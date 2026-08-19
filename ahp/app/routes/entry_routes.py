@@ -158,6 +158,20 @@ async def get_grid(collection_id: str, request: Request):
             out[m["matrix_id"]] = resolved
         return out
 
+    def _cr_by_matrix(raw_answers: dict) -> dict:
+        """응답자별 매트릭스별 CR을 서버가 매번 계산해 돌려준다. 프런트가
+        직전 PUT 응답을 DOM에 임시 캐시해 두는 방식은 그리드를 다시 그릴 때마다
+        (응답자 전환 등) 캐시가 통째로 사라져 "완료된 매트릭스인데도 CR이 안
+        보이는" 문제로 이어졌었다 — 그 캐시를 아예 없애고 매번 서버 계산값을 쓴다."""
+        out = {}
+        for m in survey["matrices"]:
+            if len(m["child_uuids"]) < 2:
+                continue
+            cr_info = _compute_cr_for_matrix(m, raw_answers)
+            if cr_info["complete"]:
+                out[m["matrix_id"]] = cr_info["cr"]  # n<=2면 cr=None(정의상 무의미) — 그대로 전달
+        return out
+
     return {
         "matrices": matrices_out,
         "respondents": [
@@ -168,6 +182,7 @@ async def get_grid(collection_id: str, request: Request):
                 "answers": _answers_in_display_order(
                     matrices_out, responses_by_rid.get(r["_id"], {})
                 ),
+                "cr_by_matrix": _cr_by_matrix(responses_by_rid.get(r["_id"], {})),
             }
             for r in respondents
         ],

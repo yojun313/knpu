@@ -4,6 +4,28 @@
   const projectId = location.pathname.split('/')[2];
   const MODE_LABEL = { offline: '오프라인', online: '온라인', realtime: '실시간' };
   let activeCollectionForCodes = null;
+  let diagramLoaded = false;
+
+  // 계층도는 다른 단계에서도 참고할 수 있어야 한다는 요청사항 — design.html의
+  // hierarchy_diagram.js를 그대로 재사용, 접이식 카드로 두고 처음 펼칠 때만 불러온다.
+  function wireDiagramToggle() {
+    const toggle = document.getElementById('diagramToggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', async function () {
+      const box = document.getElementById('diagramContainer');
+      const icon = document.getElementById('diagramToggleIcon');
+      box.hidden = !box.hidden;
+      icon.textContent = box.hidden ? '▸ 펼치기' : '▾ 접기';
+      if (box.hidden || diagramLoaded) return;
+      diagramLoaded = true;
+      try {
+        const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
+        window.AHPHierarchyDiagram.render(box, h.nodes);
+      } catch (e) {
+        box.innerHTML = '<p class="muted" style="padding:16px;font-size:12px">계층도를 불러오지 못했습니다.</p>';
+      }
+    });
+  }
 
   async function load() {
     let collections;
@@ -133,6 +155,7 @@
 
   function init() {
     load();
+    wireDiagramToggle();
     ahpApi('/api/projects/' + projectId).then(function (p) {
       document.getElementById('projTitle').textContent = p.title + ' · 수집 관리';
       if (window.AHPShell) window.AHPShell.setActiveProject(projectId);

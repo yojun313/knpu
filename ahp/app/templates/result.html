@@ -30,6 +30,14 @@
     </div>
   </div>
 
+  <div class="table-card" id="diagramCard" style="margin-bottom:14px">
+    <div class="tc-head collapsible" id="diagramToggle">
+      <span class="tc-title">계층도 보기</span>
+      <span class="tc-meta" id="diagramToggleIcon">▸ 펼치기</span>
+    </div>
+    <div id="diagramContainer" class="hd-scroll" hidden></div>
+  </div>
+
   <div id="resultError" class="empty-state" hidden>
     <div class="es-icon">⚠</div>
     <h2>결과를 불러오지 못했습니다</h2>
@@ -82,4 +90,7 @@
   </div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/js/result.js"></script>{% endblock %}
+{% block extra_scripts %}
+<script src="/js/hierarchy_diagram.js"></script>
+<script src="/js/result.js"></script>
+{% endblock %}

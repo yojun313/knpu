@@ -46,6 +46,24 @@ select{padding:9px 12px;border-radius:8px;border:1px solid var(--sidebar-border)
 select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--overlay-hover)}
 select option{background:var(--sidebar-bg);color:var(--text-strong)}
 
+/* apple/glass/mesh 테마의 --sidebar-bg는 반투명 rgba라 위 규칙만으로는
+   네이티브 <select> 팝업(페이지 밖 OS 오버레이 — backdrop-filter나 뒤 배경과의
+   합성이 전혀 적용되지 않는다)에서 사실상 흰 배경처럼 그려져, 그 위에 얹은
+   밝은 글자가 다시 안 보인다. 팝업 배경만큼은 각 테마의 색감에 맞춘 "불투명"
+   색으로 별도 지정해야 한다 — mesh는 이미 불투명 베이스 토큰(--mesh-base)이
+   있어 그대로 재사용하고, apple/glass는 그런 토큰이 없어 리터럴 solid 색을 쓴다. */
+html[data-ui-theme="glass"]{color-scheme:light}
+html[data-ui-theme="glass"][data-ui-theme-mode="dark"]{color-scheme:dark}
+html[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) select option{background:#eef0f7;color:#1c2530}
+html[data-ui-theme="glass"][data-ui-theme-mode="dark"] select option{background:#1e2230;color:#eceef4}
+
+html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) select option{background:#eef1f7;color:#1d1d1f}
+html[data-ui-theme="apple"][data-ui-theme-mode="dark"] select option{background:#1c1d24;color:#f5f5f7}
+
+html[data-ui-theme="mesh"]{color-scheme:light}
+html[data-ui-theme="mesh"][data-ui-theme-mode="dark"]{color-scheme:dark}
+html[data-ui-theme="mesh"] select option{background:var(--mesh-base);color:var(--text-strong)}
+
 /* ── 상단 브랜드 바 (모든 KNPU 사이트 공통) ── */
 .top-header{background:linear-gradient(110deg,#0B1226 0%,#2D4473 60%,#416BBF 100%);
   height:58px;flex-shrink:0;padding:0 24px;display:flex;align-items:center;gap:16px;
@@ -202,6 +220,16 @@ select option{background:var(--sidebar-bg);color:var(--text-strong)}
   align-items:center;justify-content:space-between;gap:8px}
 .tc-title{font-size:13px;font-weight:700;color:var(--text-strong)}
 .tc-meta{font-size:10.5px;color:var(--sidebar-muted)}
+
+/* ── 계층도(SVG) — design/survey/collect/result 전체에서 공유 ── */
+.hd-scroll{overflow:auto;max-height:320px;padding:8px}
+.hd-edge{fill:none;stroke:var(--sidebar-border);stroke-width:1.6}
+.hd-box{box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;
+  justify-content:center;text-align:center;padding:6px 10px;border-radius:10px;
+  border:1.5px solid var(--sidebar-border);background:var(--sidebar-bg);color:var(--text-strong);
+  font-size:12px;font-weight:700;line-height:1.35;overflow:hidden}
+.hd-box.hd-root{background:var(--accent);border-color:var(--accent);color:#fff}
+.tc-head.collapsible{cursor:pointer;user-select:none}
 
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .proj-card{background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:14px;

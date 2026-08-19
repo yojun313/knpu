@@ -23,6 +23,14 @@
 
   <div id="resyncNotice"></div>
 
+  <div class="table-card" id="diagramCard" style="margin-bottom:14px">
+    <div class="tc-head collapsible" id="diagramToggle">
+      <span class="tc-title">계층도 보기</span>
+      <span class="tc-meta" id="diagramToggleIcon">▸ 펼치기</span>
+    </div>
+    <div id="diagramContainer" class="hd-scroll" hidden></div>
+  </div>
+
   <div class="table-card" style="margin-bottom:14px">
     <div class="tc-head"><span class="tc-title">안내 · 동의</span></div>
     <div style="padding:16px">
@@ -38,4 +46,7 @@
   <div id="matricesList"></div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/js/survey_editor.js"></script>{% endblock %}
+{% block extra_scripts %}
+<script src="/js/hierarchy_diagram.js"></script>
+<script src="/js/survey_editor.js"></script>
+{% endblock %}

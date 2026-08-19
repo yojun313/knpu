@@ -33,6 +33,12 @@
         for (let j = i + 1; j < children.length; j++) {
           const nameA = (nodes[children[i]] || {}).name || children[i];
           const nameB = (nodes[children[j]] || {}).name || children[j];
+          const descA = survey.node_descriptions[children[i]] || '';
+          const descB = survey.node_descriptions[children[j]] || '';
+          if (descA || descB) {
+            block += '<div class="pair-desc"><span>' + (descA ? esc(nameA) + ': ' + esc(descA) : '') + '</span>' +
+              '<span>' + (descB ? esc(nameB) + ': ' + esc(descB) : '') + '</span></div>';
+          }
           block += '<table class="pair-table"><thead><tr><th>' + esc(nameA) + '</th>' +
             SAATY_LEVELS.map(function (n, i) { return '<th>' + levelLabel(n, i) + '</th>'; }).join('') +
             '<th>' + esc(nameB) + '</th></tr></thead><tbody><tr><td></td>' +

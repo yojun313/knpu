@@ -3,9 +3,31 @@
 
   const projectId = location.pathname.split('/')[2];
   let survey = null;
+  let diagramLoaded = false;
 
   const STATUS_LABEL = { draft: '초안', published: '발행됨' };
   const STATUS_BADGE = { draft: 'muted', published: 'ok' };
+
+  // 계층도는 다른 단계에서도 참고할 수 있어야 한다는 요청사항 — design.html의
+  // hierarchy_diagram.js를 그대로 재사용, 접이식 카드로 두고 처음 펼칠 때만 불러온다.
+  function wireDiagramToggle() {
+    const toggle = document.getElementById('diagramToggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', async function () {
+      const box = document.getElementById('diagramContainer');
+      const icon = document.getElementById('diagramToggleIcon');
+      box.hidden = !box.hidden;
+      icon.textContent = box.hidden ? '▸ 펼치기' : '▾ 접기';
+      if (box.hidden || diagramLoaded) return;
+      diagramLoaded = true;
+      try {
+        const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
+        window.AHPHierarchyDiagram.render(box, h.nodes);
+      } catch (e) {
+        box.innerHTML = '<p class="muted" style="padding:16px;font-size:12px">계층도를 불러오지 못했습니다.</p>';
+      }
+    });
+  }
 
   function nodeName(uuid, nodesByUuid) {
     return (nodesByUuid[uuid] && nodesByUuid[uuid].name) || uuid;
@@ -172,6 +194,7 @@
       window.open('/print/' + survey.id, '_blank');
     });
     document.getElementById('publishBtn').addEventListener('click', publish);
+    wireDiagramToggle();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

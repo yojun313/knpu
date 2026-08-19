@@ -377,6 +377,7 @@ async def put_hierarchy(project_id: str, request: Request):
     }
     await hierarchies_db.insert_one(doc)
     await projects_db.update_one({"_id": project_id}, {"$set": {"updated_at": _now()}})
+    await _fill_missing_survey_descriptions(project_id, nodes)
 
     return {
         "version": next_version,
@@ -384,3 +385,34 @@ async def put_hierarchy(project_id: str, request: Request):
         "alternatives": alternatives,
         "warnings": _sibling_warnings(nodes),
     }
+
+
+async def _fill_missing_survey_descriptions(project_id: str, nodes: list[dict]) -> None:
+    """계층 설명이 설문지 단계에 자동으로 넘어오지 않는다는 요청사항 반영.
+
+    survey_routes._ensure_survey()는 설문지가 처음 만들어질 때 딱 한 번만
+    계층 설명을 복사하고, 그 뒤로는(설문지가 이미 있으면) 다시 안 들여다본다.
+    그렇다고 매번 계층 값으로 덮어쓰면 연구자가 설문 단계에서 직접 다듬은
+    안내문을 잃는다 — 그래서 "설문지에 아직 그 노드의 설명이 없을 때만"
+    채운다. 구조 변경이 아니라 텍스트만 채우는 것이므로 survey version은
+    올리지 않는다(update_survey와 동일한 무버전 patch)."""
+    survey = await surveys_db.find_one(
+        {"project_id": project_id}, sort=[("version", -1)]
+    )
+    if not survey:
+        return  # 아직 설문지가 없으면 최초 생성 시(_ensure_survey) 알아서 채워진다
+
+    current_descriptions = dict(survey.get("node_descriptions", {}))
+    changed = False
+    for n in nodes:
+        if not n.get("description"):
+            continue
+        if not current_descriptions.get(n["uuid"]):
+            current_descriptions[n["uuid"]] = n["description"]
+            changed = True
+
+    if changed:
+        await surveys_db.update_one(
+            {"_id": survey["_id"]},
+            {"$set": {"node_descriptions": current_descriptions, "updated_at": _now()}},
+        )

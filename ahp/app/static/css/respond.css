@@ -97,6 +97,12 @@ button{font-family:inherit}
 .side-labels span{flex:1;text-align:center}
 .side-labels span:first-child{text-align:left}
 .side-labels span:last-child{text-align:right}
+.item-descs{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;
+  color:var(--r-muted);padding:0 2px;margin-top:-8px;line-height:1.5}
+.item-descs[hidden]{display:none}
+.item-descs span{flex:1}
+.item-descs span:first-child{text-align:left}
+.item-descs span:last-child{text-align:right}
 .side-buttons{display:grid;grid-template-columns:1fr auto 1fr;gap:8px}
 .side-btn{min-height:64px;border-radius:14px;border:1.5px solid var(--r-border);
   background:var(--r-surface);color:var(--r-ink);font-size:14.5px;font-weight:700;
@@ -121,16 +127,31 @@ button{font-family:inherit}
 
 :focus-visible{outline:2.5px solid var(--r-accent);outline-offset:2px}
 
-/* ── 제출 완료 화면 — 기준별 CR 요약 ── */
+/* ── 제출 완료 화면 — 기준별 CR 요약(섹션별로 눌러서 바로 이동) ── */
 .cr-summary-list{width:100%;max-width:420px;margin:14px 0;display:flex;flex-direction:column;
   gap:8px;text-align:left}
-.cr-summary-row{display:flex;justify-content:space-between;align-items:center;
+.cr-summary-row{display:flex;justify-content:space-between;align-items:center;width:100%;
   padding:10px 14px;border-radius:12px;background:var(--r-surface);border:1px solid var(--r-border);
-  font-size:13px}
+  font-size:13px;font-family:inherit;cursor:pointer;transition:border-color .12s}
+.cr-summary-row:active{transform:scale(.99)}
 .cr-summary-row .csr-name{font-weight:700;color:var(--r-ink)}
 .cr-summary-row .csr-cr{font-variant-numeric:tabular-nums;font-weight:700}
+.cr-summary-row.bad{border-color:var(--r-danger)}
 .cr-summary-row.bad .csr-cr{color:var(--r-danger)}
 .cr-summary-row.ok .csr-cr{color:var(--r-good)}
+
+/* ── 섹션 리뷰 화면 — 한 매트릭스의 모든 쌍을 한 번에 보여주고 재조정 ── */
+.btn-ghost.sm{min-height:38px;min-width:0;padding:0 12px;font-size:13px}
+.review-title{font-size:15px;font-weight:800;margin:8px 2px 0;text-align:center}
+.review-pairs{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.review-pair-row{border:1.5px solid var(--r-border);border-radius:14px;background:var(--r-surface);
+  padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.review-pair-row.worst{border-color:var(--r-danger)}
+.review-worst-badge{align-self:flex-start;background:var(--r-danger);color:#fff;font-size:11px;
+  font-weight:700;padding:3px 9px;border-radius:999px}
+.review-pair-row .rp-label{font-size:13.5px;font-weight:700;color:var(--r-ink)}
+.review-pair-row select{width:100%;min-height:44px;border:1.5px solid var(--r-border);
+  border-radius:10px;background:var(--r-bg);color:var(--r-ink);font-size:13px;padding:0 10px}
 
 /* ── 실시간 문항 수정 알림 배너 ── */
 .patch-notice{position:fixed;top:calc(10px + var(--r-safe-t));left:50%;transform:translateX(-50%);

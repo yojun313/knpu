@@ -15,6 +15,15 @@
     </div>
     <button class="btn primary" id="newCollectionBtn">＋ 새 수집 시작</button>
   </div>
+
+  <div class="table-card" id="diagramCard" style="margin-bottom:14px">
+    <div class="tc-head collapsible" id="diagramToggle">
+      <span class="tc-title">계층도 보기</span>
+      <span class="tc-meta" id="diagramToggleIcon">▸ 펼치기</span>
+    </div>
+    <div id="diagramContainer" class="hd-scroll" hidden></div>
+  </div>
+
   <div id="collectionsList" class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))"></div>
   <div id="collectionsEmpty" class="empty-state" hidden>
     <div class="es-icon">📮</div>
@@ -79,4 +88,7 @@
   </div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/js/collect.js"></script>{% endblock %}
+{% block extra_scripts %}
+<script src="/js/hierarchy_diagram.js"></script>
+<script src="/js/collect.js"></script>
+{% endblock %}

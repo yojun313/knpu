@@ -84,7 +84,8 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
         h = doc.add_heading(f"'{parent_name}' 측면 비교", level=2)
         h.paragraph_format.keep_with_next = True
         if parent_desc:
-            doc.add_paragraph(parent_desc).italic = True
+            p = doc.add_paragraph()
+            p.add_run(parent_desc).italic = True
         q = doc.add_paragraph(m.get("question_text", ""))
         q.paragraph_format.keep_with_next = True
 
@@ -97,6 +98,19 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
                 name_b = nodes_by_uuid.get(child_uuids[j], {}).get(
                     "name", child_uuids[j]
                 )
+                desc_a = node_descriptions.get(child_uuids[i], "")
+                desc_b = node_descriptions.get(child_uuids[j], "")
+                if desc_a or desc_b:
+                    dp = doc.add_paragraph()
+                    dp.paragraph_format.keep_with_next = True
+                    bits = []
+                    if desc_a:
+                        bits.append(f"{name_a}: {desc_a}")
+                    if desc_b:
+                        bits.append(f"{name_b}: {desc_b}")
+                    run = dp.add_run("  |  ".join(bits))
+                    run.italic = True
+                    run.font.size = Pt(9)
 
                 table = doc.add_table(rows=2, cols=1 + len(SAATY_LEVELS) + 1)
                 table.style = "Table Grid"

@@ -40,9 +40,13 @@
   function renderTree() {
     const rootNode = root();
     const container = document.getElementById('treeRoot');
-    if (!rootNode) { container.innerHTML = ''; return; }
-    container.innerHTML = '';
-    container.appendChild(renderNode(rootNode));
+    if (!rootNode) { container.innerHTML = ''; } else {
+      container.innerHTML = '';
+      container.appendChild(renderNode(rootNode));
+    }
+    // 계층도는 별도 버튼 없이 트리를 편집할 때마다(추가/삭제/이동/이름변경)
+    // 항상 최신 상태로 갱신된다 — 팝업을 열어야만 보이던 이전 UX를 인라인으로 바꿈.
+    window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
   }
 
   function renderNode(node) {
@@ -474,14 +478,6 @@
       renderBrainList();
       renderTree();
       ahpToast('트리에 추가했습니다. 저장을 눌러야 반영됩니다.');
-    });
-
-    document.getElementById('previewDiagramBtn').addEventListener('click', function () {
-      window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
-      document.getElementById('diagramModal').hidden = false;
-    });
-    document.getElementById('diagramClose').addEventListener('click', function () {
-      document.getElementById('diagramModal').hidden = true;
     });
 
     document.getElementById('settingsBtn').addEventListener('click', openSettings);
