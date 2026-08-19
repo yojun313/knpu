@@ -127,8 +127,11 @@ app.include_router(settings_routes.router)
 @app.exception_handler(StarletteHTTPException)
 async def auth_exception_handler(request: Request, exc: StarletteHTTPException):
     if exc.status_code == 307:
+        # request.url은 nginx 뒤라는 걸 몰라서 scheme이 항상 http로 찍힌다 —
+        # https로 강제하지 않으면 로그인 후 돌아올 때 Secure 쿠키가 안 실린다.
+        redirect_url = str(request.url.replace(scheme="https"))
         return RedirectResponse(
-            url=f"https://knpu.re.kr/login?redirect={quote(str(request.url))}"
+            url=f"https://knpu.re.kr/login?redirect={quote(redirect_url)}"
         )
 
     # 그 외의 에러는 기본 에러 메시지 출력
