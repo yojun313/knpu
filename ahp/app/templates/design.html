@@ -18,7 +18,6 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="dirtyBadge" class="badge warn" hidden>저장 안 됨</span>
-      <button class="btn" id="previewDiagramBtn">🌳 계층도 미리보기</button>
       <button class="btn" id="settingsBtn">⚙ 방법론 설정</button>
       <button class="btn danger" id="deleteProjectBtn">삭제</button>
       <button class="btn primary" id="saveHierarchyBtn">저장</button>
@@ -27,21 +26,27 @@
 
   <div id="warningsBox"></div>
 
+  <div class="table-card" id="diagramCard" style="margin-bottom:14px">
+    <div class="tc-head"><span class="tc-title">계층도</span>
+      <span class="tc-meta">편집하는 동안 계속 갱신됩니다</span></div>
+    <div id="diagramContainer" class="hd-scroll"></div>
+  </div>
+
+  <div id="altPanel" class="table-card" style="margin-bottom:14px" hidden>
+    <div class="tc-head"><span class="tc-title">대안 관리</span>
+      <span class="tc-meta">최하위 기준마다 이 대안들의 비교 문항이 자동 추가됩니다</span></div>
+    <div class="brainstorm-add">
+      <input type="text" id="altInput" placeholder="대안 이름을 입력하고 Enter">
+    </div>
+    <div id="altList" class="brainstorm-list"></div>
+  </div>
+
   <div class="designer-layout">
     <div class="table-card">
       <div class="tc-head"><span class="tc-title">계층 트리</span>
         <button class="btn sm" id="addRootChildBtn">＋ 최상위 기준 추가</button>
       </div>
       <div id="treeRoot" class="tree-root"></div>
-    </div>
-
-    <div id="altPanel" class="table-card" hidden>
-      <div class="tc-head"><span class="tc-title">대안 관리</span>
-        <span class="tc-meta">최하위 기준마다 이 대안들의 비교 문항이 자동 추가됩니다</span></div>
-      <div class="brainstorm-add">
-        <input type="text" id="altInput" placeholder="대안 이름을 입력하고 Enter">
-      </div>
-      <div id="altList" class="brainstorm-list"></div>
     </div>
 
     <div class="table-card">
@@ -61,13 +66,6 @@
     <div class="field"><label>이름</label><input type="text" id="nodeEditName"></div>
     <div class="field"><label>설명(응답자에게 표시됨)</label><textarea id="nodeEditDesc"></textarea></div>
     <button class="btn primary" id="nodeEditSave" style="width:100%">적용</button>
-  </div>
-</div>
-
-<div id="diagramModal" class="modal-overlay" hidden>
-  <div class="modal-card wide">
-    <div class="modal-head"><span>계층도 미리보기</span><button class="modal-close" id="diagramClose">×</button></div>
-    <div id="diagramContainer" class="hd-scroll"></div>
   </div>
 </div>
 

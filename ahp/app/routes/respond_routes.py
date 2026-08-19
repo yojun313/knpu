@@ -27,6 +27,7 @@ from app.services.ahp_calc import (
     IncompleteMatrixError,
 )
 from app.services.hub import hub
+from app.services.consistency import worst_offending_pairs
 
 router = APIRouter()
 
@@ -380,11 +381,19 @@ async def respond_summary(token: str, request: Request):
         pairs = sub["answers"].get(m["matrix_id"], {})
         try:
             result = derive_weights(node_ids, pairs)
+            worst_pair = None
+            if len(node_ids) >= 3:
+                # 이 응답자 본인의 판단 중 CR에 가장 큰 영향을 준(가장 모순적인)
+                # 쌍 — 리뷰 화면에서 바로 강조해 보여주기 위함(요청사항).
+                worst = worst_offending_pairs(node_ids, pairs, top_k=1)
+                if worst:
+                    worst_pair = {"uuid_a": worst[0].uuid_a, "uuid_b": worst[0].uuid_b}
             items.append(
                 {
                     "matrix_id": m["matrix_id"],
                     "parent_name": m["parent_name"],
                     "cr": result.cr,
+                    "worst_pair": worst_pair,
                 }
             )
         except IncompleteMatrixError:

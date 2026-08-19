@@ -25,8 +25,10 @@
   let clientSeq = Number(localStorage.getItem(STORAGE_SEQ_KEY) || 0);
   let pendingSide = null;
   let pendingIntensity = null;
+  let reviewMatrixId = null;
+  let reviewWorstPid = null;
 
-  function views() { return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone']; }
+  function views() { return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone', 'viewReview']; }
   function show(id) { views().forEach(function (v) { document.getElementById(v).hidden = (v !== id); }); }
   function showError(title, msg) {
     document.getElementById('errorTitle').textContent = title;
@@ -128,6 +130,7 @@
           matrix_id: m.matrix_id, parent_name: m.parent_name, parent_description: m.parent_description,
           question_text: m.question_text, uuid_a: p.uuid_a, uuid_b: p.uuid_b,
           name_a: a ? a.name : p.uuid_a, name_b: b ? b.name : p.uuid_b,
+          desc_a: (a && a.description) || '', desc_b: (b && b.description) || '',
           is_alternative: !!m.is_alternative,
           is_last_in_matrix: false,
         });
@@ -297,6 +300,9 @@
     document.getElementById('labelB').textContent = q.name_b;
     document.getElementById('sideBtnAName').textContent = q.name_a;
     document.getElementById('sideBtnBName').textContent = q.name_b;
+    document.getElementById('descA').textContent = q.desc_a || '';
+    document.getElementById('descB').textContent = q.desc_b || '';
+    document.getElementById('itemDescs').hidden = !q.desc_a && !q.desc_b;
     document.getElementById('qCounter').textContent = (currentIndex + 1) + ' / ' + questions.length;
     document.getElementById('prevBtn').disabled = currentIndex === 0;
 
@@ -413,7 +419,11 @@
     }
   }
 
-  // ── 제출 완료 화면 — 기준별 CR 요약 + 재조정 진입점 ─────────────────────────
+  // ── 제출 완료 화면 — 기준별 CR 요약 + 섹션별 이동 진입점 ─────────────────────
+  // 매트릭스별 worst_pair(그 응답자 본인의 판단 중 CR에 가장 큰 영향을 준 쌍)를
+  // 요약을 다시 부르지 않고도 리뷰 화면에서 바로 쓸 수 있게 캐시해 둔다.
+  let summaryWorstByMatrix = {};
+
   async function showDone() {
     show('viewDone');
     const box = document.getElementById('crSummaryList');
@@ -424,16 +434,56 @@
       });
       if (!res.ok) throw new Error('summary failed');
       const data = await res.json();
+      summaryWorstByMatrix = {};
+      data.items.forEach(function (it) { summaryWorstByMatrix[it.matrix_id] = it.worst_pair; });
       if (!data.items.length) { box.innerHTML = ''; return; }
       box.innerHTML = data.items.map(function (it) {
         const cls = (it.cr === null || it.cr === undefined) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
         const crText = (it.cr === null || it.cr === undefined) ? '-' : ('CR ' + it.cr.toFixed(3));
-        return '<div class="cr-summary-row ' + cls + '"><span class="csr-name">' + esc(it.parent_name) + '</span>' +
-          '<span class="csr-cr">' + crText + '</span></div>';
+        return '<button type="button" class="cr-summary-row ' + cls + '" data-matrix="' + it.matrix_id + '">' +
+          '<span class="csr-name">' + esc(it.parent_name) + '</span>' +
+          '<span class="csr-cr">' + crText + '</span></button>';
       }).join('');
     } catch (e) {
       box.innerHTML = '';
     }
+  }
+
+  // ── 섹션 리뷰 — 한 매트릭스의 모든 쌍을 한 화면에 보여주고, 가장 모순적인
+  // 쌍(worst_pair)을 강조해 바로 조정할 수 있게 한다(요청사항). 척도는
+  // entry.js의 scaleOptionsHtml과 동일한 9~1~1/9 전 구간.
+  function reviewScaleOptionsHtml(nameA, nameB, current) {
+    const opts = [];
+    for (let n = 9; n >= 2; n--) opts.push({ v: n, label: nameA + '가(이) ' + n + '배 더 중요' });
+    opts.push({ v: 1, label: '동일하게 중요' });
+    for (let n = 2; n <= 9; n++) opts.push({ v: 1 / n, label: nameB + '가(이) ' + n + '배 더 중요' });
+    return opts.map(function (o) {
+      const sel = current != null && Math.abs(o.v - current) < 1e-6 ? ' selected' : '';
+      return '<option value="' + o.v + '"' + sel + '>' + esc(o.label) + '</option>';
+    }).join('');
+  }
+
+  function renderReview(matrixId) {
+    reviewMatrixId = matrixId;
+    const worst = summaryWorstByMatrix[matrixId];
+    reviewWorstPid = worst ? pairId(worst.uuid_a, worst.uuid_b) : null;
+    const qs = questions.filter(function (q) { return q.matrix_id === matrixId; });
+    document.getElementById('reviewTitle').textContent =
+      (qs[0] && qs[0].is_alternative ? '대안 비교 · ' : '') + (qs[0] ? qs[0].parent_name : '');
+    document.getElementById('reviewPairs').innerHTML = qs.map(function (q) {
+      const pid = pairId(q.uuid_a, q.uuid_b);
+      const current = currentValueForQuestion(q);
+      const isWorst = pid === reviewWorstPid;
+      return '<div class="review-pair-row' + (isWorst ? ' worst' : '') + '" data-a="' + q.uuid_a + '" data-b="' + q.uuid_b + '" data-matrix="' + matrixId + '">' +
+        (isWorst ? '<span class="review-worst-badge">⚠ 가장 모순적인 응답</span>' : '') +
+        '<span class="rp-label">' + esc(q.name_a) + ' vs ' + esc(q.name_b) + '</span>' +
+        '<select>' + reviewScaleOptionsHtml(q.name_a, q.name_b, current) + '</select></div>';
+    }).join('');
+  }
+
+  function enterReview(matrixId) {
+    renderReview(matrixId);
+    show('viewReview');
   }
 
   // ── 초기화 ──────────────────────────────────────────────────────────────
@@ -485,6 +535,28 @@
       }
       startSurvey();
     });
+
+    document.getElementById('crSummaryList').addEventListener('click', function (e) {
+      const row = e.target.closest('.cr-summary-row');
+      if (!row) return;
+      enterReview(row.dataset.matrix);
+    });
+    document.getElementById('reviewPairs').addEventListener('change', function (e) {
+      if (e.target.tagName !== 'SELECT') return;
+      const row = e.target.closest('.review-pair-row');
+      const uuidA = row.dataset.a, uuidB = row.dataset.b, matrixId = row.dataset.matrix;
+      const value = Number(e.target.value);
+      answers[pairId(uuidA, uuidB)] = value;
+      clientSeq += 1;
+      localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
+      queueAnswer({ matrix_id: matrixId, uuid_a: uuidA, uuid_b: uuidB, value: value, client_seq: clientSeq });
+    });
+    document.getElementById('reviewBackBtn').addEventListener('click', function () { showDone(); });
+    document.getElementById('reviewDoneBtn').addEventListener('click', async function () {
+      await flushQueue();
+      await showDone();
+    });
+
     window.addEventListener('online', flushQueue);
 
     run();

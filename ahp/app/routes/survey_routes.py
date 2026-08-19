@@ -271,6 +271,10 @@ async def survey_print_data(survey_id: str, request: Request):
         {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
     )
     nodes_by_uuid = {n["uuid"]: n for n in hierarchy["nodes"]} if hierarchy else {}
+    # 대안 비교 행렬의 child_uuids는 대안 uuid라, 이것도 같이 넣어야 인쇄물에서
+    # 대안 이름이 uuid로 안 보이고 정상 표시된다.
+    for a in (hierarchy or {}).get("alternatives", []):
+        nodes_by_uuid[a["uuid"]] = a
     return {"survey": _serialize_survey(survey), "nodes": nodes_by_uuid}
 
 

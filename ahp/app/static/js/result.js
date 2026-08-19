@@ -11,6 +11,28 @@
   // 'custom'이면 scopeSelection에 담긴 collection_ids(+선택된 round만) 조합만 본다.
   let scopeMode = 'all';
   let scopeSelection = { collectionIds: [], roundMap: {} };
+  let diagramLoaded = false;
+
+  // 계층도는 다른 단계에서도 참고할 수 있어야 한다는 요청사항 — design.html의
+  // hierarchy_diagram.js를 그대로 재사용, 접이식 카드로 두고 처음 펼칠 때만 불러온다.
+  function wireDiagramToggle() {
+    const toggle = document.getElementById('diagramToggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', async function () {
+      const box = document.getElementById('diagramContainer');
+      const icon = document.getElementById('diagramToggleIcon');
+      box.hidden = !box.hidden;
+      icon.textContent = box.hidden ? '▸ 펼치기' : '▾ 접기';
+      if (box.hidden || diagramLoaded) return;
+      diagramLoaded = true;
+      try {
+        const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
+        window.AHPHierarchyDiagram.render(box, h.nodes);
+      } catch (e) {
+        box.innerHTML = '<p class="muted" style="padding:16px;font-size:12px">계층도를 불러오지 못했습니다.</p>';
+      }
+    });
+  }
 
   function renderWeightChart(container, weights, nodeNames, opts) {
     opts = opts || {};
@@ -232,6 +254,7 @@
       ahpToast('프로젝트를 불러오지 못했습니다', true);
       return;
     }
+    wireDiagramToggle();
 
     wireExportLinks();
     await loadCollectionsFilter();
