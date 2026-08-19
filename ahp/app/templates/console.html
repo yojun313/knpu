@@ -11,6 +11,8 @@
     <div style="display:flex;gap:8px;align-items:center">
       <span id="wsStatus" class="badge muted">연결 중…</span>
       <span class="badge ok">라운드 <b id="roundNum">1</b></span>
+      <span id="sessionPhaseBadge" class="badge muted"></span>
+      <button class="btn primary" id="startSessionBtn" hidden>설문 시작</button>
       <button class="btn" id="advanceRoundBtn">다음 라운드 시작</button>
       <a class="btn sm" id="backToCollect" href="#">← 수집 관리로</a>
     </div>
@@ -18,7 +20,12 @@
 
   <div class="console-layout">
     <div class="table-card">
-      <div class="tc-head"><span class="tc-title">참여자</span><span class="tc-meta" id="respCountMeta"></span></div>
+      <div class="tc-head"><span class="tc-title">참여자</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="tc-meta" id="respCountMeta"></span>
+          <button class="btn sm" id="addParticipantBtn">＋ 추가</button>
+        </div>
+      </div>
       <div id="respondentTable" class="resp-table"></div>
     </div>
 
@@ -41,8 +48,13 @@
     </div>
     <p style="padding:10px 16px 0;font-size:11.5px;color:var(--sidebar-muted)">
       값을 바로 고치면 관리자가 응답자와 확인한 값이라는 뜻입니다. 그렇지 않다면
-      "이 섹션 재응답 요청"으로 응답자가 직접 조정하게 하세요.
+      "이 섹션 재응답 요청"으로 응답자 전원이 직접 조정하게 하세요. 응답자 행의
+      "개별 공개"/"재조정 요청"은 그 사람에게만 적용됩니다.
     </p>
+    <div style="padding:10px 16px 0;display:flex;gap:8px">
+      <button class="btn sm" id="revealGroupBtn">그룹 결과 공개</button>
+      <button class="btn sm primary" id="advanceSectionBtn">다음 섹션 진행 →</button>
+    </div>
     <div id="sectionWorstPairs" style="padding:10px 16px 0"></div>
     <div id="sectionTable" class="tw" style="padding:10px 16px 16px"></div>
   </div>

@@ -15,6 +15,17 @@
 .resp-row .rr-cr{font-size:11px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
 .resp-row .rr-cr.ok{color:var(--success)}
 .resp-row .rr-cr.bad{color:var(--danger)}
+.resp-row .rr-actions{display:flex;gap:4px;justify-content:flex-end}
+.resp-row .rr-act{width:22px;height:22px;border-radius:6px;border:1px solid var(--sidebar-border);
+  background:transparent;color:var(--sidebar-muted);cursor:pointer;font-size:12px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.resp-row .rr-act:hover{background:var(--sidebar-panel2);color:var(--text-strong)}
+
+/* ── 섹션 응답자별 액션 ── */
+.section-row-actions{display:flex;gap:4px}
+.sr-act{border:1px solid var(--sidebar-border);background:transparent;color:var(--sidebar-muted);
+  border-radius:6px;padding:3px 7px;font-size:10.5px;cursor:pointer;white-space:nowrap}
+.sr-act:hover{background:var(--sidebar-panel2);color:var(--text-strong)}
 
 .live-matrices{padding:14px 16px}
 .live-matrix{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--sidebar-border)}

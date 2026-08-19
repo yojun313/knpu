@@ -33,6 +33,18 @@ def _now():
     return datetime.now(timezone.utc)
 
 
+def _dedupe_label(base: str, existing_labels: set[str]) -> str:
+    """같은 수집 회차 안에서 응답자 이름이 겹치면 "이름 (2)"처럼 구분자를 붙여
+    유일하게 만든다 — 이름이 같으면 결과 화면·CSV 내보내기에서 서로 다른
+    응답자를 구별할 수 없어진다(요청사항)."""
+    if base not in existing_labels:
+        return base
+    n = 2
+    while f"{base} ({n})" in existing_labels:
+        n += 1
+    return f"{base} ({n})"
+
+
 async def _survey_and_nodes(collection: dict):
     survey = await surveys_db.find_one({"_id": collection["survey_id"]})
     hierarchy = await hierarchies_db.find_one(
@@ -55,6 +67,14 @@ async def add_manual_respondent(collection_id: str, request: Request):
     if not label:
         n = await respondents_db.count_documents({"collection_id": collection_id})
         label = f"응답자 {n + 1}"
+
+    existing_labels = {
+        r["label"]
+        async for r in respondents_db.find(
+            {"collection_id": collection_id}, {"label": 1}
+        )
+    }
+    label = _dedupe_label(label, existing_labels)
 
     rid = uuid.uuid4().hex
     doc = {
@@ -344,8 +364,17 @@ async def import_csv(
     if errors:
         return {"status": "error", "errors": errors[:50], "error_count": len(errors)}
 
+    existing_labels = {
+        r["label"]
+        async for r in respondents_db.find(
+            {"collection_id": collection_id}, {"label": 1}
+        )
+    }
+
     created = []
     for label, answers in by_respondent.items():
+        label = _dedupe_label(label, existing_labels)
+        existing_labels.add(label)
         rid = uuid.uuid4().hex
         await respondents_db.insert_one(
             {
