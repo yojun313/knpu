@@ -7,10 +7,6 @@ import random
 from user_agent import generate_navigator
 import os
 
-api_headers = {
-    "Authorization": "Bearer " + os.getenv("ADMIN_TOKEN"),
-}
-
 _CURRENT_PROXY_LIST = []
 
 
