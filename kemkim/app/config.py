@@ -11,6 +11,6 @@ load_dotenv()
 mode = int(os.getenv("MODE", 1))
 
 if mode == 0:
-    KEMKIM_VIEWER_URL = "http://localhost:8008"
+    KEMKIM_VIEWER_URL = "https://dev-kemkim.knpu.re.kr"
 else:
     KEMKIM_VIEWER_URL = "https://kemkim.knpu.re.kr"

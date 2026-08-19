@@ -11,7 +11,7 @@ load_dotenv()
 MODE = int(os.getenv("MODE", 1))
 
 if MODE == 0:
-    AHP_BASE_URL = "http://localhost:8010"
+    AHP_BASE_URL = "https://dev-ahp.knpu.re.kr"
 else:
     AHP_BASE_URL = "https://ahp.knpu.re.kr"
 

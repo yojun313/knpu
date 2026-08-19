@@ -149,4 +149,34 @@
   } else {
     init();
   }
+
+  // ----------------------------------------------------------------------
+  // dev 서브도메인(dev-xxx.knpu.re.kr)에서 보고 있을 때, 상단 네비게이션의
+  // 다른 서비스 링크(MANAGER/NETWORK/...)도 같은 dev 쪽으로 데려가 준다.
+  // 로그인/홈(knpu.re.kr)은 dev/prod 공통이라 건드리지 않는다.
+  // ----------------------------------------------------------------------
+  var CROSS_SERVICE_SUBDOMAINS = [
+    'manager', 'crawler', 'network', 'kemkim', 'statistics', 'ahp', 'dashboard',
+  ];
+
+  function fixCrossServiceNavLinks() {
+    var m = /^dev-([a-z0-9.-]+\.knpu\.re\.kr)$/i.exec(location.hostname);
+    if (!m) return;
+    document.querySelectorAll('a[href^="https://"]').forEach(function (a) {
+      var url;
+      try { url = new URL(a.getAttribute('href'), location.href); } catch (e) { return; }
+      var hm = /^([a-z0-9-]+)\.knpu\.re\.kr$/i.exec(url.hostname);
+      if (!hm) return;
+      var sub = hm[1].toLowerCase();
+      if (CROSS_SERVICE_SUBDOMAINS.indexOf(sub) === -1) return;
+      url.hostname = 'dev-' + sub + '.knpu.re.kr';
+      a.setAttribute('href', url.toString());
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixCrossServiceNavLinks);
+  } else {
+    fixCrossServiceNavLinks();
+  }
 })();
