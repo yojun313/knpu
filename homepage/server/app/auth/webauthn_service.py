@@ -21,7 +21,7 @@ from app.auth.jwt import create_token
 from app.auth.service import _log_user_activity, _public_user
 from app.auth.webauthn_config import (
     CHALLENGE_TTL_MINUTES,
-    EXPECTED_ORIGIN,
+    EXPECTED_ORIGINS,
     RP_ID,
     RP_NAME,
 )
@@ -106,7 +106,7 @@ def verify_registration(
             credential=credential,
             expected_challenge=base64url_to_bytes(challenge_b64),
             expected_rp_id=RP_ID,
-            expected_origin=EXPECTED_ORIGIN,
+            expected_origin=EXPECTED_ORIGINS,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"패스키 등록에 실패했습니다: {e}")
@@ -170,7 +170,7 @@ def verify_authentication(credential: dict) -> dict:
             credential=credential,
             expected_challenge=base64url_to_bytes(challenge_b64),
             expected_rp_id=RP_ID,
-            expected_origin=EXPECTED_ORIGIN,
+            expected_origin=EXPECTED_ORIGINS,
             credential_public_key=bytes(stored_cred["public_key"]),
             credential_current_sign_count=stored_cred["sign_count"],
         )

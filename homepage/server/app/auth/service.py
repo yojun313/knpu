@@ -16,7 +16,7 @@ from app.db import (
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_token
 from app.auth.email import sendEmail
-from app.auth.webauthn_config import EXPECTED_ORIGIN
+from app.auth.webauthn_config import BASE_URL
 from app.libs import r2
 from app.libs.discord_notify import notify_discord
 from system.logging.user_log import insert_log
@@ -162,7 +162,7 @@ def _send_signup_verification_link(username: str, email: str):
         },
         upsert=True,
     )
-    verify_url = f"{EXPECTED_ORIGIN}/verify-email?token={token}"
+    verify_url = f"{BASE_URL}/verify-email?token={token}"
     sendEmail(
         email,
         "[KNPU] 이메일 인증",

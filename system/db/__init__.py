@@ -14,6 +14,9 @@ DB 구조 (scripts/db/migrate.py로 이관 완료, scripts/db/verify.py로 검�
 
 기존 manager/homepage/discord/audit DB는 며칠간 그대로 두고(구 코드가 참조할 일이 없어지면)
 수동으로 정리한다 — 이 파일에서는 더 이상 참조하지 않는다.
+
+dev/prod는 위 DB를 그대로 공유한다. MODE는 접속 URL(dev-*.knpu.re.kr)과 포트만
+가르고 데이터는 가르지 않는다 — "_dev" 접미사를 붙이던 옛 동작은 아래 주석 참고.
 """
 
 import os
@@ -24,8 +27,6 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 load_dotenv()
-
-MODE = int(os.getenv("MODE", 1))
 
 SSH_HOST = os.getenv("SSH_HOST")
 SSH_PORT = int(os.getenv("SSH_PORT", 22))
@@ -65,21 +66,17 @@ else:
         f"@127.0.0.1:{_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
     )
 
-systems_db_name = "systems_dev" if MODE == 0 else "systems"
-manager_db_name = "manager_dev" if MODE == 0 else "manager"
-crawler_db_name = "crawler_dev" if MODE == 0 else "crawler"
-network_db_name = "network_dev" if MODE == 0 else "network"
-kemkim_db_name = "kemkim_dev" if MODE == 0 else "kemkim"
-statistics_db_name = "statistics_dev" if MODE == 0 else "statistics"
-homepage_db_name = "homepage_dev" if MODE == 0 else "homepage"
-
-systems_db = client[systems_db_name]
-manager_db = client[manager_db_name]
-crawler_db = client[crawler_db_name]
-homepage_db = client[homepage_db_name]
-network_db = client[network_db_name]
-kemkim_db = client[kemkim_db_name]
-statistics_db = client[statistics_db_name]
+# dev(MODE=0)도 아래 DB를 그대로 쓴다. 예전엔 MODE=0일 때 "_dev" 접미사를 붙였는데
+# 그 DB들이 실제로 만들어진 적이 없어서, dev 사이트는 논문/구성원 같은 콘텐츠가 통째로
+# 비어 보였고 systems_dev에 계정이 없으니 dev-* 서브도메인은 세션 검증에 실패해
+# 로그인 페이지로 무한히 되돌아갔다.
+systems_db = client["systems"]
+manager_db = client["manager"]
+crawler_db = client["crawler"]
+homepage_db = client["homepage"]
+network_db = client["network"]
+kemkim_db = client["kemkim"]
+statistics_db = client["statistics"]
 
 user_db = systems_db["users"]
 auth_codes_db = systems_db["auth-codes"]

@@ -20,8 +20,6 @@ from system.db import user_db, user_logs_db, get_user_names  # noqa: F401  (재�
 
 load_dotenv()
 
-MODE = int(os.getenv("MODE", 1))
-
 SSH_HOST = os.getenv("SSH_HOST")
 SSH_PORT = int(os.getenv("SSH_PORT", 22))
 SSH_USER = os.getenv("SSH_USER")
@@ -59,8 +57,8 @@ else:
 
 _client = AsyncIOMotorClient(_mongo_uri)
 
-_db_name = "ahp_dev" if MODE == 0 else "ahp"
-ahp_db = _client[_db_name]
+# dev/prod는 DB를 공유한다(system/db/__init__.py 참고).
+ahp_db = _client["ahp"]
 
 projects_db = ahp_db["projects"]
 hierarchies_db = ahp_db["hierarchies"]

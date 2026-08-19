@@ -1,4 +1,3 @@
-import os
 from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse
@@ -17,6 +16,7 @@ from app.models import (
     PasskeyClientErrorRequest,
 )
 from app.auth import service, webauthn_service
+from app.auth.webauthn_config import BASE_URL
 from app.auth.jwt import decode_token
 from app.db import users_db
 from app.libs.discord_notify import notify_discord
@@ -29,9 +29,8 @@ from system.auth.session import revalidate_session
 
 router = APIRouter()
 
-MODE = int(os.getenv("MODE", 1))
-COOKIE_DOMAIN = ".knpu.re.kr" if MODE == 1 else None
-COOKIE_SECURE = MODE == 1
+COOKIE_DOMAIN = ".knpu.re.kr"
+COOKIE_SECURE = True
 COOKIE_MAX_AGE = 30 * 24 * 60 * 60
 
 
@@ -75,7 +74,7 @@ def _safe_redirect(url: str) -> str:
         ".knpu.re.kr"
     ):
         return url
-    return "https://knpu.re.kr/account"
+    return f"{BASE_URL}/account"
 
 
 @router.get("/token-login")
