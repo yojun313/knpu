@@ -27,7 +27,7 @@ PROGRESS_PUBLIC_WS_URL = (
 # 크롤러 API 내부 호출 주소 — 같은 호스트이므로 로컬로 직접 호출한다 (CORS 불필요,
 # '크롤링 DB에서 선택' 기능에서 이 서버가 사용자 세션 쿠키를 실어 서버 간 호출한다)
 CRAWLER_INTERNAL_API = os.getenv(
-    "CRAWLER_INTERNAL_API", f"http://localhost:{18005 if MODE == 0 else 8005}/api"
+    "CRAWLER_INTERNAL_API", f"http://localhost:{18011 if MODE == 0 else 8011}/api"
 )
 
 _DEFAULT_OPTION = {
