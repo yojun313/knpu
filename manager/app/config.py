@@ -27,8 +27,8 @@ if mode == 0:
     HOMEPAGE_EDIT_API = "https://knpu.re.kr/api"
     NETWORK_VIEWER_URL = "http://localhost:8002"
     KEMKIM_VIEWER_URL = "http://localhost:8003"
-    STATISTICS_VIEWER_URL = "http://localhost:8004"
-    CRAWLER_VIEWER_URL = "http://localhost:8005"
+    STATISTICS_VIEWER_URL = "http://localhost:8010"
+    CRAWLER_VIEWER_URL = "http://localhost:8011"
 else:
     MANAGER_SERVER_API = "https://manager.knpu.re.kr/api"
     MANAGER_PROGRESS_API = "https://manager.knpu.re.kr/progress"
