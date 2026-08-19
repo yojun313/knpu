@@ -21,12 +21,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from system.auth.middleware import AuthMiddleware
 from app.common.notification import sendDiscord
-from app.config import MODE
 from db import user_logs_db
 from system.logging.user_log import AuditLogMiddleware
 import gc
 import asyncio
-from datetime import datetime
 from rich.console import Console
 import traceback
 
@@ -120,6 +118,12 @@ import os as _os
 
 _static_path = _os.path.join(_os.path.dirname(__file__), "static")
 fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
+# 다른 서비스와 공유하는 프론트 자산(dev 링크 보정 등)
+fastapi_app.mount(
+    "/shared-ui",
+    StaticFiles(directory=os.path.join(_REPO_ROOT, "system", "ui")),
+    name="shared-ui",
+)
 
 from app.routes import api_router
 from app.routes.dashboard_routes import router as dashboard_router

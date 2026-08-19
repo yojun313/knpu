@@ -101,4 +101,12 @@ app.include_router(frontend_router, tags=["frontend"])
 # about.html·manager.html처럼 직접 경로로도 접근되던 파일들)은 예전 Express 정적 서빙과
 # 동일하게 public/ 디렉토리를 통째로 서빙해 대체한다. 반드시 다른 라우트보다 뒤에 등록해야
 # 위의 명시적 라우트(/, /login, /api/* 등)가 우선 매치된다.
+# 다른 서비스와 공유하는 프론트 자산(dev 링크 보정 등). catch-all "/" 마운트보다
+# 먼저 등록해야 매치된다.
+app.mount(
+    "/shared-ui",
+    StaticFiles(directory=os.path.join(_REPO_ROOT, "system", "ui")),
+    name="shared-ui",
+)
+
 app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")

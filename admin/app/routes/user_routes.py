@@ -5,12 +5,16 @@ from fastapi.responses import JSONResponse
 from app.services.data_service import get_all_users, get_pending_users
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
+from system.endpoints import internal_api
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
-HOMEPAGE_AUTH_API = "https://knpu.re.kr/api/auth"
+# 같은 장비의 홈페이지를 직접 부른다 — 공개 도메인(prod 고정)으로 나가면 dev
+# 대시보드가 운영 홈페이지를 호출하게 되고, 불필요하게 nginx/TLS를 왕복한다.
+# (같은 앱의 version_routes.py가 이미 쓰는 방식과 맞춤)
+HOMEPAGE_AUTH_API = f"{internal_api('homepage')}/auth"
 
 
 @router.get("/users")

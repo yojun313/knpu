@@ -4,9 +4,15 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
+from system.endpoints import internal_url
+
 load_dotenv()
 
-PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL")
+# 기본값이 없으면 값이 비었을 때 "None/process"로 요청이 나간다.
+# 진행상황 서버는 manager/web(8006, dev 18006)이다.
+PROGRESS_SERVER_URL = (
+    os.getenv("PROGRESS_SERVER_URL") or internal_url("progress")
+).rstrip("/")
 
 
 def register_process(process_id: str, title: str) -> None:

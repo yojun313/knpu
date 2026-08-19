@@ -5,8 +5,12 @@ load_dotenv()
 
 VERSION = "3.3.4"
 
-"""
-    0: local
+"""MODE
+
+여기서의 0은 서버 쪽 dev(dev*.knpu.re.kr / 18xxx)가 아니라, 개발자 PC에서 각 서버를
+직접 띄워놓고 붙는 "로컬" 모드다 — 그래서 아래 주소가 18xxx가 아니라 localhost의
+운영 포트를 가리킨다. 데스크톱 클라이언트라 배포된 dev 환경을 쓸 일이 없다.
+    0: local (개발자 PC에서 서버 직접 실행)
     1: production
 """
 

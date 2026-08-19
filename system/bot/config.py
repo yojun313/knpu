@@ -1,24 +1,30 @@
-"""
-0: local
-1: production
-"""
-
 import os
+import sys
+
 from dotenv import load_dotenv
 
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+# MODE는 pm2 env로 들어오지만, pm2 밖에서 띄울 때를 위해 .env를 먼저 읽고 나서
+# system.endpoints(=import 시점에 MODE를 확정한다)를 가져온다.
 load_dotenv()
 
-mode = int(os.getenv("MODE"))
+from system.endpoints import internal_api, public_url  # noqa: E402
 
-LLM_API_URL = "http://localhost:8000/api"
+# LLM 프록시(/api/llm/*)는 manager/server가 들고 있다 — 예전엔 홈페이지 포트(8000)로
+# 잘못 향해 있어서 404가 났다.
+LLM_API_URL = internal_api("manager")
 LLM_KEY = os.getenv("ADMIN_TOKEN")
 
-HOMEPAGE_API_URL = "http://localhost:8002/api"
-ADMIN_API_URL = "http://localhost:3004/api"
+# 가입 승인/거절(/api/auth/admin/requests/*)은 홈페이지가 들고 있다 — 예전엔 크롤러
+# 포트(8002)로 잘못 향해 있었다.
+HOMEPAGE_API_URL = internal_api("homepage")
 
 # 디스코드 인증 링크는 사용자 브라우저에서 직접 여는 것이므로 localhost가 아니라
 # 공개 도메인이어야 한다 (HOMEPAGE_API_URL은 봇↔서버 내부 통신용이라 다르다).
-HOMEPAGE_WEB_URL = "https://knpu.re.kr"
+HOMEPAGE_WEB_URL = public_url("homepage")
 
 # 인증 관련 값도 CHANNEL_IDS와 같은 이유로 슬래시 명령어로 바꾸는 기능을 두지 않고
 # 코드에 고정한다 (/인증설정, /인증전역할, /인증로그채널, /시작하기 명령어 폐지).

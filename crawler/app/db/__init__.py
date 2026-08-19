@@ -1,10 +1,10 @@
 """system.db의 단일 MongoClient를 재사용한다 — 예전에는 이 서비스가 자체
 MongoClient(+SSH 터널)를 별도로 만들어서 프로세스마다 연결이 중복됐다.
 
-주의: 이 서비스는 원래도 자신의 MODE(dev/prod)와 무관하게 항상 운영 DB(crawler/manager)를
-그대로 썼다(config.MODE를 import만 하고 DB 이름 분기에는 안 씀 — 옮기기 전 동작 그대로 보존).
-그래서 system.db의 MODE 분기 핸들(crawler_db/user_logs_db 등)을 쓰지 않고, client에서
-운영 DB 이름을 직접 고정해서 가져온다."""
+이 서비스는 예전부터 MODE와 무관하게 운영 DB를 그대로 썼는데, 이제는 전 서비스가
+그렇게 동작하므로(system/db/__init__.py 참고) 더 이상 이 파일만의 예외가 아니다.
+아래에서 DB 이름을 직접 적는 것은 system.db가 노출하지 않는 핸들(homepage_db 등)을
+같이 쓰기 때문이다."""
 
 import logging
 from datetime import datetime
