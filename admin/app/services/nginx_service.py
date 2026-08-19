@@ -110,23 +110,43 @@ class NginxService:
                     domain_match = re.search(r"server_name\s+([^;]+);", content)
                     locations = cls._extract_locations(content)
 
+                    paths = [
+                        {"path": loc["path"], "port": loc["port"]} for loc in locations
+                    ]
                     domains.append(
                         {
                             "domain": domain_match.group(1).strip()
                             if domain_match
                             else "N/A",
                             "filename": filename,
-                            "paths": [
-                                {"path": loc["path"], "port": loc["port"]}
-                                for loc in locations
-                            ],
+                            "paths": paths,
+                            "primary_port": cls._primary_port(paths),
                         }
                     )
                 except Exception:
                     continue
 
-        domains.sort(key=lambda x: x["domain"])
+        # 카드를 펼치지 않아도 포트가 바로 보이도록 primary_port를 계산해 두고,
+        # 그 값 기준으로 정렬한다("/" 경로 포트가 있으면 그걸, 없으면 등록된
+        # 포트 중 가장 작은 값). 포트를 못 찾은 도메인은 맨 뒤로 보낸다.
+        domains.sort(
+            key=lambda d: (d["primary_port"] is None, d["primary_port"] or 0, d["domain"])
+        )
         return domains
+
+    @staticmethod
+    def _primary_port(paths):
+        if not paths:
+            return None
+        root = next((p for p in paths if p["path"] == "/"), None)
+        candidates = [root] if root else paths
+        ports = []
+        for p in candidates:
+            try:
+                ports.append(int(p["port"]))
+            except (TypeError, ValueError):
+                continue
+        return min(ports) if ports else None
 
     # ---------- write (existing domain, no certbot) ----------
 
