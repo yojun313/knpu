@@ -11,10 +11,6 @@ from core.setting import get_setting, set_setting
 
 
 class WebLoginDialog(QDialog):
-    """knpu.re.kr 로그인 페이지를 임베디드 브라우저로 띄우고, 로그인 성공 시
-    발급되는 session 쿠키(JWT)를 가로채 MANAGER 앱의 인증 토큰으로 재사용한다.
-    (기존 page_web.py의 web_open_crawler가 쓰던 embedded QWebEngineView와 같은 패턴)"""
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("KNPU 로그인")
@@ -45,7 +41,6 @@ class WebLoginDialog(QDialog):
 
 
 def _fetch_profile(parent) -> bool:
-    """저장된(또는 방금 발급된) 토큰으로 knpu.re.kr 프로필을 조회해 parent에 채운다."""
     res = requests.get(f"{HOMEPAGE_URL}/api/auth/me", headers=get_api_headers())
     if res.status_code != 200:
         return False
@@ -102,8 +97,6 @@ def loginProgram(parent):
 
 
 def verifyAdmin(parent) -> bool:
-    """관리자 전용 동작을 수행하기 전, 관리자 본인의 knpu.re.kr 아이디/비밀번호로
-    권한을 확인한다 (예전의 공용 하드코딩 비밀번호 방식을 대체)."""
     id_dialog = QInputDialog(parent)
     id_dialog.setWindowTitle("Admin Mode")
     id_dialog.setLabelText("관리자 아이디:")

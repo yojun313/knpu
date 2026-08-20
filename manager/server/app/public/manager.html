@@ -601,13 +601,15 @@
         :root[data-ui-theme="mesh"] .download-text h3 { color: var(--text-main); }
         :root[data-ui-theme="mesh"] footer { background-color: var(--mesh-base) !important; }
     </style>
+  <script src="/shared-ui/services.js"></script>
+  <script src="/shared-ui/knpu.js"></script>
 </head>
 
 <body>
     <div class="top-header">
-        <a href="https://knpu.re.kr" title="홈으로"><img src="assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+        <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
         <nav class="top-nav">
-            <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+            <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
             <a href="https://manager.knpu.re.kr" class="top-nav-link active" onclick="return openManagerApp(event)">MANAGER</a>
             <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
             <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
@@ -619,9 +621,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
     </div>
-    <script src="/shared-ui/dev-links.js"></script>
-
-    <div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target===this) closeThemeModal()">
+<div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target===this) closeThemeModal()">
         <div class="theme-modal" role="dialog" aria-modal="true" aria-label="테마 설정">
             <div class="theme-modal-head">
                 <div>

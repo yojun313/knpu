@@ -294,14 +294,12 @@ class Manager_Setting(BaseDialog):
         ################################################################################
         # LLM API Key 입력 섹션
         def open_details_url():
-            """자세히 버튼 클릭 시 URL 열기"""
             import webbrowser
 
             url = "https://hyunicecream.tistory.com/78"  # 원하는 URL 입력
             webbrowser.open(url)
 
         def disable_api_key_input():
-            """API Key 입력창 비활성화"""
             api_key = self.api_key_input.text()
             if api_key:
                 self.api_key_input.setDisabled(True)  # 입력창 비활성화
@@ -314,7 +312,6 @@ class Manager_Setting(BaseDialog):
                 QMessageBox.warning(self, "경고", "API Key를 입력하세요.")
 
         def enable_api_key_input():
-            """API Key 입력창 활성화"""
             self.api_key_input.setDisabled(False)  # 입력창 활성화
             self.save_api_key_button.setEnabled(True)  # 저장 버튼 활성화
             self.edit_api_key_button.setEnabled(False)  # 수정 버튼 비활성화
@@ -529,7 +526,6 @@ class Manager_Setting(BaseDialog):
             return "\n".join(lines)
 
         def update_runtime():
-            """실시간으로 구동 시간을 정수 형식으로 업데이트하는 메서드"""
             elapsed_time = datetime.now() - self.main.startTime
             total_seconds = int(elapsed_time.total_seconds())
             hours, remainder = divmod(total_seconds, 3600)

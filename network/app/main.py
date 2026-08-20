@@ -20,6 +20,7 @@ from system.auth.middleware import AuthMiddleware
 from app.db import user_logs_db
 from system.notify.discord import notify_discord
 from system.logging.user_log import AuditLogMiddleware
+from system.shared_ui import mount_shared_ui
 
 app = FastAPI(title="KNPU Network Analyzer")
 
@@ -75,8 +76,7 @@ app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
 
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
-app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
+mount_shared_ui(app)
 
 app.include_router(api_router)
 

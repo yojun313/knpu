@@ -17,6 +17,7 @@ from app.models import (
 )
 from app.auth import service, webauthn_service
 from app.auth.webauthn_config import BASE_URL
+from system.endpoints import COOKIE_DOMAIN as SHARED_COOKIE_DOMAIN
 from app.auth.jwt import decode_token
 from app.db import users_db
 from app.libs.discord_notify import notify_discord
@@ -29,7 +30,10 @@ from system.auth.session import revalidate_session
 
 router = APIRouter()
 
-COOKIE_DOMAIN = ".knpu.re.kr"
+# 세션은 dev/prod가 공유한다. dev도 https 서브도메인(dev.knpu.re.kr,
+# dev-kemkim.knpu.re.kr ...)으로 서빙되므로 쿠키를 부모 도메인에 걸어야 한다 —
+# 호스트 전용 쿠키로 두면 dev-* 서비스들이 세션을 못 읽고 로그인으로 되돌아간다.
+COOKIE_DOMAIN = SHARED_COOKIE_DOMAIN
 COOKIE_SECURE = True
 COOKIE_MAX_AGE = 30 * 24 * 60 * 60
 
@@ -70,9 +74,9 @@ def login(data: LoginRequest, response: Response):
 
 def _safe_redirect(url: str) -> str:
     parsed = urlparse(url)
-    if parsed.hostname == "knpu.re.kr" or (parsed.hostname or "").endswith(
-        ".knpu.re.kr"
-    ):
+    host = (parsed.hostname or "").lower()
+    # services.json의 cookie_domain(".knpu.re.kr")을 기준으로 우리 도메인인지 본다.
+    if host == SHARED_COOKIE_DOMAIN.lstrip(".") or host.endswith(SHARED_COOKIE_DOMAIN):
         return url
     return f"{BASE_URL}/account"
 

@@ -113,9 +113,9 @@
     const logoutBtn = document.getElementById('railLogout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function () {
-        fetch('https://knpu.re.kr/api/auth/logout', { method: 'POST', credentials: 'include' })
+        fetch(KNPU.logoutUrl(), { method: 'POST', credentials: 'include' })
           .then(function () {
-            location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(window.location.href);
+            location.href = KNPU.loginUrl();
           });
       });
     }

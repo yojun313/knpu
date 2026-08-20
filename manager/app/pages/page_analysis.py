@@ -1047,7 +1047,6 @@ class Manager_Analysis(Manager_Worker):
                         if words_to_translate:
 
                             async def translate_word(word):
-                                """개별 단어를 비동기적으로 번역하고 반환하는 함수"""
                                 result = await translator.translate(
                                     word, dest="en", src="auto"
                                 )  # await 추가
@@ -2370,7 +2369,6 @@ class Manager_Analysis(Manager_Worker):
     def run_detection(self):
 
         def fetch_yolo_models():
-            """서버로부터 .pt 모델 리스트를 가져옵니다."""
             try:
                 # MANAGER_SERVER_API는 기존 코드에 정의된 서버 주소 변수입니다.
                 url = MANAGER_SERVER_API + "/analysis/yolo/models"

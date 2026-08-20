@@ -68,7 +68,6 @@ def insert_log(
     service: str,
     **kwargs,
 ) -> None:
-    """로그 기록 실패가 원래 요청을 절대 깨지 않도록 항상 예외를 삼킨다."""
     try:
         entry = build_entry(user_uid, action, service, **kwargs)
         collection.insert_one(entry)

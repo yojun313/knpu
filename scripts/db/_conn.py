@@ -1,6 +1,3 @@
-"""scripts/db/ 공용 MongoDB 연결 헬퍼.
-manager/server/app/db/__init__.py의 연결 패턴(서버 내부면 로컬, 아니면 SSH 터널)을 그대로 따른다."""
-
 import os
 import socket
 import warnings

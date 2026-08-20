@@ -1,11 +1,3 @@
-"""system.db의 단일 MongoClient를 재사용한다 — 예전에는 이 서비스가 자체
-MongoClient(+SSH 터널)를 별도로 만들어서 프로세스마다 연결이 중복됐다.
-
-이 서비스는 예전부터 MODE와 무관하게 운영 DB를 그대로 썼는데, 이제는 전 서비스가
-그렇게 동작하므로(system/db/__init__.py 참고) 더 이상 이 파일만의 예외가 아니다.
-아래에서 DB 이름을 직접 적는 것은 system.db가 노출하지 않는 핸들(homepage_db 등)을
-같이 쓰기 때문이다."""
-
 import logging
 from datetime import datetime
 
@@ -33,8 +25,6 @@ __all__ = [
     "recordDB",
 ]
 
-# 예전에도 이 컬렉션은 crawler 프로세스의 MODE와 무관하게 항상 운영 DB(manager.user-logs)를
-# 가리켰다 — 지금은 그 데이터가 systems.user-logs로 이관되었으므로 운영 systems DB를 고정해서 쓴다.
 user_logs_db = client["systems"]["user-logs"]
 
 

@@ -125,15 +125,6 @@ def tokenization(
 
 
 async def start_youtube_download(option: dict):
-    """
-    option 예시:
-    {
-      "pid": "xxx",
-      "urls": ["https://youtu.be/...", "https://www.youtube.com/watch?v=..."],
-      "format": "mp3",          # "mp3" | "mp4"
-      "save_whisper": true,     # true면 whisper 결과(txt)도 저장
-    }
-    """
     try:
         pid: str = option.get("pid", str(uuid.uuid4()))
         raw_urls = option.get("urls", [])

@@ -187,13 +187,6 @@ def validateCrawlRange(startDate, endDate):
 
 
 def purgeCrawlDb(DBuid):
-    """재크롤링을 위해 기존 DB 레코드·수집 파일·로그를 전부 삭제한다.
-
-    재크롤링은 새 크롤링을 처음부터 다시 도는 것이므로(새 uid·새 DB명), 여기서 지우지
-    않으면 옛 데이터가 그대로 남는다. 특히 같은 키워드·같은 날짜 범위를 같은 분(分)에
-    재크롤링하면 makeDBname 결과가 이전과 같아져 폴더가 겹치므로, 새 작업을 큐에
-    넣기 전에 반드시 먼저 호출해야 한다.
-    """
     doc = crawlList_db.find_one({"uid": DBuid})
     if not doc:
         raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {DBuid}")

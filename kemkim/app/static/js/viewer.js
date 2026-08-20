@@ -45,7 +45,7 @@
 
   function railApi(path, opts) {
     return fetch(path, opts).then(function (res) {
-      if (res.status === 401) { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(location.href); return Promise.reject(new Error('unauthorized')); }
+      if (res.status === 401) { location.href = KNPU.loginUrl(); return Promise.reject(new Error('unauthorized')); }
       return res.json().then(function (b) {
         if (!res.ok) throw new Error(b.detail || res.statusText);
         return b;
@@ -70,7 +70,7 @@
         if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
       };
       xhr.onload = function () {
-        if (xhr.status === 401) { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(location.href); return; }
+        if (xhr.status === 401) { location.href = KNPU.loginUrl(); return; }
         var body = {};
         try { body = JSON.parse(xhr.responseText); } catch (e) { /* noop */ }
         if (xhr.status >= 200 && xhr.status < 300) resolve(body);
@@ -1812,8 +1812,8 @@
 
     document.getElementById('railLogout').addEventListener('click', function () {
       // 로그인은 knpu.re.kr 중앙 로그인이 전담하므로, 로그아웃도 그쪽 세션(쿠키)을 지운다
-      fetch('https://knpu.re.kr/api/auth/logout', { method: 'POST', credentials: 'include' })
-        .then(function () { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(window.location.href); });
+      fetch(KNPU.logoutUrl(), { method: 'POST', credentials: 'include' })
+        .then(function () { location.href = KNPU.loginUrl(); });
     });
 
     // 화면 다크모드는 더 이상 이 앱만의 버튼이 아니라 상단 그라디언트 바의 테마

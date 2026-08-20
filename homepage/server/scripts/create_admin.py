@@ -7,6 +7,7 @@ sys.path.insert(0, ".")
 
 from app.db import users_db
 from app.auth.hashing import hash_password
+from system.endpoints import HOMEPAGE_URL
 
 
 def main():
@@ -49,7 +50,7 @@ def main():
         }
     )
     print(
-        f"\n관리자 계정 '{username}'이(가) 생성되었습니다. https://knpu.re.kr/login 에서 로그인하세요."
+        f"\n관리자 계정 '{username}'이(가) 생성되었습니다. {HOMEPAGE_URL}/login 에서 로그인하세요."
     )
 
 

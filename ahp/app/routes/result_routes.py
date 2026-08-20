@@ -169,7 +169,10 @@ async def get_results(
             "per_respondent_cr": {},
             "consensus": {},
             "outliers": {},
-            "node_names": {**{n["uuid"]: n["name"] for n in hierarchy["nodes"]}, **alt_names},
+            "node_names": {
+                **{n["uuid"]: n["name"] for n in hierarchy["nodes"]},
+                **alt_names,
+            },
             "matrix_parent_names": matrix_parent_names,
             "message": "아직 제출된 응답이 없습니다",
         }

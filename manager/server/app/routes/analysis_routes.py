@@ -119,9 +119,6 @@ async def youtube_download(
 
 @router.get("/yolo/models")
 async def get_yolo_models_proxy():
-    """
-    GPU 서버로부터 사용 가능한 YOLO 모델 리스트를 가져와 반환하는 프록시 엔드포인트
-    """
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             # GPU 서버의 모델 리스트 엔드포인트 호출

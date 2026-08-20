@@ -20,18 +20,10 @@ from dotenv import load_dotenv
 from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote
-from itertools import combinations
-from collections import Counter
-from sklearn.metrics.pairwise import cosine_similarity
-import networkx as nx
-import zipfile
 import platform
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-from multiprocessing import Pool, cpu_count
 from typing import List
-from app.services.network_service import run_network_analysis
-from io import StringIO
 
 
 if platform.system() == "Linux":
@@ -113,9 +105,6 @@ async def whisper_route(option: str = Form("{}"), file: UploadFile = File(...)):
 
 @router.get("/yolo/models")
 async def get_yolo_models():
-    """
-    현재 서버에서 사용 가능한 YOLO 모델 리스트를 반환합니다.
-    """
     try:
         models = get_yolo_model_list()
         return JSONResponse(content={"models": models})
@@ -294,11 +283,3 @@ async def embed_csv_route(file: UploadFile = File(...), option: str = Form("{}")
         media_type="text/csv",
         headers={"Content-Disposition": cd_header},
     )
-
-
-@router.post("/graph-network")
-async def graph_network(option: str = Form(...), file: UploadFile = File(...)):
-    option = json.loads(option)
-    content = await file.read()
-    df = pd.read_csv(StringIO(content.decode("utf-8")))
-    return run_network_analysis(option.get("pid", "network"), df, option)

@@ -54,10 +54,6 @@ def compute_summary(graph: dict) -> dict:
 
 
 def compute_community_keywords(graph: dict, top_k: int = 6) -> list:
-    """커뮤니티별 대표 단어. 두 기준으로 뽑아 서로 다른 관점을 함께 보여준다.
-    - top_freq: 커뮤니티 안에서 가장 자주 등장한 단어 (핵심어)
-    - top_internal_degree: 같은 커뮤니티 내부 연결이 가장 많은 단어 (그 그룹을 응집시키는 허브어)
-    """
     if not graph.get("has_community"):
         return []
 

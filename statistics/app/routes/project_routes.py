@@ -50,8 +50,6 @@ def _handle_store_error(fn, *args, **kwargs):
 
 @router.get("/", response_class=HTMLResponse)
 async def app_shell():
-    """프로젝트 목록(왼쪽 레일)과 통계분석 뷰어가 한 화면에 있는 통합 UI. 프로젝트를
-    아직 선택하지 않은 상태로 열린다."""
     return _page("viewer.html")
 
 
@@ -117,8 +115,6 @@ async def api_create_project(
 
 @router.post("/api/projects/upload-zip")
 async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
-    """업로드 진행률 표시를 위한 1단계: 파일만 먼저 받아둔다. 실제 프로젝트 생성은
-    이름을 정한 뒤 /api/projects/finalize-zip 에서 이어진다."""
     if not file.filename.lower().endswith(".zip"):
         raise HTTPException(400, "통계분석 결과 zip 파일을 업로드해주세요.")
     content = await file.read()
@@ -130,7 +126,6 @@ async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
 
 @router.post("/api/projects/finalize-zip")
 async def api_finalize_zip(request: Request):
-    """업로드 진행률 표시 2단계: 이름을 확정해 실제 프로젝트를 만든다."""
     body = await request.json()
     uid = _uid(request)
     try:
@@ -312,8 +307,6 @@ async def project_download(project_id: str, request: Request):
 
 @router.get("/api/projects/{project_id}/base")
 async def project_base(project_id: str, request: Request):
-    """표(csv_files/*.csv를 JSON으로 변환한 것)와 설명(description.txt)을 한 번에
-    내려준다. 서버 재계산 없음 — 프론트엔드가 표 데이터로 직접 차트를 그린다."""
     base = _handle_store_error(
         project_store.load_base, _uid(request), project_id, _is_admin(request)
     )
@@ -327,7 +320,6 @@ async def project_base(project_id: str, request: Request):
 
 @router.get("/api/analyze/options")
 async def analyze_options():
-    """업로드 모달의 '분석 실행' 탭에서 쓸 플랫폼별 카테고리 매트릭스."""
     return JSONResponse(
         {
             "platforms": analyze_service.PLATFORM_CATEGORIES,
@@ -338,15 +330,11 @@ async def analyze_options():
 
 @router.get("/api/progress-config")
 async def progress_config():
-    """브라우저가 진행 상황 WebSocket에 붙을 공개 주소를 알려준다."""
     return JSONResponse({"ws_url": analyze_service.PROGRESS_PUBLIC_WS_URL})
 
 
 @router.get("/api/crawl-dbs")
 async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
-    """'크롤링 DB에서 선택' 기능: 완료된 크롤 DB 목록을 크롤러 서버에서 그대로 가져온다.
-    같은 호스트이므로 로컬로 직접 호출하고, 사용자 세션 쿠키를 그대로 실어 보내
-    크롤러의 get_current_user 인증을 그대로 통과시킨다(별도 내부 키 불필요)."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -371,8 +359,6 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 @router.get("/api/crawl-dbs/{uid}/files")
 async def api_crawl_db_files(uid: str, request: Request):
-    """완료된 크롤 DB의 파일 목록 중 원본(비토큰화) 파일만 골라 반환한다 — 통계분석은
-    형태소 분석 이전의 원본 컬럼(Reply Date/Writer 등)이 그대로 필요하다."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -393,8 +379,6 @@ async def api_crawl_db_files(uid: str, request: Request):
 
 @router.post("/api/crawl-dbs/{uid}/select")
 async def api_crawl_db_select(uid: str, request: Request):
-    """선택한 크롤 DB 파일을 크롤러에서 CSV로 받아와 그대로 스테이징한다 — 이후 흐름은
-    /api/projects/analyze/start로 기존 CSV 업로드 경로와 완전히 동일하다."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -431,8 +415,6 @@ async def api_crawl_db_select(uid: str, request: Request):
 
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
-    """업로드 진행률 표시를 위한 1단계: 원본 CSV만 먼저 받아둔다. 플랫폼/분석 종류는
-    업로드가 끝난 뒤(2단계, /api/projects/analyze/start)에 고른다."""
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "원본 CSV 파일을 업로드해주세요.")
     content = await file.read()
@@ -444,9 +426,6 @@ async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...
 
 @router.post("/api/projects/analyze/start")
 async def api_analyze_start(request: Request):
-    """업로드 진행률 표시 2단계: 플랫폼/분석 종류를 확정해 통계분석 파이프라인
-    (데스크톱 MANAGER와 동일한 백엔드)을 이 프로세스 안에서 직접 돌린다. 완료되면 결과가
-    자동으로 이 사용자의 프로젝트로 저장된다."""
     uid = _uid(request)
 
     body = await request.json()

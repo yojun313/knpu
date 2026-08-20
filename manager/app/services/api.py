@@ -9,9 +9,6 @@ PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 
 def get_api_headers():
-    """
-    Returns the API headers with the current token.
-    """
     token = get_setting("auth_token")
     return {"Authorization": f"Bearer {token}"}
 

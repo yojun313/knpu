@@ -13,7 +13,8 @@ templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 # (다른 서비스들의 discord_notify.py 프록시와 동일한 관례).
 MODE = int(os.getenv("MODE", 1))
 MANAGER_SERVER_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
+    "MANAGER_SERVER_INTERNAL_API",
+    f"http://localhost:{18001 if MODE == 0 else 8001}/api",
 )
 
 

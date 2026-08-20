@@ -1,12 +1,3 @@
-"""
-MANAGER · persistent settings helper
-----------------------------------------------
-
-- Qt 의 `QSettings` 래퍼
-- 기본값 자동 채우기
-- 편의 함수: `get_setting`, `set_setting`, `update_settings`, `all_settings`
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -37,25 +28,19 @@ for key, val in _DEFAULTS.items():
 
 
 def get_setting(key: str, default: Any | None = None) -> Any:
-    """단일 설정값 반환 (없으면 default)"""
     return _qsettings.value(key, default)
 
 
 def set_setting(key: str, value: Any) -> None:
-    """단일 설정값 저장 & 즉시 플러시"""
     _qsettings.setValue(key, value)
     _qsettings.sync()
 
 
 def update_settings(**kwargs: Any) -> None:
-    """여러 값을 한꺼번에 저장
-    `update_settings(Theme='dark', ScreenSize='max')`
-    """
     for k, v in kwargs.items():
         _qsettings.setValue(k, v)
     _qsettings.sync()
 
 
 def all_settings() -> dict[str, Any]:
-    """딕셔너리 형태로 전체 설정 반환 (기본값 포함)"""
     return {k: get_setting(k, _DEFAULTS[k]) for k in _DEFAULTS}

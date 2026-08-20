@@ -33,6 +33,8 @@ from app.db import user_logs_col
 from app.libs.jwt import decode_token
 from app.libs.discord_notify import notify_discord
 from system.logging.user_log import AuditLogMiddleware
+from system.endpoints import LOGIN_URL
+from system.shared_ui import mount_shared_ui
 
 
 def _extract_identity(request: Request):
@@ -90,9 +92,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 class NoCacheStaticFiles(StaticFiles):
-    """statistics/kemkim/network와 동일한 이유로 캐시를 끈다: 개발 중 자산이 자주
-    바뀌므로 브라우저가 옛 버전을 계속 쓰는 일이 없도록 한다."""
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
@@ -105,9 +104,7 @@ class NoCacheStaticFiles(StaticFiles):
 
 
 # statistics/kemkim/network가 함께 쓰는 테마 시스템(테마 CSS) — 관리자 대시보드는
-# 상단 네비 바 없이 테마 스킨(glass/neu/mesh)만 설정 페이지에서 골라 쓴다.
-SHARED_UI_DIR = os.path.join(_REPO_ROOT, "system", "ui")
-app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
+mount_shared_ui(app)
 
 # 라우터 등록
 app.include_router(main_routes.router)
@@ -130,9 +127,7 @@ async def auth_exception_handler(request: Request, exc: StarletteHTTPException):
         # request.url은 nginx 뒤라는 걸 몰라서 scheme이 항상 http로 찍힌다 —
         # https로 강제하지 않으면 로그인 후 돌아올 때 Secure 쿠키가 안 실린다.
         redirect_url = str(request.url.replace(scheme="https"))
-        return RedirectResponse(
-            url=f"https://knpu.re.kr/login?redirect={quote(redirect_url)}"
-        )
+        return RedirectResponse(url=f"{LOGIN_URL}?redirect={quote(redirect_url)}")
 
     # 그 외의 에러는 기본 에러 메시지 출력
     return await http_exception_handler(request, exc)

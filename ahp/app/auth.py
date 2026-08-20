@@ -1,13 +1,3 @@
-"""연구자/관리자 인증 헬퍼 + 웹소켓 인증.
-
-HTTP 경로는 system.auth.middleware.AuthMiddleware가 이미 JWT를 검증하고
-request.scope["state"]["user"]에 심어 준다 (network/kemkim/statistics와 동일 패턴).
-
-웹소켓은 다르다 — AuthMiddleware.__call__은 scope["type"] != "http"이면 그대로
-통과시키므로 웹소켓 연결은 미들웨어 인증을 전혀 거치지 않는다. 반드시 각
-웹소켓 엔드포인트 안에서 직접 검증해야 한다 (PLAN.md 5.3).
-"""
-
 from datetime import datetime, timedelta, timezone
 
 import jwt as pyjwt
@@ -51,11 +41,6 @@ def _decode_and_revalidate_sync(token: str) -> dict | None:
 
 
 async def authenticate_websocket(ws: WebSocket) -> dict | None:
-    """관리자용 웹소켓 연결 시 쿠키의 session JWT를 검증한다.
-
-    decode_token/revalidate_session은 동기(pymongo)라 워커 1개의 이벤트 루프를
-    직접 막지 않도록 threadpool로 감싼다. 연결 시점에 한 번만 호출되므로 비용은 작다.
-    """
     token = ws.cookies.get("session")
     if not token:
         auth_header = ws.headers.get("authorization", "")
@@ -96,9 +81,6 @@ def verify_respondent_token(token: str) -> dict | None:
 
 
 def current_respondent(request: Request) -> dict:
-    """응답자용 API에서 Authorization: Bearer 헤더로 신원을 확인한다.
-    관리자 라우트의 current_user()와 다르게 미들웨어가 대신해주지 않는다 —
-    /api/respond/는 AuthMiddleware의 공개 경로라 여기서 직접 검증해야 한다."""
     auth_header = request.headers.get("authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(401, "응답자 인증이 필요합니다")

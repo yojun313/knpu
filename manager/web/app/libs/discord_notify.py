@@ -1,17 +1,11 @@
-"""Discord 알림 발행기 (프록시).
-
-이 서비스는 자체 MongoDB 접속 정보를 갖지 않으므로, 이미 떠 있는 manager/server의
-관리자 알림 엔드포인트(POST /users/admin/notify)를 통해 알림을 큐에 넣는다.
-실제 전송은 manager/server -> discord.notifications 컬렉션 -> 디스코드 봇 순서로 처리된다.
-"""
-
 import os
 import requests
 
 MODE = int(os.getenv("MODE", 1))
 
 MANAGER_SERVER_INTERNAL_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
+    "MANAGER_SERVER_INTERNAL_API",
+    f"http://localhost:{18001 if MODE == 0 else 8001}/api",
 )
 
 

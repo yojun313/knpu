@@ -20,10 +20,6 @@ async def upload_image(
         "misc"
     ),
 ) -> JSONResponse:
-    """
-    * `file` : multipart/form-data 로 전송되는 이미지 파일\n
-    * `folder` : 버킷 내 폴더 (기본 *misc*) – 필요 시 프론트에서 지정
-    """
     _, ext = os.path.splitext(file.filename)
     if not _allowed(ext):
         raise HTTPException(

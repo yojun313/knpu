@@ -1,15 +1,3 @@
-"""
-갤러리 컬렉션을 구 스키마({url, caption, date})에서
-신 스키마({title, content, date, photos: [...], schema_version: 2})로 옮기는 1회성 마이그레이션 스크립트.
-
-사용법 (homepage/server 디렉터리에서 실행):
-    python scripts/migrate_gallery_to_posts.py --dry-run   # 변경 없이 대상만 확인
-    python scripts/migrate_gallery_to_posts.py              # 실제 마이그레이션 실행
-
-실행 전 반드시 gallery 컬렉션을 mongodump로 백업해둘 것.
-schema_version 필드가 이미 있는 문서는 대상에서 제외되므로, 재실행해도 안전함(대상 0건).
-"""
-
 import argparse
 import sys
 from pathlib import Path

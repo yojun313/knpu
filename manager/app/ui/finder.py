@@ -54,10 +54,6 @@ def _launch_app(system, exe_path, file_path):
 
 
 def open_graphml_with_viewer(main_window, file_path):
-    """
-    GraphML 파일을 열 수 있는 뷰어(yEd 등)를 찾아 실행한다.
-    설치되어 있지 않으면 다운로드 페이지로 이동할지 물어본다.
-    """
     system = platform.system()
 
     for viewer in GRAPHML_VIEWERS:

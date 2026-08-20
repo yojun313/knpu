@@ -11,25 +11,21 @@ from fastapi.responses import JSONResponse
 
 load_dotenv()
 
-MODE = int(os.getenv("MODE", 1))
-
-MANAGER_SERVER_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
+from system.endpoints import (  # noqa: E402
+    internal_api,
+    internal_url,
+    public_ws_url,
 )
 
-PROGRESS_SERVER_URL = os.getenv(
-    "PROGRESS_SERVER_URL", f"http://localhost:{18006 if MODE == 0 else 8006}"
-).rstrip("/")
+MANAGER_SERVER_API = os.getenv("MANAGER_SERVER_INTERNAL_API", internal_api("manager"))
 
-PROGRESS_PUBLIC_WS_URL = (
-    "wss://dev-manager.knpu.re.kr/progress"
-    if MODE == 0
-    else "wss://manager.knpu.re.kr/progress"
+PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", internal_url("progress")).rstrip(
+    "/"
 )
 
-CRAWLER_INTERNAL_API = os.getenv(
-    "CRAWLER_INTERNAL_API", f"http://localhost:{18002 if MODE == 0 else 8002}/api"
-)
+PROGRESS_PUBLIC_WS_URL = public_ws_url("progress")
+
+CRAWLER_INTERNAL_API = os.getenv("CRAWLER_INTERNAL_API", internal_api("crawler"))
 
 _DEFAULT_OPTION = {
     "period": "1y",

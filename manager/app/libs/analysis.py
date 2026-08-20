@@ -327,7 +327,6 @@ class DataProcess:
         if words_to_translate:
 
             async def translate_word(word):
-                """개별 단어를 비동기적으로 번역하고 반환하는 함수"""
                 result = await translator.translate(
                     word, dest="en", src="auto"
                 )  # await 추가

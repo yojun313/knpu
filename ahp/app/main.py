@@ -20,6 +20,7 @@ from app.db import user_logs_db, ensure_indexes
 from system.auth.middleware import AuthMiddleware
 from system.notify.discord import notify_discord
 from system.logging.user_log import AuditLogMiddleware
+from system.shared_ui import mount_shared_ui
 
 app = FastAPI(title="KNPU AHP")
 
@@ -87,9 +88,7 @@ app.mount(
 )
 
 # 관리자 화면 전용 — 테마 시스템(글래스/애플/뉴모피즘/메시 + 다크). 응답자 화면은
-# 이 마운트를 아예 참조하지 않는다(PLAN.md 10.2 — 시스템 라이트/다크만, 테마 선택 없음).
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
-app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
+mount_shared_ui(app)
 
 app.include_router(api_router)
 

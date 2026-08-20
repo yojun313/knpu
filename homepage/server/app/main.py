@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import traceback
 
@@ -19,8 +20,15 @@ from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
 from app.auth.jwt import decode_token
 from system.logging.user_log import AuditLogMiddleware
+from system.endpoints import COOKIE_DOMAIN as _COOKIE_DOMAIN
+from system.shared_ui import mount_shared_ui
 
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
+
+# services.json의 cookie_domain(".knpu.re.kr")에서 유도한다 — 우리 도메인의 모든
+# 서브도메인(dev-* 포함)만 credentialed 요청을 허용한다.
+_ROOT_DOMAIN_RE = re.escape(_COOKIE_DOMAIN.lstrip("."))
+CORS_ORIGIN_REGEX = rf"https://([a-z0-9-]+\.)?{_ROOT_DOMAIN_RE}"
 
 
 def _extract_identity(request: Request):
@@ -88,7 +96,7 @@ app.add_middleware(
     # allow_credentials=True와 allow_origins=["*"]는 브라우저가 동시 사용을 거부하므로
     # (쿠키 기반 SSO 로그아웃 등 credentialed 요청을 다른 *.knpu.re.kr 서브도메인에서
     # 받으려면) 정규식으로 knpu.re.kr 서브도메인만 명시적으로 허용한다.
-    allow_origin_regex=r"https://([a-z0-9-]+\.)?knpu\.re\.kr",
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,12 +109,8 @@ app.include_router(frontend_router, tags=["frontend"])
 # about.html·manager.html처럼 직접 경로로도 접근되던 파일들)은 예전 Express 정적 서빙과
 # 동일하게 public/ 디렉토리를 통째로 서빙해 대체한다. 반드시 다른 라우트보다 뒤에 등록해야
 # 위의 명시적 라우트(/, /login, /api/* 등)가 우선 매치된다.
-# 다른 서비스와 공유하는 프론트 자산(dev 링크 보정 등). catch-all "/" 마운트보다
-# 먼저 등록해야 매치된다.
-app.mount(
-    "/shared-ui",
-    StaticFiles(directory=os.path.join(_REPO_ROOT, "system", "ui")),
-    name="shared-ui",
-)
+# 다른 서비스와 공유하는 프론트 자산(+ /shared-ui/services.js). catch-all "/"
+# 마운트보다 먼저 등록해야 매치된다.
+mount_shared_ui(app)
 
 app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")

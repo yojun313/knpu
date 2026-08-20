@@ -1,24 +1,3 @@
-# system/db/__init__.py
-"""KNPU 전 서비스가 공유하는 단일 MongoDB 연결 지점.
-
-이전에는 manager/server, manager/{network,kemkim,statistics}, homepage/server, crawler,
-admin, bot이 각자 MongoClient를 만들고 DB/컬렉션 이름을 흩어서 정의했다. 여기서 한 번만
-연결하고, 아래 각 모듈이 이 파일의 핸들을 가져다 쓴다.
-
-DB 구조 (scripts/db/migrate.py로 이관 완료, scripts/db/verify.py로 검증됨):
-- systems     : 계정/세션/인증코드/로그/감사로그/디스코드 알림 큐 등 전 서비스 공통 데이터
-- homepage    : 홈페이지 콘텐츠(members/news/papers/gallery/popups)
-- network / kemkim / statistics : 각 서비스의 projects/folders
-- crawler     : 크롤러 데이터 (db-list/log-list/job-queue/ip-list/youtube-api)
-- manager     : 매니저 게시판(version-board/bug-board/free-board)만 남음
-
-기존 manager/homepage/discord/audit DB는 며칠간 그대로 두고(구 코드가 참조할 일이 없어지면)
-수동으로 정리한다 — 이 파일에서는 더 이상 참조하지 않는다.
-
-dev/prod는 위 DB를 그대로 공유한다. MODE는 접속 URL(dev-*.knpu.re.kr)과 포트만
-가르고 데이터는 가르지 않는다 — "_dev" 접미사를 붙이던 옛 동작은 아래 주석 참고.
-"""
-
 import os
 import socket
 import warnings
@@ -129,7 +108,6 @@ crawldata_path = os.getenv("CRAWLDATA_PATH")
 
 
 def get_user_names(uids: list[str]) -> dict[str, str]:
-    """uid 목록 -> 표시용 이름. 계정 정보의 진짜 출처는 systems.users이므로 조회만 한다."""
     if not uids:
         return {}
     docs = user_db.find({"uid": {"$in": list(set(uids))}}, {"uid": 1, "name": 1})

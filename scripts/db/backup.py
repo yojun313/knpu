@@ -1,13 +1,3 @@
-"""Phase 0 — DB 구조 개편 전 전량 백업.
-
-대상 DB의 모든 컬렉션을 bson.json_util로 덤프(ObjectId/datetime 보존)하고,
-인덱스 정보와 문서 수 manifest를 함께 남긴다. manifest.json은 Phase 2 verify.py의
-검증 기준값으로 쓰인다.
-
-사용법:
-    .venv/bin/python scripts/db/backup.py
-"""
-
 import json
 import os
 from datetime import datetime

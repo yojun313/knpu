@@ -25,9 +25,6 @@ class IPBlockedException(Exception):
 
 
 def refreshProxyListIfEnabled(DBuid=None):
-    """REFRESH_PROXY_DAILY가 켜져 있으면 날짜(구간)가 바뀔 때마다 DB(ip-list)에서
-    IP 리스트를 새로 받아와 그 이후 요청부터 새 리스트에서 프록시를 고르게 한다.
-    PROXY 자체가 꺼져 있으면 아무 의미가 없으므로 함께 확인한다."""
     if not (PROXY and REFRESH_PROXY_DAILY):
         return
     try:

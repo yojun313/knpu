@@ -18,9 +18,6 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 class StatisticsAnalysis:
-    """manager/app/libs/analysis.py의 DataProcess에서 이관된 통계분석 엔진.
-    Qt 의존을 제거하고, 결과 폴더는 desktop 로컬 경로 대신 서버가 준 output_dir을 그대로 쓴다."""
-
     def checkColumns(self, required_columns, columns):
         missing_columns = [col for col in required_columns if col not in columns]
 

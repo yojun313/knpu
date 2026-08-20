@@ -102,9 +102,9 @@ button:hover{background:var(--accent-hover)}
 </head>
 <body>
   <div class="top-header">
-    <a href="https://knpu.re.kr" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
     <nav class="top-nav">
-      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
       <a href="https://manager.knpu.re.kr" class="top-nav-link" id="navManagerLink">MANAGER</a>
       <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
       <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
@@ -255,5 +255,7 @@ button:hover{background:var(--accent-hover)}
                     높아졌다면, 해당 기간에 관련된 중요한 사건이 있었음을 추정할 수 있습니다.</p>
             </div>
     </div>
+    <script src="/shared-ui/services.js"></script>
+    <script src="/shared-ui/knpu.js"></script>
 </body>
 </html>

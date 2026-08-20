@@ -16,8 +16,6 @@ from services.discord_notify import sendAdminNotify
 
 
 def _report_crash(exc_type, exc_value, exc_tb):
-    """Qt 이벤트 루프 안에서 잡히지 않은 예외를 knpu 시스템 전체 오류 채널로 보고한다.
-    manager/server의 /users/admin/notify가 이미 system_error 채널로 라우팅해준다."""
     tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     print(tb)
     try:

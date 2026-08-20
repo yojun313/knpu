@@ -1,11 +1,3 @@
-"""수집 회차(collection) — 오프라인/온라인/실시간 배포 단위.
-
-한 프로젝트에 여러 collection이 동시에 열려 있을 수 있다(오프라인 패널 진행 중에
-온라인 링크도 함께 배포하는 식) — 그래서 project가 아니라 collection이 실제
-"응답을 받는" 단위다. 같은 survey_id를 공유하는 여러 collection의 응답을
-result_routes에서 합쳐 분석한다(PLAN.md 1절).
-"""
-
 import math
 import uuid
 from collections import defaultdict
@@ -122,8 +114,7 @@ async def create_collection(request: Request):
         "survey_id": survey["_id"],
         "survey_version": survey["version"],
         "mode": mode,
-        "label": (body.get("label") or "").strip()
-        or f"{MODE_LABELS_KO[mode]} 수집",
+        "label": (body.get("label") or "").strip() or f"{MODE_LABELS_KO[mode]} 수집",
         "status": "open",
         "round": 1,
         "section_rounds": {},
@@ -239,7 +230,9 @@ async def issue_codes(collection_id: str, request: Request):
     return {"issued": issued}
 
 
-@router.post("/api/collections/{collection_id}/respondents/{respondent_id}/reissue-code")
+@router.post(
+    "/api/collections/{collection_id}/respondents/{respondent_id}/reissue-code"
+)
 async def reissue_code(collection_id: str, respondent_id: str, request: Request):
     """분실된 접속 코드를 재발급한다. 응답자 신원(label)과 지금까지의 진행 상황은
     그대로 유지하고 code/code_hash만 바꾼다 — 코드를 잃어버렸다고 진행 중이던
@@ -377,9 +370,7 @@ async def advance_round(collection_id: str, request: Request):
 async def section_snapshot(collection_id: str, matrix_id: str, request: Request):
     collection = await _get_collection_checked(collection_id, request)
     survey = await surveys_db.find_one({"_id": collection["survey_id"]})
-    matrix = next(
-        (m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None
-    )
+    matrix = next((m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None)
     if not matrix:
         raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
     node_ids = matrix["child_uuids"]

@@ -1,0 +1,50 @@
+{
+  "login_service": "homepage",
+
+  "cookie_domain": ".knpu.re.kr",
+  "webauthn_rp_id": "knpu.re.kr",
+  
+  "services": {
+    "homepage": {
+      "prod_port": 8000, "dev_port": 18000,
+      "prod_domain": "knpu.re.kr", "dev_domain": "dev.knpu.re.kr"
+    },
+    "manager": {
+      "prod_port": 8001, "dev_port": 18001,
+      "prod_domain": "manager.knpu.re.kr", "dev_domain": "dev-manager.knpu.re.kr"
+    },
+    "crawler": {
+      "prod_port": 8002, "dev_port": 18002,
+      "prod_domain": "crawler.knpu.re.kr", "dev_domain": "dev-crawler.knpu.re.kr"
+    },
+    "network": {
+      "prod_port": 8003, "dev_port": 18003,
+      "prod_domain": "network.knpu.re.kr", "dev_domain": "dev-network.knpu.re.kr"
+    },
+    "statistics": {
+      "prod_port": 8004, "dev_port": 18004,
+      "prod_domain": "statistics.knpu.re.kr", "dev_domain": "dev-statistics.knpu.re.kr"
+    },
+    "kemkim": {
+      "prod_port": 8005, "dev_port": 18005,
+      "prod_domain": "kemkim.knpu.re.kr", "dev_domain": "dev-kemkim.knpu.re.kr"
+    },
+    "progress": {
+      "prod_port": 8006, "dev_port": 18006,
+      "prod_domain": "manager.knpu.re.kr", "dev_domain": "dev-manager.knpu.re.kr",
+      "public_path": "/progress"
+    },
+    "ahp": {
+      "prod_port": 8007, "dev_port": 18007,
+      "prod_domain": "ahp.knpu.re.kr", "dev_domain": "dev-ahp.knpu.re.kr"
+    },
+    "dashboard": {
+      "prod_port": 8009, "dev_port": 18009,
+      "prod_domain": "dashboard.knpu.re.kr", "dev_domain": "dev-dashboard.knpu.re.kr"
+    },
+    "complaint": {
+      "prod_port": 8010, "dev_port": 18010,
+      "prod_domain": "complaint.knpu.re.kr", "dev_domain": "dev-complaint.knpu.re.kr"
+    }
+  }
+}
