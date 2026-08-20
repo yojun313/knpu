@@ -1,18 +1,3 @@
-"""MODE
-0: dev  (dev*.knpu.re.kr, 18xxx 포트)
-1: prod (*.knpu.re.kr, 8xxx 포트)
+from system.endpoints import public_url
 
-DB와 계정은 두 모드가 공유한다 — system/db/__init__.py 참고.
-"""
-
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-mode = int(os.getenv("MODE", 1))
-
-if mode == 0:
-    STATISTICS_VIEWER_URL = "https://dev-statistics.knpu.re.kr"
-else:
-    STATISTICS_VIEWER_URL = "https://statistics.knpu.re.kr"
+STATISTICS_VIEWER_URL = public_url("statistics")

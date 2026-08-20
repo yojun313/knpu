@@ -130,7 +130,11 @@ class NginxService:
         # 그 값 기준으로 정렬한다("/" 경로 포트가 있으면 그걸, 없으면 등록된
         # 포트 중 가장 작은 값). 포트를 못 찾은 도메인은 맨 뒤로 보낸다.
         domains.sort(
-            key=lambda d: (d["primary_port"] is None, d["primary_port"] or 0, d["domain"])
+            key=lambda d: (
+                d["primary_port"] is None,
+                d["primary_port"] or 0,
+                d["domain"],
+            )
         )
         return domains
 

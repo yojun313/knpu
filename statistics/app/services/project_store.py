@@ -43,8 +43,6 @@ def _base_json_path(uid: str, project_id: str) -> str:
 
 
 def _find_result_root(extract_dir: str) -> str:
-    """추출된 폴더에서 metadata.json이 있는 실제 결과 루트를 찾는다. zip이 폴더 하나로
-    감싸져 있는 경우와 바로 풀린 경우를 모두 지원한다."""
     if os.path.exists(os.path.join(extract_dir, "metadata.json")):
         return extract_dir
 
@@ -350,7 +348,6 @@ def _build_base_json(root: str) -> dict:
 
 
 def _extract_zip_and_build(root: str, upload_bytes: bytes) -> dict:
-    """zip을 root/raw 에 풀고 base.json을 만들어 반환한다."""
     raw_dir = os.path.join(root, "raw")
     os.makedirs(raw_dir, exist_ok=True)
 
@@ -436,7 +433,6 @@ def list_projects(uid: str) -> list:
 
 
 def list_all_projects() -> list:
-    """관리자용: 모든 사용자의 프로젝트를 소유자 이름과 함께 반환한다."""
     docs = list(statistics_projects_db.find({}).sort("created_at", -1))
     names = get_user_names([d["uid"] for d in docs])
     out = []
@@ -589,7 +585,6 @@ def load_base(uid: str, project_id: str, is_admin: bool = False) -> dict:
 
 
 def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
-    """raw/ 폴더를 즉석에서 압축해 zip 경로를 반환한다 (호출자가 응답 후 삭제 책임)."""
     doc = _get_owned_doc(uid, project_id, is_admin)
     owner_uid = doc["uid"]
     raw_dir = _raw_dir(owner_uid, project_id)

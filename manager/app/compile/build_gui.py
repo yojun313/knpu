@@ -130,10 +130,6 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
 
 def read_latest_built_version() -> str | None:
-    """
-    EXE_DIRECTORY 내부에서 MANAGER_x.y.z 형식의 폴더명을 읽고,
-    가장 최신 버전을 반환한다.
-    """
     if not os.path.exists(EXE_DIRECTORY):
         return None
 

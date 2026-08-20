@@ -95,15 +95,7 @@ def measure_hate(
     update_interval: int = 1_000,
     batch_size: int = 64,
 ) -> pd.DataFrame:
-    """
-    option.option_num
-      1 → clean 제외 레이블 중 최대값 → Hate 열
-      2 → 10개 레이블 모두         → 레이블명별 열
-      3 → clean 확률               → Clean 열
-    """
-
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
-        """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
         pipe = load_hate_model()
         outs = pipe(
             texts,
@@ -329,9 +321,6 @@ def unload_yolo_models():
 
 
 def load_yolo_model(model_name: str = "yolo11n"):
-    """
-    model_name 예시: 'yolo11n', 'yolo11s', 'yolo11m' 등
-    """
     global _yolo_models_cache
 
     if model_name not in _yolo_models_cache:
@@ -516,7 +505,6 @@ DEFAULT_TRACKER_DIR = Path(ultralytics.__file__).parent / "cfg" / "trackers"
 
 
 def make_loose_tracker_config(conf_thres: float, base: str = "bytetrack.yaml") -> str:
-    """conf_thres 이상 탐지가 트래커 단계에서 누락되지 않도록 임계값을 낮춘 설정 생성."""
     cfg = yaml.safe_load(open(DEFAULT_TRACKER_DIR / base))
 
     cfg["track_high_thresh"] = max(conf_thres, 0.05)
@@ -754,9 +742,6 @@ async def yolo_detect_videos(
 
 
 def get_yolo_model_list() -> List[str]:
-    """
-    MODEL_PATH/yolo 디렉토리에 있는 .pt 파일 리스트를 반환합니다.
-    """
     yolo_dir = os.path.join(MODEL_DIR, "yolo")
     if not os.path.exists(yolo_dir):
         return []
@@ -819,12 +804,6 @@ async def grounding_dino_detect_images(
     box_threshold: float = 0.4,
     pid=None,
 ) -> io.BytesIO:
-    """
-    여러 이미지 + 텍스트 프롬프트를 받아
-    Grounding DINO로 bbox를 그리고
-    결과들을 zip(BytesIO)로 반환
-    """
-
     if pid is not None:
         send_message(pid, "[GroundingDINO] 모델 로드 중")
 
@@ -1129,10 +1108,6 @@ def load_bge_m3_model():
 def measure_embeddings(
     data: pd.DataFrame, text_col: str = "Text", batch_size: int = 12, pid: str = None
 ) -> pd.DataFrame:
-    """
-    DataFrame의 특정 열을 기반으로 BGE-M3 임베딩을 생성하여
-    'embedding' 열(JSON 문자열 형태)을 추가합니다.
-    """
     # 대상 열 자동 탐색 (기존 measure_hate 로직 활용)
     if text_col not in data.columns:
         for c in data.columns:

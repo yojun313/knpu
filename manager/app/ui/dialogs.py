@@ -108,11 +108,6 @@ class BaseDialog(QDialog):
         dialog_title: str = "저장 경로 선택",
         placeholder: str = "선택되지 않음",
     ):
-        """Create a path selection button and label.
-
-        Returns: (button, label)
-        If a path is chosen, the label is updated and `on_selected(path)` is called if provided.
-        """
         btn = QPushButton(button_text)
         btn.setFixedWidth(100)
         label = QLabel(initial_path if initial_path else placeholder)
@@ -394,7 +389,6 @@ class SaveDbDialog(BaseDialog):
         self.adjust_dialog_size()
 
     def adjust_dialog_size(self):
-        """다이얼로그 크기를 현재 내용에 맞게 조정"""
         self.adjustSize()  # 다이얼로그 크기를 내용에 맞게 자동 조정
 
     def accept(self):
@@ -858,9 +852,6 @@ class EditPostDialog(BaseDialog):
 
 
 def load_pixmap_exif_safe(source) -> QPixmap:
-    """파일 경로(str) 또는 바이트(bytes)로부터 QPixmap을 생성하되, 스마트폰 촬영
-    사진에 흔한 EXIF Orientation 태그를 반영해 90/180/270도로 뒤집혀 보이는 문제를
-    방지한다. QPixmap(path)/loadFromData()는 기본적으로 EXIF 방향을 무시한다."""
     reader = QImageReader()
     if isinstance(source, (bytes, bytearray)):
         buf = QBuffer()
@@ -874,9 +865,6 @@ def load_pixmap_exif_safe(source) -> QPixmap:
 
 
 class _PhotoThumbnailLoader(QThread):
-    """URL 사진들을 백그라운드 스레드에서 내려받는다. QPixmap 생성은 스레드 안전성 때문에
-    여기서 하지 않고, raw bytes만 넘겨서 메인 스레드의 슬롯에서 만들도록 한다."""
-
     loaded = Signal(int, bytes)
     failed = Signal(int)
 
@@ -910,12 +898,6 @@ def _scaled_pixmap(pixmap: QPixmap) -> QPixmap:
 def _build_photo_grid(
     grid_layout: QGridLayout, entries, on_remove: Callable | None = None
 ) -> QThread | None:
-    """entries: [(source, is_url), ...]. on_remove(index)가 주어지면 각 칸에 제거 버튼을 붙임(None이면 읽기 전용).
-
-    URL 사진(기존에 업로드된 사진)은 UI를 막지 않도록 백그라운드 스레드에서 내려받아 도착하는
-    대로 채워 넣는다. 로컬 경로(방금 고른 새 사진)는 디스크 I/O라 빨라서 그대로 즉시 로드한다.
-    반환된 스레드는 호출부가 참조를 들고 있어야 중간에 GC로 끊기지 않는다.
-    """
     while grid_layout.count():
         item = grid_layout.takeAt(0)
         widget = item.widget()
@@ -1217,12 +1199,6 @@ class MergeOptionDialog(BaseDialog):
 
 
 class StatAnalysisDialog(BaseDialog):
-    """
-    • 1차 : 분석 종류(체크박스) – 데이터 타입별로 구성
-    • 2차 : 데이터 출처(콤보박스)
-    ※ ‘혐오도 분석’은 모든 타입에 공통으로 제공.
-    """
-
     def __init__(self, filename: str = ""):
         super().__init__()
         self.setWindowTitle("Select Options")

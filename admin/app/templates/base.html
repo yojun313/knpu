@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KNPU Dashboard</title>
+  <script src="/shared-ui/services.js"></script>
+  <script src="/shared-ui/knpu.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // 페인트 전에 테마를 정해서 깜빡임(FOUC)을 막는다.
@@ -413,12 +415,12 @@
         async function logout(e) {
             e.preventDefault();
             try {
-                await fetch('https://knpu.re.kr/api/auth/logout', {
+                await fetch(KNPU.logoutUrl(), {
                     method: 'POST',
                     credentials: 'include',
                 });
             } finally {
-                window.location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(window.location.href);
+                window.location.href = KNPU.loginUrl();
             }
         }
 
@@ -444,6 +446,5 @@
             }
         });
     </script>
-    <script src="/shared-ui/dev-links.js"></script>
 </body>
 </html>

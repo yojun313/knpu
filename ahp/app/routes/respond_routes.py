@@ -251,7 +251,9 @@ async def put_answer(token: str, request: Request):
     if collection["mode"] == "realtime" and collection.get("session_started"):
         idx = collection.get("active_section_index", 0)
         matrices = survey["matrices"]
-        active_matrix_id = matrices[idx]["matrix_id"] if 0 <= idx < len(matrices) else None
+        active_matrix_id = (
+            matrices[idx]["matrix_id"] if 0 <= idx < len(matrices) else None
+        )
         is_revision = (respondent or {}).get("revision_matrix_id") == matrix_id
         if matrix_id != active_matrix_id and not is_revision:
             # 예외를 던지면 클라이언트 큐(flushQueue)가 이걸 "일시적 네트워크
@@ -307,7 +309,8 @@ async def put_answer(token: str, request: Request):
         cr_info = {"complete": True, "cr": result.cr}
         if (respondent or {}).get("revision_matrix_id") == matrix_id:
             await respondents_db.update_one(
-                {"_id": payload["respondent_id"]}, {"$unset": {"revision_matrix_id": ""}}
+                {"_id": payload["respondent_id"]},
+                {"$unset": {"revision_matrix_id": ""}},
             )
     except IncompleteMatrixError:
         cr_info = {"complete": False}
@@ -399,9 +402,13 @@ async def respond_summary(token: str, request: Request):
     survey, nodes_by_id = await _survey_and_nodes(collection)
     matrices_view = _build_matrices_view(survey, nodes_by_id)
     cr_threshold = (
-        (await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1}))
-        or {}
-    ).get("settings", {}).get("cr_threshold", 0.1)
+        (
+            (await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1}))
+            or {}
+        )
+        .get("settings", {})
+        .get("cr_threshold", 0.1)
+    )
 
     items = []
     for m in matrices_view:

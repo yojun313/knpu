@@ -1,13 +1,3 @@
-"""Phase 2 — 마이그레이션 검증.
-
-scripts/db/backup.py가 남긴 manifest.json(마이그레이션 전 문서 수)을 기준으로,
-새 DB 구조에 문서 수가 맞게 옮겨졌는지 + 표본 문서가 실제로 존재하는지 확인한다.
-
-사용법:
-    .venv/bin/python scripts/db/verify.py ~/knpu_db_backup/<timestamp>
-    (인자를 생략하면 가장 최근 백업 디렉토리를 사용한다)
-"""
-
 import json
 import os
 import random

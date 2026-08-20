@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 
 from app.auth.dependencies import get_current_user_optional
 from app.db import discord_link_col, users_db
+from system.endpoints import public_url
 
 router = APIRouter()
 
@@ -168,46 +169,44 @@ def discord_link(token: str = "", user=Depends(get_current_user_optional)):
 
 @router.get("/manager")
 def manager_redirect():
-    return RedirectResponse(url="https://manager.knpu.re.kr", status_code=301)
+    return RedirectResponse(url=public_url("manager"), status_code=301)
 
 
 @router.get("/manager/download")
 def manager_download_page():
     return RedirectResponse(
-        url="https://manager.knpu.re.kr/api/download", status_code=301
+        url=f"{public_url('manager')}/api/download", status_code=301
     )
 
 
 # 매뉴얼은 각 서비스 서버 안으로 옮겼다 — 옛 북마크/링크가 죽지 않도록 새 위치로 리다이렉트만 남긴다.
 @router.get("/manual/kemkim")
 def manual_kemkim():
-    return RedirectResponse(url="https://kemkim.knpu.re.kr/manual", status_code=301)
+    return RedirectResponse(url=f"{public_url('kemkim')}/manual", status_code=301)
 
 
 @router.get("/manual/network")
 def manual_network():
-    return RedirectResponse(url="https://network.knpu.re.kr/manual", status_code=301)
+    return RedirectResponse(url=f"{public_url('network')}/manual", status_code=301)
 
 
 @router.get("/manual/hate_analysis")
 def manual_hate_analysis():
     return RedirectResponse(
-        url="https://manager.knpu.re.kr/manual/hate_analysis", status_code=301
+        url=f"{public_url('manager')}/manual/hate_analysis", status_code=301
     )
 
 
 @router.get("/manual/whisper")
 def manual_whisper():
     return RedirectResponse(
-        url="https://manager.knpu.re.kr/manual/whisper", status_code=301
+        url=f"{public_url('manager')}/manual/whisper", status_code=301
     )
 
 
 @router.get("/manual/yolo")
 def manual_yolo():
-    return RedirectResponse(
-        url="https://manager.knpu.re.kr/manual/yolo", status_code=301
-    )
+    return RedirectResponse(url=f"{public_url('manager')}/manual/yolo", status_code=301)
 
 
 @router.get("/favicon.ico")

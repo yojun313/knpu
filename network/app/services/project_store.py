@@ -37,7 +37,6 @@ def _label_for_tag(tag: str) -> str:
 
 
 def _find_network_pairs(root: str):
-    """추출된 폴더에서 nodes*.csv / edges*.csv 짝을 모두 찾는다."""
     pairs = []
     for name in sorted(os.listdir(root)):
         m = _NODES_RE.match(name)
@@ -112,8 +111,6 @@ def _build_graph_json(root: str, tag: str, nodes_csv: str, edges_csv: str) -> di
 
 
 def _read_analysis_options(search_root: str) -> dict | None:
-    """MANAGER에서 분석할 때 쓴 옵션·분석 시각(analysis_options.json)이 있으면 읽어온다.
-    수동으로 zip을 업로드한 경우 등 파일이 없으면 None."""
     path = os.path.join(search_root, "analysis_options.json")
     if not os.path.exists(path):
         return None
@@ -125,8 +122,6 @@ def _read_analysis_options(search_root: str) -> dict | None:
 
 
 def _extract_zip_and_build(root: str, upload_bytes: bytes) -> tuple:
-    """zip을 root(프로젝트 디렉토리)에 풀고 graph{tag}.json들을 만들어
-    (networks 메타 목록, 분석 옵션 or None)을 반환."""
     extract_dir = os.path.join(root, "extract")
     os.makedirs(extract_dir, exist_ok=True)
 
@@ -225,7 +220,6 @@ def list_projects(uid: str) -> list:
 
 
 def list_all_projects() -> list:
-    """관리자용: 모든 사용자의 프로젝트를 소유자 이름과 함께 반환한다."""
     docs = list(network_projects_db.find({}).sort("created_at", -1))
     names = get_user_names([d["uid"] for d in docs])
     out = []
@@ -288,8 +282,6 @@ def list_folders(uid: str) -> list:
 
 
 def list_all_folders() -> list:
-    """관리자용: 모든 사용자의 폴더를 소유자와 함께 반환한다(정리는 각자 자기 것만 하므로
-    프로젝트처럼 읽기 전용으로만 보여준다)."""
     docs = list(network_folders_db.find({}).sort("name", 1))
     names = get_user_names([d["uid"] for d in docs])
     out = []
@@ -350,8 +342,6 @@ def delete_folder(uid: str, folder_id: str):
 
 
 def move_project_folder(uid: str, project_id: str, folder_id: str | None) -> dict:
-    """프로젝트를 폴더로 옮기거나(folder_id 지정) 미분류로 뺀다(folder_id=None).
-    자기 프로젝트만 정리할 수 있으므로 관리자 우회 없이 소유자 전용이다."""
     doc = _get_owned_doc(uid, project_id)
     if folder_id:
         _get_owned_folder(uid, folder_id)

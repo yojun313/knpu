@@ -17,8 +17,6 @@ _HTTP_ACTION_PATTERN = re.compile(r"^(GET|POST|PUT|PATCH|DELETE) ")
 
 
 def _explicit_log_filter() -> dict:
-    """User Logs 탭: '확실한 액션'이 있는 의도적 기록만 — 자동 기록(source="auto" 또는
-    source 필드 도입 이전의 "METHOD /path" 형태)과 액션이 아예 없는 레거시 기록은 제외."""
     return {
         "action": {"$exists": True, "$not": _HTTP_ACTION_PATTERN},
         "source": {"$ne": "auto"},
@@ -233,7 +231,6 @@ def get_audit_services():
 def get_audit_logs(
     page=1, per_page=30, service=None, name=None, method=None, date_str=None
 ):
-    """Audit Logs 탭: source(explicit/auto)나 action 유무와 무관하게 전부 보여준다."""
     user_map = get_user_mapping()
     query = {}
 

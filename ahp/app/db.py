@@ -1,22 +1,9 @@
-"""AHP 전용 MongoDB 연결.
-
-system/db는 동기 pymongo다. 워커가 1개인 실시간 웹소켓 서버에서 동기 드라이버를
-쓰면 한 번의 쿼리가 이벤트 루프를 막아 접속자 전원이 함께 멈춘다(PLAN.md 7.1 참고).
-그래서 AHP 데이터(ahp DB)는 motor(async)로 별도 연결하고, 계정 조회처럼 HTTP
-요청 경로에서만 쓰는 동기 접근(user_db)은 system/db 것을 그대로 재사용한다.
-
-연결 전략은 system/bot/run.py와 동일하게 맞춘다: 서버에서 실행되면 로컬 MongoDB에
-바로 붙고, 그 밖에서(로컬 개발) 실행되면 SSH 터널을 새로 연다.
-"""
-
 import os
 import socket
 import warnings
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
-
-from system.db import user_db, user_logs_db, get_user_names  # noqa: F401  (재수출)
 
 load_dotenv()
 
@@ -72,18 +59,12 @@ imports_db = ahp_db["imports"]
 
 
 async def ensure_indexes():
-    """앱 시작 시 1회 호출. 존재해도 재실행 시 에러 없이 통과한다."""
     await responses_db.create_index(
         [("collection_id", 1), ("respondent_id", 1)], unique=True
     )
     await submissions_db.create_index(
         [("collection_id", 1), ("respondent_id", 1), ("round", 1)]
     )
-    # code_hash가 null인 문서(오프라인에서 관리자가 직접 추가한 응답자)는 몇 명이든
-    # 있을 수 있다. sparse=True는 필드가 "존재하되 null"인 경우엔 걸러주지 않아서
-    # (필드 자체가 없을 때만 걸러진다) 첫 배포 때 이 값으로 두 번째 수동 응답자를
-    # 추가하자마자 충돌이 났다. 실제로 null을 제외하려면 partialFilterExpression으로
-    # code_hash가 문자열(진짜 코드)인 문서에만 유니크 제약을 걸어야 한다.
     await respondents_db.create_index(
         [("collection_id", 1), ("code_hash", 1)],
         unique=True,

@@ -26,6 +26,7 @@ from starlette.background import BackgroundTask
 
 from system.progress import send_message
 from app.config import NETWORK_VIEWER_URL
+from system.endpoints import HOMEPAGE_URL
 from app.services import project_store
 from scipy.spatial import ConvexHull
 from xml.sax.saxutils import escape
@@ -47,7 +48,6 @@ def _split_tokens(cell):
 
 
 def _make_units(cell, scope, window):
-    """하나의 셀(행) → 공출현을 셀 여러 '단위'(문서/문장/윈도우) 리스트로."""
     toks = _split_tokens(cell)
     if not toks:
         return []
@@ -115,7 +115,6 @@ def _transform_chunk(args):
 
 
 def build_cooccurrence(texts, vocab, scope, window, n_workers=4):
-    """문서-단어 이진행렬을 병렬 생성 후 DT.T @ DT 로 공출현 행렬."""
     texts = list(texts)
     if n_workers > 1 and len(texts) > 5000:
         n = max(1, len(texts) // n_workers)
@@ -135,7 +134,6 @@ def build_cooccurrence(texts, vocab, scope, window, n_workers=4):
 
 # ────────────────────── 연관성 척도 ──────────────────────
 def build_edges(cooc, freq, n_units, measure, min_edge_weight):
-    """상삼각만, 척도 계산해서 (i, j, weight, raw) 리스트."""
     edges = []
     row, col, val = cooc.row, cooc.col, cooc.data
     for i, j, c in zip(row, col, val):
@@ -169,7 +167,6 @@ def build_edges(cooc, freq, n_units, measure, min_edge_weight):
 
 # ────────────────────── 백본(disparity filter) ──────────────────────
 def disparity_filter(g, alpha):
-    """Serrano et al. 백본 추출. 남길 edge 인덱스 집합."""
     strength = np.array(g.strength(weights="weight"))
     deg = np.array(g.degree())
     keep = set()
@@ -306,7 +303,6 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
 
 
 def export_ego_networks(res, option, out_dir, tag=""):
-    """상위 노드들의 ego 네트워크(1-hop)를 개별 저장."""
     g = res["graph"]
     ego_top = int(option.get("ego_top", 0))
     if ego_top <= 0:
@@ -481,7 +477,6 @@ def _hex_to_rgb(h):
 
 
 def _scale_coords(coords, span=1000.0):
-    """igraph FR 좌표는 범위가 작아서 Gephi에서 다 겹친다. 넓게 펴준다."""
     c = np.asarray(coords, dtype=float)
     mins, maxs = c.min(axis=0), c.max(axis=0)
     rng = np.where(maxs - mins == 0, 1.0, maxs - mins)
@@ -493,7 +488,6 @@ def _xa(s):  # XML 속성값 안전하게 escape (따옴표까지)
 
 
 def _write_gexf(res, out_path):
-    """Gephi가 좌표/크기/색을 그대로 반영하도록 viz 확장 포함 GEXF 저장."""
     g = res["graph"]
     cent = res["cent"]
     community = res["community"]
@@ -636,8 +630,6 @@ def export_files(res, option, out_dir, tag=""):
 
 
 def _write_viewer_readme(out_dir):
-    """온라인 인터랙티브 뷰어 안내. 뷰어 자체는 더 이상 결과에 동봉하지 않고,
-    nodes.csv/edges.csv 를 뷰어 사이트에 업로드해 서버에서 렌더링한다."""
     path = os.path.join(out_dir, "인터랙티브_뷰어_안내.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write(
@@ -647,7 +639,7 @@ def _write_viewer_readme(out_dir):
             "마우스로 확대·검색·필터가 되는 인터랙티브 네트워크를 바로 확인할 수 있습니다.\n"
             "(nodes.csv, edges.csv 를 읽어 서버에서 그래프를 구성합니다.)\n\n"
             "자세한 사용법은 매뉴얼의 '인터랙티브 뷰어' 장을 참고하세요:\n"
-            "https://knpu.re.kr/manual/network\n"
+            f"{HOMEPAGE_URL}/manual/network\n"
         )
 
 
@@ -678,8 +670,6 @@ _SCOPE_LABELS = {"document": "문서 단위", "window": "슬라이딩 윈도우"
 
 
 def _write_analysis_options(out_dir, option, project_name):
-    """분석 시 사용한 옵션·시각을 결과 zip에 함께 저장한다 (analysis_options.json).
-    온라인 뷰어가 이 파일을 읽어 '이 결과가 어떤 설정으로 만들어졌는지' 보여준다."""
     opts = {k: v for k, v in option.items() if k != "pid"}
     meta = {
         "analyzed_at": datetime.now().isoformat(),
@@ -783,10 +773,6 @@ def _export_period_comparison(period_summ, out_dir):
 def _save_as_project(
     zip_path: str, uid: str, project_name: str, pid: str
 ) -> str | None:
-    """분석 결과 zip을 이 서비스 자신의 project_store에 바로 저장한다 — 예전에는 매니저
-    서버가 분석하고 HTTP로 여기 /api/internal/projects/ingest를 호출해 저장했지만,
-    분석 자체가 이 프로세스 안에서 도는 지금은 그 왕복이 필요 없다.
-    실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
     try:
         with open(zip_path, "rb") as f:
             content = f.read()

@@ -48,8 +48,6 @@ def _is_heatmap_table(stem: str, df: pd.DataFrame) -> bool:
 
 
 def _plan_chart(stem: str, df: pd.DataFrame):
-    """app/static/js/viewer.js(planChart)와 반드시 동일하게 유지할 것.
-    None을 반환하면 뷰어에서도 차트 없이 표만 보여주는 경우다."""
     if stem == "basic_stats" or "corr" in stem:
         return None
     if df.empty:

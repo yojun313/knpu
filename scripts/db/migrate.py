@@ -1,27 +1,3 @@
-"""Phase 2 — MongoDB 재편: 서비스 단위로 DB를 분리한다.
-
-기존 DB(manager/homepage/crawler/discord/audit)는 그대로 둔 채 새 DB
-(systems/network/kemkim/statistics/manager)로 문서를 복사한다. 물리적으로 이름만
-같은 DB 안에서 바뀌는 경우(crawler.youtube_api -> crawler.youtube-api)도 복사로 처리한다.
-DB/컬렉션 위치가 전혀 바뀌지 않는 것들(crawler의 db-list/log-list/job-queue/ip-list,
-manager의 version-board/bug-board/free-board, homepage의 members/news/papers/gallery/popups)은
-매핑 목록에 넣지 않는다 — verify.py가 그대로 존재하는지만 확인한다.
-
-주의:
-- manager.auth (email/auth_code 스키마, 33건)는 현재 어떤 코드도 읽지 않는 죽은 컬렉션이고,
-  homepage.auth_codes(활성 회원가입/재설정 인증 컬렉션, token/type 스키마)와 스키마가 전혀
-  달라서 계획서의 "병합" 대신 legacy-auth-codes로 이름을 바꿔 보존한다 — 활성 컬렉션에
-  이질적인 문서가 섞이는 걸 피하기 위함.
-- 계정(users)/인증코드(auth_codes)/webauthn/discord-link-requests/디스코드 알림 큐/감사 로그는
-  원래도 dev/prod 구분 없이 단일 컬렉션이었으므로 새 구조에서도 systems 하나만 쓰고
-  systems_dev는 만들지 않는다.
-
-사용법:
-    .venv/bin/python scripts/db/migrate.py           # dry-run (건수만 출력, 쓰지 않음)
-    .venv/bin/python scripts/db/migrate.py --apply    # 실제 복사 수행
-    .venv/bin/python scripts/db/migrate.py --apply --force  # 대상이 비어있지 않아도 덮어쓰기
-"""
-
 import argparse
 
 from _conn import get_client

@@ -2,15 +2,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Network Analyzer</title>
   <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');var mn=document.cookie.match(/(?:^|; )ui_nav_visibility=([^;]*)/);if(mn&&decodeURIComponent(mn[1])==='autohide')document.documentElement.setAttribute('data-ui-nav','autohide');}catch(e){}})();</script>
+  <script src="/shared-ui/services.js"></script>
+  <script src="/shared-ui/knpu.js"></script>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <link rel="stylesheet" href="/css/viewer.css">
   <link rel="stylesheet" href="/shared-ui/theme.css">
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
 </head><body>
   <div class="top-header">
-    <a href="https://knpu.re.kr" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
     <nav class="top-nav">
-      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
       <a href="https://manager.knpu.re.kr" class="top-nav-link" id="navManagerLink">MANAGER</a>
       <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
       <a href="https://network.knpu.re.kr" class="top-nav-link active">NETWORK</a>
@@ -466,5 +468,4 @@
 
   <script src="/js/viewer.js"></script>
   <script src="/shared-ui/theme.js"></script>
-  <script src="/shared-ui/dev-links.js"></script>
 </body></html>

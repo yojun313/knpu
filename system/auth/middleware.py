@@ -8,6 +8,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from system.auth.jwt import decode_token
 from system.auth.session import revalidate_session
 from system.db import user_db
+from system.endpoints import LOGIN_URL
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,13 @@ class AuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        if path.startswith("/js/") or path.startswith("/css/"):
+        # 정적 자산은 로그인 없이도 받을 수 있어야 한다. /shared-ui 에는 공개
+        # 도메인 이름(services.js)과 테마 자산만 들어 있어 감출 것이 없다.
+        if (
+            path.startswith("/js/")
+            or path.startswith("/css/")
+            or path.startswith("/shared-ui/")
+        ):
             await self.app(scope, receive, send)
             return
 
@@ -64,7 +71,7 @@ class AuthMiddleware:
                 await self.app(scope, receive, send)
                 return
 
-        # 인증 실패 → knpu.re.kr 중앙 로그인으로 이동
+        # 인증 실패 → 중앙 로그인으로 이동 (주소는 services.json)
         if path.startswith("/api/"):
             response = JSONResponse(
                 status_code=401,
@@ -77,7 +84,7 @@ class AuthMiddleware:
             # 쿠키가 http 요청에 실리지 않아 리다이렉트가 깨진다.
             redirect_url = str(request.url.replace(scheme="https"))
             response = RedirectResponse(
-                url=f"https://knpu.re.kr/login?redirect={quote(redirect_url)}",
+                url=f"{LOGIN_URL}?redirect={quote(redirect_url)}",
                 status_code=302,
             )
 

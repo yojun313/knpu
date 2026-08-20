@@ -136,8 +136,6 @@ async def api_create_project(
 
 @router.post("/api/projects/upload-zip")
 async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
-    """업로드 진행률 표시를 위한 1단계: 파일만 먼저 받아둔다. 실제 프로젝트 생성은
-    이름을 정한 뒤 /api/projects/finalize-zip 에서 이어진다."""
     if not file.filename.lower().endswith(".zip"):
         raise HTTPException(400, "KEMKIM 분석 결과 zip 파일을 업로드해주세요.")
     content = await file.read()
@@ -149,7 +147,6 @@ async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
 
 @router.post("/api/projects/finalize-zip")
 async def api_finalize_zip(request: Request):
-    """업로드 진행률 표시 2단계: 이름을 확정해 실제 프로젝트를 만든다."""
     body = await request.json()
     uid = _uid(request)
     try:
@@ -331,9 +328,6 @@ async def project_download(project_id: str, request: Request):
 
 @router.get("/api/projects/{project_id}/graph")
 async def project_graph(project_id: str, request: Request):
-    """KEM/KIM 좌표·4분면 신호·기간별 지표·추적(Trace) 데이터를 한 번에 내려준다.
-    웹에서는 별도의 "조정" 단계가 없다 — 프론트엔드가 이 데이터를 받아 사분면/단어
-    단위로 표시만 껐다 켠다(서버 재계산 없음)."""
     graph = _handle_store_error(
         project_store.load_graph, _uid(request), project_id, _is_admin(request)
     )
@@ -516,15 +510,11 @@ async def project_interpretation_export(
 
 @router.get("/api/progress-config")
 async def progress_config():
-    """브라우저가 진행 상황 WebSocket에 붙을 공개 주소를 알려준다."""
     return JSONResponse({"ws_url": analyze_service.PROGRESS_PUBLIC_WS_URL})
 
 
 @router.get("/api/crawl-dbs")
 async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
-    """'크롤링 DB에서 선택' 기능: 완료된 크롤 DB 목록을 크롤러 서버에서 그대로 가져온다.
-    같은 호스트이므로 로컬로 직접 호출하고, 사용자 세션 쿠키를 그대로 실어 보내
-    크롤러의 get_current_user 인증을 그대로 통과시킨다(별도 내부 키 불필요)."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -549,8 +539,6 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 @router.get("/api/crawl-dbs/{uid}/files")
 async def api_crawl_db_files(uid: str, request: Request):
-    """완료된 크롤 DB의 파일 목록 중 토큰화된 파일만 골라 반환한다 — KEMKIM은 형태소
-    분석이 끝난 토큰 데이터만 분석 대상으로 허용한다(원본 텍스트는 사용 불가)."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -571,8 +559,6 @@ async def api_crawl_db_files(uid: str, request: Request):
 
 @router.post("/api/crawl-dbs/{uid}/select")
 async def api_crawl_db_select(uid: str, request: Request):
-    """선택한 크롤 DB 파일을 크롤러에서 CSV로 받아와 그대로 스테이징한다 — 이후 흐름은
-    /api/projects/analyze/start로 기존 CSV 업로드 경로와 완전히 동일하다."""
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -615,8 +601,6 @@ async def api_crawl_db_select(uid: str, request: Request):
 
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
-    """업로드 진행률 표시를 위한 1단계: 토큰 CSV만 먼저 받아둔다. 대상 열 등 설정은
-    업로드가 끝난 뒤(2단계, /api/projects/analyze/start)에 고른다."""
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "토큰화된 CSV 파일을 업로드해주세요.")
     content = await file.read()
@@ -634,9 +618,6 @@ async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...
 
 @router.post("/api/projects/analyze/start")
 async def api_analyze_start(request: Request):
-    """업로드 진행률 표시 2단계: 이름·옵션을 확정해 KEMKIM 분석 파이프라인
-    (데스크톱 MANAGER와 동일한 백엔드)을 이 프로세스 안에서 직접 돌린다. 완료되면 결과가
-    자동으로 이 사용자의 프로젝트로 저장된다."""
     uid = _uid(request)
 
     body = await request.json()

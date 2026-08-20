@@ -14,6 +14,8 @@ _REPO_ROOT = os.path.dirname(
 )
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
+from system.endpoints import all_origins
+from system.shared_ui import mount_shared_ui
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -43,12 +45,8 @@ async def periodic_gc(interval_seconds: int = 60):
 
 fastapi_app = FastAPI(title="CRAWLER")
 
-# dev(dev-crawler.knpu.re.kr)도 같은 앱을 18002로 띄워 쓰므로 함께 허용한다.
-cors_origins = [
-    "http://localhost:3001",
-    "https://crawler.knpu.re.kr",
-    "https://dev-crawler.knpu.re.kr",
-]
+# prod/dev 오리진을 둘 다 허용한다 (주소는 services.json).
+cors_origins = ["http://localhost:3001"] + all_origins("crawler")
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -118,12 +116,8 @@ import os as _os
 
 _static_path = _os.path.join(_os.path.dirname(__file__), "static")
 fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
-# 다른 서비스와 공유하는 프론트 자산(dev 링크 보정 등)
-fastapi_app.mount(
-    "/shared-ui",
-    StaticFiles(directory=os.path.join(_REPO_ROOT, "system", "ui")),
-    name="shared-ui",
-)
+# 다른 서비스와 공유하는 프론트 자산(+ /shared-ui/services.js)
+mount_shared_ui(fastapi_app)
 
 from app.routes import api_router
 from app.routes.dashboard_routes import router as dashboard_router

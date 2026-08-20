@@ -1,27 +1,52 @@
+// pm2 ecosystem — dev (MODE=0)
+//
+// 포트는 여기에 적지 않는다 — knpu/services.json 한 곳에서 읽는다.
+// cwd/interpreter는 이 파일이 있는 위치(__dirname) 기준이라 어느 계정의 체크아웃에서도 동작한다.
+const fs = require("fs");
 const path = require("path");
 
+const MODE = "0";
+const PORT_KEY = MODE === "0" ? "dev_port" : "prod_port";
+const SERVICES = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "services.json"), "utf8")
+).services;
+
 const py = path.join(__dirname, ".venv", "bin", "python");
-const app = (name, dir, port, extra = {}) => ({
-  name,
-  cwd: path.join(__dirname, dir),
-  script: "run.py",
-  interpreter: py,
-  watch: false,
-  time: true,
-  env: { MODE: "0", ...(port ? { PORT: String(port) } : {}) },
-  ...extra,
-});
+
+// service: services.json의 키. null이면 포트를 쓰지 않는 앱(봇 등).
+const app = (name, dir, service, extra = {}) => {
+  const env = { MODE };
+  if (service) {
+    const port = SERVICES[service]?.[PORT_KEY];
+    if (port == null) {
+      throw new Error(
+        `services.json에 '${service}'의 ${PORT_KEY}가 없습니다 (pm2 앱: ${name})`
+      );
+    }
+    env.PORT = String(port);
+  }
+  return {
+    name,
+    cwd: path.join(__dirname, dir),
+    script: "run.py",
+    interpreter: py,
+    watch: false,
+    time: true,
+    env,
+    ...extra,
+  };
+};
 
 module.exports = {
   apps: [
-    app("homepage-dev", "homepage/server", 18000),
-    app("manager-dev", "manager/server", 18001),
-    app("network-dev", "network", 18003),
-    app("kemkim-dev", "kemkim", 18008),
-    app("statistics-dev", "statistics", 18004),
-    app("manager_web-dev", "manager/web", 18006),
-    app("ahp-dev", "ahp", 18007),
-    app("complaint-dev", "complaint/server", 18010),
-    app("dashboard-dev", "admin", 18009),
+    app("homepage-dev", "homepage/server", "homepage"),
+    app("manager-dev", "manager/server", "manager"),
+    app("network-dev", "network", "network"),
+    app("kemkim-dev", "kemkim", "kemkim"),
+    app("statistics-dev", "statistics", "statistics"),
+    app("manager_web-dev", "manager/web", "progress"),
+    app("ahp-dev", "ahp", "ahp"),
+    app("complaint-dev", "complaint/server", "complaint"),
+    app("dashboard-dev", "admin", "dashboard"),
   ],
 };

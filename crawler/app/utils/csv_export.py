@@ -51,7 +51,6 @@ def apply_date_filter(
     start_date_formed: Optional[str],
     end_date_formed: Optional[str],
 ) -> pd.DataFrame:
-    """'기간 지정'일 때 Article/Reply/Rereply Date 중 먼저 매칭되는 컬럼 기준으로 필터링."""
     if date_option != "part":
         return df
 
@@ -72,13 +71,6 @@ def apply_word_filter(
     excl_words: list,
     include_all: bool,
 ) -> pd.DataFrame:
-    """포함/제외 단어 필터. pandas의 벡터화된 str.contains를 사용해 행 단위 파이썬
-    루프(.apply(lambda ...))보다 대용량 텍스트에서 훨씬 빠르게 동작한다.
-
-    제외 단어는 AND/OR(include_all) 토글과 무관하게 항상 "하나라도 있으면 제외"로
-    동작한다 (제외 단어가 2개 이상이고 OR 모드일 때 "전부 다 있어야 제외"로 반대로
-    동작하던 버그가 있었음 — 그 필터를 없앤 것).
-    """
     text = df[column].astype(str)
 
     if incl_words:
@@ -107,12 +99,6 @@ def process_table_task(
     url_filter: Optional[list],
     stats_variant: Optional[dict],
 ) -> dict:
-    """article/statistics 원본 테이블 처리로 얻은 articleURL/statisticsURL이 이미
-    확정된 이후의 테이블(reply, rereply, token_* 등)을 별도 프로세스에서 독립적으로
-    읽기→필터링→CSV 저장까지 처리한다. 여러 테이블을 ProcessPoolExecutor로 동시에
-    돌려 저장 속도를 높이기 위한 함수라 app.db 등 프로세스 간 공유하면 안 되는
-    상태(예: MongoDB 커넥션)에 의존하지 않는다.
-    """
     tableDF = pd.read_parquet(parquet_path)
     tableDF = apply_date_filter(
         tableDF, date_option, start_date_formed, end_date_formed

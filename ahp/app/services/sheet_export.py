@@ -91,7 +91,9 @@ def build_workbook(
         ws_alt = wb.create_sheet("대안")
         _header(ws_alt, ["uuid", "이름", "설명", "순서"])
         for a in alternatives:
-            ws_alt.append([a["uuid"], a["name"], a.get("description", ""), a.get("order", 0)])
+            ws_alt.append(
+                [a["uuid"], a["name"], a.get("description", ""), a.get("order", 0)]
+            )
 
     ws3 = wb.create_sheet("설문지")
     _header(ws3, ["matrix_id", "기준(부모)", "하위 항목들", "질문 문구"])

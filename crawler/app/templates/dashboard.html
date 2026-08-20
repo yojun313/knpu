@@ -1135,13 +1135,15 @@
             color: var(--ink);
         }
     </style>
+  <script src="/shared-ui/services.js"></script>
+  <script src="/shared-ui/knpu.js"></script>
 </head>
 <body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
 
 <div class="header">
-    <a href="https://knpu.re.kr" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="header-logo"></a>
+    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="header-logo"></a>
     <nav class="top-nav">
-        <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+        <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
         <a href="https://manager.knpu.re.kr" class="top-nav-link" onclick="return openManagerApp(event)">MANAGER</a>
         <a href="https://crawler.knpu.re.kr" class="top-nav-link active">CRAWLER</a>
         <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
@@ -2344,6 +2346,5 @@
         }
     }, 3000);
 </script>
-    <script src="/shared-ui/dev-links.js"></script>
 </body>
 </html>

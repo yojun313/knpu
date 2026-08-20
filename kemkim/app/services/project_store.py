@@ -69,8 +69,6 @@ def _base_json_path(uid: str, project_id: str) -> str:
 
 
 def _find_kemkim_root(extract_dir: str) -> str:
-    """추출된 폴더에서 kemkim_info.txt가 있는 실제 결과 루트를 찾는다. zip이
-    kemkim_xxx_MMDDHHMM 폴더 하나로 감싸져 있는 경우와 바로 풀린 경우를 모두 지원."""
     if os.path.exists(os.path.join(extract_dir, "kemkim_info.txt")):
         return extract_dir
 
@@ -142,9 +140,6 @@ def _parse_signal_csv(path: str) -> dict:
 
 
 def _parse_trace_coordinates_csv(path: str) -> dict:
-    """Trace/{DoV,DoD}_coordinates_trace.csv (Keyword, period_<p1>, period_<p2>, ... 열,
-    각 셀은 좌표 튜플)를 {word: [{period, x, y}, ...]} 형태로 변환한다. 필터링 옵션을
-    꺼둔 채 실행한 프로젝트는 이 파일이 아예 없을 수 있으므로 그런 경우 빈 dict."""
     if not os.path.exists(path):
         return {}
     df = pd.read_csv(path, encoding="utf-8-sig")
@@ -174,7 +169,6 @@ def _parse_trace_coordinates_csv(path: str) -> dict:
 
 
 def _build_periods(root: str) -> dict:
-    """Data/{TF,DF,TF-IDF,DoV,DoD}/{period}_<metric>.csv -> {period: {metric: {word: value}}}"""
     data_dir = os.path.join(root, "Data")
     periods: dict = {}
     for metric in _PERIOD_METRICS:
@@ -244,7 +238,6 @@ def _build_base_json(root: str) -> dict:
 
 
 def _extract_zip_and_build(root: str, upload_bytes: bytes) -> dict:
-    """zip을 root/raw 에 풀고 base.json을 만들어 반환한다."""
     raw_dir = os.path.join(root, "raw")
     os.makedirs(raw_dir, exist_ok=True)
 
@@ -331,7 +324,6 @@ def list_projects(uid: str) -> list:
 
 
 def list_all_projects() -> list:
-    """관리자용: 모든 사용자의 프로젝트를 소유자 이름과 함께 반환한다."""
     docs = list(kemkim_projects_db.find({}).sort("created_at", -1))
     names = get_user_names([d["uid"] for d in docs])
     out = []
@@ -394,8 +386,6 @@ def list_folders(uid: str) -> list:
 
 
 def list_all_folders() -> list:
-    """관리자용: 모든 사용자의 폴더를 소유자와 함께 반환한다(정리는 각자 자기 것만 하므로
-    프로젝트처럼 읽기 전용으로만 보여준다)."""
     docs = list(kemkim_folders_db.find({}).sort("name", 1))
     names = get_user_names([d["uid"] for d in docs])
     out = []
@@ -456,8 +446,6 @@ def delete_folder(uid: str, folder_id: str):
 
 
 def move_project_folder(uid: str, project_id: str, folder_id: str | None) -> dict:
-    """프로젝트를 폴더로 옮기거나(folder_id 지정) 미분류로 뺀다(folder_id=None).
-    자기 프로젝트만 정리할 수 있으므로 관리자 우회 없이 소유자 전용이다."""
     doc = _get_owned_doc(uid, project_id)
     if folder_id:
         _get_owned_folder(uid, folder_id)
@@ -565,7 +553,6 @@ def load_interpretation(
 
 
 def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
-    """raw/ 폴더를 즉석에서 압축해 zip 경로를 반환한다 (호출자가 응답 후 삭제 책임)."""
     doc = _get_owned_doc(uid, project_id, is_admin)
     owner_uid = doc["uid"]
     raw_dir = _raw_dir(owner_uid, project_id)

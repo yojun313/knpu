@@ -17,10 +17,6 @@ from app.utils.zip import fast_zip
 def _save_as_project(
     zip_path: str, uid: str, project_name: str, pid: str
 ) -> str | None:
-    """분석 결과 zip을 이 서비스 자신의 project_store에 바로 저장한다 — 예전에는 매니저
-    서버가 분석하고 HTTP로 여기 /api/internal/projects/ingest를 호출해 저장했지만,
-    분석 자체가 이 프로세스 안에서 도는 지금은 그 왕복이 필요 없다.
-    실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
     try:
         with open(zip_path, "rb") as f:
             content = f.read()

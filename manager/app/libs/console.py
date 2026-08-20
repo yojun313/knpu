@@ -130,7 +130,6 @@ def _close_console_macos():
 
 def openConsole(msg: str = ""):
     print("hello")
-    """필요하면 콘솔(터미널) 창을 열고 stdout/stderr을 그쪽으로 보낸다."""
     if platform.system() == "Windows":
         _open_console_windows(msg)
     elif platform.system() == "Darwin":
@@ -139,7 +138,6 @@ def openConsole(msg: str = ""):
 
 
 def closeConsole():
-    """열어 둔 콘솔 자원을 해제한다."""
     if platform.system() == "Windows":
         _close_console_windows()
     elif platform.system() == "Darwin":

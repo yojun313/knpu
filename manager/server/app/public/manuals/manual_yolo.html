@@ -102,9 +102,9 @@ button:hover{background:var(--accent-hover)}
 </head>
 <body>
   <div class="top-header">
-    <a href="https://knpu.re.kr" title="홈으로"><img src="/assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
     <nav class="top-nav">
-      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
       <a href="https://manager.knpu.re.kr" class="top-nav-link active" id="navManagerLink">MANAGER</a>
       <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
       <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
@@ -382,5 +382,7 @@ button:hover{background:var(--accent-hover)}
         </div>
 
     </div>
+    <script src="/shared-ui/services.js"></script>
+    <script src="/shared-ui/knpu.js"></script>
 </body>
 </html>

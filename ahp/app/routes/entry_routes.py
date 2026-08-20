@@ -189,7 +189,9 @@ async def get_grid(collection_id: str, request: Request):
                 continue
             cr_info = _compute_cr_for_matrix(m, raw_answers)
             if cr_info["complete"]:
-                out[m["matrix_id"]] = cr_info["cr"]  # n<=2면 cr=None(정의상 무의미) — 그대로 전달
+                out[m["matrix_id"]] = cr_info[
+                    "cr"
+                ]  # n<=2면 cr=None(정의상 무의미) — 그대로 전달
         return out
 
     return {
