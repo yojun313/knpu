@@ -114,7 +114,7 @@
         [class*="bg-zinc-950"],
         [class*="bg-\[\#09090b\]"] { background-color: var(--panel) !important; }
         [class*="bg-zinc-800"] { background-color: var(--panel2) !important; }
-        [class*="bg-black"] { background-color: var(--panel) !important; }
+        [class*="bg-black"]:not([class*="inset-0"]) { background-color: var(--panel) !important; }
 
         [class*="text-white"] { color: var(--ink) !important; }
         [class*="text-zinc-100"],
@@ -169,11 +169,13 @@
             --accent: #7c6fd6; --brand: #3a4256;
             --panel: rgba(255,255,255,0.62); --panel2: rgba(255,255,255,0.78);
             --line: rgba(255,255,255,0.7); --muted: #626c7b; --ink: #262d38;
+            --modal-panel: rgba(255,255,255,0.92);
         }
         :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] {
             --accent: #7c9ce8; --brand: #cdd4e4;
             --panel: rgba(255,255,255,0.07); --panel2: rgba(255,255,255,0.12);
             --line: rgba(255,255,255,0.14); --muted: #99a1b2; --ink: #dde1ea;
+            --modal-panel: rgba(30,28,40,0.94);
         }
         :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) body {
             background:
@@ -193,7 +195,7 @@
         :root[data-ui-theme="glass"] [class*="bg-zinc-950"],
         :root[data-ui-theme="glass"] [class*="bg-\[\#09090b\]"],
         :root[data-ui-theme="glass"] [class*="bg-zinc-800"],
-        :root[data-ui-theme="glass"] [class*="bg-black"] {
+        :root[data-ui-theme="glass"] [class*="bg-black"]:not([class*="inset-0"]) {
             background: var(--panel) !important;
             backdrop-filter: blur(16px) saturate(130%);
             -webkit-backdrop-filter: blur(16px) saturate(130%);
@@ -210,6 +212,7 @@
             --line: rgba(60,60,67,0.14); --muted: rgba(60,60,67,0.62); --ink: rgba(0,0,0,0.86);
             --ap-specular: inset 0 1px 0 rgba(255,255,255,0.75);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.07);
+            --modal-panel: rgba(255,255,255,0.92);
         }
         :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] {
             --accent: #0a84ff; --brand: #f5f5f7;
@@ -217,6 +220,7 @@
             --line: rgba(255,255,255,0.12); --muted: rgba(235,235,245,0.6); --ink: rgba(255,255,255,0.92);
             --ap-specular: inset 0 1px 0 rgba(255,255,255,0.16);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
+            --modal-panel: rgba(20,20,24,0.94);
         }
         :root[data-ui-theme="apple"] body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
@@ -249,7 +253,7 @@
         :root[data-ui-theme="apple"] [class*="bg-zinc-950"],
         :root[data-ui-theme="apple"] [class*="bg-\[\#09090b\]"],
         :root[data-ui-theme="apple"] [class*="bg-zinc-800"],
-        :root[data-ui-theme="apple"] [class*="bg-black"] {
+        :root[data-ui-theme="apple"] [class*="bg-black"]:not([class*="inset-0"]) {
             background: var(--panel) !important;
             backdrop-filter: blur(30px) saturate(180%);
             -webkit-backdrop-filter: blur(30px) saturate(180%);
@@ -278,6 +282,31 @@
             :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body { background: #000 !important; }
         }
 
+
+        /* ── 모달 카드 틴트 강화 (glass/apple/mesh) ──────────────────────────
+           위 규칙은 모달 카드도 페이지의 일반 카드와 똑같은 --panel 불투명도를
+           썼는데, 모달은 뒤에 어떤 페이지 내용이 있어도 항상 읽혀야 하므로
+           일반 카드보다 훨씬 진한 --modal-panel을 쓴다. 자손 선택자라 모달
+           카드 안의 헤더 바 같은 중첩 zinc-900 요소도 같이 적용된다. */
+        :root[data-ui-theme="glass"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="glass"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="glass"] [class*="inset-0"][class*="bg-black"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="glass"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-800"] {
+            background: var(--modal-panel) !important;
+        }
+        :root[data-ui-theme="apple"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="apple"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="apple"] [class*="inset-0"][class*="bg-black"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="apple"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-800"] {
+            background: var(--modal-panel) !important;
+        }
+        :root[data-ui-theme="mesh"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="mesh"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="mesh"] [class*="inset-0"][class*="bg-black"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="mesh"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-800"] {
+            background: var(--modal-panel) !important;
+        }
+
         :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
             --accent: #5b7fdb; --brand: #4a5568;
             --panel: #e7e9ee; --panel2: #dfe2e8;
@@ -297,7 +326,7 @@
         :root[data-ui-theme="neu"] [class*="bg-zinc-950"],
         :root[data-ui-theme="neu"] [class*="bg-\[\#09090b\]"],
         :root[data-ui-theme="neu"] [class*="bg-zinc-800"],
-        :root[data-ui-theme="neu"] [class*="bg-black"] {
+        :root[data-ui-theme="neu"] [class*="bg-black"]:not([class*="inset-0"]) {
             background: var(--panel) !important;
             border: none !important;
             box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
@@ -315,6 +344,7 @@
             --mesh-base: #eef0f4;
             --mesh-1: rgba(109,92,232,0.14); --mesh-2: rgba(34,211,238,0.12);
             --mesh-3: rgba(240,163,207,0.12); --mesh-4: rgba(246,205,158,0.1);
+            --modal-panel: rgba(255,255,255,0.92);
         }
         :root[data-ui-theme="mesh"][data-ui-theme-mode="dark"] {
             --accent: #22d3ee; --brand: #dde0ea;
@@ -323,6 +353,7 @@
             --mesh-base: #14151f;
             --mesh-1: rgba(109,92,232,0.28); --mesh-2: rgba(34,211,238,0.22);
             --mesh-3: rgba(240,163,207,0.2); --mesh-4: rgba(246,205,158,0.16);
+            --modal-panel: rgba(18,19,28,0.94);
         }
         :root[data-ui-theme="mesh"] body { background: var(--mesh-base) !important; }
         :root[data-ui-theme="mesh"] body::before {
@@ -343,7 +374,7 @@
         :root[data-ui-theme="mesh"] [class*="bg-zinc-950"],
         :root[data-ui-theme="mesh"] [class*="bg-\[\#09090b\]"],
         :root[data-ui-theme="mesh"] [class*="bg-zinc-800"],
-        :root[data-ui-theme="mesh"] [class*="bg-black"] {
+        :root[data-ui-theme="mesh"] [class*="bg-black"]:not([class*="inset-0"]) {
             background: var(--panel) !important;
             backdrop-filter: blur(18px) saturate(120%);
             -webkit-backdrop-filter: blur(18px) saturate(120%);
