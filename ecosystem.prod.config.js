@@ -1,7 +1,3 @@
-// pm2 ecosystem — prod (MODE=1)
-//
-// 포트는 여기에 적지 않는다 — knpu/services.json 한 곳에서 읽는다.
-// cwd/interpreter는 이 파일이 있는 위치(__dirname) 기준이라 어느 계정의 체크아웃에서도 동작한다.
 const fs = require("fs");
 const path = require("path");
 
