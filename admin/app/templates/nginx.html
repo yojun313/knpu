@@ -13,6 +13,9 @@
                    class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition">
             <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
+        <button onclick="openCreateFolderModal()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-5 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap border border-zinc-700">
+            + 새 폴더
+        </button>
         <button onclick="openAddModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/20 whitespace-nowrap">
             + 새 도메인 추가
         </button>
@@ -20,6 +23,31 @@
 </div>
 
 <style>
+    /* 폴더 접힘 / 비어있음 / 드래그 상태는 인라인 style이 아니라 클래스로 다룬다.
+       (검색 필터가 행마다 인라인 display를 건드리므로 서로 싸우지 않게 하기 위함) */
+    #nginxDomainTable tbody.folder-group.folder-collapsed tr.domain-row,
+    #nginxDomainTable tbody.folder-group.folder-collapsed tr.folder-empty-row,
+    #nginxDomainTable tbody.folder-group.folder-collapsed tr.paths-row { display: none !important; }
+
+    #nginxDomainTable tbody.folder-group:not(.is-empty) tr.folder-empty-row { display: none; }
+
+    /* 폴더 안 도메인: 오른쪽으로 살짝 밀어 트리처럼 보이게 한다 */
+    #nginxDomainTable .tree-indent { margin-left: 22px; }
+    #nginxDomainTable .tree-branch {
+        width: 14px; height: 14px; margin-right: 2px;
+        border-left: 1px solid rgb(63 63 70 / 0.7);
+        border-bottom: 1px solid rgb(63 63 70 / 0.7);
+        border-bottom-left-radius: 4px;
+    }
+    #nginxDomainTable tr.folder-empty-row.in-folder td { padding-left: 22px; }
+
+    /* 드래그 중 */
+    #nginxDomainTable tr.domain-row.dragging { opacity: 0.4; }
+    #nginxDomainTable tbody.folder-group.drop-target { outline: 2px dashed rgb(245 158 11 / 0.7); outline-offset: -2px; }
+    #nginxDomainTable tbody.folder-group.drop-target tr.folder-row { background-color: rgb(245 158 11 / 0.08); }
+    body.dnd-active #nginxDomainTable tr.domain-row { cursor: grabbing; }
+    #nginxDomainTable tr.domain-row .drag-handle { cursor: grab; }
+
     /* 1024px 미만(모바일/태블릿 세로)에서는 도메인 테이블 및 경로 서브테이블을 세로 카드형으로
        재배치해서 Actions(경로 추가/삭제) 버튼을 보려고 가로 스크롤할 필요가 없게 한다. */
     @media (max-width: 1023px) {
@@ -38,6 +66,19 @@
             letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
         }
         #nginxDomainTable tr.domain-row > td.nginx-cell-domain { width: 100%; order: -1; }
+
+        /* 폴더 머리글도 같은 방식으로 카드화 */
+        #nginxDomainTable tbody.folder-group { display: block; width: 100%; }
+        #nginxDomainTable tr.folder-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+            padding: 12px 16px;
+        }
+        #nginxDomainTable tr.folder-row > td { display: block; padding: 0; border: none !important; }
+        #nginxDomainTable tr.folder-row > td.folder-cell-name { width: 100%; order: -1; }
+        #nginxDomainTable tr.folder-row > td.folder-cell-ports { width: 100%; }
+        #nginxDomainTable tr.folder-row > td.folder-cell-actions { width: 100%; text-align: left; }
+        #nginxDomainTable tr.folder-empty-row { display: block; width: 100%; }
+        #nginxDomainTable tr.folder-empty-row > td { display: block; }
         #nginxDomainTable tr.domain-row > td.nginx-cell-actions { width: 100%; order: 99; margin-top: 6px; text-align: left; }
 
         /* 경로 서브테이블(도메인 클릭 시 펼쳐지는 표) 도 같은 방식으로 카드화 */
@@ -74,14 +115,56 @@
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody id="domainListBody">
-                {% for d in domains %}
-                <tr class="domain-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer" data-domain="{{ d.domain }}" onclick="toggleDomainPaths('{{ d.domain }}')">
-                    <td class="p-4 nginx-cell-domain" data-label="Domain Name">
+            {% for g in groups %}
+            {# 표시용 폴더 그룹. 미분류(g.id 없음)는 폴더가 하나도 없고 도메인만 있을 때는 머리글을 숨긴다. #}
+            <tbody class="folder-group{% if not g.domains %} is-empty{% endif %}{% if g.id %} folder-collapsed{% endif %}" data-folder-id="{{ g.id or '' }}" data-folder-name="{{ g.name }}">
+                {% if g.id or folders %}
+                <tr class="folder-row bg-zinc-900/40 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800/30 transition-colors"
+                    data-folder-name="{{ g.name }}" onclick="toggleFolder(this)">
+                    <td class="p-4 folder-cell-name" colspan="2">
                         <div class="flex items-center gap-2">
+                            <svg class="folder-chevron text-zinc-500 transition-transform shrink-0" style="transform: {{ 'rotate(0deg)' if g.id else 'rotate(90deg)' }}" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            <svg class="shrink-0 {{ 'text-amber-500' if g.id else 'text-zinc-600' }}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                            <span class="font-bold text-zinc-100">{{ g.name }}</span>
+                            <span class="folder-count text-zinc-600 text-xs">{{ g.domains|length }}개 도메인</span>
+                        </div>
+                    </td>
+                    <td class="p-4 folder-cell-ports" colspan="2" data-label="Ports">
+                        {% if g.ports %}
+                        <div class="flex flex-wrap items-center gap-1">
+                            {% for port in g.ports %}
+                            <span class="font-mono text-[10px] text-blue-300 bg-blue-900/15 px-1.5 py-0.5 rounded border border-blue-900/30">:{{ port }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span class="font-mono text-zinc-600 text-xs">포트 없음</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-right folder-cell-actions" data-label="Actions">
+                        {% if g.id %}
+                        <button onclick="event.stopPropagation(); openRenameFolderModal('{{ g.id }}', '{{ g.name }}')" class="p-2 text-zinc-500 hover:text-amber-400 hover:bg-amber-900/10 rounded-lg transition" title="폴더 이름 변경">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteFolder('{{ g.id }}', '{{ g.name }}')" class="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-900/10 rounded-lg transition" title="폴더 삭제 (도메인은 유지)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+
+                {% for d in g.domains %}
+                <tr class="domain-row{{ ' in-folder' if g.id else '' }} border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer"
+                    draggable="true"
+                    data-domain="{{ d.domain }}"
+                    data-ports="{{ d.paths|map(attribute='port')|select('ne', 'N/A')|unique|join(',') }}"
+                    onclick="toggleDomainPaths('{{ d.domain }}')">
+                    <td class="p-4 nginx-cell-domain" data-label="Domain Name">
+                        <div class="flex items-center gap-2{{ ' tree-indent' if g.id else '' }}">
+                            {% if g.id %}<span class="tree-branch shrink-0" aria-hidden="true"></span>{% endif %}
                             <svg id="chevron-{{ d.domain }}" class="text-zinc-500 transition-transform shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                            <a href="https://{{ d.domain }}" target="_blank" onclick="event.stopPropagation()" class="font-bold text-zinc-100 hover:text-blue-400 hover:underline transition-colors">
+                            <a href="https://{{ d.domain }}" target="_blank" draggable="false" onclick="event.stopPropagation()" class="font-bold text-zinc-100 hover:text-blue-400 hover:underline transition-colors">
                                 {{ d.domain }}
                             </a>
                         </div>
@@ -106,6 +189,9 @@
                     </td>
                     <td class="p-4 text-zinc-500 text-xs font-mono" data-label="Config File">{{ d.filename }}</td>
                     <td class="p-4 text-right nginx-cell-actions" data-label="Actions">
+                        <button onclick="event.stopPropagation(); openMoveFolderModal('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-amber-400 hover:bg-amber-900/10 rounded-lg transition" title="폴더 이동">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        </button>
                         <button onclick="event.stopPropagation(); openAddPathModal('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-blue-400 hover:bg-blue-900/10 rounded-lg transition" title="경로 추가">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
@@ -114,7 +200,7 @@
                         </button>
                     </td>
                 </tr>
-                <tr id="paths-row-{{ d.domain }}" class="hidden bg-black/20 border-b border-zinc-800/50">
+                <tr id="paths-row-{{ d.domain }}" class="paths-row hidden bg-black/20 border-b border-zinc-800/50">
                     <td colspan="5" class="p-0">
                         <div class="px-6 py-4 overflow-x-auto">
                             <table class="nested-paths-table w-full text-left text-xs">
@@ -141,14 +227,24 @@
                         </div>
                     </td>
                 </tr>
-                {% else %}
+                {% endfor %}
+                <tr class="folder-empty-row{{ ' in-folder' if g.id else '' }} border-b border-zinc-800/50">
+                    <td colspan="5" class="px-6 py-4 text-zinc-600 text-xs italic">
+                        {% if g.id %}이 폴더에 담긴 도메인이 없습니다. 도메인 행을 끌어다 놓으세요.{% else %}모든 도메인이 폴더에 들어가 있습니다.{% endif %}
+                    </td>
+                </tr>
+            </tbody>
+            {% endfor %}
+
+            {% if not domains %}
+            <tbody>
                 <tr>
                     <td colspan="5" class="p-20 text-center">
                         <div class="text-zinc-600 mb-2 italic">등록된 도메인이 없습니다.</div>
                     </td>
                 </tr>
-                {% endfor %}
             </tbody>
+            {% endif %}
         </table>
     </div>
 </div>
@@ -265,6 +361,67 @@
     </div>
 </div>
 
+<div id="createFolderModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-1 text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            새 폴더
+        </h3>
+        <p class="text-zinc-500 text-xs mb-4">목록을 보기 좋게 묶기 위한 폴더입니다. nginx 설정과 인증서에는 영향을 주지 않습니다.</p>
+        <form id="createFolderForm" class="space-y-4">
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">폴더 이름</label>
+                <input type="text" name="name" maxlength="40" placeholder="예: 운영 서비스" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-amber-500 outline-none transition text-white" required>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeCreateFolderModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 p-3 rounded-xl text-sm font-bold transition text-white">만들기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="renameFolderModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-4 text-white">폴더 이름 변경</h3>
+        <form id="renameFolderForm" class="space-y-4">
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">폴더 이름</label>
+                <input type="text" name="name" maxlength="40" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-amber-500 outline-none transition text-white" required>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeRenameFolderModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 p-3 rounded-xl text-sm font-bold transition text-white">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="moveFolderModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-1 text-white">폴더 이동</h3>
+        <p class="text-zinc-500 text-xs mb-4 font-mono" id="moveFolderDomainLabel"></p>
+        <form id="moveFolderForm" class="space-y-4">
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">폴더</label>
+                <select name="folder_id" id="moveFolderSelect" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-amber-500 outline-none transition text-white">
+                    <option value="">미분류</option>
+                    {% for f in folders %}
+                    <option value="{{ f.id }}">{{ f.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if not folders %}
+                <p class="text-[11px] text-zinc-600 mt-1.5">아직 폴더가 없습니다. 상단의 "+ 새 폴더"로 먼저 만들어 주세요.</p>
+                {% endif %}
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeMoveFolderModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 p-3 rounded-xl text-sm font-bold transition text-white">이동</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 let consoleSocket = null;
 let domainToDelete = "";
@@ -274,7 +431,232 @@ let currentPathValue = "";
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
+/* ---------- 표시용 폴더 ---------- */
+let renameFolderId = "";
+let moveFolderDomain = "";
+
+function toggleFolder(headerRow) {
+    const body = headerRow.parentElement;
+    setFolderCollapsed(body, !body.classList.contains('folder-collapsed'));
+}
+
+function setFolderCollapsed(group, collapsed) {
+    group.classList.toggle('folder-collapsed', collapsed);
+    const chevron = group.querySelector('.folder-chevron');
+    if (chevron) chevron.style.transform = collapsed ? '' : 'rotate(90deg)';
+    // 접을 때는 펼쳐져 있던 경로 표도 같이 닫는다.
+    if (collapsed) {
+        group.querySelectorAll('tr.paths-row').forEach(function (tr) { tr.classList.add('hidden'); });
+    }
+}
+
+/* 폴더 머리글의 도메인 개수 / 포트 칩을 현재 DOM 기준으로 다시 그린다.
+   (드래그로 옮긴 뒤 새로고침 없이 맞추기 위함) */
+function refreshFolderSummary(group) {
+    const rows = [...group.querySelectorAll('tr.domain-row')];
+    group.classList.toggle('is-empty', rows.length === 0);
+
+    const header = group.querySelector('tr.folder-row');
+    if (!header) return;
+
+    const countEl = header.querySelector('.folder-count');
+    if (countEl) countEl.textContent = `${rows.length}개 도메인`;
+
+    const ports = new Set();
+    rows.forEach(function (r) {
+        (r.getAttribute('data-ports') || '').split(',').forEach(function (v) {
+            const n = parseInt(v, 10);
+            if (!isNaN(n)) ports.add(n);
+        });
+    });
+    const portsCell = header.querySelector('.folder-cell-ports');
+    if (!portsCell) return;
+    const sorted = [...ports].sort(function (a, b) { return a - b; });
+    if (sorted.length === 0) {
+        portsCell.innerHTML = '<span class="font-mono text-zinc-600 text-xs">포트 없음</span>';
+    } else {
+        portsCell.innerHTML =
+            '<div class="flex flex-wrap items-center gap-1">' +
+            sorted.map(function (n) {
+                return '<span class="font-mono text-[10px] text-blue-300 bg-blue-900/15 px-1.5 py-0.5 rounded border border-blue-900/30">:' + n + '</span>';
+            }).join('') +
+            '</div>';
+    }
+}
+
+/* ---------- 드래그 앤 드롭 ---------- */
+let draggedDomain = null;
+let dragSuppressClick = false;
+
+function initDragAndDrop() {
+    document.querySelectorAll('#nginxDomainTable tr.domain-row').forEach(function (row) {
+        row.addEventListener('dragstart', function (e) {
+            draggedDomain = row;
+            dragSuppressClick = true;
+            row.classList.add('dragging');
+            document.body.classList.add('dnd-active');
+            e.dataTransfer.effectAllowed = 'move';
+            // Firefox는 데이터가 없으면 드래그를 시작하지 않는다.
+            e.dataTransfer.setData('text/plain', row.getAttribute('data-domain'));
+        });
+        row.addEventListener('dragend', function () {
+            row.classList.remove('dragging');
+            document.body.classList.remove('dnd-active');
+            document.querySelectorAll('tbody.folder-group.drop-target')
+                .forEach(function (g) { g.classList.remove('drop-target'); });
+            draggedDomain = null;
+            // 드래그 직후 click이 이어져 경로 표가 열리는 것을 막는다.
+            setTimeout(function () { dragSuppressClick = false; }, 0);
+        });
+    });
+
+    document.querySelectorAll('#nginxDomainTable tbody.folder-group').forEach(function (group) {
+        group.addEventListener('dragover', function (e) {
+            if (!draggedDomain) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (draggedDomain.parentElement !== group) group.classList.add('drop-target');
+        });
+        group.addEventListener('dragleave', function (e) {
+            // 자식 요소 사이를 오갈 때 발생하는 dragleave는 무시한다.
+            if (e.relatedTarget && group.contains(e.relatedTarget)) return;
+            group.classList.remove('drop-target');
+        });
+        group.addEventListener('drop', function (e) {
+            e.preventDefault();
+            group.classList.remove('drop-target');
+            if (draggedDomain) moveDomainToGroup(draggedDomain, group);
+        });
+    });
+}
+
+function setRowTreeIndent(row, inFolder) {
+    row.classList.toggle('in-folder', inFolder);
+    const wrap = row.querySelector('td.nginx-cell-domain > div');
+    if (!wrap) return;
+    wrap.classList.toggle('tree-indent', inFolder);
+    let branch = wrap.querySelector('.tree-branch');
+    if (inFolder && !branch) {
+        branch = document.createElement('span');
+        branch.className = 'tree-branch shrink-0';
+        branch.setAttribute('aria-hidden', 'true');
+        wrap.insertBefore(branch, wrap.firstChild);
+    } else if (!inFolder && branch) {
+        branch.remove();
+    }
+}
+
+async function moveDomainToGroup(row, group) {
+    const source = row.parentElement;
+    if (source === group) return;
+
+    const domain = row.getAttribute('data-domain');
+    const folderId = group.getAttribute('data-folder-id') || null;
+    const pathsRow = document.getElementById(`paths-row-${domain}`);
+
+    // 먼저 화면을 옮기고(직접 조작이라 즉시 반응해야 한다), 실패하면 새로고침으로 되돌린다.
+    const anchor = group.querySelector('tr.folder-empty-row');
+    group.insertBefore(row, anchor);
+    if (pathsRow) group.insertBefore(pathsRow, anchor);
+    setRowTreeIndent(row, !!folderId);
+    if (anchor) anchor.classList.toggle('in-folder', !!folderId);
+
+    if (group.classList.contains('folder-collapsed')) setFolderCollapsed(group, false);
+    row.style.display = '';
+    if (pathsRow) { pathsRow.classList.add('hidden'); pathsRow.style.display = ''; }
+
+    refreshFolderSummary(source);
+    refreshFolderSummary(group);
+
+    try {
+        const res = await fetch('/nginx/folders/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: domain, folder_id: folderId })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(function () { return {}; });
+            alert(data.detail || '폴더 이동에 실패했습니다.');
+            location.reload();
+        }
+    } catch (e) {
+        alert('폴더 이동 중 오류가 발생했습니다.');
+        location.reload();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initDragAndDrop);
+
+function openCreateFolderModal() {
+    document.getElementById('createFolderForm').reset();
+    document.getElementById('createFolderModal').classList.remove('hidden');
+}
+function closeCreateFolderModal() { document.getElementById('createFolderModal').classList.add('hidden'); }
+
+function openRenameFolderModal(folderId, name) {
+    renameFolderId = folderId;
+    document.getElementById('renameFolderForm').name.value = name;
+    document.getElementById('renameFolderModal').classList.remove('hidden');
+}
+function closeRenameFolderModal() { document.getElementById('renameFolderModal').classList.add('hidden'); }
+
+function openMoveFolderModal(domain) {
+    moveFolderDomain = domain;
+    const row = document.querySelector(`tr.domain-row[data-domain="${domain}"]`);
+    const group = row ? row.closest('tbody.folder-group') : null;
+    document.getElementById('moveFolderDomainLabel').innerText = domain;
+    document.getElementById('moveFolderSelect').value = group ? (group.getAttribute('data-folder-id') || "") : "";
+    document.getElementById('moveFolderModal').classList.remove('hidden');
+}
+function closeMoveFolderModal() { document.getElementById('moveFolderModal').classList.add('hidden'); }
+
+async function postFolder(url, options, failMessage) {
+    try {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok) { alert(data.detail || failMessage); return false; }
+        location.reload();
+        return true;
+    } catch (e) {
+        alert(failMessage);
+        return false;
+    }
+}
+
+document.getElementById('createFolderForm').onsubmit = async (e) => {
+    e.preventDefault();
+    await postFolder('/nginx/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: e.target.name.value })
+    }, '폴더 생성에 실패했습니다.');
+};
+
+document.getElementById('renameFolderForm').onsubmit = async (e) => {
+    e.preventDefault();
+    await postFolder(`/nginx/folders/${renameFolderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: e.target.name.value })
+    }, '이름 변경에 실패했습니다.');
+};
+
+document.getElementById('moveFolderForm').onsubmit = async (e) => {
+    e.preventDefault();
+    await postFolder('/nginx/folders/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: moveFolderDomain, folder_id: e.target.folder_id.value || null })
+    }, '폴더 이동에 실패했습니다.');
+};
+
+async function deleteFolder(folderId, name) {
+    if (!confirm(`'${name}' 폴더를 삭제할까요?\n\n안에 있던 도메인은 미분류로 이동하며, nginx 설정과 인증서는 그대로입니다.`)) return;
+    await postFolder(`/nginx/folders/${folderId}`, { method: 'DELETE' }, '폴더 삭제에 실패했습니다.');
+}
+
 function toggleDomainPaths(domain) {
+    if (dragSuppressClick) return;
     const row = document.getElementById(`paths-row-${domain}`);
     const chevron = document.getElementById(`chevron-${domain}`);
     if (!row) return;
@@ -357,14 +739,37 @@ document.getElementById('editPathForm').onsubmit = async (e) => {
 
 function filterDomains() {
     const query = document.getElementById('domainSearch').value.toLowerCase();
-    const rows = document.getElementsByClassName('domain-row');
-    for (let row of rows) {
-        const domain = row.getAttribute('data-domain');
-        const match = domain.toLowerCase().includes(query);
-        row.style.display = match ? "" : "none";
-        const pathsRow = document.getElementById(`paths-row-${domain}`);
-        if (pathsRow && !match) pathsRow.classList.add('hidden');
-    }
+
+    document.querySelectorAll('tbody.folder-group').forEach(function (group) {
+        // 검색 중에는 접힌 폴더도 결과를 보여줘야 하므로 접힘 상태를 푼다.
+        if (query) setFolderCollapsed(group, false);
+
+        let visible = 0;
+        group.querySelectorAll('tr.domain-row').forEach(function (row) {
+            const domain = row.getAttribute('data-domain');
+            const match = domain.toLowerCase().includes(query);
+            row.style.display = match ? "" : "none";
+            if (match) visible += 1;
+            const pathsRow = document.getElementById(`paths-row-${domain}`);
+            if (pathsRow) {
+                if (!match) pathsRow.classList.add('hidden');
+                pathsRow.style.display = match ? "" : "none";
+            }
+        });
+
+        // 폴더 이름으로도 찾을 수 있게 한다.
+        const header = group.querySelector('tr.folder-row');
+        const folderName = header ? (header.getAttribute('data-folder-name') || '') : '';
+        const folderMatch = query && folderName.toLowerCase().includes(query);
+        if (folderMatch) {
+            group.querySelectorAll('tr.domain-row').forEach(function (row) {
+                row.style.display = "";
+                visible += 1;
+            });
+        }
+
+        if (header) header.style.display = (!query || visible > 0) ? "" : "none";
+    });
 }
 
 function runConsoleTask(payload) {

@@ -27,6 +27,12 @@ def get_all_users():
     return list(homepage_users_col.find().sort("name", 1))
 
 
+def get_registered_uids() -> set:
+    return {
+        u["uid"] for u in homepage_users_col.find({}, {"uid": 1}) if u.get("uid")
+    }
+
+
 def get_pending_users():
     return list(
         homepage_users_col.find({"status": "pending_approval"}).sort("created_at", 1)
@@ -156,25 +162,20 @@ def get_recent_logs(limit=10, name=None, date_str=None):
 
 def get_users_with_log_counts():
     user_map = get_user_mapping()
+    registered = get_registered_uids()
     pipeline = [
         {"$match": _explicit_log_filter()},
         {"$group": {"_id": "$userUid", "count": {"$sum": 1}}},
     ]
     counts = {c["_id"]: c["count"] for c in user_logs_col.aggregate(pipeline)}
-    users = []
-    for uid, count in counts.items():
-        if uid:
-            users.append(
-                {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
-            )
-        else:
-            users.append(
-                {
-                    "uid": ANONYMOUS_AUDIT_KEY,
-                    "name": "익명 (로그인 전 요청)",
-                    "count": count,
-                }
-            )
+    # 탈퇴한 계정/옛 매니저 계정/익명(uid 없음)은 탭에서 뺀다 — Users 탭에 있는
+    # 사용자만 보이게 한다. 그 계정들의 로그 자체는 지우지 않으니 감사 기록은 그대로
+    # 남고, "사용자별 로그" 탐색 UI만 현재 유효한 계정으로 좁힌다.
+    users = [
+        {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
+        for uid, count in counts.items()
+        if uid and uid in registered
+    ]
     users.sort(key=lambda u: u["count"], reverse=True)
     return users
 
@@ -262,30 +263,19 @@ def get_audit_logs(
 
 def get_users_with_audit_counts():
     user_map = get_user_mapping()
+    registered = get_registered_uids()
     pipeline = [
         {"$sort": {"datetime": -1}},
         {"$group": {"_id": "$userUid", "count": {"$sum": 1}}},
     ]
-    users = []
-    anon_count = 0
-    for r in user_logs_col.aggregate(pipeline):
-        uid = r["_id"]
-        if not uid:
-            anon_count += r["count"]
-            continue
-        users.append(
-            {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": r["count"]}
-        )
-
+    # 탈퇴한 계정/옛 매니저 계정/익명(uid 없음)은 탭에서 뺀다 — get_users_with_log_counts와
+    # 동일한 이유(Users 탭 기준으로만 사용자 탐색 UI를 보여준다).
+    users = [
+        {"uid": r["_id"], "name": user_map.get(r["_id"], r["_id"][:8]), "count": r["count"]}
+        for r in user_logs_col.aggregate(pipeline)
+        if r["_id"] and r["_id"] in registered
+    ]
     users.sort(key=lambda u: u["count"], reverse=True)
-    if anon_count:
-        users.append(
-            {
-                "uid": ANONYMOUS_AUDIT_KEY,
-                "name": "익명 (로그인 전 요청)",
-                "count": anon_count,
-            }
-        )
     return users
 
 
