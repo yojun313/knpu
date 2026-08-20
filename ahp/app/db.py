@@ -4,6 +4,8 @@ import warnings
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+# 삭제 금지
+from system.db import user_db, user_logs_db, get_user_names  # noqa: F401  (재수출)
 
 load_dotenv()
 
@@ -44,9 +46,7 @@ else:
 
 _client = AsyncIOMotorClient(_mongo_uri)
 
-# dev/prod는 DB를 공유한다(system/db/__init__.py 참고).
 ahp_db = _client["ahp"]
-
 projects_db = ahp_db["projects"]
 hierarchies_db = ahp_db["hierarchies"]
 surveys_db = ahp_db["surveys"]
