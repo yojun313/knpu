@@ -4,6 +4,7 @@ import warnings
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import OperationFailure
 # 삭제 금지
 from system.db import user_db, user_logs_db, get_user_names  # noqa: F401  (재수출)
 
@@ -70,6 +71,19 @@ async def ensure_indexes():
         unique=True,
         partialFilterExpression={"code_hash": {"$type": "string"}},
     )
-    await collections_db.create_index("access_token", unique=True, sparse=True)
+    try:
+        await collections_db.create_index(
+            "access_token",
+            unique=True,
+            partialFilterExpression={"access_token": {"$type": "string"}},
+        )
+    except OperationFailure:
+        # 기존 sparse 인덱스가 이름은 같은데 옵션이 달라 충돌하는 경우 — 지우고 새로 만든다.
+        await collections_db.drop_index("access_token_1")
+        await collections_db.create_index(
+            "access_token",
+            unique=True,
+            partialFilterExpression={"access_token": {"$type": "string"}},
+        )
     await hierarchies_db.create_index([("project_id", 1), ("version", 1)])
     await surveys_db.create_index([("project_id", 1), ("version", 1)])
