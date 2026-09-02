@@ -24,6 +24,8 @@ from app.services.ahp_calc import (
     IncompleteMatrixError,
 )
 from app.services.csv_schema import parse_value
+from app.services.codes import dedupe_label as _dedupe_label
+from app.services.hub import hub
 from app.services.demographics import coerce_attributes, validate_required
 from app.routes.collection_routes import _get_collection_checked
 
@@ -32,18 +34,6 @@ router = APIRouter()
 
 def _now():
     return datetime.now(timezone.utc)
-
-
-def _dedupe_label(base: str, existing_labels: set[str]) -> str:
-    """같은 수집 회차 안에서 응답자 이름이 겹치면 "이름 (2)"처럼 구분자를 붙여
-    유일하게 만든다 — 이름이 같으면 결과 화면·CSV 내보내기에서 서로 다른
-    응답자를 구별할 수 없어진다(요청사항)."""
-    if base not in existing_labels:
-        return base
-    n = 2
-    while f"{base} ({n})" in existing_labels:
-        n += 1
-    return f"{base} ({n})"
 
 
 async def _survey_and_nodes(collection: dict):
@@ -300,7 +290,25 @@ async def put_answer(collection_id: str, request: Request):
         {"$set": {"answers": answers, "submitted_at": _now()}},
     )
 
-    return _compute_cr_for_matrix(matrix, answers)
+    cr_info = _compute_cr_for_matrix(matrix, answers)
+
+    # 진행자가 콘솔에서 고친 값을 그 참여자 화면에도 즉시 반영한다 — 안 그러면
+    # 로컬 상태가 조정 전 값으로 남아 있다가 "재조정 요청" 시 원복돼 버린다.
+    await hub.publish(
+        collection_id,
+        "answer.override",
+        {
+            "matrix_id": matrix_id,
+            "uuid_a": uuid_a,
+            "uuid_b": uuid_b,
+            "value_a_over_b": value_a_over_b,
+            "cr": cr_info.get("cr") if cr_info.get("complete") else None,
+            "complete": cr_info.get("complete", False),
+        },
+        only_role_prefix=f"respondent:{respondent_id}",
+    )
+
+    return cr_info
 
 
 @router.post("/api/entry/{collection_id}/respondents/{respondent_id}/submit")

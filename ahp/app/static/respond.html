@@ -61,37 +61,27 @@
   <div class="survey-top">
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-label"><span id="progressText">0%</span></div>
+    <div class="cr-bar" id="matrixCrBar" hidden></div>
   </div>
 
   <div class="survey-body">
+    <div class="hd-card">
+      <button type="button" class="hd-toggle" id="hdToggle">계층도 <span id="hdToggleIcon">▾</span></button>
+      <div class="hd-box-wrap fit" id="hdBox">
+        <button type="button" class="hd-zoom" id="hdZoom" title="실제 크기 ↔ 화면 맞춤">⤢</button>
+        <div id="hdCanvas"></div>
+      </div>
+    </div>
     <div class="q-parent" id="qParentName"></div>
     <div class="q-desc" id="qParentDesc"></div>
     <h1 class="q-title" id="qQuestionText"></h1>
-
-    <div class="picker">
-      <div class="side-labels">
-        <span id="labelA"></span>
-        <span id="labelB"></span>
-      </div>
-      <div class="item-descs" id="itemDescs" hidden>
-        <span id="descA"></span>
-        <span id="descB"></span>
-      </div>
-      <div class="side-buttons" id="sideButtons">
-        <button type="button" class="side-btn" data-side="a"><span id="sideBtnAName"></span></button>
-        <button type="button" class="side-btn equal" data-side="eq">동일</button>
-        <button type="button" class="side-btn" data-side="b"><span id="sideBtnBName"></span></button>
-      </div>
-      <div class="intensity-wrap" id="intensityWrap" hidden>
-        <p class="intensity-hint" id="intensityHint"></p>
-        <div class="intensity-row" id="intensityRow"></div>
-      </div>
-    </div>
+    <div id="pairList" class="pair-list"></div>
   </div>
 
   <div class="survey-nav">
     <button class="btn-ghost" id="prevBtn">이전</button>
     <span id="qCounter" class="q-counter"></span>
+    <button class="btn-ghost" id="submitBtn" hidden>제출하기</button>
     <button class="btn-primary" id="nextBtn">다음</button>
   </div>
 </div>
@@ -119,8 +109,17 @@
   <div class="survey-top">
     <button class="btn-ghost sm" id="reviewBackBtn">← 뒤로</button>
     <h2 class="review-title" id="reviewTitle"></h2>
+    <div class="cr-bar" id="reviewCrBar"></div>
   </div>
   <div class="survey-body">
+    <div class="wchart-card">
+      <div class="wchart" id="reviewChart"></div>
+      <div class="wchart-nav">
+        <button type="button" class="wchart-arrow" id="rankPrevBtn" aria-label="이전 순위">◀</button>
+        <span class="wchart-focus" id="rankFocusLabel"></span>
+        <button type="button" class="wchart-arrow" id="rankNextBtn" aria-label="다음 순위">▶</button>
+      </div>
+    </div>
     <div id="reviewPairs" class="review-pairs"></div>
   </div>
   <div class="survey-nav">
@@ -129,5 +128,6 @@
   </div>
 </div>
 
+<script src="/js/hierarchy_diagram.js"></script>
 <script src="/js/respond.js"></script>
 </body></html>

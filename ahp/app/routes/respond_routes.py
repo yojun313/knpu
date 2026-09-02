@@ -93,6 +93,10 @@ async def respond_landing(token: str):
     collection = await _collection_by_token(token)
     survey, nodes_by_id = await _survey_and_nodes(collection)
     project = await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1})
+    hierarchy = await hierarchies_db.find_one(
+        {"project_id": survey["project_id"], "version": survey["hierarchy_version"]},
+        {"nodes": 1},
+    )
 
     active_matrix_id = None
     if collection["mode"] == "realtime" and collection.get("session_started"):
@@ -126,6 +130,7 @@ async def respond_landing(token: str):
             == "on",
             "demographics": survey.get("demographics", []),
             "matrices": _build_matrices_view(survey, nodes_by_id),
+            "hierarchy_nodes": (hierarchy or {}).get("nodes", []),
         },
     }
 
@@ -310,6 +315,19 @@ async def put_answer(token: str, request: Request):
         {"$set": {"status": "in_progress"}},
     )
 
+    # 이미 이번 라운드에 제출까지 마친 응답자가 완료 화면에서 값을 고치는 경우
+    # (entry_routes.put_answer와 동일 처리) — submissions 스냅샷도 같이 갱신해야
+    # 완료 화면 CR(respond_summary는 submissions 기준)이 수정값을 반영한다.
+    current_round = collection.get("round", 1)
+    await submissions_db.update_one(
+        {
+            "collection_id": collection["_id"],
+            "respondent_id": payload["respondent_id"],
+            "round": current_round,
+        },
+        {"$set": {"answers": answers, "submitted_at": _now()}},
+    )
+
     node_ids = matrix["child_uuids"]
     try:
         result = derive_weights(node_ids, matrix_answers)
@@ -360,6 +378,67 @@ async def put_demographics(token: str, request: Request):
         {"_id": payload["respondent_id"]}, {"$set": {"attributes": attributes}}
     )
     return {"attributes": attributes}
+
+
+@router.post("/api/respond/{token}/matrix-eval")
+async def matrix_eval(token: str, request: Request):
+    """수정 화면의 실시간 what-if — 저장된 답 위에 overrides를 얹어 이 기준의
+    가중치·CR·순위·가장 모순적인 쌍을 재계산해 돌려준다(저장하지 않는다)."""
+    payload = current_respondent(request)
+    collection = await _collection_by_token(token)
+    if collection["_id"] != payload["collection_id"]:
+        raise HTTPException(403, "이 링크의 응답자가 아닙니다")
+
+    body = await request.json()
+    matrix_id = body.get("matrix_id")
+    survey, nodes_by_id = await _survey_and_nodes(collection)
+    matrix = next(
+        (m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None
+    )
+    if not matrix:
+        raise HTTPException(404, "해당 비교 항목을 찾을 수 없습니다")
+    node_ids = matrix["child_uuids"]
+
+    resp = await responses_db.find_one(
+        {"collection_id": collection["_id"], "respondent_id": payload["respondent_id"]}
+    )
+    stored = dict((resp or {}).get("answers", {}).get(matrix_id, {}))
+    for ov in body.get("overrides") or []:
+        try:
+            pid, sv = to_stored_pair(
+                ov["uuid_a"], ov["uuid_b"], float(ov["value_a_over_b"])
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+        stored[pid] = sv
+
+    names = {cid: nodes_by_id.get(cid, {}).get("name", cid) for cid in node_ids}
+    try:
+        result = derive_weights(node_ids, stored)
+    except IncompleteMatrixError as e:
+        return {
+            "incomplete": True,
+            "missing": len(e.missing_pairs),
+            "child_uuids": node_ids,
+            "names": names,
+        }
+
+    ranking = sorted(node_ids, key=lambda u: result.weights.get(u, 0), reverse=True)
+    worst = []
+    if len(node_ids) >= 3:
+        try:
+            worst = [w.to_dict() for w in worst_offending_pairs(node_ids, stored)]
+        except Exception:
+            worst = []
+    return {
+        "incomplete": False,
+        "child_uuids": node_ids,
+        "names": names,
+        "weights": result.weights,
+        "ranking": ranking,
+        "cr": result.cr,
+        "worst_pairs": worst,
+    }
 
 
 @router.post("/api/respond/{token}/submit")

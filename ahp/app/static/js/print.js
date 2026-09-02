@@ -1,9 +1,10 @@
 (function () {
   'use strict';
 
-  // 9~1~1/9 전 구간(17칸) — entry.js의 scaleOptionsHtml과 같은 눈금으로 맞춘다.
+  // 9~1~9 전 구간(17칸). 오른쪽 절반도 단순 숫자로 표시한다 — 연구자가 반입 시
+  // 알아서 분수로 환산한다(요청사항). 표가 [A] …17칸… [B] 배치라 방향은 그대로 읽힌다.
   const SAATY_LEVELS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  function levelLabel(n, i) { return i <= SAATY_LEVELS.length / 2 ? String(n) : ('1/' + n); }
+  function levelLabel(n) { return String(n); }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -49,6 +50,8 @@
             block += '<div class="pair-desc"><span>' + (descA ? esc(nameA) + ': ' + esc(descA) : '') + '</span>' +
               '<span>' + (descB ? esc(nameB) + ': ' + esc(descB) : '') + '</span></div>';
           }
+          block += '<div class="pair-dir"><span>◀ ‘' + esc(nameA) + '’이 더 중요</span>' +
+            '<span>‘' + esc(nameB) + '’이 더 중요 ▶</span></div>';
           block += '<table class="pair-table"><thead><tr><th>' + esc(nameA) + '</th>' +
             SAATY_LEVELS.map(function (n, i) { return '<th>' + levelLabel(n, i) + '</th>'; }).join('') +
             '<th>' + esc(nameB) + '</th></tr></thead><tbody><tr><td></td>' +
