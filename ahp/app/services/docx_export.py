@@ -112,6 +112,13 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
                     run.italic = True
                     run.font.size = Pt(9)
 
+                dir_p = doc.add_paragraph()
+                dir_p.paragraph_format.keep_with_next = True
+                dir_run = dir_p.add_run(
+                    f"◀ ‘{name_a}’이 더 중요        ‘{name_b}’이 더 중요 ▶"
+                )
+                dir_run.font.size = Pt(8)
+
                 table = doc.add_table(rows=2, cols=1 + len(SAATY_LEVELS) + 1)
                 table.style = "Table Grid"
                 table.autofit = False
@@ -121,7 +128,8 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
                 header = table.rows[0]
                 _set_cell_text(header.cells[0], name_a, bold=True, size=9)
                 for k, lvl in enumerate(SAATY_LEVELS):
-                    label = str(lvl) if k <= len(SAATY_LEVELS) // 2 else f"1/{lvl}"
+                    # 오른쪽 절반도 단순 숫자 — 연구자가 반입 시 분수로 환산(요청사항).
+                    label = str(lvl)
                     _set_cell_text(
                         header.cells[1 + k], label, align_center=True, size=7
                     )
