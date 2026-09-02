@@ -170,3 +170,12 @@ button{font-family:inherit}
   z-index:60;background:var(--r-good);color:#fff;padding:10px 18px;border-radius:999px;
   font-size:13px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.18);
   max-width:calc(100% - 32px);text-align:center}
+
+/* ── 인구통계 화면 ── */
+.demo-form{display:flex;flex-direction:column;gap:18px;margin:16px 0 20px}
+.demo-field .demo-q{font-size:14px;font-weight:700;margin-bottom:8px}
+.demo-field .demo-req{color:var(--r-danger)}
+.demo-choice{display:flex;align-items:center;gap:10px;font-size:14px;padding:8px 2px}
+.demo-choice input{width:20px;height:20px;flex-shrink:0;accent-color:var(--r-accent)}
+.demo-input{width:100%;min-height:46px;padding:10px 12px;font-size:15px;border-radius:12px;
+  border:1px solid var(--r-border,#ccc);background:var(--r-card,#fff);color:inherit}

@@ -25,6 +25,8 @@
   let activeList = [];
   let currentIndex = 0;
   let answers = {};
+  let respondentAttributes = {};
+  let demographicsDone = false;  // 인구통계 화면을 한 번 통과했는가
   let matrixCrCache = {};
   let clientSeq = Number(localStorage.getItem(STORAGE_SEQ_KEY) || 0);
   let pendingSide = null;
@@ -50,7 +52,7 @@
 
   function views() {
     return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone',
-      'viewReview', 'viewWaitStart', 'viewSectionWait'];
+      'viewReview', 'viewWaitStart', 'viewSectionWait', 'viewDemographics'];
   }
   function show(id) { views().forEach(function (v) { document.getElementById(v).hidden = (v !== id); }); }
   function showError(title, msg) {
@@ -184,6 +186,11 @@
       answers = {};
       Object.keys(me.answers).forEach(function (mid) { Object.assign(answers, me.answers[mid]); });
       clientSeq = me.client_seq || clientSeq;
+      respondentAttributes = me.respondent.attributes || {};
+      // 이미 제출했거나 인구통계 답이 있으면 화면을 다시 안 띄운다(라운드 반복 등).
+      if (me.respondent.status === 'submitted' || Object.keys(respondentAttributes).length) {
+        demographicsDone = true;
+      }
       if (me.respondent.status === 'submitted') { await showDone(); return; }
       if (landing.collection.mode === 'realtime') { enterRealtimeFlow(); return; }
       activeList = questions;
@@ -574,7 +581,21 @@
     renderQuestion();
   }
 
+  function needsDemographics() {
+    return (
+      landing.survey.collect_demographics &&
+      (landing.survey.demographics || []).length &&
+      !demographicsDone
+    );
+  }
+
   async function finishSurvey() {
+    // 모든 비교를 마친 뒤, 제출 직전에 인구통계를 받는다(온라인·실시간 공통 관문).
+    if (needsDemographics()) {
+      renderDemographics();
+      show('viewDemographics');
+      return;
+    }
     await flushQueue();
     try {
       const res = await fetch('/api/respond/' + accessToken + '/submit', {
@@ -585,6 +606,84 @@
       await showDone();
     } catch (e) {
       alert('제출 중 문제가 발생했습니다. 다시 시도해 주세요.');
+    }
+  }
+
+  // ── 인구통계 화면 ──────────────────────────────────────────────────────────
+  function renderDemographics() {
+    const fields = landing.survey.demographics || [];
+    document.getElementById('demoForm').innerHTML = fields.map(function (f) {
+      const saved = respondentAttributes[f.id];
+      let control = '';
+      if (f.type === 'single') {
+        control = (f.options || []).map(function (o) {
+          const on = String(saved) === String(o.code) ? ' checked' : '';
+          return '<label class="demo-choice"><input type="radio" name="demo_' + f.id + '" value="' + esc(o.code) + '"' + on + '> ' + esc(o.label) + '</label>';
+        }).join('');
+      } else if (f.type === 'multi') {
+        const set = Array.isArray(saved) ? saved.map(String) : [];
+        control = (f.options || []).map(function (o) {
+          const on = set.indexOf(String(o.code)) !== -1 ? ' checked' : '';
+          return '<label class="demo-choice"><input type="checkbox" name="demo_' + f.id + '" value="' + esc(o.code) + '"' + on + '> ' + esc(o.label) + '</label>';
+        }).join('');
+      } else if (f.type === 'number') {
+        control = '<input type="number" class="demo-input" data-fid="' + f.id + '" value="' + (saved != null ? esc(saved) : '') + '">';
+      } else {
+        control = '<input type="text" class="demo-input" data-fid="' + f.id + '" value="' + (saved != null ? esc(saved) : '') + '">';
+      }
+      return '<div class="demo-field" data-fid="' + f.id + '" data-type="' + f.type + '">' +
+        '<div class="demo-q">' + esc(f.label) + (f.required ? ' <span class="demo-req">*</span>' : '') + '</div>' +
+        control + '</div>';
+    }).join('');
+    document.getElementById('demoError').hidden = true;
+  }
+
+  function collectDemoAnswers() {
+    const out = {};
+    document.querySelectorAll('#demoForm .demo-field').forEach(function (el) {
+      const fid = el.dataset.fid;
+      const type = el.dataset.type;
+      if (type === 'single') {
+        const r = el.querySelector('input[type=radio]:checked');
+        if (r) out[fid] = r.value;
+      } else if (type === 'multi') {
+        const vals = Array.prototype.map.call(el.querySelectorAll('input[type=checkbox]:checked'), function (c) { return c.value; });
+        if (vals.length) out[fid] = vals;
+      } else {
+        const v = el.querySelector('.demo-input').value.trim();
+        if (v) out[fid] = v;
+      }
+    });
+    return out;
+  }
+
+  async function submitDemographics() {
+    const answersOut = collectDemoAnswers();
+    const btn = document.getElementById('demoSubmitBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/respond/' + accessToken + '/demographics', {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + respondentToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersOut }),
+      });
+      if (res.status === 401) { await handleTokenExpired(); return; }
+      const d = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        const el = document.getElementById('demoError');
+        el.textContent = d.detail || d.message || '저장에 실패했습니다.';
+        el.hidden = false;
+        return;
+      }
+      respondentAttributes = d.attributes || {};
+      demographicsDone = true;
+      await finishSurvey();
+    } catch (e) {
+      const el = document.getElementById('demoError');
+      el.textContent = '네트워크 오류로 저장하지 못했습니다.';
+      el.hidden = false;
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -694,6 +793,7 @@
 
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('prevBtn').addEventListener('click', goPrev);
+    document.getElementById('demoSubmitBtn').addEventListener('click', submitDemographics);
     document.getElementById('editAnswersBtn').addEventListener('click', function () {
       if (pendingReopenMatrixId) {
         const idx = questions.findIndex(function (q) { return q.matrix_id === pendingReopenMatrixId; });

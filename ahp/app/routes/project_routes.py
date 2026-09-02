@@ -29,6 +29,7 @@ DEFAULT_SETTINGS = {
     "scale": 9,  # 9 | 5
     "cr_threshold": 0.1,
     "cr_action": "warn",  # warn | block
+    "collect_demographics": "off",  # off | on — 켜면 설문지 하단에 인구통계 설계 패널
 }
 
 # 배포(수집 시작) 이후에는 방법론이 바뀌면 이미 받은 응답과 이후 응답의 계산

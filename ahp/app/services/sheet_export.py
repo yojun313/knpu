@@ -10,6 +10,7 @@ from openpyxl.styles import Font
 
 from app.services.csv_schema import CSV_COLUMNS, format_value
 from app.services.ahp_calc import pair_id
+from app.services.demographics import resolve_for_export
 
 
 def _header(ws, columns):
@@ -60,6 +61,7 @@ def build_workbook(
     nodes_by_uuid: dict,
     response_rows: list[list],
     results: dict | None,
+    respondents_by_id: dict | None = None,
 ) -> io.BytesIO:
     wb = Workbook()
 
@@ -108,6 +110,23 @@ def build_workbook(
     _header(ws4, CSV_COLUMNS)
     for row in response_rows:
         ws4.append(row)
+
+    demographics = survey.get("demographics", [])
+    if demographics and respondents_by_id:
+        ws_demo = wb.create_sheet("응답자 인구통계")
+        cols = ["respondent_id", "label"]
+        for f in demographics:
+            cols += [f"{f['label']}_code", f"{f['label']}_label"]
+        _header(ws_demo, cols)
+        for r in sorted(
+            respondents_by_id.values(), key=lambda d: d.get("created_at") or 0
+        ):
+            attrs = r.get("attributes", {})
+            row = [r["_id"], r.get("label", "")]
+            for f in demographics:
+                resolved = resolve_for_export(f, attrs.get(f["id"]))
+                row += [resolved["code"], resolved["label"]]
+            ws_demo.append(row)
 
     if results:
         ws5 = wb.create_sheet("결과")

@@ -1,8 +1,11 @@
-"""오프라인 응답 CSV의 가져오기/내보내기가 공유하는 열 구조.
+"""오프라인 응답 CSV의 열 구조·값 표기.
 
-PLAN.md 6.4: "인쇄 레이아웃과 CSV 열 구조를 1:1로 맞춘다 — 어긋나면 반입 때마다
-손으로 매핑해야 한다." 그래서 가져오기(entry_routes)와 내보내기(export_routes)가
-같은 이 파일을 참조해 열 이름과 값 표기가 절대 어긋나지 않게 한다.
+- **반입(entry_routes.import_csv)**: wide 형식 — 첫 열이 `respondent`, 이후 열마다
+  비교쌍 하나(`Q1. 부모: A vs B`). 응답자 한 명이 한 행이라 이름을 반복 입력하지
+  않는다. 열 순서는 설문지 매트릭스의 i<j 쌍 전역 순서이며, 반입 양식 생성
+  (export_routes.export_import_template_csv)·인쇄 설문지(print.js)가 같은 순서를 쓴다.
+- **내보내기(export_routes.export_responses_csv, sheet_export)**: long(tidy) 형식
+  `CSV_COLUMNS` — 분석·재현 패키지 용도라 그대로 둔다. 반입 소스로는 쓰지 않는다.
 
 값은 소수(0.333)와 분수(1/3) 표기를 둘 다 받는다 — 종이 설문에 흔히 분수로
 적혀 있기 때문이다.
@@ -12,7 +15,18 @@ from __future__ import annotations
 
 from fractions import Fraction
 
+# long(tidy) 내보내기 전용 열. 반입은 wide 형식이라 이 목록을 쓰지 않는다.
 CSV_COLUMNS = ["respondent", "parent", "item_a", "item_b", "value"]
+
+# wide 반입 양식의 첫 열 이름.
+RESPONDENT_COL = "respondent"
+
+
+def pair_column_label(n: int, parent: str, name_a: str, name_b: str) -> str:
+    """wide 반입 양식의 비교쌍 열 제목. 인쇄 설문지의 문항 번호(Qn)와 1:1로 맞춰
+    종이 → CSV 전사 시 열을 바로 찾게 한다. n은 설문지 전체를 통틀어 1부터.
+    파싱은 열 위치 기준이므로 이 문자열 자체는 사람이 읽는 용도일 뿐이다."""
+    return f"Q{n}. {parent}: {name_a} vs {name_b}"
 
 
 def parse_value(raw: str) -> float:

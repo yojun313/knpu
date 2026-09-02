@@ -44,6 +44,20 @@
   </div>
 
   <div id="matricesList"></div>
+
+  <div class="table-card" id="demographicsCard" style="margin-bottom:14px" hidden>
+    <div class="tc-head">
+      <span class="tc-title">인구통계 항목</span>
+      <button class="btn sm" id="addDemoFieldBtn">＋ 항목 추가</button>
+    </div>
+    <div style="padding:14px">
+      <p style="font-size:12px;color:var(--sidebar-muted);margin-bottom:12px">
+        모든 비교를 마친 뒤(온라인·실시간) 또는 설문지 맨 아래(종이)에서 수집합니다.
+        선택형은 보기와 코드를 미리 지정하면 그 코드로 저장·내보내집니다.</p>
+      <div id="demoFieldList"></div>
+      <button class="btn primary sm" id="saveDemoBtn" style="margin-top:12px">인구통계 설계 저장</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 {% block extra_scripts %}

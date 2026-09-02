@@ -335,6 +335,7 @@
     document.getElementById('setScale').value = String(data.settings.scale);
     document.getElementById('setCrThreshold').value = data.settings.cr_threshold;
     document.getElementById('setCrAction').value = data.settings.cr_action;
+    document.getElementById('setCollectDemographics').value = data.settings.collect_demographics || 'off';
 
     document.getElementById('settingsLockNotice').hidden = !data.locked;
     ['setAggregation', 'setWeightMethod', 'setAltLayer', 'setScale'].forEach(function (id) {
@@ -352,6 +353,7 @@
       scale: Number(document.getElementById('setScale').value),
       cr_threshold: Number(document.getElementById('setCrThreshold').value),
       cr_action: document.getElementById('setCrAction').value,
+      collect_demographics: document.getElementById('setCollectDemographics').value,
     };
     try {
       await ahpApi('/api/projects/' + projectId + '/settings', { method: 'PUT', body: body });
@@ -404,6 +406,14 @@
     document.addEventListener('keydown', function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveHierarchy(); }
     });
+
+    function downloadDiagram(format) {
+      if (!tree.nodes.length) { ahpToast('먼저 계층을 만들어 주세요', true); return; }
+      const title = (document.getElementById('projTitle').textContent || '계층도').trim();
+      window.AHPHierarchyDiagram.download(tree.nodes, { format: format, filename: title + '_계층도' });
+    }
+    document.getElementById('dlDiagramSvg').addEventListener('click', function () { downloadDiagram('svg'); });
+    document.getElementById('dlDiagramPng').addEventListener('click', function () { downloadDiagram('png'); });
 
     document.getElementById('nodeEditClose').addEventListener('click', function () {
       document.getElementById('nodeEditModal').hidden = true;
