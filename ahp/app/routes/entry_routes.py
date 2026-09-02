@@ -23,7 +23,8 @@ from app.services.ahp_calc import (
     derive_weights,
     IncompleteMatrixError,
 )
-from app.services.csv_schema import CSV_COLUMNS, parse_value, format_value
+from app.services.csv_schema import parse_value
+from app.services.demographics import coerce_attributes, validate_required
 from app.routes.collection_routes import _get_collection_checked
 
 router = APIRouter()
@@ -76,6 +77,11 @@ async def add_manual_respondent(collection_id: str, request: Request):
     }
     label = _dedupe_label(label, existing_labels)
 
+    survey, _nodes = await _survey_and_nodes(collection)
+    attributes, _errs = coerce_attributes(
+        survey.get("demographics", []), body.get("attributes") or {}
+    )
+
     rid = uuid.uuid4().hex
     doc = {
         "_id": rid,
@@ -84,7 +90,7 @@ async def add_manual_respondent(collection_id: str, request: Request):
         "label": label,
         "source": "manual",
         "status": "in_progress",
-        "attributes": body.get("attributes") or {},
+        "attributes": attributes,
         "consent_at": None,
         "created_at": _now(),
     }
@@ -102,6 +108,31 @@ async def add_manual_respondent(collection_id: str, request: Request):
         }
     )
     return {"id": rid, "label": label}
+
+
+@router.put("/api/entry/{collection_id}/respondents/{respondent_id}/demographics")
+async def set_manual_demographics(
+    collection_id: str, respondent_id: str, request: Request
+):
+    collection = await _get_collection_checked(collection_id, request)
+    r = await respondents_db.find_one(
+        {"_id": respondent_id, "collection_id": collection_id}
+    )
+    if not r:
+        raise HTTPException(404, "응답자를 찾을 수 없습니다")
+
+    survey, _nodes = await _survey_and_nodes(collection)
+    body = await request.json()
+    attributes, errors = coerce_attributes(
+        survey.get("demographics", []), body.get("answers") or {}
+    )
+    if errors:
+        raise HTTPException(400, " / ".join(errors[:5]))
+
+    await respondents_db.update_one(
+        {"_id": respondent_id}, {"$set": {"attributes": attributes}}
+    )
+    return {"attributes": attributes}
 
 
 @router.delete("/api/entry/{collection_id}/respondents/{respondent_id}")
@@ -196,11 +227,13 @@ async def get_grid(collection_id: str, request: Request):
 
     return {
         "matrices": matrices_out,
+        "demographics": survey.get("demographics", []),
         "respondents": [
             {
                 "id": r["_id"],
                 "label": r["label"],
                 "status": r.get("status", "in_progress"),
+                "attributes": r.get("attributes", {}),
                 "answers": _answers_in_display_order(
                     matrices_out, responses_by_rid.get(r["_id"], {})
                 ),
@@ -307,16 +340,16 @@ async def import_csv(
         raise HTTPException(400, "CSV 반입은 오프라인 수집에서만 지원합니다")
 
     survey, nodes_by_id = await _survey_and_nodes(collection)
-    matrices_by_parent_name = {}
+    demographics = survey.get("demographics", [])
+    n_demo = len(demographics)
+    # 반입 양식 열 순서와 1:1로 맞춘 비교쌍 슬롯(부모별 i<j 전역 순서).
+    # export_routes.export_import_template_csv·print.js와 같은 순서여야 한다.
+    slots = []  # (matrix_id, uuid_a, uuid_b)
     for m in survey["matrices"]:
-        parent_name = nodes_by_id.get(m["parent_uuid"], {}).get("name", "")
-        name_to_uuid = {
-            nodes_by_id.get(c, {}).get("name", c): c for c in m["child_uuids"]
-        }
-        matrices_by_parent_name[parent_name] = {
-            "matrix_id": m["matrix_id"],
-            "name_to_uuid": name_to_uuid,
-        }
+        cu = m["child_uuids"]
+        for i in range(len(cu)):
+            for j in range(i + 1, len(cu)):
+                slots.append((m["matrix_id"], cu[i], cu[j]))
 
     raw = await file.read()
     try:
@@ -324,44 +357,60 @@ async def import_csv(
     except UnicodeDecodeError:
         text = raw.decode("cp949", errors="replace")
 
-    reader = csv.DictReader(io.StringIO(text))
-    missing_cols = set(CSV_COLUMNS) - set(reader.fieldnames or [])
-    if missing_cols:
-        raise HTTPException(400, f"CSV에 필요한 열이 없습니다: {sorted(missing_cols)}")
-
-    errors, by_respondent = [], {}
-    for i, row in enumerate(reader, start=2):  # 1행은 헤더
-        label = (row.get("respondent") or "").strip()
-        parent = (row.get("parent") or "").strip()
-        item_a = (row.get("item_a") or "").strip()
-        item_b = (row.get("item_b") or "").strip()
-        if not (label and parent and item_a and item_b):
-            errors.append(
-                f"{i}행: respondent/parent/item_a/item_b 중 비어 있는 값이 있습니다"
-            )
-            continue
-
-        m_info = matrices_by_parent_name.get(parent)
-        if not m_info:
-            errors.append(f"{i}행: '{parent}' 기준을 찾을 수 없습니다")
-            continue
-        uuid_a = m_info["name_to_uuid"].get(item_a)
-        uuid_b = m_info["name_to_uuid"].get(item_b)
-        if not uuid_a or not uuid_b:
-            errors.append(
-                f"{i}행: '{parent}' 아래에서 '{item_a}' 또는 '{item_b}'를 찾을 수 없습니다"
-            )
-            continue
-        try:
-            value = parse_value(row.get("value", ""))
-        except ValueError as e:
-            errors.append(f"{i}행: {e}")
-            continue
-
-        pid, stored = to_stored_pair(uuid_a, uuid_b, value)
-        by_respondent.setdefault(label, {}).setdefault(m_info["matrix_id"], {})[pid] = (
-            stored
+    rows = list(csv.reader(io.StringIO(text)))
+    if not rows:
+        raise HTTPException(400, "빈 CSV 파일입니다")
+    header = rows[0]
+    while header and not header[-1].strip():  # 엑셀이 붙이는 후행 빈 열 제거
+        header.pop()
+    # 열 배치: [respondent] + [인구통계 n_demo개] + [비교쌍 len(slots)개]
+    data_cols = len(header) - 1
+    expected = n_demo + len(slots)
+    if data_cols != expected:
+        raise HTTPException(
+            400,
+            f"양식 열 개수가 설문지와 다릅니다 (설문지 {expected}개"
+            f"{f' = 인구통계 {n_demo} + 비교 {len(slots)}' if n_demo else ''} / 파일 "
+            f"{max(data_cols, 0)}개). 최신 양식을 다시 받아 주세요.",
         )
+
+    errors, by_respondent, demo_by_respondent = [], {}, {}
+    for i, row in enumerate(rows[1:], start=2):  # 1행은 헤더
+        if not any(cell.strip() for cell in row):
+            continue  # 완전히 빈 행
+        label = row[0].strip() if row else ""
+        if not label:
+            errors.append(f"{i}행: 첫 열(응답자)이 비어 있습니다")
+            continue
+
+        # 인구통계 열(있으면) — respondent 다음 n_demo개
+        raw_attrs = {}
+        for d, field in enumerate(demographics):
+            cell = row[1 + d].strip() if 1 + d < len(row) else ""
+            if cell:
+                raw_attrs[field["id"]] = cell
+        attrs, attr_errs = coerce_attributes(demographics, raw_attrs)
+        for e in attr_errs:
+            errors.append(f"{i}행: {e}")
+        demo_by_respondent[label] = attrs
+
+        got = 0
+        base = 1 + n_demo  # 비교쌍 첫 열 인덱스
+        for k, (matrix_id, uuid_a, uuid_b) in enumerate(slots):
+            cell = row[base + k].strip() if base + k < len(row) else ""
+            if not cell:
+                continue  # 그 쌍은 미입력 — 부분 응답 허용
+            try:
+                value = parse_value(cell)
+            except ValueError as e:
+                col = header[base + k] if base + k < len(header) else f"열{base + k + 1}"
+                errors.append(f"{i}행 [{col}]: {e}")
+                continue
+            pid, stored = to_stored_pair(uuid_a, uuid_b, value)
+            by_respondent.setdefault(label, {}).setdefault(matrix_id, {})[pid] = stored
+            got += 1
+        if got == 0:
+            errors.append(f"{i}행: '{label}' 행에 비교값이 하나도 없습니다")
 
     if errors:
         return {"status": "error", "errors": errors[:50], "error_count": len(errors)}
@@ -374,8 +423,8 @@ async def import_csv(
     }
 
     created = []
-    for label, answers in by_respondent.items():
-        label = _dedupe_label(label, existing_labels)
+    for orig_label, answers in by_respondent.items():
+        label = _dedupe_label(orig_label, existing_labels)
         existing_labels.add(label)
         rid = uuid.uuid4().hex
         await respondents_db.insert_one(
@@ -386,7 +435,7 @@ async def import_csv(
                 "label": label,
                 "source": "manual",
                 "status": "submitted",
-                "attributes": {},
+                "attributes": demo_by_respondent.get(orig_label, {}),
                 "consent_at": None,
                 "created_at": _now(),
             }

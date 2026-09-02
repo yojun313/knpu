@@ -69,6 +69,8 @@ news_db = homepage_db["news"]
 papers_db = homepage_db["papers"]
 gallery_db = homepage_db["gallery"]
 popup_db = homepage_db["popups"]
+admission_faq_db = homepage_db["admission-faq"]
+admission_faq_categories_db = homepage_db["admission-faq-categories"]
 
 # ── 세션 / 봇 설정 ──
 sessions_db = systems_db["sessions"]

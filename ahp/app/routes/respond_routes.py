@@ -28,6 +28,7 @@ from app.services.ahp_calc import (
 )
 from app.services.hub import hub
 from app.services.consistency import worst_offending_pairs
+from app.services.demographics import coerce_attributes, validate_required
 
 router = APIRouter()
 
@@ -119,6 +120,11 @@ async def respond_landing(token: str):
             .get("settings", {})
             .get("cr_threshold", 0.1),
             "cr_action": (project or {}).get("settings", {}).get("cr_action", "warn"),
+            "collect_demographics": (project or {})
+            .get("settings", {})
+            .get("collect_demographics", "off")
+            == "on",
+            "demographics": survey.get("demographics", []),
             "matrices": _build_matrices_view(survey, nodes_by_id),
         },
     }
@@ -218,6 +224,7 @@ async def respond_me(token: str, request: Request):
             "id": respondent["_id"],
             "label": respondent["label"],
             "status": respondent.get("status", "in_progress"),
+            "attributes": respondent.get("attributes", {}),
         },
         "answers": _resolve_display_answers(
             matrices_view, resp.get("answers", {}) if resp else {}
@@ -327,6 +334,32 @@ async def put_answer(token: str, request: Request):
     )
 
     return {"ack": client_seq, "progress": progress, **cr_info}
+
+
+@router.put("/api/respond/{token}/demographics")
+async def put_demographics(token: str, request: Request):
+    """모든 비교를 마친 뒤 제출 직전에 응답자가 입력하는 인구통계 정보.
+    respondents.attributes 에 코드 기반으로 저장한다."""
+    payload = current_respondent(request)
+    collection = await _collection_by_token(token)
+    if collection["_id"] != payload["collection_id"]:
+        raise HTTPException(403, "이 링크의 응답자가 아닙니다")
+
+    survey = await surveys_db.find_one({"_id": collection["survey_id"]})
+    demographics = (survey or {}).get("demographics", [])
+
+    body = await request.json()
+    attributes, errors = coerce_attributes(demographics, body.get("answers") or {})
+    if errors:
+        raise HTTPException(400, " / ".join(errors[:5]))
+    missing = validate_required(demographics, attributes)
+    if missing:
+        raise HTTPException(400, f"필수 항목을 입력해 주세요: {', '.join(missing)}")
+
+    await respondents_db.update_one(
+        {"_id": payload["respondent_id"]}, {"$set": {"attributes": attributes}}
+    )
+    return {"attributes": attributes}
 
 
 @router.post("/api/respond/{token}/submit")

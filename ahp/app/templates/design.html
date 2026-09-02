@@ -27,8 +27,14 @@
   <div id="warningsBox"></div>
 
   <div class="table-card" id="diagramCard" style="margin-bottom:14px">
-    <div class="tc-head"><span class="tc-title">계층도</span>
-      <span class="tc-meta">편집하는 동안 계속 갱신됩니다</span></div>
+    <div class="tc-head">
+      <span class="tc-title">계층도</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="tc-meta">편집하는 동안 계속 갱신됩니다</span>
+        <button class="btn sm" id="dlDiagramSvg" title="논문·편집용 벡터 SVG로 저장">SVG</button>
+        <button class="btn sm" id="dlDiagramPng" title="PNG 이미지로 저장">PNG</button>
+      </span>
+    </div>
     <div id="diagramContainer" class="hd-scroll"></div>
   </div>
 
@@ -143,6 +149,13 @@
       <select id="setCrAction">
         <option value="warn">경고만 (기본값)</option>
         <option value="block">제출 차단</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>인구통계 수집</label>
+      <select id="setCollectDemographics">
+        <option value="off">사용 안 함 (기본값)</option>
+        <option value="on">사용 — 설문지 하단에서 항목 설계</option>
       </select>
     </div>
     <button class="btn primary" id="settingsSave" style="width:100%">저장</button>

@@ -141,6 +141,23 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
 
                 doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
+    demographics = survey.get("demographics", [])
+    if demographics:
+        doc.add_paragraph()
+        h = doc.add_heading("인구통계 정보", level=1)
+        h.paragraph_format.keep_with_next = True
+        doc.add_paragraph("아래 항목에 응답해 주세요.")
+        for f in demographics:
+            p = doc.add_paragraph()
+            p.paragraph_format.keep_with_next = True
+            run = p.add_run(f["label"] + ("  (필수)" if f.get("required") else ""))
+            run.bold = True
+            if f["type"] in ("single", "multi"):
+                for o in f.get("options", []):
+                    doc.add_paragraph(f"☐ {o['label']}")
+            else:
+                doc.add_paragraph("__________________________________")
+
     buf = io.BytesIO()
     doc.save(buf)
     buf.seek(0)

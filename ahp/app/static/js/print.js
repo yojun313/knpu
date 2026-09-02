@@ -21,6 +21,14 @@
     if (survey.consent_text) parts.push('<div class="sv-consent">' + esc(survey.consent_text) + '</div>');
     parts.push('<div class="sv-meta">응답자: ______________________&nbsp;&nbsp;&nbsp; 소속/경력: ______________________&nbsp;&nbsp;&nbsp; 일자: ______________________</div>');
 
+    if (data.nodes_tree && data.nodes_tree.length && window.AHPHierarchyDiagram) {
+      var diagramSvg = window.AHPHierarchyDiagram.toSVGString(data.nodes_tree)
+        .replace(/^<\?xml[^>]*\?>\s*/, '');
+      parts.push('<div class="sv-diagram">' + diagramSvg + '</div>');
+    }
+
+    // 설문지 전체를 통틀어 매기는 문항 번호 — 반입 CSV의 열 제목(Q1, Q2, …)과 1:1.
+    let qNum = 0;
     survey.matrices.forEach(function (m) {
       const parentName = (nodes[m.parent_uuid] || {}).name || '';
       const parentDesc = survey.node_descriptions[m.parent_uuid] || '';
@@ -31,10 +39,12 @@
       const children = m.child_uuids;
       for (let i = 0; i < children.length; i++) {
         for (let j = i + 1; j < children.length; j++) {
+          qNum += 1;
           const nameA = (nodes[children[i]] || {}).name || children[i];
           const nameB = (nodes[children[j]] || {}).name || children[j];
           const descA = survey.node_descriptions[children[i]] || '';
           const descB = survey.node_descriptions[children[j]] || '';
+          block += '<div class="pair-q">Q' + qNum + '.</div>';
           if (descA || descB) {
             block += '<div class="pair-desc"><span>' + (descA ? esc(nameA) + ': ' + esc(descA) : '') + '</span>' +
               '<span>' + (descB ? esc(nameB) + ': ' + esc(descB) : '') + '</span></div>';
@@ -49,6 +59,26 @@
       block += '</div>';
       parts.push(block);
     });
+
+    const demographics = survey.demographics || [];
+    if (demographics.length) {
+      let demo = '<div class="demo-block"><h2>인구통계 정보</h2>' +
+        '<div class="mb-q">아래 항목에 응답해 주세요.</div>';
+      demographics.forEach(function (f) {
+        demo += '<div class="demo-field"><div class="demo-label">' + esc(f.label) +
+          (f.required ? ' <span class="demo-req">(필수)</span>' : '') + '</div>';
+        if (f.type === 'single' || f.type === 'multi') {
+          demo += '<div class="demo-opts">' + (f.options || []).map(function (o) {
+            return '<span class="demo-opt">☐ ' + esc(o.label) + '</span>';
+          }).join('') + '</div>';
+        } else {
+          demo += '<div class="demo-blank">&nbsp;</div>';
+        }
+        demo += '</div>';
+      });
+      demo += '</div>';
+      parts.push(demo);
+    }
 
     document.getElementById('sheet').innerHTML = parts.join('');
   }
