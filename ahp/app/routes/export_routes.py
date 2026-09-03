@@ -11,10 +11,12 @@ from app.routes.result_routes import (
     _get_project_checked,
     _canonical_survey_and_hierarchy,
     _gather_final_submissions,
+    _gather_respondents,
 )
 from app.services.docx_export import build_survey_docx
 from app.services.sheet_export import build_workbook, build_response_rows
-from app.services.csv_schema import CSV_COLUMNS
+from app.services.csv_schema import CSV_COLUMNS, RESPONDENT_COL, pair_column_label
+from app.services.demographics import column_labels as demo_column_labels, resolve_for_export
 from app.services.result_service import build_results
 
 router = APIRouter()
@@ -54,8 +56,12 @@ async def export_package_xlsx(
     project = await _get_project_checked(project_id, request)
     survey, hierarchy = await _canonical_survey_and_hierarchy(project_id)
     nodes_by_uuid = _nodes_by_uuid(hierarchy)
-    submissions = await _gather_final_submissions(
-        project_id, [collection_id] if collection_id else None
+    cids = [collection_id] if collection_id else None
+    submissions = await _gather_final_submissions(project_id, cids)
+    respondents_by_id = (
+        await _gather_respondents(project_id, cids)
+        if survey.get("demographics")
+        else {}
     )
 
     response_rows = build_response_rows(survey["matrices"], nodes_by_uuid, submissions)
@@ -71,7 +77,8 @@ async def export_package_xlsx(
     )
 
     buf = build_workbook(
-        project, hierarchy, survey, nodes_by_uuid, response_rows, results
+        project, hierarchy, survey, nodes_by_uuid, response_rows, results,
+        respondents_by_id=respondents_by_id,
     )
     return Response(
         content=buf.read(),
@@ -82,40 +89,78 @@ async def export_package_xlsx(
 
 @router.get("/api/export/{project_id}/import-template.csv")
 async def export_import_template_csv(project_id: str, request: Request):
-    """오프라인 반입용 빈 양식 — csv_schema.CSV_COLUMNS와 1:1로 맞춘 헤더에
-    parent/item_a/item_b만 현재 설문지 기준으로 미리 채우고 respondent/value는
-    빈 칸으로 남긴다. 반입(entry_routes.import_csv)이 기대하는 열 구조와
-    반드시 같아야 하므로 그 열거 로직(부모별 쌍 i<j)을 그대로 따라간다."""
+    """오프라인 반입용 빈 양식 — wide 형식. 열 배치는
+    `[respondent] + [인구통계 항목들] + [Q1. 부모: A vs B, ...]`.
+    응답자 한 명이 한 행이라 이름을 반복 입력하지 않는다. 비교쌍 열 순서(부모별 i<j
+    전역 순서)는 entry_routes.import_csv의 슬롯 순서, print.js의 문항 번호와 같아야 한다."""
     project = await _get_project_checked(project_id, request)
     survey, hierarchy = await _canonical_survey_and_hierarchy(project_id)
     nodes_by_uuid = _nodes_by_uuid(hierarchy)
 
-    rows = []
+    header = [RESPONDENT_COL] + demo_column_labels(survey.get("demographics", []))
+    n = 0
     for m in survey["matrices"]:
         child_uuids = m["child_uuids"]
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
         for i in range(len(child_uuids)):
             for j in range(i + 1, len(child_uuids)):
                 a, b = child_uuids[i], child_uuids[j]
-                rows.append(
-                    [
-                        "",
+                n += 1
+                header.append(
+                    pair_column_label(
+                        n,
                         parent_name,
                         nodes_by_uuid.get(a, {}).get("name", a),
                         nodes_by_uuid.get(b, {}).get("name", b),
-                        "",
-                    ]
+                    )
                 )
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(CSV_COLUMNS)
-    writer.writerows(rows)
+    writer.writerow(header)  # 데이터 행 없음 — 응답자별로 한 줄씩 직접 추가
 
     return Response(
         content="﻿" + buf.getvalue(),
         media_type="text/csv",
         headers=_download_headers(f"{project['title']}_반입양식.csv"),
+    )
+
+
+@router.get("/api/export/{project_id}/demographics.csv")
+async def export_demographics_csv(
+    project_id: str, request: Request, collection_id: str | None = Query(None)
+):
+    """응답자별 인구통계 코딩 데이터 — respondent_id,label + 항목마다 코드/라벨 열."""
+    project = await _get_project_checked(project_id, request)
+    survey, _hierarchy = await _canonical_survey_and_hierarchy(project_id)
+    demographics = survey.get("demographics", [])
+    respondents = await _gather_respondents(
+        project_id, [collection_id] if collection_id else None
+    )
+
+    columns = ["respondent_id", "label"]
+    for f in demographics:
+        columns.append(f"{f['label']}_code")
+        columns.append(f"{f['label']}_label")
+
+    rows = []
+    for r in sorted(respondents.values(), key=lambda d: d.get("created_at") or 0):
+        attrs = r.get("attributes", {})
+        row = [r["_id"], r.get("label", "")]
+        for f in demographics:
+            resolved = resolve_for_export(f, attrs.get(f["id"]))
+            row.append(resolved["code"])
+            row.append(resolved["label"])
+        rows.append(row)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(columns)
+    writer.writerows(rows)
+    return Response(
+        content="﻿" + buf.getvalue(),
+        media_type="text/csv",
+        headers=_download_headers(f"{project['title']}_인구통계.csv"),
     )
 
 

@@ -5,35 +5,25 @@
   const STORAGE_TOKEN_KEY = 'ahp_respondent_token_' + accessToken;
   const STORAGE_QUEUE_KEY = 'ahp_queue_' + accessToken;
   const STORAGE_SEQ_KEY = 'ahp_seq_' + accessToken;
-
-  // 5점 축약형은 "최대 강도를 5로 낮춘 다른 척도"가 아니라, 같은 1~9 비율
-  // 척도에서 선택지 수만 줄인 것이다(홀수 지점만 제시). 최대 강도는 여전히
-  // 9이고, 그래야 CI/CR·RI 표 등 계산 계층이 흔들리지 않는다.
-  const INTENSITY_LEVELS_BY_SCALE = { 9: [2, 3, 4, 5, 6, 7, 8, 9], 5: [3, 5, 7, 9] };
-  const INTENSITY_LABELS = {
-    2: '약간~보통 사이', 3: '약간 더 중요', 4: '보통~강함 사이', 5: '강하게 중요',
-    6: '강함~매우 사이', 7: '매우 중요', 8: '매우~절대 사이', 9: '절대적으로 중요',
-  };
+  const STORAGE_SUBMITTED_KEY = 'ahp_submitted_' + accessToken;
 
   let landing = null;
   let respondentToken = localStorage.getItem(STORAGE_TOKEN_KEY);
   let pendingReopenMatrixId = null;
-  let questions = [];
-  // 실시간 모드에서 지금 이 화면에 보여줄 문항 부분집합 — 그 외 모드에서는 항상
-  // questions 전체와 같다(섹션 게이팅이 없으니까). goNext/renderQuestion 등
-  // 설문 진행 로직은 전부 questions가 아니라 이걸 봐야 한다.
-  let activeList = [];
-  let currentIndex = 0;
+  let questions = [];            // 평탄한 쌍 목록(리뷰·이름조회용)
+  let activeMatrices = [];       // 현재 흐름에서 보여줄 기준(matrix) 뷰 목록
+  let currentMatrixIndex = 0;
+  // answers 키 = matrixId + '::' + pairId  — 대안 비교 행렬은 matrix_id만 다르고
+  // child_uuids(대안 uuid)는 모든 leaf에서 같아서, pairId 하나로만 keying하면
+  // 첫 대안 평가가 나머지에 그대로 복사된다(이 파일 이전 버전의 버그).
   let answers = {};
+  let respondentAttributes = {};
+  let demographicsDone = false;
+  let everSubmitted = localStorage.getItem(STORAGE_SUBMITTED_KEY) === '1';
   let matrixCrCache = {};
   let clientSeq = Number(localStorage.getItem(STORAGE_SEQ_KEY) || 0);
-  let pendingSide = null;
-  let pendingIntensity = null;
-  let reviewMatrixId = null;
-  let reviewWorstPid = null;
-  // 연구자가 "재조정 요청"을 보낸 섹션 — 설정돼 있으면 지금 열린 섹션이 아니어도
-  // 이 매트릭스만은 다시 응답할 수 있다(요청사항 5단계).
   let revisionMatrixId = null;
+  let revisionWorst = [];        // 진행자가 재조정 요청 시 함께 받은 문제 쌍
 
   const STORAGE_SECTIONS_DONE_KEY = 'ahp_sections_done_' + accessToken;
   function loadSectionsDone() {
@@ -50,7 +40,7 @@
 
   function views() {
     return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone',
-      'viewReview', 'viewWaitStart', 'viewSectionWait'];
+      'viewReview', 'viewWaitStart', 'viewSectionWait', 'viewDemographics'];
   }
   function show(id) { views().forEach(function (v) { document.getElementById(v).hidden = (v !== id); }); }
   function showError(title, msg) {
@@ -59,13 +49,21 @@
     show('viewError');
   }
   function pairId(a, b) { return [a, b].sort().join(':'); }
+  function answerKey(matrixId, a, b) { return matrixId + '::' + pairId(a, b); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  // A-over-B 값(예: 3, 1/3)을 사람이 읽는 응답형 문자열로.
+  function fmtValue(v) {
+    if (v == null) return '';
+    if (Math.abs(v - 1) < 1e-9) return '1';
+    if (v > 1) return String(Math.round(v));
+    return '1/' + String(Math.round(1 / v));
+  }
 
-  // ── 저장 큐(네트워크 문제에도 입력을 잃지 않는다, PLAN.md 4.6) ─────────────
+  // ── 저장 큐 ──────────────────────────────────────────────────────────────
   function loadQueue() {
     try { return JSON.parse(localStorage.getItem(STORAGE_QUEUE_KEY) || '[]'); } catch (e) { return []; }
   }
@@ -111,6 +109,7 @@
       }
     } finally {
       flushing = false;
+      refreshCrBar();
     }
   }
 
@@ -155,14 +154,25 @@
           name_a: a ? a.name : p.uuid_a, name_b: b ? b.name : p.uuid_b,
           desc_a: (a && a.description) || '', desc_b: (b && b.description) || '',
           is_alternative: !!m.is_alternative,
-          is_last_in_matrix: false,
         });
       });
     });
-    const seen = {};
-    for (let i = questions.length - 1; i >= 0; i--) {
-      if (!seen[questions[i].matrix_id]) { questions[i].is_last_in_matrix = true; seen[questions[i].matrix_id] = true; }
-    }
+  }
+
+  function matrixView(matrixId) {
+    return landing.survey.matrices.find(function (m) { return m.matrix_id === matrixId; });
+  }
+  function pairsOfMatrix(matrixId) {
+    return questions.filter(function (q) { return q.matrix_id === matrixId; });
+  }
+
+  function mergeServerAnswers(serverAnswers) {
+    // serverAnswers: { matrix_id: { pair_id: value } } — 표시 방향으로 이미 해석돼 옴.
+    Object.keys(serverAnswers || {}).forEach(function (mid) {
+      Object.keys(serverAnswers[mid]).forEach(function (pid) {
+        answers[mid + '::' + pid] = serverAnswers[mid][pid];
+      });
+    });
   }
 
   function renderConsent() {
@@ -182,48 +192,52 @@
       if (!res.ok) throw new Error('resume failed');
       const me = await res.json();
       answers = {};
-      Object.keys(me.answers).forEach(function (mid) { Object.assign(answers, me.answers[mid]); });
+      mergeServerAnswers(me.answers);
       clientSeq = me.client_seq || clientSeq;
+      respondentAttributes = me.respondent.attributes || {};
+      if (me.respondent.status === 'submitted' || Object.keys(respondentAttributes).length) {
+        demographicsDone = true;
+      }
+      if (me.respondent.status === 'submitted') { everSubmitted = true; localStorage.setItem(STORAGE_SUBMITTED_KEY, '1'); }
       if (me.respondent.status === 'submitted') { await showDone(); return; }
       if (landing.collection.mode === 'realtime') { enterRealtimeFlow(); return; }
-      activeList = questions;
-      currentIndex = computeResumeIndex(activeList);
+      buildActiveMatrices();
+      currentMatrixIndex = firstIncompleteMatrixIndex();
       startSurvey();
     } catch (e) {
       renderConsent();
     }
   }
 
-  // 다음에 보여줄 문항 인덱스 — 답 없는 첫 문항, 전부 채워져 있으면 마지막
-  // 문항에 머문다(제출 전 다시 훑어볼 수 있게).
-  function computeResumeIndex(list) {
-    const idx = list.findIndex(function (q) { return currentValueForQuestion(q) === null; });
-    return idx === -1 ? (list.length ? list.length - 1 : 0) : idx;
-  }
-
-  // 실시간 모드에서 "지금 무엇을 보여줘야 하는가"를 한 곳에서 결정한다 —
-  // 세션 시작 전(대기), 재조정 요청을 받은 섹션(즉시 그 섹션), 현재 열린
-  // 섹션을 이미 마쳤으면(대기), 아니면 그 섹션의 남은 문항부터.
-  function refreshActiveList() {
-    if (landing.collection.mode !== 'realtime') { activeList = questions; return; }
-    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
-    activeList = questions.filter(function (q) { return q.matrix_id === targetId; });
-  }
-
-  function enterRealtimeFlow() {
-    refreshActiveList();
-    if (!landing.collection.session_started) { showWaitStart(); return; }
-    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
-    if (!targetId) {
-      // active_matrix_id가 없다 = 마지막 섹션까지 이미 넘어갔다는 뜻(서버 상태
-      // 기준) — 보통은 section.advanced의 done 알림으로 곧장 제출까지 끝나지만,
-      // 그 알림을 놓치고 재접속한 경우에도 대기 화면에 갇히지 않도록 여기서도
-      // 같은 마무리를 한 번 더 시도한다.
-      finishSurvey();
+  function buildActiveMatrices() {
+    if (landing.collection.mode !== 'realtime') {
+      activeMatrices = landing.survey.matrices.slice();
       return;
     }
+    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
+    activeMatrices = landing.survey.matrices.filter(function (m) { return m.matrix_id === targetId; });
+  }
+
+  function pairValue(q) {
+    const k = answerKey(q.matrix_id, q.uuid_a, q.uuid_b);
+    return (k in answers) ? answers[k] : null;
+  }
+  function matrixComplete(m) {
+    return pairsOfMatrix(m.matrix_id).every(function (q) { return pairValue(q) !== null; });
+  }
+  function firstIncompleteMatrixIndex() {
+    const i = activeMatrices.findIndex(function (m) { return !matrixComplete(m); });
+    return i === -1 ? Math.max(0, activeMatrices.length - 1) : i;
+  }
+
+  // ── 실시간 흐름 ──────────────────────────────────────────────────────────
+  function enterRealtimeFlow() {
+    buildActiveMatrices();
+    if (!landing.collection.session_started) { showWaitStart(); return; }
+    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
+    if (!targetId) { finishSurvey(); return; }
     if (!revisionMatrixId && isSectionDone(targetId)) { showSectionWait(); return; }
-    currentIndex = computeResumeIndex(activeList);
+    currentMatrixIndex = 0;
     startSurvey();
   }
 
@@ -246,10 +260,10 @@
       const data = await res.json();
       respondentToken = data.token;
       localStorage.setItem(STORAGE_TOKEN_KEY, respondentToken);
-      currentIndex = 0;
       answers = {};
       if (landing.collection.mode === 'realtime') { enterRealtimeFlow(); return; }
-      activeList = questions;
+      buildActiveMatrices();
+      currentMatrixIndex = 0;
       startSurvey();
     } catch (e) {
       errEl.textContent = '연결에 실패했습니다. 다시 시도해 주세요';
@@ -262,19 +276,125 @@
   // ── 설문 화면 ──────────────────────────────────────────────────────────
   function startSurvey() {
     show('viewSurvey');
-    renderQuestion();
+    renderHierarchyOnce();
+    renderMatrixPage();
     connectRealtimeIfNeeded();
   }
 
-  function showWaitStart() {
-    show('viewWaitStart');
-    connectRealtimeIfNeeded();
+  let hierarchyRendered = false;
+  function renderHierarchyOnce() {
+    if (hierarchyRendered) return;
+    const nodes = (landing.survey.hierarchy_nodes || []);
+    if (!nodes.length || !window.AHPHierarchyDiagram) { document.querySelector('.hd-card').hidden = true; return; }
+    window.AHPHierarchyDiagram.render(document.getElementById('hdCanvas'), nodes);
+    hierarchyRendered = true;
   }
 
+  // 17칸 가로 눈금: 왼쪽 9..2 = A가 n배(value=n), 가운데 1, 오른쪽 2..9 = B가 n배(value=1/n).
+  function scaleCells() {
+    const out = [];
+    for (let n = 9; n >= 2; n--) out.push({ v: n, txt: String(n), side: 'a' });
+    out.push({ v: 1, txt: '1', side: 'eq' });
+    for (let n = 2; n <= 9; n++) out.push({ v: 1 / n, txt: String(n), side: 'b' });
+    return out;
+  }
+  const SCALE_CELLS = scaleCells();
+
+  // q: {matrix_id, uuid_a, uuid_b, name_a, name_b, desc_a, desc_b, is_alternative}
+  function renderPairScaleRow(q, opts) {
+    opts = opts || {};
+    const cur = opts.value !== undefined ? opts.value : pairValue(q);
+    const cells = SCALE_CELLS.map(function (c) {
+      const on = cur != null && Math.abs(c.v - cur) < 1e-9;
+      return '<button type="button" class="scale-cell' + (c.side === 'eq' ? ' eq' : '') +
+        (on ? ' on' : '') + '" data-v="' + c.v + '">' + c.txt + '</button>';
+    }).join('');
+    const descLine = (q.desc_a || q.desc_b)
+      ? '<div class="pair-desc"><span>' + (q.desc_a ? esc(q.name_a) + ': ' + esc(q.desc_a) : '') + '</span>' +
+        '<span>' + (q.desc_b ? esc(q.name_b) + ': ' + esc(q.desc_b) : '') + '</span></div>'
+      : '';
+    const badge = opts.suggestBadge
+      ? '<div class="pair-suggest">⚠ 가장 모순적인 응답 · 추천 ' +
+        (opts.given ? esc(opts.given) + ' → ' : '') + '<b>' + esc(opts.suggest) + '</b></div>'
+      : '';
+    return '<div class="pair-row' + (opts.worst ? ' worst' : '') + '" data-mid="' + q.matrix_id +
+      '" data-a="' + q.uuid_a + '" data-b="' + q.uuid_b + '">' +
+      '<div class="pair-names"><span>' + esc(q.name_a) + '</span><span>' + esc(q.name_b) + '</span></div>' +
+      descLine + badge +
+      '<div class="pair-dir"><span>◀ ‘' + esc(q.name_a) + '’이 더 중요</span>' +
+      '<span>‘' + esc(q.name_b) + '’이 더 중요 ▶</span></div>' +
+      '<div class="scale">' + cells + '</div></div>';
+  }
+
+  function renderMatrixPage() {
+    const m = activeMatrices[currentMatrixIndex];
+    if (!m) return;
+    document.getElementById('qParentName').textContent = (m.is_alternative ? '대안 비교 · ' : '') + m.parent_name;
+    document.getElementById('qParentDesc').textContent = m.parent_description || '';
+    document.getElementById('qParentDesc').hidden = !m.parent_description;
+    document.getElementById('qQuestionText').textContent = m.question_text;
+    document.getElementById('pairList').innerHTML = pairsOfMatrix(m.matrix_id)
+      .map(function (q) { return renderPairScaleRow(q); }).join('');
+    document.getElementById('qCounter').textContent =
+      (currentMatrixIndex + 1) + ' / ' + activeMatrices.length + ' 기준';
+    document.getElementById('prevBtn').disabled = currentMatrixIndex === 0;
+    updateNav();
+    updateProgress();
+    refreshCrBar();
+  }
+
+  function updateNav() {
+    const isRealtime = landing.collection.mode === 'realtime';
+    const isLast = currentMatrixIndex === activeMatrices.length - 1;
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    nextBtn.hidden = isLast && !isRealtime;
+    nextBtn.textContent = isLast ? (isRealtime ? '완료' : '다음') : '다음';
+    submitBtn.hidden = isRealtime;
+    if (!isRealtime) {
+      const allDone = activeMatrices.every(matrixComplete);
+      submitBtn.disabled = !allDone;
+      submitBtn.classList.toggle('ready', allDone);
+    }
+  }
+
+  function updateProgress() {
+    let total = 0, done = 0;
+    activeMatrices.forEach(function (m) {
+      pairsOfMatrix(m.matrix_id).forEach(function (q) { total += 1; if (pairValue(q) !== null) done += 1; });
+    });
+    const pct = total ? Math.round(100 * done / total) : 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = pct + '% 완료';
+  }
+
+  function crState(cr) {
+    const th = landing.survey.cr_threshold || 0.1;
+    if (cr == null) return { cls: '', txt: '-' };
+    return { cls: cr <= th ? 'ok' : 'bad', txt: 'CR ' + cr.toFixed(3) + (cr <= th ? ' · 양호' : ' · 주의') };
+  }
+  function refreshCrBar() { renderCrBar(document.getElementById('matrixCrBar')); }
+  function renderCrBar(el) {
+    if (!el) return;
+    if (document.getElementById('viewSurvey').hidden) { el.hidden = true; return; }
+    const m = activeMatrices[currentMatrixIndex];
+    if (!m || m.children.length < 3) { el.hidden = true; return; }
+    if (!everSubmitted) {
+      el.hidden = false; el.className = 'cr-bar muted';
+      el.textContent = '일관성(CR)은 제출 후 공개됩니다';
+      return;
+    }
+    const info = matrixCrCache[m.matrix_id];
+    const s = crState(info && info.complete ? info.cr : null);
+    el.hidden = false;
+    el.className = 'cr-bar ' + s.cls;
+    el.textContent = '이 기준 ' + (info && info.complete ? s.txt : 'CR: 응답 완료 후 표시');
+  }
+
+  function showWaitStart() { show('viewWaitStart'); connectRealtimeIfNeeded(); }
   function showSectionWait() {
     const box = document.getElementById('sectionWaitResults');
-    box.innerHTML = '';
-    box.hidden = true;
+    box.innerHTML = ''; box.hidden = true;
     show('viewSectionWait');
     connectRealtimeIfNeeded();
   }
@@ -292,8 +412,7 @@
     if (msg.matrix_id !== (revisionMatrixId || landing.collection.active_matrix_id)) return;
     const box = document.getElementById('sectionWaitResults');
     const cr = isIndividual ? msg.cr : msg.avg_cr;
-    const crLine = (cr === null || cr === undefined) ? '' :
-      '<div class="swr-cr">CR ' + cr.toFixed(3) + '</div>';
+    const crLine = (cr == null) ? '' : '<div class="swr-cr">CR ' + cr.toFixed(3) + '</div>';
     const rows = Object.keys(msg.weights || {})
       .sort(function (a, b) { return msg.weights[b] - msg.weights[a]; })
       .map(function (uuid) {
@@ -304,9 +423,7 @@
     box.hidden = false;
   }
 
-  // ── 실시간 수신 전용 소켓 (PLAN.md 7.2) ────────────────────────────────
-  // 응답 저장은 여기서 하지 않는다 — 이미 검증된 HTTP 저장 경로를 그대로 쓰고,
-  // 이 소켓은 관리자가 문항을 실시간으로 고쳤을 때 그 사실만 받아서 반영한다.
+  // ── 실시간 수신 소켓 ──────────────────────────────────────────────────────
   let realtimeSocket = null;
 
   function showNotice(msg) {
@@ -321,10 +438,7 @@
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(proto + '//' + location.host + '/ws/respond/' + accessToken);
     realtimeSocket = ws;
-
-    ws.addEventListener('open', function () {
-      ws.send(JSON.stringify({ type: 'auth', token: respondentToken }));
-    });
+    ws.addEventListener('open', function () { ws.send(JSON.stringify({ type: 'auth', token: respondentToken })); });
     ws.addEventListener('message', function (e) {
       let msg;
       try { msg = JSON.parse(e.data); } catch (err) { return; }
@@ -336,16 +450,14 @@
       else if (msg.event === 'section.results') renderSectionWaitResults(msg, false);
       else if (msg.event === 'section.individual_result') renderSectionWaitResults(msg, true);
       else if (msg.event === 'section.revision_requested') handleRevisionRequested(msg);
+      else if (msg.event === 'answer.override') handleAnswerOverride(msg);
     });
     ws.addEventListener('close', function () {
       realtimeSocket = null;
-      // 재연결(지수 백오프) — 응답 저장 자체는 HTTP라 끊겨도 입력을 잃지 않지만,
-      // 문항 실시간 반영 채널은 계속 살려 둬야 대기 화면에서도 다음 섹션·공개
-      // 결과 알림을 받을 수 있다.
       setTimeout(function () {
-        const stillNeedsSocket = ['viewSurvey', 'viewWaitStart', 'viewSectionWait']
+        const still = ['viewSurvey', 'viewWaitStart', 'viewSectionWait', 'viewReview', 'viewDone']
           .some(function (id) { return document.getElementById(id).hidden === false; });
-        if (stillNeedsSocket) connectRealtimeIfNeeded();
+        if (still) connectRealtimeIfNeeded();
       }, 2000);
     });
   }
@@ -358,17 +470,13 @@
       const res = await fetch('/api/respond/' + accessToken + '/me', {
         headers: { 'Authorization': 'Bearer ' + respondentToken },
       });
-      if (res.ok) {
-        const me = await res.json();
-        answers = {};
-        Object.keys(me.answers).forEach(function (mid) { Object.assign(answers, me.answers[mid]); });
-      }
-    } catch (e) { /* 서버 재조회 실패해도 로컬 답은 유지하고 계속 진행 */ }
+      if (res.ok) { const me = await res.json(); answers = {}; mergeServerAnswers(me.answers); }
+    } catch (e) { /* keep local */ }
     buildQuestions();
     if (document.getElementById('viewSurvey').hidden) return;
-    refreshActiveList();
-    currentIndex = computeResumeIndex(activeList);
-    renderQuestion();
+    buildActiveMatrices();
+    currentMatrixIndex = Math.min(currentMatrixIndex, activeMatrices.length - 1);
+    renderMatrixPage();
   }
 
   async function handleRoundAdvanced(msg) {
@@ -377,16 +485,16 @@
       try {
         const res = await fetch('/api/respond/' + accessToken);
         if (res.ok) { landing = await res.json(); buildQuestions(); }
-      } catch (e) { /* 재조회 실패해도 기존 landing으로 계속 진행 */ }
+      } catch (e) { /* keep */ }
       revisionMatrixId = null;
-      const waiting = ['viewDone', 'viewWaitStart', 'viewSectionWait', 'viewSurvey']
+      const waiting = ['viewDone', 'viewWaitStart', 'viewSectionWait', 'viewSurvey', 'viewReview']
         .some(function (id) { return document.getElementById(id).hidden === false; });
       if (waiting) enterRealtimeFlow();
       return;
     }
     if (!document.getElementById('viewDone').hidden) {
-      activeList = questions;
-      currentIndex = 0;
+      buildActiveMatrices();
+      currentMatrixIndex = 0;
       startSurvey();
     }
   }
@@ -402,11 +510,7 @@
   function handleSectionAdvanced(msg) {
     landing.collection.active_matrix_id = msg.matrix_id;
     revisionMatrixId = null;
-    if (msg.done) {
-      showNotice('모든 섹션이 끝났습니다. 제출을 마무리합니다.');
-      finishSurvey();
-      return;
-    }
+    if (msg.done) { showNotice('모든 섹션이 끝났습니다. 제출을 마무리합니다.'); finishSurvey(); return; }
     showNotice('다음 섹션이 열렸습니다.');
     const waiting = ['viewSectionWait', 'viewWaitStart'].some(function (id) {
       return document.getElementById(id).hidden === false;
@@ -416,152 +520,80 @@
 
   function handleRevisionRequested(msg) {
     revisionMatrixId = msg.matrix_id;
+    revisionWorst = msg.worst_pairs || [];
     showNotice('연구자가 이 항목의 응답을 다시 확인해 달라고 요청했습니다.');
     enterRealtimeFlow();
   }
 
-  // 연구자가 콘솔에서 특정 섹션(계층 매트릭스)만 다시 열었을 때 — 이미 제출을
-  // 마친 응답자도 이 항목만 다시 조정할 수 있게 안내한다(PLAN.md 3절: 델파이는
-  // 계층 하나하나가 곧 라운드이기도 하다).
   function handleSectionUnlock(msg) {
-    const q = questions.find(function (qq) { return qq.matrix_id === msg.matrix_id; });
+    const q = pairsOfMatrix(msg.matrix_id)[0];
     const name = q ? q.parent_name : '이 항목';
     if (landing.collection.mode === 'realtime') {
-      // 실시간 모드는 게이팅 때문에 알림만 띄워선 안 된다 — 서버가 이미 전원에게
-      // revision_matrix_id를 부여했으니(collection_routes.unlock_section) 곧장
-      // 그 섹션 화면으로 데려가야 실제로 다시 응답할 수 있다.
       revisionMatrixId = msg.matrix_id;
-      showNotice('연구자가 "' + name + '" 항목을 참가자 전원에게 다시 열었습니다. 이어서 응답해 주세요.');
+      revisionWorst = [];
+      showNotice('연구자가 "' + name + '" 항목을 전원에게 다시 열었습니다. 이어서 응답해 주세요.');
       enterRealtimeFlow();
       return;
     }
     pendingReopenMatrixId = msg.matrix_id;
     const onDone = document.getElementById('viewDone').hidden === false;
-    showNotice(
-      '연구자가 "' + name + '" 항목을 다시 열었습니다. ' +
-      (onDone ? '아래 "답변 수정하기"를 눌러 조정해 주세요.' : '이어서 응답해 주세요.')
-    );
+    showNotice('연구자가 "' + name + '" 항목을 다시 열었습니다. ' +
+      (onDone ? '아래 항목을 눌러 조정해 주세요.' : '이어서 응답해 주세요.'));
   }
 
-  function currentValueForQuestion(q) {
-    const pid = pairId(q.uuid_a, q.uuid_b);
-    return (pid in answers) ? answers[pid] : null;
-  }
-
-  function renderQuestion() {
-    const q = activeList[currentIndex];
-    document.getElementById('qParentName').textContent = (q.is_alternative ? '대안 비교 · ' : '') + q.parent_name;
-    document.getElementById('qParentDesc').textContent = q.parent_description || '';
-    document.getElementById('qParentDesc').hidden = !q.parent_description;
-    document.getElementById('qQuestionText').textContent = q.question_text;
-    document.getElementById('labelA').textContent = q.name_a;
-    document.getElementById('labelB').textContent = q.name_b;
-    document.getElementById('sideBtnAName').textContent = q.name_a;
-    document.getElementById('sideBtnBName').textContent = q.name_b;
-    document.getElementById('descA').textContent = q.desc_a || '';
-    document.getElementById('descB').textContent = q.desc_b || '';
-    document.getElementById('itemDescs').hidden = !q.desc_a && !q.desc_b;
-    document.getElementById('qCounter').textContent = (currentIndex + 1) + ' / ' + activeList.length;
-    document.getElementById('prevBtn').disabled = currentIndex === 0;
-
-    const current = currentValueForQuestion(q);
-    if (current === null) { pendingSide = null; pendingIntensity = null; }
-    else if (Math.abs(current - 1) < 1e-9) { pendingSide = 'eq'; pendingIntensity = 1; }
-    else if (current > 1) { pendingSide = 'a'; pendingIntensity = Math.round(current); }
-    else { pendingSide = 'b'; pendingIntensity = Math.round(1 / current); }
-
-    renderSideButtons();
-    renderIntensity();
-    updateProgress();
-    updateNextButtonState();
-  }
-
-  function renderSideButtons() {
-    document.querySelectorAll('.side-btn').forEach(function (btn) {
-      btn.classList.toggle('selected', btn.dataset.side === pendingSide);
+  // 진행자가 콘솔에서 이 참여자 답을 고침 → 로컬에 즉시 반영(원복 방지).
+  function handleAnswerOverride(msg) {
+    const q = pairsOfMatrix(msg.matrix_id).find(function (x) {
+      return pairId(x.uuid_a, x.uuid_b) === pairId(msg.uuid_a, msg.uuid_b);
     });
-    document.getElementById('intensityWrap').hidden = (pendingSide === 'eq' || pendingSide === null);
+    if (!q) return;
+    // msg.value_a_over_b 는 msg.uuid_a 기준. 이 화면 질문의 a 기준으로 방향 맞춤.
+    const v = (q.uuid_a === msg.uuid_a) ? msg.value_a_over_b : (1 / msg.value_a_over_b);
+    answers[answerKey(q.matrix_id, q.uuid_a, q.uuid_b)] = v;
+    matrixCrCache[msg.matrix_id] = { complete: !!msg.complete, cr: msg.cr };
+    showNotice('연구자가 함께 확인한 값으로 응답이 조정되었습니다.');
+    if (!document.getElementById('viewSurvey').hidden) renderMatrixPage();
+    if (!document.getElementById('viewReview').hidden && reviewMatrixId === msg.matrix_id) refreshReview();
   }
 
-  function renderIntensity() {
-    const row = document.getElementById('intensityRow');
-    if (pendingSide === null || pendingSide === 'eq') { row.innerHTML = ''; return; }
-    const levels = INTENSITY_LEVELS_BY_SCALE[landing.survey.scale] || INTENSITY_LEVELS_BY_SCALE[9];
-    row.innerHTML = levels.map(function (n) {
-      return '<button type="button" class="intensity-chip' + (pendingIntensity === n ? ' selected' : '') +
-        '" data-n="' + n + '">' + n + '</button>';
-    }).join('');
-    document.getElementById('intensityHint').textContent =
-      pendingIntensity ? (INTENSITY_LABELS[pendingIntensity] || '') : '정도를 선택해 주세요';
-  }
-
-  function updateProgress() {
-    const answeredCount = activeList.filter(function (q) { return currentValueForQuestion(q) !== null; }).length;
-    const pct = activeList.length ? Math.round(100 * answeredCount / activeList.length) : 100;
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressText').textContent = pct + '% 완료';
-  }
-
-  function updateNextButtonState() {
-    const ready = pendingSide === 'eq' || (pendingSide && pendingIntensity);
-    document.getElementById('nextBtn').disabled = !ready;
-    const isLast = currentIndex === activeList.length - 1;
-    document.getElementById('nextBtn').textContent = isLast
-      ? (landing.collection.mode === 'realtime' ? '완료' : '제출')
-      : '다음';
-  }
-
-  function commitAnswer() {
-    const q = activeList[currentIndex];
-    let value;
-    if (pendingSide === 'eq') value = 1;
-    else if (pendingSide === 'a') value = pendingIntensity;
-    else if (pendingSide === 'b') value = 1 / pendingIntensity;
-    else return false;
-
-    const pid = pairId(q.uuid_a, q.uuid_b);
-    answers[pid] = value;
-    clientSeq += 1;
-    localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
-    queueAnswer({ matrix_id: q.matrix_id, uuid_a: q.uuid_a, uuid_b: q.uuid_b, value: value, client_seq: clientSeq });
-    updateProgress();
-    return true;
-  }
-
+  // ── 네비게이션 ──────────────────────────────────────────────────────────
   function crWarningIfNeeded(matrixId) {
     const info = matrixCrCache[matrixId];
     if (!info || !info.complete) return null;
-    const threshold = landing.survey.cr_threshold || 0.1;
-    return info.cr > threshold ? info : null;
+    const th = landing.survey.cr_threshold || 0.1;
+    return info.cr > th ? info : null;
+  }
+
+  async function leaveCurrentMatrix() {
+    // 현재 기준을 떠나기 전 저장 flush.
+    await flushQueue();
+    // CR 경고/차단은 "최초 제출 이후"에만 — 그 전에는 가중치·CR을 아직 보여주지
+    // 않았으므로 CR을 이유로 진행을 막으면 참가자에게 혼란만 준다. 최초 제출 후
+    // 마지막 화면에서 이유를 설명한 뒤부터 수정을 요청한다.
+    if (everSubmitted) {
+      const m = activeMatrices[currentMatrixIndex];
+      if (m && matrixComplete(m)) {
+        const warn = crWarningIfNeeded(m.matrix_id);
+        if (warn) {
+          const msg = '이 기준의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
+          if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주세요.'); return false; }
+          if (!confirm(msg + ' 계속 진행할까요?')) return false;
+        }
+      }
+    }
+    return true;
   }
 
   async function goNext() {
-    if (!commitAnswer()) return;
-    const q = activeList[currentIndex];
-
-    if (q.is_last_in_matrix) {
-      await flushQueue();
-      const warn = crWarningIfNeeded(q.matrix_id);
-      if (warn) {
-        const msg = '이 항목 그룹의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
-        if (landing.survey.cr_action === 'block') {
-          alert(msg + ' 이전 문항으로 돌아가 다시 생각해 주세요.');
-          return;
-        }
-        if (!confirm(msg + ' 계속 진행할까요?')) return;
-      }
-    }
-
-    if (currentIndex < activeList.length - 1) {
-      currentIndex += 1;
-      renderQuestion();
+    if (!(await leaveCurrentMatrix())) return;
+    if (currentMatrixIndex < activeMatrices.length - 1) {
+      currentMatrixIndex += 1;
+      renderMatrixPage();
+      document.getElementById('viewSurvey').scrollTo && window.scrollTo(0, 0);
     } else if (landing.collection.mode === 'realtime') {
-      // 실시간 모드는 섹션 하나를 다 채웠다고 곧장 다음 섹션으로 넘어가지
-      // 않는다 — 연구자가 "다음 섹션 진행"을 누를 때까지 대기 화면에서
-      // 기다린다(요청사항 4~5단계).
-      await flushQueue();
-      if (revisionMatrixId === q.matrix_id) revisionMatrixId = null;
-      else markSectionDone(q.matrix_id);
+      const m = activeMatrices[currentMatrixIndex];
+      if (revisionMatrixId === m.matrix_id) revisionMatrixId = null;
+      else markSectionDone(m.matrix_id);
       enterRealtimeFlow();
     } else {
       await finishSurvey();
@@ -569,12 +601,26 @@
   }
 
   function goPrev() {
-    if (currentIndex === 0) return;
-    currentIndex -= 1;
-    renderQuestion();
+    if (currentMatrixIndex === 0) return;
+    currentMatrixIndex -= 1;
+    renderMatrixPage();
+    window.scrollTo(0, 0);
+  }
+
+  async function onSubmitBtn() {
+    if (!activeMatrices.every(matrixComplete)) return;
+    if (!(await leaveCurrentMatrix())) return;
+    // 남은 기준 중 CR 경고가 있으면 한 번 더 확인
+    await finishSurvey();
+  }
+
+  function needsDemographics() {
+    return landing.survey.collect_demographics &&
+      (landing.survey.demographics || []).length && !demographicsDone;
   }
 
   async function finishSurvey() {
+    if (needsDemographics()) { renderDemographics(); show('viewDemographics'); return; }
     await flushQueue();
     try {
       const res = await fetch('/api/respond/' + accessToken + '/submit', {
@@ -582,17 +628,92 @@
       });
       if (res.status === 401) { await handleTokenExpired(); return; }
       if (!res.ok && res.status !== 409) throw new Error('submit failed');
+      everSubmitted = true;
+      localStorage.setItem(STORAGE_SUBMITTED_KEY, '1');
       await showDone();
     } catch (e) {
       alert('제출 중 문제가 발생했습니다. 다시 시도해 주세요.');
     }
   }
 
-  // ── 제출 완료 화면 — 기준별 CR 요약 + 섹션별 이동 진입점 ─────────────────────
-  // 매트릭스별 worst_pair(그 응답자 본인의 판단 중 CR에 가장 큰 영향을 준 쌍)를
-  // 요약을 다시 부르지 않고도 리뷰 화면에서 바로 쓸 수 있게 캐시해 둔다.
-  let summaryWorstByMatrix = {};
+  // ── 인구통계 화면 ──────────────────────────────────────────────────────────
+  function renderDemographics() {
+    const fields = landing.survey.demographics || [];
+    document.getElementById('demoForm').innerHTML = fields.map(function (f) {
+      const saved = respondentAttributes[f.id];
+      let control = '';
+      if (f.type === 'single') {
+        control = (f.options || []).map(function (o) {
+          const on = String(saved) === String(o.code) ? ' checked' : '';
+          return '<label class="demo-choice"><input type="radio" name="demo_' + f.id + '" value="' + esc(o.code) + '"' + on + '> ' + esc(o.label) + '</label>';
+        }).join('');
+      } else if (f.type === 'multi') {
+        const set = Array.isArray(saved) ? saved.map(String) : [];
+        control = (f.options || []).map(function (o) {
+          const on = set.indexOf(String(o.code)) !== -1 ? ' checked' : '';
+          return '<label class="demo-choice"><input type="checkbox" name="demo_' + f.id + '" value="' + esc(o.code) + '"' + on + '> ' + esc(o.label) + '</label>';
+        }).join('');
+      } else if (f.type === 'number') {
+        control = '<input type="number" class="demo-input" data-fid="' + f.id + '" value="' + (saved != null ? esc(saved) : '') + '">';
+      } else {
+        control = '<input type="text" class="demo-input" data-fid="' + f.id + '" value="' + (saved != null ? esc(saved) : '') + '">';
+      }
+      return '<div class="demo-field" data-fid="' + f.id + '" data-type="' + f.type + '">' +
+        '<div class="demo-q">' + esc(f.label) + (f.required ? ' <span class="demo-req">*</span>' : '') + '</div>' +
+        control + '</div>';
+    }).join('');
+    document.getElementById('demoError').hidden = true;
+  }
 
+  function collectDemoAnswers() {
+    const out = {};
+    document.querySelectorAll('#demoForm .demo-field').forEach(function (el) {
+      const fid = el.dataset.fid, type = el.dataset.type;
+      if (type === 'single') {
+        const r = el.querySelector('input[type=radio]:checked');
+        if (r) out[fid] = r.value;
+      } else if (type === 'multi') {
+        const vals = Array.prototype.map.call(el.querySelectorAll('input[type=checkbox]:checked'), function (c) { return c.value; });
+        if (vals.length) out[fid] = vals;
+      } else {
+        const v = el.querySelector('.demo-input').value.trim();
+        if (v) out[fid] = v;
+      }
+    });
+    return out;
+  }
+
+  async function submitDemographics() {
+    const answersOut = collectDemoAnswers();
+    const btn = document.getElementById('demoSubmitBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/respond/' + accessToken + '/demographics', {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + respondentToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersOut }),
+      });
+      if (res.status === 401) { await handleTokenExpired(); return; }
+      const d = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        const el = document.getElementById('demoError');
+        el.textContent = d.detail || d.message || '저장에 실패했습니다.';
+        el.hidden = false;
+        return;
+      }
+      respondentAttributes = d.attributes || {};
+      demographicsDone = true;
+      await finishSurvey();
+    } catch (e) {
+      const el = document.getElementById('demoError');
+      el.textContent = '네트워크 오류로 저장하지 못했습니다.';
+      el.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── 제출 완료 화면 ──────────────────────────────────────────────────────────
   async function showDone() {
     show('viewDone');
     const box = document.getElementById('crSummaryList');
@@ -603,68 +724,147 @@
       });
       if (!res.ok) throw new Error('summary failed');
       const data = await res.json();
-      summaryWorstByMatrix = {};
-      data.items.forEach(function (it) { summaryWorstByMatrix[it.matrix_id] = it.worst_pair; });
+      const anyBad = data.items.some(function (it) {
+        return it.cr != null && it.cr > data.cr_threshold;
+      });
+      document.getElementById('crExplain').hidden = !anyBad;
       if (!data.items.length) { box.innerHTML = ''; return; }
       box.innerHTML = data.items.map(function (it) {
-        const cls = (it.cr === null || it.cr === undefined) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
-        const crText = (it.cr === null || it.cr === undefined) ? '-' : ('CR ' + it.cr.toFixed(3));
+        const cls = (it.cr == null) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
+        const crText = (it.cr == null) ? '-' : ('CR ' + it.cr.toFixed(3));
         return '<button type="button" class="cr-summary-row ' + cls + '" data-matrix="' + it.matrix_id + '">' +
           '<span class="csr-name">' + esc(it.parent_name) + '</span>' +
           '<span class="csr-cr">' + crText + '</span></button>';
       }).join('');
     } catch (e) {
       box.innerHTML = '';
+      document.getElementById('crExplain').hidden = true;
     }
   }
 
-  // ── 섹션 리뷰 — 한 매트릭스의 모든 쌍을 한 화면에 보여주고, 가장 모순적인
-  // 쌍(worst_pair)을 강조해 바로 조정할 수 있게 한다(요청사항). 척도는
-  // entry.js의 scaleOptionsHtml과 동일한 9~1~1/9 전 구간.
-  function reviewScaleOptionsHtml(nameA, nameB, current) {
-    const opts = [];
-    for (let n = 9; n >= 2; n--) opts.push({ v: n, label: nameA + '가(이) ' + n + '배 더 중요' });
-    opts.push({ v: 1, label: '동일하게 중요' });
-    for (let n = 2; n <= 9; n++) opts.push({ v: 1 / n, label: nameB + '가(이) ' + n + '배 더 중요' });
-    return opts.map(function (o) {
-      const sel = current != null && Math.abs(o.v - current) < 1e-6 ? ' selected' : '';
-      return '<option value="' + o.v + '"' + sel + '>' + esc(o.label) + '</option>';
-    }).join('');
-  }
-
-  function renderReview(matrixId) {
-    reviewMatrixId = matrixId;
-    const worst = summaryWorstByMatrix[matrixId];
-    reviewWorstPid = worst ? pairId(worst.uuid_a, worst.uuid_b) : null;
-    const qs = questions.filter(function (q) { return q.matrix_id === matrixId; });
-    document.getElementById('reviewTitle').textContent =
-      (qs[0] && qs[0].is_alternative ? '대안 비교 · ' : '') + (qs[0] ? qs[0].parent_name : '');
-    document.getElementById('reviewPairs').innerHTML = qs.map(function (q) {
-      const pid = pairId(q.uuid_a, q.uuid_b);
-      const current = currentValueForQuestion(q);
-      const isWorst = pid === reviewWorstPid;
-      return '<div class="review-pair-row' + (isWorst ? ' worst' : '') + '" data-a="' + q.uuid_a + '" data-b="' + q.uuid_b + '" data-matrix="' + matrixId + '">' +
-        (isWorst ? '<span class="review-worst-badge">⚠ 가장 모순적인 응답</span>' : '') +
-        '<span class="rp-label">' + esc(q.name_a) + ' vs ' + esc(q.name_b) + '</span>' +
-        '<select>' + reviewScaleOptionsHtml(q.name_a, q.name_b, current) + '</select></div>';
-    }).join('');
-  }
+  // ── 수정 화면 — what-if 가중치 차트 + 응답형 추천 ─────────────────────────
+  let reviewMatrixId = null;
+  let reviewWorstPids = {};      // pid -> {given_label, suggested_label}
+  let reviewEval = null;         // 최근 matrix-eval 결과
+  let rankFocus = 0;            // 좌우 화살표 포커스 (ranking 인덱스)
+  let evalTimer = null;
 
   function enterReview(matrixId) {
-    renderReview(matrixId);
+    reviewMatrixId = matrixId;
+    rankFocus = 0;
+    reviewWorstPids = {};
+    (revisionMatrixId === matrixId ? revisionWorst : []).forEach(function (w) {
+      reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = w;
+    });
+    const qs = pairsOfMatrix(matrixId);
+    document.getElementById('reviewTitle').textContent =
+      (qs[0] && qs[0].is_alternative ? '대안 비교 · ' : '') + (qs[0] ? qs[0].parent_name : '');
+    renderReviewPairs();
     show('viewReview');
+    refreshReview();
+  }
+
+  function renderReviewPairs() {
+    const qs = pairsOfMatrix(reviewMatrixId);
+    document.getElementById('reviewPairs').innerHTML = qs.map(function (q) {
+      const pid = pairId(q.uuid_a, q.uuid_b);
+      const w = reviewWorstPids[pid];
+      return renderPairScaleRow(q, {
+        worst: !!w,
+        suggestBadge: !!w,
+        given: w ? (w.given_label || fmtValue(pairValue(q))) : '',
+        suggest: w ? w.suggested_label : '',
+      });
+    }).join('');
+  }
+
+  function currentOverrides() {
+    return pairsOfMatrix(reviewMatrixId).map(function (q) {
+      const v = pairValue(q);
+      return v == null ? null : { uuid_a: q.uuid_a, uuid_b: q.uuid_b, value_a_over_b: v };
+    }).filter(Boolean);
+  }
+
+  function refreshReview() {
+    clearTimeout(evalTimer);
+    evalTimer = setTimeout(async function () {
+      try {
+        const res = await fetch('/api/respond/' + accessToken + '/matrix-eval', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + respondentToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matrix_id: reviewMatrixId, overrides: currentOverrides() }),
+        });
+        if (!res.ok) return;
+        reviewEval = await res.json();
+        // worst 힌트를 서버 최신값으로 갱신(응답형 라벨 포함)
+        reviewWorstPids = {};
+        (reviewEval.worst_pairs || []).slice(0, 1).forEach(function (w) {
+          reviewWorstPids[w.pair_id] = w;
+        });
+        renderReviewPairs();
+        renderReviewChart();
+      } catch (e) { /* ignore */ }
+    }, 250);
+  }
+
+  function renderReviewChart() {
+    const el = document.getElementById('reviewChart');
+    const crBar = document.getElementById('reviewCrBar');
+    if (!reviewEval || reviewEval.incomplete) {
+      el.innerHTML = '<p class="muted" style="font-size:12.5px">모든 쌍을 응답하면 가중치·CR이 표시됩니다.</p>';
+      crBar.hidden = true;
+      document.getElementById('rankFocusLabel').textContent = '';
+      return;
+    }
+    const s = crState(reviewEval.cr);
+    crBar.hidden = false; crBar.className = 'cr-bar ' + s.cls;
+    crBar.textContent = s.txt;
+
+    const ranking = reviewEval.ranking || [];
+    if (rankFocus >= ranking.length) rankFocus = ranking.length - 1;
+    if (rankFocus < 0) rankFocus = 0;
+    const maxW = Math.max.apply(null, ranking.map(function (u) { return reviewEval.weights[u] || 0; }).concat([1e-6]));
+    el.innerHTML = ranking.map(function (u, i) {
+      const w = reviewEval.weights[u] || 0;
+      const focus = i === rankFocus;
+      const near = i === rankFocus - 1 || i === rankFocus + 1;
+      return '<div class="wc-row' + (focus ? ' focus' : (near ? ' near' : '')) + '">' +
+        '<span class="wc-name">' + esc(reviewEval.names[u] || u) + '</span>' +
+        '<span class="wc-bar"><span style="width:' + (w / maxW * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="wc-val">' + (w * 100).toFixed(1) + '%</span></div>';
+    }).join('');
+
+    const focusU = ranking[rankFocus];
+    document.getElementById('rankFocusLabel').textContent = focusU
+      ? (rankFocus + 1) + '위 ' + (reviewEval.names[focusU] || focusU) + ' · ' + (reviewEval.weights[focusU] * 100).toFixed(1) + '%'
+      : '';
   }
 
   // ── 초기화 ──────────────────────────────────────────────────────────────
+  function scaleClickHandler(container, onPick) {
+    container.addEventListener('click', function (e) {
+      const cell = e.target.closest('.scale-cell');
+      if (!cell) return;
+      const row = e.target.closest('.pair-row');
+      if (!row) return;
+      const v = Number(cell.dataset.v);
+      row.querySelectorAll('.scale-cell').forEach(function (c) { c.classList.toggle('on', c === cell); });
+      const mid = row.dataset.mid, a = row.dataset.a, b = row.dataset.b;
+      answers[answerKey(mid, a, b)] = v;
+      clientSeq += 1;
+      localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
+      queueAnswer({ matrix_id: mid, uuid_a: a, uuid_b: b, value: v, client_seq: clientSeq });
+      onPick();
+    });
+  }
+
   function init() {
     document.getElementById('consentCheck').addEventListener('change', function (e) {
       document.getElementById('consentNextBtn').disabled = !e.target.checked;
     });
     document.getElementById('consentNextBtn').addEventListener('click', function () { show('viewCode'); });
 
-    document.getElementById('codeInput').addEventListener('input', function (e) {
-      e.target.value = e.target.value.toUpperCase();
-    });
+    document.getElementById('codeInput').addEventListener('input', function (e) { e.target.value = e.target.value.toUpperCase(); });
     document.getElementById('codeInput').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') submitCode(document.getElementById('codeInput').value);
     });
@@ -672,72 +872,59 @@
       submitCode(document.getElementById('codeInput').value);
     });
 
-    document.getElementById('sideButtons').addEventListener('click', function (e) {
-      const btn = e.target.closest('.side-btn');
-      if (!btn) return;
-      pendingSide = btn.dataset.side;
-      if (pendingSide !== 'eq' && !pendingIntensity) {
-        const levels = INTENSITY_LEVELS_BY_SCALE[landing.survey.scale] || INTENSITY_LEVELS_BY_SCALE[9];
-        pendingIntensity = levels[0];
-      }
-      renderSideButtons();
-      renderIntensity();
-      updateNextButtonState();
+    document.getElementById('hdToggle').addEventListener('click', function () {
+      const box = document.getElementById('hdBox');
+      box.hidden = !box.hidden;
+      document.getElementById('hdToggleIcon').textContent = box.hidden ? '▸' : '▾';
     });
-    document.getElementById('intensityRow').addEventListener('click', function (e) {
-      const chip = e.target.closest('.intensity-chip');
-      if (!chip) return;
-      pendingIntensity = Number(chip.dataset.n);
-      renderIntensity();
-      updateNextButtonState();
+    document.getElementById('hdZoom').addEventListener('click', function (e) {
+      e.stopPropagation();
+      document.getElementById('hdBox').classList.toggle('fit');
+    });
+
+    scaleClickHandler(document.getElementById('pairList'), function () {
+      updateProgress(); updateNav(); refreshCrBar();
+    });
+    scaleClickHandler(document.getElementById('reviewPairs'), function () {
+      refreshReview();
     });
 
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('prevBtn').addEventListener('click', goPrev);
+    document.getElementById('submitBtn').addEventListener('click', onSubmitBtn);
+    document.getElementById('demoSubmitBtn').addEventListener('click', submitDemographics);
+
     document.getElementById('editAnswersBtn').addEventListener('click', function () {
+      buildActiveMatrices();
       if (pendingReopenMatrixId) {
-        const idx = questions.findIndex(function (q) { return q.matrix_id === pendingReopenMatrixId; });
-        currentIndex = idx !== -1 ? idx : 0;
+        const i = activeMatrices.findIndex(function (m) { return m.matrix_id === pendingReopenMatrixId; });
+        currentMatrixIndex = i !== -1 ? i : 0;
         pendingReopenMatrixId = null;
       } else {
-        currentIndex = 0;
+        currentMatrixIndex = 0;
       }
       startSurvey();
     });
 
     document.getElementById('crSummaryList').addEventListener('click', function (e) {
       const row = e.target.closest('.cr-summary-row');
-      if (!row) return;
-      enterReview(row.dataset.matrix);
-    });
-    document.getElementById('reviewPairs').addEventListener('change', function (e) {
-      if (e.target.tagName !== 'SELECT') return;
-      const row = e.target.closest('.review-pair-row');
-      const uuidA = row.dataset.a, uuidB = row.dataset.b, matrixId = row.dataset.matrix;
-      const value = Number(e.target.value);
-      answers[pairId(uuidA, uuidB)] = value;
-      clientSeq += 1;
-      localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
-      queueAnswer({ matrix_id: matrixId, uuid_a: uuidA, uuid_b: uuidB, value: value, client_seq: clientSeq });
+      if (row) enterReview(row.dataset.matrix);
     });
     document.getElementById('reviewBackBtn').addEventListener('click', function () { showDone(); });
     document.getElementById('reviewDoneBtn').addEventListener('click', async function () {
       await flushQueue();
       await showDone();
     });
+    document.getElementById('rankPrevBtn').addEventListener('click', function () { rankFocus -= 1; renderReviewChart(); });
+    document.getElementById('rankNextBtn').addEventListener('click', function () { rankFocus += 1; renderReviewChart(); });
 
     window.addEventListener('online', flushQueue);
-
     run();
   }
 
   async function run() {
     show('viewLoading');
-    try {
-      await loadLanding();
-    } catch (e) {
-      return;
-    }
+    try { await loadLanding(); } catch (e) { return; }
     await tryResume();
   }
 

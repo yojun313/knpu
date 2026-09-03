@@ -11,6 +11,7 @@
   // 'custom'이면 scopeSelection에 담긴 collection_ids(+선택된 round만) 조합만 본다.
   let scopeMode = 'all';
   let scopeSelection = { collectionIds: [], roundMap: {} };
+  let demoFilter = {};  // { field_id: [code, ...] } — 필드 간 AND, 필드 내 OR
   let diagramLoaded = false;
 
   // 계층도는 다른 단계에서도 참고할 수 있어야 한다는 요청사항 — design.html의
@@ -104,6 +105,53 @@
 
   // 현재 선택 범위를 쿼리스트링으로 — get_results/get_sensitivity가 공유하는
   // collection_id(단일, 레거시)/collection_ids(복수)/rounds(cid:round 쌍) 규약을 그대로 따른다.
+  // ── 인구통계 분포 + 필터 ──────────────────────────────────────────────────
+  function renderDemographics() {
+    const card = document.getElementById('demoCard');
+    const demographics = (results && results.demographics) || [];
+    const summary = (results && results.demographics_summary) || [];
+    if (!demographics.length) { card.hidden = true; return; }
+    card.hidden = false;
+
+    const anyFilter = Object.keys(demoFilter).some(function (k) { return (demoFilter[k] || []).length; });
+    document.getElementById('demoFilterResetBtn').hidden = !anyFilter;
+
+    const byId = {};
+    summary.forEach(function (s) { byId[s.id] = s; });
+
+    document.getElementById('demoCardBody').innerHTML = demographics.map(function (f) {
+      const s = byId[f.id] || {};
+      let body = '';
+      if (f.type === 'single' || f.type === 'multi') {
+        const active = demoFilter[f.id] || [];
+        body = '<div class="demo-chips">' + (s.distribution || []).map(function (d) {
+          const on = active.indexOf(String(d.code)) !== -1;
+          return '<button type="button" class="demo-chip' + (on ? ' on' : '') + '" ' +
+            'data-fid="' + f.id + '" data-code="' + ahpEsc(d.code) + '">' +
+            ahpEsc(d.label) + ' <b>' + d.count + '</b></button>';
+        }).join('') + '</div>';
+      } else if (f.type === 'number') {
+        const st = s.stats || { n: 0 };
+        body = '<div class="demo-num">' + (st.n
+          ? ('n=' + st.n + ' · 범위 ' + st.min + '–' + st.max + ' · 평균 ' + st.mean)
+          : '응답 없음') + '</div>';
+      } else {
+        body = '<div class="demo-num">' + (s.n || 0) + '명 응답</div>';
+      }
+      return '<div class="demo-summary-field"><div class="demo-summary-label">' +
+        ahpEsc(f.label) + '</div>' + body + '</div>';
+    }).join('');
+  }
+
+  function toggleDemoChip(fid, code) {
+    const cur = demoFilter[fid] || [];
+    const i = cur.indexOf(String(code));
+    if (i === -1) cur.push(String(code));
+    else cur.splice(i, 1);
+    if (cur.length) demoFilter[fid] = cur; else delete demoFilter[fid];
+    loadResults();
+  }
+
   function buildScopeQuery() {
     if (scopeMode === 'all') return '';
     const params = new URLSearchParams();
@@ -118,10 +166,21 @@
     return qs ? ('?' + qs) : '';
   }
 
+  function buildResultsQuery() {
+    const params = new URLSearchParams(buildScopeQuery().replace(/^\?/, ''));
+    const pairs = [];
+    Object.keys(demoFilter).forEach(function (fid) {
+      (demoFilter[fid] || []).forEach(function (c) { pairs.push(fid + ':' + c); });
+    });
+    if (pairs.length) params.set('demo_filters', pairs.join(','));
+    const qs = params.toString();
+    return qs ? ('?' + qs) : '';
+  }
+
   async function loadResults() {
     document.getElementById('resultError').hidden = true;
     try {
-      results = await ahpApi('/api/projects/' + projectId + '/results' + buildScopeQuery());
+      results = await ahpApi('/api/projects/' + projectId + '/results' + buildResultsQuery());
     } catch (e) {
       // 성공이든 실패든 반드시 화면을 갱신한다 — 예외를 그냥 던지면 직전 범위의
       // 렌더가 그대로 남아 "필터를 바꿔도 안 바뀐다"는 문제로 이어진다.
@@ -131,6 +190,8 @@
       ahpToast(e.message || '결과를 불러오는 중 오류가 발생했습니다', true);
       return;
     }
+
+    renderDemographics();
 
     document.getElementById('resultEmpty').hidden = results.respondent_count > 0;
     document.getElementById('resultContent').hidden = results.respondent_count === 0;
@@ -237,6 +298,23 @@
     document.getElementById('exportDocx').href = '/api/export/' + projectId + '/survey.docx';
     document.getElementById('exportXlsx').href = '/api/export/' + projectId + '/package.xlsx';
     document.getElementById('exportCsv').href = '/api/export/' + projectId + '/responses.csv';
+
+    async function downloadDiagram(format) {
+      try {
+        if (!hierarchyNodes.length) {
+          const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
+          hierarchyNodes = h.nodes || [];
+        }
+        if (!hierarchyNodes.length) { ahpToast('계층이 없습니다', true); return; }
+        const title = (document.getElementById('projTitle').textContent || '계층도')
+          .replace(/ · 결과 분석$/, '').trim();
+        window.AHPHierarchyDiagram.download(hierarchyNodes, { format: format, filename: title + '_계층도' });
+      } catch (e) {
+        ahpToast('계층도를 불러오지 못했습니다', true);
+      }
+    }
+    document.getElementById('dlDiagramSvg').addEventListener('click', function () { downloadDiagram('svg'); });
+    document.getElementById('dlDiagramPng').addEventListener('click', function () { downloadDiagram('png'); });
   }
 
   async function init() {
@@ -274,6 +352,15 @@
     });
     document.getElementById('scopeApplyBtn').addEventListener('click', applyScopeSelection);
     document.getElementById('sensRunBtn').addEventListener('click', runSensitivity);
+
+    document.getElementById('demoCardBody').addEventListener('click', function (e) {
+      const chip = e.target.closest('.demo-chip');
+      if (chip) toggleDemoChip(chip.dataset.fid, chip.dataset.code);
+    });
+    document.getElementById('demoFilterResetBtn').addEventListener('click', function () {
+      demoFilter = {};
+      loadResults();
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -19,14 +19,28 @@ from app.services.survey_service import (
     diff_has_impact,
     prune_answers,
 )
+from app.services.demographics import normalize_demographics
 from app.services.hub import hub
 
 router = APIRouter()
 
+# 연구실 이름 — homepage about.html의 FPEI_NAME과 동일하게 유지한다.
+LAB_NAME = "경찰대학 미래치안공학연구원(FPEI)"
+
+DEFAULT_INTRO_TEXT = (
+    f"본 설문은 {LAB_NAME}의 연구를 위해 실시됩니다. "
+    "여러 평가 기준(또는 대안)의 상대적 중요도를 알아보기 위해, 두 항목씩 짝지어 "
+    "어느 쪽이 얼마나 더 중요한지 비교하는 방식(쌍대비교)으로 진행됩니다. "
+    "정답은 없으니 귀하의 전문적 판단과 경험에 따라 응답해 주시면 됩니다. "
+    "문항 수에 따라 대략 5~15분 정도 소요됩니다."
+)
+
 DEFAULT_CONSENT_TEXT = (
-    "이 설문은 연구 목적으로만 사용되며, 응답 내용은 통계적으로만 처리되어 "
-    "개인을 식별할 수 있는 형태로 공개되지 않습니다. 참여는 자발적이며 언제든 "
-    "중단할 수 있습니다."
+    f"이 설문은 {LAB_NAME}이 수행하는 연구를 위한 것으로, 응답 내용은 연구 목적으로만 "
+    "사용됩니다. 모든 응답은 익명으로 처리되며 통계적으로만 분석되어, 개인을 식별할 수 "
+    "있는 형태로 공개되거나 제3자에게 제공되지 않습니다. 참여는 전적으로 자발적이며, "
+    "응답 도중 언제든 중단할 수 있고 그로 인한 어떠한 불이익도 없습니다. "
+    f"문의: {LAB_NAME}."
 )
 
 
@@ -51,10 +65,13 @@ def _serialize_survey(doc: dict) -> dict:
         "hierarchy_version": doc["hierarchy_version"],
         "version": doc["version"],
         "title": doc.get("title", ""),
-        "intro_text": doc.get("intro_text", ""),
-        "consent_text": doc.get("consent_text", DEFAULT_CONSENT_TEXT),
+        # 비어 있으면 구체적 기본 문구로 채운다 — 참여자에게 보이는 연구 안내는
+        # 공백이 바람직하지 않고, 연구자가 다르게 쓰면 그 편집이 저장·표시된다.
+        "intro_text": doc.get("intro_text") or DEFAULT_INTRO_TEXT,
+        "consent_text": doc.get("consent_text") or DEFAULT_CONSENT_TEXT,
         "node_descriptions": doc.get("node_descriptions", {}),
         "matrices": doc.get("matrices", []),
+        "demographics": doc.get("demographics", []),
         "status": doc.get("status", "draft"),
         "created_at": doc.get("created_at"),
         "updated_at": doc.get("updated_at"),
@@ -95,10 +112,11 @@ async def _ensure_survey(project_doc: dict) -> dict:
         "hierarchy_version": hierarchy["version"],
         "version": 1,
         "title": project_doc["title"],
-        "intro_text": "",
+        "intro_text": DEFAULT_INTRO_TEXT,
         "consent_text": DEFAULT_CONSENT_TEXT,
         "node_descriptions": node_descriptions,
         "matrices": matrices,
+        "demographics": [],
         "status": "draft",
         "created_at": _now(),
         "updated_at": _now(),
@@ -137,6 +155,9 @@ async def update_survey(project_id: str, request: Request):
             if mid in by_id and text:
                 by_id[mid]["question_text"] = text
         patch["matrices"] = matrices
+    if "demographics" in body:
+        # 인구통계 스키마는 계층/matrices 구조와 무관 — node_descriptions처럼 버전 안 올린다.
+        patch["demographics"] = normalize_demographics(body["demographics"])
 
     if not patch:
         raise HTTPException(400, "변경할 내용이 없습니다")
@@ -214,6 +235,7 @@ async def resync_survey(project_id: str, request: Request):
         "consent_text": current.get("consent_text", DEFAULT_CONSENT_TEXT),
         "node_descriptions": new_descriptions,
         "matrices": new_matrices,
+        "demographics": current.get("demographics", []),
         "status": current.get("status", "draft"),
         "created_at": _now(),
         "updated_at": _now(),
@@ -275,7 +297,12 @@ async def survey_print_data(survey_id: str, request: Request):
     # 대안 이름이 uuid로 안 보이고 정상 표시된다.
     for a in (hierarchy or {}).get("alternatives", []):
         nodes_by_uuid[a["uuid"]] = a
-    return {"survey": _serialize_survey(survey), "nodes": nodes_by_uuid}
+    return {
+        "survey": _serialize_survey(survey),
+        "nodes": nodes_by_uuid,
+        # 계층도 렌더용 원본 트리 배열(위 nodes는 대안이 섞인 uuid 맵이라 부적합).
+        "nodes_tree": hierarchy["nodes"] if hierarchy else [],
+    }
 
 
 @router.post("/api/projects/{project_id}/survey/publish")

@@ -61,38 +61,38 @@
   <div class="survey-top">
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-label"><span id="progressText">0%</span></div>
+    <div class="cr-bar" id="matrixCrBar" hidden></div>
   </div>
 
   <div class="survey-body">
+    <div class="hd-card">
+      <button type="button" class="hd-toggle" id="hdToggle">계층도 <span id="hdToggleIcon">▾</span></button>
+      <div class="hd-box-wrap fit" id="hdBox">
+        <button type="button" class="hd-zoom" id="hdZoom" title="실제 크기 ↔ 화면 맞춤">⤢</button>
+        <div id="hdCanvas"></div>
+      </div>
+    </div>
     <div class="q-parent" id="qParentName"></div>
     <div class="q-desc" id="qParentDesc"></div>
     <h1 class="q-title" id="qQuestionText"></h1>
-
-    <div class="picker">
-      <div class="side-labels">
-        <span id="labelA"></span>
-        <span id="labelB"></span>
-      </div>
-      <div class="item-descs" id="itemDescs" hidden>
-        <span id="descA"></span>
-        <span id="descB"></span>
-      </div>
-      <div class="side-buttons" id="sideButtons">
-        <button type="button" class="side-btn" data-side="a"><span id="sideBtnAName"></span></button>
-        <button type="button" class="side-btn equal" data-side="eq">동일</button>
-        <button type="button" class="side-btn" data-side="b"><span id="sideBtnBName"></span></button>
-      </div>
-      <div class="intensity-wrap" id="intensityWrap" hidden>
-        <p class="intensity-hint" id="intensityHint"></p>
-        <div class="intensity-row" id="intensityRow"></div>
-      </div>
-    </div>
+    <div id="pairList" class="pair-list"></div>
   </div>
 
   <div class="survey-nav">
     <button class="btn-ghost" id="prevBtn">이전</button>
     <span id="qCounter" class="q-counter"></span>
+    <button class="btn-ghost" id="submitBtn" hidden>제출하기</button>
     <button class="btn-primary" id="nextBtn">다음</button>
+  </div>
+</div>
+
+<div id="viewDemographics" class="view" hidden>
+  <div class="card">
+    <h1>마지막으로, 배경 정보를 입력해 주세요</h1>
+    <p class="muted">통계 처리에만 쓰이며 개인을 식별하지 않습니다.</p>
+    <div id="demoForm" class="demo-form"></div>
+    <p id="demoError" class="err-text" hidden></p>
+    <button class="btn-primary" id="demoSubmitBtn">제출</button>
   </div>
 </div>
 
@@ -101,6 +101,39 @@
   <h1>제출이 완료되었습니다</h1>
   <p class="muted">아래 항목을 눌러 기준별 일관성(CR)을 확인하고, 필요하면 그
     자리에서 바로 조정할 수 있습니다.</p>
+
+  <div id="crExplain" class="cr-explain" hidden>
+    <h3>일관성(CR)이 높게 나온 이유</h3>
+    <p>답변들 사이에 <b>서로 모순되는 판단</b>이 있으면 CR이 높아집니다. 예를 들어
+      “A가 B보다 중요”, “B가 C보다 중요”라고 답했는데 “C가 A보다 중요”라고 답하면
+      중요도 순서가 <b>고리처럼 어긋나</b> 일관성이 떨어집니다.</p>
+    <svg viewBox="0 0 260 150" class="cr-explain-svg" role="img"
+      aria-label="A는 B보다, B는 C보다 중요하다고 했는데 C가 A보다 중요하다고 하면 모순">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="ah"/>
+        </marker>
+        <marker id="ahbad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="ahbad"/>
+        </marker>
+      </defs>
+      <line class="edge" x1="118" y1="38" x2="51" y2="103"/>
+      <line class="edge" x1="51" y1="120" x2="202" y2="120"/>
+      <line class="edge bad" x1="214" y1="108" x2="147" y2="43"/>
+      <circle class="node" cx="130" cy="26" r="17"/>
+      <circle class="node" cx="34" cy="120" r="17"/>
+      <circle class="node" cx="226" cy="120" r="17"/>
+      <text class="lbl" x="130" y="26">A</text>
+      <text class="lbl" x="34" y="120">B</text>
+      <text class="lbl" x="226" y="120">C</text>
+      <text class="etxt" x="74" y="66">A &gt; B</text>
+      <text class="etxt" x="126" y="136">B &gt; C</text>
+      <text class="etxt bad" x="192" y="66">C &gt; A ?!</text>
+    </svg>
+    <p class="small">CR이 높은 기준을 눌러, 강조된 “가장 모순적인 응답”부터 조정하면
+      대개 기준을 충족할 수 있습니다.</p>
+  </div>
+
   <div id="crSummaryList" class="cr-summary-list"></div>
   <button class="btn-ghost" id="editAnswersBtn">처음부터 수정하기</button>
 </div>
@@ -109,8 +142,17 @@
   <div class="survey-top">
     <button class="btn-ghost sm" id="reviewBackBtn">← 뒤로</button>
     <h2 class="review-title" id="reviewTitle"></h2>
+    <div class="cr-bar" id="reviewCrBar"></div>
   </div>
   <div class="survey-body">
+    <div class="wchart-card">
+      <div class="wchart" id="reviewChart"></div>
+      <div class="wchart-nav">
+        <button type="button" class="wchart-arrow" id="rankPrevBtn" aria-label="이전 순위">◀</button>
+        <span class="wchart-focus" id="rankFocusLabel"></span>
+        <button type="button" class="wchart-arrow" id="rankNextBtn" aria-label="다음 순위">▶</button>
+      </div>
+    </div>
     <div id="reviewPairs" class="review-pairs"></div>
   </div>
   <div class="survey-nav">
@@ -119,5 +161,6 @@
   </div>
 </div>
 
+<script src="/js/hierarchy_diagram.js"></script>
 <script src="/js/respond.js"></script>
 </body></html>

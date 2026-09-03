@@ -112,6 +112,8 @@
     loadNews();
     loadGallery();
     loadPopups();
+    loadFaqCategories();
+    loadFaq();
   }).catch(function () {
     window.location.href = '/login?redirect=' + encodeURIComponent('/admin');
   });
@@ -618,6 +620,198 @@
   window.deletePopup = function (uid) {
     if (!confirm('정말 삭제하시겠습니까?')) return;
     apiDelete('/api/popups/?uid=' + encodeURIComponent(uid)).then(loadPopups)
+      .catch(function (err) { alert(err.message || '삭제에 실패했습니다.'); });
+  };
+
+  // ============================================================
+  // 입시 FAQ (admission 페이지)
+  // ============================================================
+  var faqData = [];
+  var faqCategoriesData = [];
+  var faqEditingUid = null;
+  var faqCategoryEditingUid = null;
+
+  function loadFaqCategories() {
+    return apiGet('/api/faq/categories').then(function (docs) {
+      faqCategoriesData = (docs || []).slice().sort(function (a, b) {
+        return (a.order || 0) - (b.order || 0);
+      });
+      renderFaqCategories();
+      populateFaqCategorySelect();
+    }).catch(function () { });
+  }
+
+  function loadFaq() {
+    return apiGet('/api/faq/').then(function (docs) {
+      // 서버가 (카테고리 순서, 항목 순서)로 이미 정렬해 내려준다.
+      faqData = docs || [];
+      renderFaq();
+      renderFaqCategories(); // FAQ 수 갱신
+    }).catch(function () { });
+  }
+
+  function faqCountByCategory(name) {
+    return faqData.filter(function (f) { return (f.category || '') === name; }).length;
+  }
+
+  // ---- 카테고리 ----
+  function renderFaqCategories() {
+    var tbody = document.getElementById('faq-category-tbody');
+    if (!tbody) return;
+    if (!faqCategoriesData.length) {
+      tbody.innerHTML = '<tr><td colspan="4"><div class="admin-empty"><i class="fa-solid fa-folder-tree"></i>등록된 카테고리가 없습니다.</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = faqCategoriesData.map(function (c, idx) {
+      var count = faqCountByCategory(c.name);
+      var upDisabled = idx === 0 ? ' disabled' : '';
+      var downDisabled = idx === faqCategoriesData.length - 1 ? ' disabled' : '';
+      var moveBtns =
+        '<button class="icon-btn" title="위로" onclick="moveFaqCategory(\'' + c.uid + '\',-1)"' + upDisabled + '><i class="fa-solid fa-arrow-up"></i></button>'
+        + '<button class="icon-btn" title="아래로" onclick="moveFaqCategory(\'' + c.uid + '\',1)"' + downDisabled + '><i class="fa-solid fa-arrow-down"></i></button>';
+      return '<tr>'
+        + '<td>' + esc(c.order != null ? c.order : '') + '</td>'
+        + '<td class="cell-truncate">' + esc(c.name) + '</td>'
+        + '<td>' + count + '</td>'
+        + '<td class="col-actions">' + moveBtns + actionButtons("openFaqCategoryModal('" + c.uid + "')", "deleteFaqCategory('" + c.uid + "')") + '</td></tr>';
+    }).join('');
+  }
+
+  function populateFaqCategorySelect() {
+    var sel = document.getElementById('faq-category');
+    if (!sel) return;
+    var current = sel.value;
+    var opts = ['<option value="">(분류 없음)</option>'];
+    faqCategoriesData.forEach(function (c) {
+      opts.push('<option value="' + escAttr(c.name) + '">' + esc(c.name) + '</option>');
+    });
+    sel.innerHTML = opts.join('');
+    sel.value = current;
+  }
+
+  window.openFaqCategoryModal = function (uid) {
+    hideModalError('faq-category-error');
+    var data = uid ? faqCategoriesData.find(function (c) { return c.uid === uid; }) : null;
+    faqCategoryEditingUid = uid || null;
+    document.getElementById('faqCategoryModalTitle').textContent = uid ? '카테고리 수정' : '카테고리 추가';
+    document.getElementById('faq-category-name').value = data ? (data.name || '') : '';
+    var nextOrder = data ? data.order
+      : (faqCategoriesData.reduce(function (m, c) { return Math.max(m, c.order || 0); }, 0) + 10);
+    document.getElementById('faq-category-order').value = (nextOrder != null ? nextOrder : '');
+    openModal('faqCategoryModal');
+  };
+
+  window.saveFaqCategory = function () {
+    var name = document.getElementById('faq-category-name').value.trim();
+    if (!name) { showModalError('faq-category-error', '이름을 입력해주세요.'); return; }
+    var order = parseInt(document.getElementById('faq-category-order').value, 10);
+    if (isNaN(order)) { showModalError('faq-category-error', '순서는 숫자로 입력해주세요.'); return; }
+    apiPost('/api/faq/categories', {
+      uid: faqCategoryEditingUid || undefined,
+      name: name,
+      order: order,
+    }).then(function () {
+      closeModal('faqCategoryModal');
+      // 이름 변경 시 FAQ 항목의 분류도 서버에서 바뀌므로 둘 다 다시 불러온다.
+      return Promise.all([loadFaqCategories(), loadFaq()]);
+    }).catch(function (err) { showModalError('faq-category-error', err.message || '저장에 실패했습니다.'); });
+  };
+
+  window.deleteFaqCategory = function (uid) {
+    var c = faqCategoriesData.find(function (x) { return x.uid === uid; });
+    if (!c) return;
+    if (!confirm('["' + c.name + '"] 카테고리를 삭제하시겠습니까?')) return;
+    apiDelete('/api/faq/categories?uid=' + encodeURIComponent(uid))
+      .then(function () { return loadFaqCategories(); })
+      .catch(function (err) { alert(err.message || '삭제에 실패했습니다.'); });
+  };
+
+  window.moveFaqCategory = function (uid, dir) {
+    var idx = faqCategoriesData.findIndex(function (c) { return c.uid === uid; });
+    if (idx < 0) return;
+    var other = faqCategoriesData[idx + dir];
+    var cur = faqCategoriesData[idx];
+    if (!other || !cur) return;
+    var a = { uid: cur.uid, name: cur.name, order: other.order };
+    var b = { uid: other.uid, name: other.name, order: cur.order };
+    apiPost('/api/faq/categories', a)
+      .then(function () { return apiPost('/api/faq/categories', b); })
+      .then(function () { return Promise.all([loadFaqCategories(), loadFaq()]); })
+      .catch(function (err) { alert(err.message || '순서 변경에 실패했습니다.'); });
+  };
+
+  // ---- FAQ 항목 ----
+  function renderFaq() {
+    var tbody = document.getElementById('faq-tbody');
+    setTabCount('faq', faqData.length);
+
+    if (!faqData.length) {
+      tbody.innerHTML = '<tr><td colspan="4"><div class="admin-empty"><i class="fa-solid fa-circle-question"></i>등록된 FAQ가 없습니다.</div></td></tr>';
+      return;
+    }
+
+    var lastCategory = null;
+    tbody.innerHTML = faqData.map(function (f, idx) {
+      var cat = (f.category || '').trim();
+      var groupRow = '';
+      if (cat !== lastCategory) {
+        groupRow = '<tr><td colspan="4" class="fw-bold small text-secondary bg-light">' + (cat ? esc(cat) : '<span class="text-muted">(분류 없음)</span>') + '</td></tr>';
+        lastCategory = cat;
+      }
+      return groupRow + '<tr>'
+        + '<td>' + esc(f.order != null ? f.order : '') + '</td>'
+        + '<td class="cell-truncate">' + esc(cat) + '</td>'
+        + '<td class="cell-truncate" title="' + escAttr(f.question) + '">Q' + (idx + 1) + '. ' + esc(f.question) + '</td>'
+        + '<td class="col-actions">' + actionButtons("openFaqModal('" + f.uid + "')", "deleteFaq('" + f.uid + "')") + '</td></tr>';
+    }).join('');
+  }
+
+  window.openFaqModal = function (uid) {
+    hideModalError('faq-error');
+    var data = uid ? faqData.find(function (f) { return f.uid === uid; }) : null;
+    faqEditingUid = uid || null;
+    document.getElementById('faqModalTitle').textContent = uid ? 'FAQ 수정' : 'FAQ 추가';
+
+    var sel = document.getElementById('faq-category');
+    populateFaqCategorySelect();
+    var wantCat = data ? (data.category || '') : (faqData.length ? faqData[faqData.length - 1].category || '' : '');
+    // 목록에 없는 (레거시) 분류면 임시 옵션을 추가해 유실을 막는다.
+    if (wantCat && !Array.prototype.some.call(sel.options, function (o) { return o.value === wantCat; })) {
+      sel.insertAdjacentHTML('beforeend', '<option value="' + escAttr(wantCat) + '">' + esc(wantCat) + ' (목록에 없음)</option>');
+    }
+    sel.value = wantCat;
+
+    document.getElementById('faq-question').value = data ? (data.question || '') : '';
+    document.getElementById('faq-answer').value = data ? (data.answer || '') : '';
+    var sameCat = faqData.filter(function (f) { return (f.category || '') === wantCat; });
+    var nextOrder = data ? data.order
+      : (sameCat.reduce(function (m, f) { return Math.max(m, f.order || 0); }, 0) + 10);
+    document.getElementById('faq-order').value = (nextOrder != null ? nextOrder : '');
+    openModal('faqModal');
+  };
+
+  window.saveFaq = function () {
+    var question = document.getElementById('faq-question').value.trim();
+    if (!question) { showModalError('faq-error', '질문을 입력해주세요.'); return; }
+    var order = parseInt(document.getElementById('faq-order').value, 10);
+    if (isNaN(order)) { showModalError('faq-error', '순서는 숫자로 입력해주세요.'); return; }
+    var payload = {
+      uid: faqEditingUid || undefined,
+      category: document.getElementById('faq-category').value.trim(),
+      question: question,
+      answer: document.getElementById('faq-answer').value.replace(/\r\n/g, '\n'),
+      order: order,
+    };
+    apiPost('/api/faq/', payload).then(function () {
+      closeModal('faqModal');
+      return Promise.all([loadFaq(), loadFaqCategories()]);
+    }).catch(function (err) { showModalError('faq-error', err.message || '저장에 실패했습니다.'); });
+  };
+
+  window.deleteFaq = function (uid) {
+    if (!confirm('이 FAQ 항목을 정말 삭제하시겠습니까?')) return;
+    apiDelete('/api/faq/?uid=' + encodeURIComponent(uid))
+      .then(function () { return Promise.all([loadFaq(), loadFaqCategories()]); })
       .catch(function (err) { alert(err.message || '삭제에 실패했습니다.'); });
   };
 
