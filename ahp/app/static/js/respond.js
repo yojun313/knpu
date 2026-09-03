@@ -565,15 +565,20 @@
   }
 
   async function leaveCurrentMatrix() {
-    // 현재 기준을 떠나기 전 저장 flush + CR 경고
+    // 현재 기준을 떠나기 전 저장 flush.
     await flushQueue();
-    const m = activeMatrices[currentMatrixIndex];
-    if (m && matrixComplete(m)) {
-      const warn = crWarningIfNeeded(m.matrix_id);
-      if (warn) {
-        const msg = '이 기준의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
-        if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주세요.'); return false; }
-        if (!confirm(msg + ' 계속 진행할까요?')) return false;
+    // CR 경고/차단은 "최초 제출 이후"에만 — 그 전에는 가중치·CR을 아직 보여주지
+    // 않았으므로 CR을 이유로 진행을 막으면 참가자에게 혼란만 준다. 최초 제출 후
+    // 마지막 화면에서 이유를 설명한 뒤부터 수정을 요청한다.
+    if (everSubmitted) {
+      const m = activeMatrices[currentMatrixIndex];
+      if (m && matrixComplete(m)) {
+        const warn = crWarningIfNeeded(m.matrix_id);
+        if (warn) {
+          const msg = '이 기준의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
+          if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주세요.'); return false; }
+          if (!confirm(msg + ' 계속 진행할까요?')) return false;
+        }
       }
     }
     return true;
@@ -719,6 +724,10 @@
       });
       if (!res.ok) throw new Error('summary failed');
       const data = await res.json();
+      const anyBad = data.items.some(function (it) {
+        return it.cr != null && it.cr > data.cr_threshold;
+      });
+      document.getElementById('crExplain').hidden = !anyBad;
       if (!data.items.length) { box.innerHTML = ''; return; }
       box.innerHTML = data.items.map(function (it) {
         const cls = (it.cr == null) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
@@ -729,6 +738,7 @@
       }).join('');
     } catch (e) {
       box.innerHTML = '';
+      document.getElementById('crExplain').hidden = true;
     }
   }
 

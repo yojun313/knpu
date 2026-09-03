@@ -140,6 +140,24 @@ button{font-family:inherit}
 .cr-summary-row.bad .csr-cr{color:var(--r-danger)}
 .cr-summary-row.ok .csr-cr{color:var(--r-good)}
 
+/* ── 제출 후: CR이 높게 나온 이유 설명 + 모순 예시 시각화 ── */
+.cr-explain{width:100%;max-width:440px;margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
+  background:color-mix(in srgb,var(--r-danger) 8%,var(--r-surface));
+  border:1px solid color-mix(in srgb,var(--r-danger) 32%,var(--r-border))}
+.cr-explain[hidden]{display:none}
+.cr-explain h3{margin:0 0 6px;font-size:13.5px;font-weight:800;color:var(--r-danger)}
+.cr-explain p{font-size:12.5px;line-height:1.65;margin:0 0 8px}
+.cr-explain p.small{font-size:11.5px;color:var(--r-muted);margin-bottom:0}
+.cr-explain-svg{display:block;width:100%;max-width:260px;height:auto;margin:10px auto}
+.cr-explain-svg .node{fill:var(--r-surface);stroke:var(--r-muted);stroke-width:1.5}
+.cr-explain-svg .lbl{fill:var(--r-ink);font-size:13px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+.cr-explain-svg .edge{stroke:var(--r-muted);stroke-width:2;fill:none;marker-end:url(#ah)}
+.cr-explain-svg .edge.bad{stroke:var(--r-danger);stroke-width:2;stroke-dasharray:5 3;marker-end:url(#ahbad)}
+.cr-explain-svg .etxt{font-size:10px;font-weight:700;fill:var(--r-muted);text-anchor:middle}
+.cr-explain-svg .etxt.bad{fill:var(--r-danger)}
+.cr-explain-svg .ah{fill:var(--r-muted)}
+.cr-explain-svg .ahbad{fill:var(--r-danger)}
+
 /* ── 섹션 리뷰 화면 — 한 매트릭스의 모든 쌍을 한 번에 보여주고 재조정 ── */
 .btn-ghost.sm{min-height:38px;min-width:0;padding:0 12px;font-size:13px}
 .review-title{font-size:15px;font-weight:800;margin:8px 2px 0;text-align:center}
@@ -254,4 +272,6 @@ button{font-family:inherit}
 .demo-choice{display:flex;align-items:center;gap:10px;font-size:14px;padding:8px 2px}
 .demo-choice input{width:20px;height:20px;flex-shrink:0;accent-color:var(--r-accent)}
 .demo-input{width:100%;min-height:46px;padding:10px 12px;font-size:15px;border-radius:12px;
-  border:1px solid var(--r-border,#ccc);background:var(--r-card,#fff);color:inherit}
+  border:1.5px solid var(--r-border);background:var(--r-surface);color:var(--r-ink)}
+.demo-input:focus{outline:none;border-color:var(--r-accent)}
+.demo-input::placeholder{color:var(--r-muted)}

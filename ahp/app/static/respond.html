@@ -101,6 +101,39 @@
   <h1>제출이 완료되었습니다</h1>
   <p class="muted">아래 항목을 눌러 기준별 일관성(CR)을 확인하고, 필요하면 그
     자리에서 바로 조정할 수 있습니다.</p>
+
+  <div id="crExplain" class="cr-explain" hidden>
+    <h3>일관성(CR)이 높게 나온 이유</h3>
+    <p>답변들 사이에 <b>서로 모순되는 판단</b>이 있으면 CR이 높아집니다. 예를 들어
+      “A가 B보다 중요”, “B가 C보다 중요”라고 답했는데 “C가 A보다 중요”라고 답하면
+      중요도 순서가 <b>고리처럼 어긋나</b> 일관성이 떨어집니다.</p>
+    <svg viewBox="0 0 260 150" class="cr-explain-svg" role="img"
+      aria-label="A는 B보다, B는 C보다 중요하다고 했는데 C가 A보다 중요하다고 하면 모순">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="ah"/>
+        </marker>
+        <marker id="ahbad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="ahbad"/>
+        </marker>
+      </defs>
+      <line class="edge" x1="118" y1="38" x2="51" y2="103"/>
+      <line class="edge" x1="51" y1="120" x2="202" y2="120"/>
+      <line class="edge bad" x1="214" y1="108" x2="147" y2="43"/>
+      <circle class="node" cx="130" cy="26" r="17"/>
+      <circle class="node" cx="34" cy="120" r="17"/>
+      <circle class="node" cx="226" cy="120" r="17"/>
+      <text class="lbl" x="130" y="26">A</text>
+      <text class="lbl" x="34" y="120">B</text>
+      <text class="lbl" x="226" y="120">C</text>
+      <text class="etxt" x="74" y="66">A &gt; B</text>
+      <text class="etxt" x="126" y="136">B &gt; C</text>
+      <text class="etxt bad" x="192" y="66">C &gt; A ?!</text>
+    </svg>
+    <p class="small">CR이 높은 기준을 눌러, 강조된 “가장 모순적인 응답”부터 조정하면
+      대개 기준을 충족할 수 있습니다.</p>
+  </div>
+
   <div id="crSummaryList" class="cr-summary-list"></div>
   <button class="btn-ghost" id="editAnswersBtn">처음부터 수정하기</button>
 </div>
