@@ -27,6 +27,8 @@
       <a class="btn sm" id="exportDocx" href="#">Word 설문지</a>
       <a class="btn sm" id="exportXlsx" href="#">Excel 패키지</a>
       <a class="btn sm" id="exportCsv" href="#">CSV 원자료</a>
+      <button type="button" class="btn sm" id="dlDiagramSvg" title="논문·편집용 벡터 SVG">계층도 SVG</button>
+      <button type="button" class="btn sm" id="dlDiagramPng" title="PNG 이미지">계층도 PNG</button>
     </div>
   </div>
 
@@ -36,6 +38,14 @@
       <span class="tc-meta" id="diagramToggleIcon">▸ 펼치기</span>
     </div>
     <div id="diagramContainer" class="hd-scroll" hidden></div>
+  </div>
+
+  <div class="table-card" id="demoCard" style="margin-bottom:14px" hidden>
+    <div class="tc-head">
+      <span class="tc-title">인구통계</span>
+      <button class="btn sm" id="demoFilterResetBtn" hidden>필터 초기화</button>
+    </div>
+    <div id="demoCardBody" style="padding:14px"></div>
   </div>
 
   <div id="resultError" class="empty-state" hidden>

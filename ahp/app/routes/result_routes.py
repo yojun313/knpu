@@ -12,9 +12,11 @@ from app.db import (
     hierarchies_db,
     collections_db,
     submissions_db,
+    respondents_db,
 )
 from app.services.result_service import build_results
 from app.services.ahp_calc import sensitivity as calc_sensitivity
+from app.services.demographics import resolve_for_export
 
 router = APIRouter()
 
@@ -62,6 +64,81 @@ async def _gather_final_submissions(
         if cur is None or sub["round"] > cur["round"]:
             latest_by_respondent[rid] = sub
     return {rid: sub["answers"] for rid, sub in latest_by_respondent.items()}
+
+
+async def _gather_respondents(
+    project_id: str, collection_ids: list[str] | None = None
+) -> dict[str, dict]:
+    """respondent_id -> 응답자 문서. 내보내기(인구통계)와 결과 필터가 공유한다."""
+    survey_ids = [
+        s["_id"] async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
+    ]
+    query = {"survey_id": {"$in": survey_ids}}
+    if collection_ids:
+        query = {"_id": {"$in": collection_ids}, "survey_id": {"$in": survey_ids}}
+    cids = [c["_id"] async for c in collections_db.find(query, {"_id": 1})]
+    if not cids:
+        return {}
+    return {
+        r["_id"]: r
+        async for r in respondents_db.find({"collection_id": {"$in": cids}})
+    }
+
+
+def _parse_demo_filters(raw: str | None) -> dict[str, set[str]]:
+    """`f1:1,f1:3,f2:2` → {f1: {"1","3"}, f2: {"2"}} (필드 간 AND, 필드 내 OR)."""
+    out: dict[str, set[str]] = {}
+    for pair in (raw or "").split(","):
+        fid, _, code = pair.partition(":")
+        fid, code = fid.strip(), code.strip()
+        if fid and code:
+            out.setdefault(fid, set()).add(code)
+    return out
+
+
+def _respondent_matches(attributes: dict, filters: dict[str, set[str]]) -> bool:
+    for fid, wanted in filters.items():
+        v = (attributes or {}).get(fid)
+        have = set(str(x) for x in v) if isinstance(v, (list, tuple)) else {str(v)}
+        if have.isdisjoint(wanted):
+            return False
+    return True
+
+
+def _demographics_summary(demographics: list[dict], respondents: list[dict]) -> list[dict]:
+    out = []
+    for f in demographics:
+        entry = {"id": f["id"], "label": f["label"], "type": f["type"]}
+        vals = [
+            r.get("attributes", {}).get(f["id"])
+            for r in respondents
+            if r.get("attributes", {}).get(f["id"]) not in (None, "", [])
+        ]
+        if f["type"] in ("single", "multi"):
+            counts: dict[str, int] = {}
+            for v in vals:
+                for code in v if isinstance(v, (list, tuple)) else [v]:
+                    counts[str(code)] = counts.get(str(code), 0) + 1
+            entry["distribution"] = [
+                {"code": o["code"], "label": o["label"], "count": counts.get(o["code"], 0)}
+                for o in f.get("options", [])
+            ]
+        elif f["type"] == "number":
+            nums = [float(v) for v in vals]
+            entry["stats"] = (
+                {
+                    "n": len(nums),
+                    "min": min(nums),
+                    "max": max(nums),
+                    "mean": round(sum(nums) / len(nums), 2),
+                }
+                if nums
+                else {"n": 0}
+            )
+        else:  # text
+            entry["n"] = len(vals)
+        out.append(entry)
+    return out
 
 
 async def _canonical_survey_and_hierarchy(project_id: str):
@@ -135,11 +212,32 @@ async def get_results(
     collection_id: str | None = Query(None),
     collection_ids: str | None = Query(None),
     rounds: str | None = Query(None),
+    demo_filters: str | None = Query(None),
 ):
     project = await _get_project_checked(project_id, request)
     survey, hierarchy = await _canonical_survey_and_hierarchy(project_id)
     ids, round_map = _parse_selection(collection_id, collection_ids, rounds)
     submissions = await _gather_final_submissions(project_id, ids, round_map)
+
+    demographics = survey.get("demographics", [])
+    respondents_by_id = (
+        await _gather_respondents(project_id, ids) if demographics else {}
+    )
+    # 분포 요약은 인구통계 필터 적용 전(수집 범위 내 제출자) 기준 — 칩 선택지가 실제 값
+    in_scope = [respondents_by_id[r] for r in submissions if r in respondents_by_id]
+    demographics_summary = (
+        _demographics_summary(demographics, in_scope) if demographics else []
+    )
+    demo_filter_map = _parse_demo_filters(demo_filters)
+    if demo_filter_map:
+        submissions = {
+            rid: ans
+            for rid, ans in submissions.items()
+            if _respondent_matches(
+                (respondents_by_id.get(rid) or {}).get("attributes", {}),
+                demo_filter_map,
+            )
+        }
 
     # 대안(hierarchy.alternatives)은 기준 트리(hierarchy.nodes)와 별도의 평탄한
     # 목록이라(PLAN.md 5절 결정), build_results에 그대로 넘기면 node_parent 등
@@ -174,7 +272,13 @@ async def get_results(
                 **alt_names,
             },
             "matrix_parent_names": matrix_parent_names,
-            "message": "아직 제출된 응답이 없습니다",
+            "demographics": demographics,
+            "demographics_summary": demographics_summary,
+            "message": (
+                "선택한 인구통계 조건에 해당하는 응답이 없습니다"
+                if demo_filter_map
+                else "아직 제출된 응답이 없습니다"
+            ),
         }
 
     results = build_results(
@@ -182,6 +286,8 @@ async def get_results(
     )
     results["node_names"].update(alt_names)
     results["matrix_parent_names"] = matrix_parent_names
+    results["demographics"] = demographics
+    results["demographics_summary"] = demographics_summary
     return results
 
 

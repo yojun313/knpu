@@ -126,6 +126,18 @@
     .admission-faq .accordion-body {
       color: #495057;
     }
+
+    .admission-faq .faq-group-title {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #002d56;
+      margin: 2rem 0 0.85rem;
+    }
+
+    .admission-faq .faq-group-title:first-child {
+      margin-top: 0;
+    }
   </style>
 </head>
 
@@ -145,7 +157,7 @@
     <div class="container">
       <div class="text-center">
         <h2 class="section-heading text-uppercase">선발 기준</h2>
-        <h3 class="section-subheading text-muted">본 연구원은 <br>학부 출신교 및 전공을 고려하지 않습니다.</h3>
+        <h3 class="section-subheading text-muted"><strong>본 연구원은 <br>학부 출신교 및 전공을 고려하지 않습니다.</strong></h3>
       </div>
       <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -242,20 +254,48 @@
             <table class="table table-bordered admission-table">
               <tbody>
                 <tr>
-                  <th scope="row">입학일</th>
-                  <td>2027. 3. 2.</td>
+                  <th scope="row">원서접수</th>
+                  <td>
+                    • 일정: 9. 1.(화) 09:00 ~ 9. 14.(월) 17:00<br>
+                    • 내용: 원서접수 대행업체인 진학사 원서접수 웹사이트(www.jinhakapply.com)에 접속하여 접수 (※ 인터넷 원서접수 장애 발생 시 문의처: 진학어플라이 ☎1544-7715)<br>
+                    • 비고: 방문 또는 우편접수 불가 / 접수증을 출력하여 접수 확인
+                  </td>
                 </tr>
                 <tr>
-                  <th scope="row">모집 기간</th>
-                  <td>2026. 8. 18. ~ 9. 10. (예정)</td>
+                  <th scope="row">서류심사</th>
+                  <td>
+                    • 일정: 9. 28.(월) ~ 10. 2.(금)<br>
+                    • 내용: 과정별 3배수 선발
+                  </td>
                 </tr>
                 <tr>
-                  <th scope="row">모집 정원</th>
-                  <td>석사과정, 박사과정 각 5명 이내<br>(단, 적격자 없을 경우 선발하지 않음)</td>
+                  <th scope="row">서류심사 합격자 발표</th>
+                  <td>
+                    • 일정: 10. 15.(목)<br>
+                    • 내용: 치안대학원 홈페이지 및 원서접수 대행업체(진학어플라이) 웹사이트(www.jinhakapply.com)
+                  </td>
                 </tr>
                 <tr>
-                  <th scope="row">지원 절차</th>
-                  <td>지원 절차, 제출 서류, 전형 방법 등 상세 내용은 치안대학원 공식 모집요강을 따릅니다.</td>
+                  <th scope="row">면접·구술 평가</th>
+                  <td>
+                    • 일정: 11. 9(월) ~ 11. 13.(금)<br>
+                    • 내용: 각 과정별, 학과별로 면접 구술 평가 실시 (※ 응시자가 많을 경우 평가 일정 조정 가능)
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">최종합격자 발표</th>
+                  <td>
+                    • 일정: 12. 3.(목)<br>
+                    • 내용: 경찰대학치안대학원 홈페이지
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">합격자 등록</th>
+                  <td>
+                    • 일정: 2027. 1월 중<br>
+                    • 내용: 합격자 발표 시 등록금 고지서 확인 후 신한은행 가상계좌로 납부 (상세사항은 합격자 공지사항으로 추후 안내)<br>
+                    • 비고: 고지서 교부(치안대학원 홈페이지 공지사항 참고)
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -264,13 +304,17 @@
             정확한 일정 및 세부 사항은 반드시<br>아래 최신 모집요강을 확인해 주시기 바랍니다.
           </p>
           <div class="text-center">
-            <a href="https://grad.police.ac.kr/admissions/recruitment.do" target="_blank" rel="noopener"
-              class="btn btn-dark me-2 mb-2">
-              <i class="fas fa-file-lines me-2"></i>치안대학원 모집요강 바로가기
+            <a href="/assets/imgs/[웹용] 2027 치안대학원 신입생 모집요강(2M).pdf" download
+              class="btn btn-outline-dark me-2 mb-2">
+              <i class="fas fa-file-lines me-2"></i>치안대학원 모집요강
             </a>
             <a href="/assets/imgs/20260729_admission_briefing.pdf" download
-              class="btn btn-outline-dark me-2 mb-2">
+              class="btn btn-dark me-2 mb-2">
               <i class="fas fa-file-pdf me-2"></i>2027학년도 입학설명회 자료
+            </a>
+            <a href="https://enter.jinhakapply.com/Notice/5072009/A" target="_blank" rel="noopener"
+              class="btn btn-outline-dark me-2 mb-2">
+              <i class="fas fa-pen-to-square me-2"></i>진학어플라이 원서접수
             </a>
           </div>
         </div>
@@ -289,9 +333,11 @@
           <p>
             본 연구실은 <strong>전일제 학위과정을 권고</strong>합니다. 통계·프로그래밍 등 새로 익혀야 할 교과·학습 내용이 많고,
             입학 이후 곧바로 실제 연구를 병행하며 논문화까지 이어지는 구조이기 때문입니다. 일반적인 사회과학 연구실보다 요구되는
-            학습량과 연구 강도가 높은 편이며, 이는 앞서 밝힌 '체력'을 선발 기준에 포함한 이유이기도 합니다.
+            학습량과 연구 강도가 높은 편이며, 이는 앞서 밝힌 '체력'을 선발 기준에 포함한 이유이기도 합니다.<br><br>입학을 고민 중이시라면, 이 점을 미리 고려하여 지원해 주시기 바랍니다.
           </p>
-          <p class="mb-0">입학을 고민 중이시라면, 이 점을 미리 고려하여 지원해 주시기 바랍니다.</p>
+        </div>
+        <div class="col-lg-8 mt-4">
+          <p>※ 경찰관의 경우, 주간 석사과정으로 입학 시 교육파견 형태로 복무하게 됩니다. 교육파견은 교육휴직과 다르게 경력과 호봉이 인정되며 보수가 지급되고, 교육기관 파견근무와 다르게 부서 배정이나 기본 근무가 없이 학업에 열중할 의무만이 부여됩니다.</p>
         </div>
       </div>
     </div>
@@ -577,7 +623,6 @@
   </section>
 
 
-Admission faq merged · HTML
   <!-- FAQ -->
   <section class="page-section" id="admission-faq">
     <div class="container">
@@ -586,371 +631,71 @@ Admission faq merged · HTML
       </div>
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <div class="accordion admission-faq" id="admissionFaqAccordion">
- 
-            <h3 class="faq-group-title">01 · 지원 · 선발</h3>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading1">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse1" aria-expanded="true" aria-controls="admissionFaqCollapse1">
-                  Q1. 현직 경찰이 아닌 일반 학생들도 석사과정 진학 및 연구 참여가 활발히 이루어지는지, 또한 졸업 후 일반 학생들의 주요 진로는 어떻게 되는지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse1" class="accordion-collapse collapse show"
-                aria-labelledby="admissionFaqHeading1" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  경찰대학 치안대학원 규정상 전체 정원의 1/3 정도를 일반인으로 선발합니다. 경찰이 아니어도 진학가능합니다. 치안대학원 내 타 학과의 박사졸업생들의 진로에 대해선 교수, 연구원 등이 있습니다. 아직 본 데이터사이언스 전공에선 박사학위자가 없습니다만, 좋은 연구실적을 바탕으로 희망하는 진로로 갈 수 있을 것으로 예상합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading2">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse2" aria-expanded="false" aria-controls="admissionFaqCollapse2">
-                  Q2. 박사과정 모집 인원은 어떻게 되나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse2" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading2" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  데이터사이언스 전공 박사과정은 전일제와 파트타임 박사의 구분이 없으며, 최소 5명입니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading3">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse3" aria-expanded="false" aria-controls="admissionFaqCollapse3">
-                  Q3. 대학원생 모집 기간 중 휴직 상태인데 주간석사위탁과정에 지원이 가능한가요? (합격 시 복직 예정)
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse3" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading3" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  네, 지원이 가능합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading4">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse4" aria-expanded="false" aria-controls="admissionFaqCollapse4">
-                  Q4. 박사과정 모집할 때 경찰과 일반인은 나누어서 선발하나요, 통합해서 선발하나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse4" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading4" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  별도 구분 없이 통합해서 선발합니다. 참고로 전체인원의 2/3는 경찰관, 1/3은 일반인 선발을 권장하고 있지만, 위 사항은 권장사항일 뿐 지원자의 경험 등 도메인 지식으로 우수인력 선발에 중점을 두고 있습니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading5">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse5" aria-expanded="false" aria-controls="admissionFaqCollapse5">
-                  Q5. 박사과정도 파견근무·전일제 이수가 가능한가요? 향후 전일제 박사과정도 예정되어 있나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse5" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading5" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  박사과정은 전일제 석사과정과 달리 파견근무로 인정되지 않습니다. 아직 경찰청에선 치안대학원 박사과정에 대한 파견근무 제도를 운영하지 않기 때문에, 재직 경찰관의 경우 전일제가 아닌 파트타임 박사과정이 기본 전제입니다.<br><br>
-                  다만 전일제 박사과정 선발 자체는 이번에도 함께 이루어지고 있습니다. 업무·직장 등 개인 환경 때문에 파트타임 위주로 안내드렸을 뿐, 전일제 박사과정 선발을 기본으로 하고 있으며 교육과정도 파트타임 박사과정에 대해 탄력적으로 운영할 계획입니다.
-                </div>
-              </div>
-            </div>
- 
-            <h3 class="faq-group-title">02 · 근무형태 · 일과</h3>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading6">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse6" aria-expanded="false" aria-controls="admissionFaqCollapse6">
-                  Q6. 연구실 생활은 어떤 방식으로 운영되는지 궁금합니다. 출퇴근 형식인지 여부와 그 시간, 외부 근로 병행 가능 여부, 그리고 실제 일과표가 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse6" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading6" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  일반적인 인문사회분야의 연구실과 달리 KAIST, POSTECH의 연구실과 동일한 형태의 랩으로 운영되고 있습니다. 전일제 석사과정인 경찰관들은 '파견 근무'이므로 기본적으로 9-18이며, 별도의 방학이 부여되지 않습니다. 박사과정의 경우 현직 경찰관들은 전일제가 불가능하므로 파트타임 박사로 학업을 수행하게 되며, 일반인의 경우 경찰관과 동일하되 박사과정은 전일제로도 학업이 가능합니다.<br><br>
-                  실제로는 평일에 연구실로 출퇴근하고, 주말은 각자 개인 활동 시간을 갖는 분위기입니다. 현재 석사생들은 보통 8시 30분에서 9시 이전에 출근해서, 늦을 경우 23시나 익일 1~2시에 퇴근합니다. 출퇴근 시간은 절대 강요사항이 아니며, 다만 논문연구와 개인 학습을 열심히 하는 분위기라서 늦게 퇴근하는 경우가 많습니다. 18시 이후 기숙사 생활 등 개인 시간을 갖는 것은 전혀 제한하지 않습니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading7">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse7" aria-expanded="false" aria-controls="admissionFaqCollapse7">
-                  Q7. 방학이 없다고 하는데, 석사 과정 내내 연구를 하는 건가요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse7" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading7" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  네, 맞습니다. 방학이 없고 현업에서 근무하는 것처럼 연구실에 출퇴근 하시면 됩니다. 근무환경이 현업부서에서 연구실로 달라지고, 업무가 열심히 공부하는 대학원생이라고 생각하시면 됩니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading8">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse8" aria-expanded="false" aria-controls="admissionFaqCollapse8">
-                  Q8. 현직 경찰관입니다. 전일제 석사과정 중 육아 및 개인 사정으로 주 2-3일 정도 연구실에 출근하는 것이 가능한지요? 또한, 방학 기간 중 집에서 개인 연구 수행이 가능한지요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse8" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading8" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  불가하며, 지원을 권장하지 않습니다. 연구실에선 아침부터 새벽 시간까지 연구하는 문화가 정착되어 있습니다. 함께 프로젝트를 수행하는 경우가 많으므로, 주 2-3일 등교나 방학기간 중 개인 연구는 타 대학원생들의 학업에도 매우 부정적인 영향을 줍니다. 아울러, 대학원생의 연구 지원을 위해 개인별 고정좌석이 제공되므로 학업에 상당한 도움이 될 것입니다.
-                </div>
-              </div>
-            </div>
- 
-            <h3 class="faq-group-title">03 · 수업 · 커리큘럼</h3>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading9">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse9" aria-expanded="false" aria-controls="admissionFaqCollapse9">
-                  Q9. 서울경찰청 근무와 박사과정 병행이 가능한지 궁금합니다. 또한 수업 장소와 야간·주말 수업 운영 여부, 파트타임 박사과정 수업 시간이 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse9" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading9" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  충분히 병행 가능합니다. 아산학습관에서 필수과목 2과목 외엔 모두 서울학습관에서 개설되는 주중 주간 및 주말 수업으로 박사학위 학점을 취득할 수 있습니다. 다만, 졸업을 위한 연구 논문 작성을 위해 최대한 아산학습관에서의 연구활동을 권장합니다.<br><br>
-                  파트타임 박사과정 수업은 경찰대학 아산캠퍼스에서 월요일 15:00~18:00 / 월요일 19:00~22:00에 진행됩니다. 수도권에 거주 중인 파트타임 박사과정 학생이더라도, 최소한 한 학기 이상 아산캠퍼스에서 수업을 듣고, 연구실 일원으로서 공감대를 형성하길 추천합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading10">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse10" aria-expanded="false" aria-controls="admissionFaqCollapse10">
-                  Q10. 석사과정에서 야간 수업도 자주 진행되나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse10" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading10" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  치안대학원엔 4개의 학과가 있으며, 미래치안과학융합학과를 제외한 3개의 학과는 서울학습관에 야간 석사과정이 개설되어 있습니다. 그러나, 미래치안과학융합학과 데이터사이언스전공의 주간석사과정은 100% 전일제로 경찰대학 본원인 아산학습관에서 진행되고 있습니다. 데이터사이언스전공 학생들이 규정에 따라 서울학습관의 야간과정에서 타 학과 수업을 들을 수도 있습니다만, 본 전공 주간석사과정 원생들은 연구실 생활을 하기 때문에 타 학과의 야간 수업 수강을 권장하지 않습니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading11">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse11" aria-expanded="false" aria-controls="admissionFaqCollapse11">
-                  Q11. 개설 교과목이 모두 영문으로 되어 있는데, 수업이 영어로 진행되는지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse11" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading11" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  아닙니다. 재학생들이 모두 한국인 학생들이고 학업의 편의성을 위해 모든 수업은 국문으로 진행하고 있습니다. 다만, 외국인 학생들이 치안대학원에 점차 늘어나고 있으므로, 상황에 따라 영어강의로 진행될 수 있습니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading12">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse12" aria-expanded="false" aria-controls="admissionFaqCollapse12">
-                  Q12. 석사 수업과목은 어떻게 되나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse12" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading12" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  석·박사 커리큘럼은 연구실 홈페이지를 참고하시길 바랍니다.
-                </div>
-              </div>
-            </div>
- 
-            <h3 class="faq-group-title">04 · 연구 · 방법론</h3>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading13">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse13" aria-expanded="false" aria-controls="admissionFaqCollapse13">
-                  Q13. 텍스트 마이닝 혹은 자연어 처리 위주의 방법론이 연구실에서 선호하는 주요 방법론인지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse13" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading13" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  지금까지 여러 대학원생들이 텍스트 마이닝 기법을 활용하여 자연어 처리 연구를 수행해왔습니다. 그러나, 본 연구실에선 방법론을 정해놓지 않았습니다. 본인이 희망하는 연구 주제를 선정해서 연구를 수행하면 됩니다. 기존의 연구실 연구 실적을 통해 확인이 가능합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading14">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse14" aria-expanded="false" aria-controls="admissionFaqCollapse14">
-                  Q14. 교통공학 석사학위 소지자로서 교통 데이터 분석 경험(SPSS, ArcGIS, EMME3 등)이 있습니다. 교통 분야 전공자도 박사과정에 지원할 수 있는지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse14" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading14" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  교통공학분야는 데이터사이언스에서 권장하는 통계, 프로그래밍, 특정분야 도메인 지식을 모두 학습하고 연구하는 분야입니다. 교통 분야 석사학위자의 지원을 환영합니다. 본 데이터사이언스전공 박사과정에서 보다 깊이 있는 학업과 연구를 수행해주길 기대합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading15">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse15" aria-expanded="false" aria-controls="admissionFaqCollapse15">
-                  Q15. 데이터사이언스·AI 분야 석사 전공자가 아니어도 박사과정에 지원할 수 있는지 궁금합니다. 입학 후에는 AI를 활용한 경찰·심리·공동안전 분야를 연구하고 싶습니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse15" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading15" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  통계, 프로그래밍에 대한 기본 지식을 쌓았다면, 데이터사이언스 분야 석사 전공자가 아니어도 박사과정에 지원 가능합니다. 본 박사과정에 진학해서, 열심히 하는 것이 가장 중요합니다. 아울러, AI를 활용한 경찰·심리·공동안전 분야에 대한 연구를 희망하는 것은 본인의 경찰/치안 도메인 지식을 접목한 AI 연구이므로, 매우 탁월한 연구 방향이자 주제라고 판단합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading16">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse16" aria-expanded="false" aria-controls="admissionFaqCollapse16">
-                  Q16. 회귀분석이나 통계학이 데이터사이언스쪽에서 어떻게 활용되는지, 반드시 익혀야 할 통계도구가 있다면 궁금합니다. 그리고 박사과정에서 배우는 통계학 책도 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse16" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading16" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  통계학은 사용 분야에 따라서 의학 통계, 교육 통계, 심리 통계, 범죄 통계 등으로 불리지만 수학자와 통계학자가 만들어낸 기법으로 다르지 않습니다. 데이터사이언스는 수많은 데이터의 처리·분석 등을 위해서 통계를 사용하고 있으며 SPSS, Python, VOSviewer, Stata 등 다양한 통계도구를 활용하고 있습니다. 기초 통계학을 위한 '현대통계학'이라는 통계학 책을 미리 공부하면 도움이 됩니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading17">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse17" aria-expanded="false" aria-controls="admissionFaqCollapse17">
-                  Q17. 석사과정에서 논문을 몇 편이나 쓰나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse17" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading17" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  현재 석사생들 기준으로 보통 2편 이상을 쓰고 있습니다. 선수학습이 되어 있지 않고 논문 작성 경험이 없어도, 지도교수님이 연구방법론 등 논문 작성 방법 및 노하우를 가르쳐 주십니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading18">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse18" aria-expanded="false" aria-controls="admissionFaqCollapse18">
-                  Q18. 연구실에 구비된 장비가 있는지, 그리고 코드 부분이 정형화되어서 연구실에서 공유가 되고 있는지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse18" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading18" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  네, 모든 연구 장비가 구비되어 있습니다. 고용량의 서버, 워크스테이션 등이 있으며 데이터 수집·분석을 자동화할 수 있는 AI가 탑재된 소프트웨어도 준비되어 있습니다. 코드 부분도 정형화되어 있고 연구실에 다 공유되고 있습니다. 자세한 부분은 연구실 홈페이지를 참고하셔도 좋습니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading19">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse19" aria-expanded="false" aria-controls="admissionFaqCollapse19">
-                  Q19. KCI뿐만 아니라 SCI(E) 국제학술지 게재를 목표로 할 경우, 교수님의 지원이나 해외공동연수 기회가 어느 정도 제공되는지 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse19" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading19" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  현재 연구실에서 SCI(E)급 논문 게재를 적극 권장하고 있습니다. 지도교수님께서 SCI급 탑저널 논문을 20편 이상(연구실 홈페이지 참조) 갖고 계셔서, SCI(E)급 논문 지도가 가능합니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading20">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse20" aria-expanded="false" aria-controls="admissionFaqCollapse20">
-                  Q20. 박사학위에 요구되는 프로그래밍(바이브 코딩) 실력 및 재학생 기준 실력이 궁금합니다.
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse20" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading20" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  기본 실력이라고 생각하시면 됩니다. '혼자 공부하는 바이브 코딩 with 클로드 코드(한빛미디어)'를 학습하길 추천합니다.
-                </div>
-              </div>
-            </div>
- 
-            <h3 class="faq-group-title">05 · 복지 · 기타</h3>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading21">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse21" aria-expanded="false" aria-controls="admissionFaqCollapse21">
-                  Q21. 박사과정에도 장학금 제도가 있나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse21" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading21" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  네, 있습니다. 입학우수 장학금/성적우수 장학금/연구·강의지원 장학금/학사·학술지원 장학금/면학 장학금이 있으며, 자세한 사항은 경찰대학 치안대학원 홈페이지나 연구실 홈페이지를 참고해 주시기 바랍니다. (연구실 홈페이지: https://knpu.re.kr)
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading22">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse22" aria-expanded="false" aria-controls="admissionFaqCollapse22">
-                  Q22. 석사 대학원생에게 관사가 지원되나요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse22" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading22" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  네, 지원이 됩니다. 현재 경찰대학 치안대학원에서 기숙사가 제공되고 있으며, 기숙사비는 현재 기준 월 148,000원입니다.
-                </div>
-              </div>
-            </div>
- 
-            <div class="accordion-item">
-              <h3 class="accordion-header" id="admissionFaqHeading23">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#admissionFaqCollapse23" aria-expanded="false" aria-controls="admissionFaqCollapse23">
-                  Q23. 대학원 입시를 위해 준비할 자격증이 있을까요?
-                </button>
-              </h3>
-              <div id="admissionFaqCollapse23" class="accordion-collapse collapse"
-                aria-labelledby="admissionFaqHeading23" data-bs-parent="#admissionFaqAccordion">
-                <div class="accordion-body">
-                  입시를 위해 특별히 준비할 자격증은 없습니다. 그러나, 입학 이후 본인의 학업을 위해 사회조사분석사, ADP(데이터분석전문가)/ADsP(데이터분석준전문가), 빅데이터분석기사, SQLD(SQL 개발자)/SQLP(SQL 전문가), 정보보안기사 등 자격증을 취득해놓으면 도움이 될 것입니다. 아울러, 우대요건으로 작성된 자격증도 단순 예시입니다.
-                </div>
-              </div>
-            </div>
- 
-          </div>
+          <div class="accordion admission-faq" id="admissionFaqAccordion"></div>
+          <p id="admissionFaqEmpty" class="text-center text-muted mb-0" style="display: none;">
+            등록된 FAQ가 없습니다.
+          </p>
         </div>
       </div>
     </div>
   </section>
+
+  <script>
+    // 입시 FAQ는 knpu.re.kr/admin에서 관리하며, /api/faq/ 로 불러와 렌더링한다.
+    (function () {
+      var accordion = document.getElementById("admissionFaqAccordion");
+      var emptyMsg = document.getElementById("admissionFaqEmpty");
+      if (!accordion) return;
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+        });
+      }
+      function answerHtml(s) {
+        return esc(s).replace(/\r\n|\r|\n/g, "<br>");
+      }
+
+      fetch("/api/faq/")
+        .then(function (res) { return res.ok ? res.json() : []; })
+        .then(function (items) {
+          items = Array.isArray(items) ? items : [];
+          if (!items.length) {
+            emptyMsg.style.display = "block";
+            return;
+          }
+
+          var html = "";
+          var lastCategory = null;
+          items.forEach(function (item, idx) {
+            var n = idx + 1;
+            var cat = (item.category || "").trim();
+            if (cat && cat !== lastCategory) {
+              html += '<h3 class="faq-group-title">' + esc(cat) + "</h3>";
+              lastCategory = cat;
+            }
+            var open = idx === 0;
+            html +=
+              '<div class="accordion-item">' +
+              '<h3 class="accordion-header" id="admissionFaqHeading' + n + '">' +
+              '<button class="accordion-button' + (open ? "" : " collapsed") + '" type="button" ' +
+              'data-bs-toggle="collapse" data-bs-target="#admissionFaqCollapse' + n + '" ' +
+              'aria-expanded="' + (open ? "true" : "false") + '" aria-controls="admissionFaqCollapse' + n + '">' +
+              "Q" + n + ". " + esc(item.question || "") +
+              "</button></h3>" +
+              '<div id="admissionFaqCollapse' + n + '" class="accordion-collapse collapse' + (open ? " show" : "") + '" ' +
+              'aria-labelledby="admissionFaqHeading' + n + '" data-bs-parent="#admissionFaqAccordion">' +
+              '<div class="accordion-body">' + answerHtml(item.answer || "") + "</div>" +
+              "</div></div>";
+          });
+          accordion.innerHTML = html;
+        })
+        .catch(function () {
+          emptyMsg.textContent = "FAQ를 불러오지 못했습니다.";
+          emptyMsg.style.display = "block";
+        });
+    })();
+  </script>
 
   <!-- 문의 -->
   <section class="page-section bg-light" id="admission-contact">

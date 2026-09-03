@@ -4,6 +4,7 @@
   const projectId = location.pathname.split('/')[2];
   let survey = null;
   let diagramLoaded = false;
+  let projectSettings = {};
 
   const STATUS_LABEL = { draft: '초안', published: '발행됨' };
   const STATUS_BADGE = { draft: 'muted', published: 'ok' };
@@ -137,6 +138,7 @@
     try {
       const project = await ahpApi('/api/projects/' + projectId);
       document.getElementById('projTitle').textContent = project.title + ' · 설문지';
+      projectSettings = project.settings || {};
       if (window.AHPShell) window.AHPShell.setActiveProject(projectId);
     } catch (e) {
       ahpToast('프로젝트를 불러오지 못했습니다', true);
@@ -195,6 +197,120 @@
     });
     document.getElementById('publishBtn').addEventListener('click', publish);
     wireDiagramToggle();
+
+    const demoOn = projectSettings.collect_demographics === 'on';
+    document.getElementById('demographicsCard').hidden = !demoOn;
+    if (demoOn) {
+      demoFields = JSON.parse(JSON.stringify(survey.demographics || []));
+      renderDemoFields();
+      if (!demoWired) { wireDemographics(); demoWired = true; }
+    }
+  }
+
+  // ── 인구통계 설계 패널 ────────────────────────────────────────────────────
+  const DEMO_TYPES = [
+    { v: 'single', label: '단일선택' },
+    { v: 'multi', label: '복수선택' },
+    { v: 'number', label: '숫자' },
+    { v: 'text', label: '단답형' },
+  ];
+  let demoFields = [];
+  let demoWired = false;
+
+  function renderDemoFields() {
+    const box = document.getElementById('demoFieldList');
+    if (!demoFields.length) {
+      box.innerHTML = '<p class="muted" style="font-size:12px">추가된 항목이 없습니다.</p>';
+      return;
+    }
+    box.innerHTML = demoFields.map(function (f, i) {
+      const typeOpts = DEMO_TYPES.map(function (t) {
+        return '<option value="' + t.v + '"' + (t.v === f.type ? ' selected' : '') + '>' + t.label + '</option>';
+      }).join('');
+      const isChoice = f.type === 'single' || f.type === 'multi';
+      const optsHtml = isChoice ? (
+        '<div class="demo-opts-editor">' +
+        (f.options || []).map(function (o, j) {
+          return '<div class="demo-opt-row">' +
+            '<input class="demo-opt-label" data-fi="' + i + '" data-oi="' + j + '" placeholder="보기(예: 남)" value="' + ahpEsc(o.label || '') + '">' +
+            '<input class="demo-opt-code" data-fi="' + i + '" data-oi="' + j + '" placeholder="코드" value="' + ahpEsc(o.code || '') + '">' +
+            '<button type="button" class="btn sm" data-act="del-opt" data-fi="' + i + '" data-oi="' + j + '">×</button></div>';
+        }).join('') +
+        '<button type="button" class="btn sm" data-act="add-opt" data-fi="' + i + '">＋ 보기 추가</button></div>'
+      ) : '';
+      return '<div class="demo-field-card">' +
+        '<div class="demo-field-head">' +
+        '<input class="demo-field-label" data-fi="' + i + '" placeholder="항목 이름(예: 성별)" value="' + ahpEsc(f.label || '') + '">' +
+        '<select class="demo-field-type" data-fi="' + i + '">' + typeOpts + '</select>' +
+        '<label class="demo-req-check"><input type="checkbox" class="demo-field-req" data-fi="' + i + '"' + (f.required ? ' checked' : '') + '> 필수</label>' +
+        '<button type="button" class="btn sm" data-act="del-field" data-fi="' + i + '">삭제</button>' +
+        '</div>' + optsHtml + '</div>';
+    }).join('');
+  }
+
+  function syncDemoFromDom() {
+    document.querySelectorAll('.demo-field-label').forEach(function (el) {
+      demoFields[+el.dataset.fi].label = el.value;
+    });
+    document.querySelectorAll('.demo-field-req').forEach(function (el) {
+      demoFields[+el.dataset.fi].required = el.checked;
+    });
+    document.querySelectorAll('.demo-opt-label').forEach(function (el) {
+      const f = demoFields[+el.dataset.fi];
+      f.options[+el.dataset.oi] = f.options[+el.dataset.oi] || {};
+      f.options[+el.dataset.oi].label = el.value;
+    });
+    document.querySelectorAll('.demo-opt-code').forEach(function (el) {
+      const f = demoFields[+el.dataset.fi];
+      f.options[+el.dataset.oi] = f.options[+el.dataset.oi] || {};
+      f.options[+el.dataset.oi].code = el.value;
+    });
+  }
+
+  async function saveDemographics() {
+    syncDemoFromDom();
+    try {
+      const res = await ahpApi('/api/projects/' + projectId + '/survey', {
+        method: 'PUT', body: { demographics: demoFields },
+      });
+      survey.demographics = res.demographics || [];
+      demoFields = JSON.parse(JSON.stringify(survey.demographics));
+      renderDemoFields();
+      ahpToast('인구통계 설계를 저장했습니다');
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    }
+  }
+
+  function wireDemographics() {
+    document.getElementById('addDemoFieldBtn').addEventListener('click', function () {
+      syncDemoFromDom();
+      demoFields.push({ label: '', type: 'single', required: false, options: [{ label: '', code: '1' }] });
+      renderDemoFields();
+    });
+    document.getElementById('saveDemoBtn').addEventListener('click', saveDemographics);
+    const list = document.getElementById('demoFieldList');
+    list.addEventListener('change', function (e) {
+      if (!e.target.classList.contains('demo-field-type')) return;
+      syncDemoFromDom();
+      const f = demoFields[+e.target.dataset.fi];
+      f.type = e.target.value;
+      if ((f.type === 'single' || f.type === 'multi') && !(f.options && f.options.length)) {
+        f.options = [{ label: '', code: '1' }];
+      }
+      renderDemoFields();
+    });
+    list.addEventListener('click', function (e) {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      syncDemoFromDom();
+      const fi = +btn.dataset.fi;
+      const act = btn.dataset.act;
+      if (act === 'del-field') demoFields.splice(fi, 1);
+      else if (act === 'add-opt') demoFields[fi].options.push({ label: '', code: String((demoFields[fi].options || []).length + 1) });
+      else if (act === 'del-opt') demoFields[fi].options.splice(+btn.dataset.oi, 1);
+      renderDemoFields();
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

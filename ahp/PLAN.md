@@ -148,9 +148,13 @@ _id, project_id, hierarchy_version, version,
 title, intro_text, consent_text,      # 응답자에게 보일 안내·동의 문안
 node_descriptions: { <node_uuid>: "설명" },
 matrices: [ { matrix_id, parent_uuid, child_uuids[], question_text } ],
+demographics: [ { id, label, type(single|multi|number|text), required, order,
+                  options:[{code,label}] } ],   # project.settings.collect_demographics=on일 때
 status(draft|published|closed), created_at, updated_at
 ```
 > `matrices`는 계층에서 자동 생성(부모마다 1개). `matrix_id`도 안정 ID.
+> `demographics`는 node_descriptions처럼 구조 아닌 편집물 — 버전 안 올리고 이 문서에 저장.
+> 정규화·값 파싱·내보내기 라벨 해석은 `app/services/demographics.py` 한 곳에서만.
 
 **`collections`** — 수집 회차 (모드가 여기 붙는다)
 ```
@@ -165,7 +169,7 @@ opened_at, closed_at
 ```
 _id, collection_id, code_hash, label,  # label = "참여자 A-17"
 source(web|manual),                    # manual = 관리자가 종이 입력
-attributes: { field, career_years },   # 선택적 층화 변수
+attributes: { <field_id>: <value> },   # 인구통계 응답. single→코드, multi→[코드], number→숫자, text→문자열
 consent_at, created_at
 ```
 

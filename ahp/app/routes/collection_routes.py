@@ -16,7 +16,13 @@ from app.db import (
     results_db,
     imports_db,
 )
-from app.services.codes import generate_code, hash_code, generate_access_token
+from app.services.codes import (
+    generate_code,
+    hash_code,
+    generate_access_token,
+    dedupe_label,
+    seq_letters,
+)
 from app.services.ahp_calc import derive_weights, IncompleteMatrixError
 from app.services.aggregate import find_outliers, aggregate_aij, aggregate_aip
 from app.services.consistency import worst_offending_pairs
@@ -193,6 +199,28 @@ async def delete_collection(collection_id: str, request: Request):
     return {"status": "deleted", "id": cid}
 
 
+async def _collection_seq_letter(collection: dict) -> str:
+    """이 수집이 속한 프로젝트에서 몇 번째로 생성된 수집인지를 A, B, C… 문자로.
+    (opened_at 순서 기준. 저장하지 않고 매번 계산 — 기존 수집도 자동 정합.)"""
+    project = await _project_for_survey(collection["survey_id"])
+    if not project:
+        return "A"
+    survey_ids = [
+        s["_id"]
+        async for s in surveys_db.find({"project_id": project["_id"]}, {"_id": 1})
+    ]
+    ordered = [
+        c["_id"]
+        async for c in collections_db.find(
+            {"survey_id": {"$in": survey_ids}}, {"_id": 1}
+        ).sort("opened_at", 1)
+    ]
+    try:
+        return seq_letters(ordered.index(collection["_id"]))
+    except ValueError:
+        return seq_letters(len(ordered))
+
+
 @router.post("/api/collections/{collection_id}/codes")
 async def issue_codes(collection_id: str, request: Request):
     doc = await _get_collection_checked(collection_id, request)
@@ -206,11 +234,21 @@ async def issue_codes(collection_id: str, request: Request):
     if not (1 <= count <= 500):
         raise HTTPException(400, "한 번에 1~500개까지 발급할 수 있습니다")
 
+    letter = await _collection_seq_letter(doc)
+    start = await respondents_db.count_documents({"collection_id": collection_id})
+    existing_labels = {
+        r["label"]
+        async for r in respondents_db.find(
+            {"collection_id": collection_id}, {"label": 1}
+        )
+    }
+
     issued = []
     for i in range(count):
         code = generate_code()
         rid = uuid.uuid4().hex
-        label = f"참여자 {chr(65 + (i % 26))}-{i + 1}"
+        label = dedupe_label(f"참여자 {letter}-{start + i + 1}", existing_labels)
+        existing_labels.add(label)
         await respondents_db.insert_one(
             {
                 "_id": rid,
@@ -629,7 +667,7 @@ async def request_individual_revision(
     """이 참여자 한 명만 이미 지난 섹션도 다시 조정할 수 있게 한다(요청사항
     5단계 "CR 값을 토대로 수정을 요구"). respond_routes.put_answer가
     revision_matrix_id를 확인해 실제로 PUT을 허용한다."""
-    await _get_collection_checked(collection_id, request)
+    collection = await _get_collection_checked(collection_id, request)
     r = await respondents_db.find_one(
         {"_id": respondent_id, "collection_id": collection_id}
     )
@@ -638,10 +676,24 @@ async def request_individual_revision(
     await respondents_db.update_one(
         {"_id": respondent_id}, {"$set": {"revision_matrix_id": matrix_id}}
     )
+
+    # 이 참여자 본인의 이 기준 답 중 가장 모순적인 쌍 + 응답형 추천값을 함께 보내
+    # 수정 화면에서 "어디를 어떻게 고칠지"를 바로 보여준다.
+    worst_pairs = []
+    try:
+        matrix, responses_by_rid = await _matrix_and_answers(collection, matrix_id)
+        pairs = responses_by_rid.get(respondent_id, {})
+        if len(matrix["child_uuids"]) >= 3 and pairs:
+            worst_pairs = [
+                w.to_dict() for w in worst_offending_pairs(matrix["child_uuids"], pairs)
+            ]
+    except Exception:
+        worst_pairs = []
+
     await hub.publish(
         collection_id,
         "section.revision_requested",
-        {"matrix_id": matrix_id},
+        {"matrix_id": matrix_id, "worst_pairs": worst_pairs},
         only_role_prefix=f"respondent:{respondent_id}",
     )
     return {"status": "requested"}

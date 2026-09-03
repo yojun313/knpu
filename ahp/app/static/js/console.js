@@ -277,8 +277,10 @@
 
     document.getElementById('sectionWorstPairs').innerHTML = (snap.worst_pairs || []).length
       ? snap.worst_pairs.map(function (w) {
+        var given = w.given_label || w.given_value.toFixed(2);
+        var sug = w.suggested_label || w.suggested_value.toFixed(2);
         return '<div class="warn-item">⚠ ' + ahpEsc(nodeNameFromHierarchy(w.uuid_a)) + ' vs ' + ahpEsc(nodeNameFromHierarchy(w.uuid_b)) +
-          ' — 응답값 ' + w.given_value.toFixed(2) + ', 그룹 관점 권장값 ' + w.suggested_value.toFixed(2) + '</div>';
+          ' — 응답값 ' + ahpEsc(given) + ', 그룹 관점 권장값 ' + ahpEsc(sug) + '</div>';
       }).join('')
       : '';
   }

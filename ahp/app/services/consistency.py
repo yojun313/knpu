@@ -10,6 +10,21 @@ import numpy as np
 
 from app.services.ahp_calc import build_matrix, eigen_weights, pair_id
 
+# Saaty 눈금 값(왼쪽 9배 … 동일 … 오른쪽 9배). 응답 화면·CSV가 받는 것과 동일.
+_SAATY_VALUES = [1 / k for k in range(9, 1, -1)] + [1.0] + list(range(2, 10))
+
+
+def nearest_saaty_label(value: float) -> str:
+    """임의의 실수(예: 일관성 행렬이 함의하는 w_i/w_j)를 응답 가능한 Saaty 눈금 중
+    로그거리 최근접 값으로 스냅해 사람이 읽는 형태("3", "1/3")로 돌려준다 —
+    소수 추천값은 진행자·참여자 모두 이해하기 어렵다는 요청사항."""
+    if value <= 0:
+        return "1"
+    best = min(_SAATY_VALUES, key=lambda s: abs(math.log(s) - math.log(value)))
+    if best >= 1:
+        return str(int(round(best)))
+    return f"1/{int(round(1 / best))}"
+
 
 class WorstPair:
     __slots__ = (
@@ -35,7 +50,9 @@ class WorstPair:
             "uuid_a": self.uuid_a,
             "uuid_b": self.uuid_b,
             "given_value": round(self.given_value, 3),
+            "given_label": nearest_saaty_label(self.given_value),
             "suggested_value": round(self.suggested_value, 3),
+            "suggested_label": nearest_saaty_label(self.suggested_value),
             "deviation": round(self.deviation, 3),
         }
 

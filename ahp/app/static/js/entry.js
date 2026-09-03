@@ -83,6 +83,7 @@
     const box = document.getElementById('matricesForm');
     const resp = currentRespondent();
     updateSubmitButton();
+    renderDemoEdit();
     if (!resp) {
       box.innerHTML = '<p style="color:var(--sidebar-muted);font-size:12.5px">왼쪽에서 응답자를 선택하세요.</p>';
       return;
@@ -113,6 +114,72 @@
       const answeredCount = Object.keys(resp.answers[m.matrix_id] || {}).length;
       applyCrBadge(m.matrix_id, (resp.cr_by_matrix || {})[m.matrix_id], answeredCount);
     });
+  }
+
+  // ── 인구통계 편집(선택된 응답자) ──────────────────────────────────────────
+  function renderDemoEdit() {
+    const card = document.getElementById('demoEditCard');
+    const demographics = grid.demographics || [];
+    if (!demographics.length) { card.hidden = true; return; }
+    card.hidden = false;
+    const resp = currentRespondent();
+    document.getElementById('demoEditSaveBtn').disabled = !resp;
+    document.getElementById('demoEditWho').textContent = resp ? resp.label : '응답자를 선택하세요';
+    const box = document.getElementById('demoEditForm');
+    if (!resp) { box.innerHTML = ''; return; }
+    const saved = resp.attributes || {};
+    box.innerHTML = demographics.map(function (f) {
+      const v = saved[f.id];
+      let control = '';
+      if (f.type === 'single') {
+        control = '<select class="demo-input" data-fid="' + f.id + '" data-type="single">' +
+          '<option value="">(미입력)</option>' +
+          (f.options || []).map(function (o) {
+            return '<option value="' + ahpEsc(o.code) + '"' + (String(v) === String(o.code) ? ' selected' : '') + '>' + ahpEsc(o.label) + '</option>';
+          }).join('') + '</select>';
+      } else if (f.type === 'multi') {
+        const set = Array.isArray(v) ? v.map(String) : [];
+        control = '<div data-fid="' + f.id + '" data-type="multi" class="demo-multi">' +
+          (f.options || []).map(function (o) {
+            return '<label class="demo-choice"><input type="checkbox" value="' + ahpEsc(o.code) + '"' + (set.indexOf(String(o.code)) !== -1 ? ' checked' : '') + '> ' + ahpEsc(o.label) + '</label>';
+          }).join('') + '</div>';
+      } else if (f.type === 'number') {
+        control = '<input type="number" class="demo-input" data-fid="' + f.id + '" data-type="number" value="' + (v != null ? ahpEsc(v) : '') + '">';
+      } else {
+        control = '<input type="text" class="demo-input" data-fid="' + f.id + '" data-type="text" value="' + (v != null ? ahpEsc(v) : '') + '">';
+      }
+      return '<div class="field"><label>' + ahpEsc(f.label) + (f.required ? ' *' : '') + '</label>' + control + '</div>';
+    }).join('');
+  }
+
+  function readDemoEditForm() {
+    const out = {};
+    document.querySelectorAll('#demoEditForm [data-fid]').forEach(function (el) {
+      const fid = el.dataset.fid;
+      const type = el.dataset.type;
+      if (type === 'multi') {
+        const vals = Array.prototype.map.call(el.querySelectorAll('input:checked'), function (c) { return c.value; });
+        if (vals.length) out[fid] = vals;
+      } else {
+        const val = (el.value || '').trim();
+        if (val) out[fid] = val;
+      }
+    });
+    return out;
+  }
+
+  async function saveDemoEdit() {
+    const resp = currentRespondent();
+    if (!resp) return;
+    try {
+      const res = await ahpApi('/api/entry/' + collectionId + '/respondents/' + resp.id + '/demographics', {
+        method: 'PUT', body: { answers: readDemoEditForm() },
+      });
+      resp.attributes = res.attributes || {};
+      ahpToast('인구통계를 저장했습니다');
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    }
   }
 
   async function loadGrid() {
@@ -234,6 +301,8 @@
       if (e.target.files.length) importCsv(e.target.files[0]);
       e.target.value = '';
     });
+
+    document.getElementById('demoEditSaveBtn').addEventListener('click', saveDemoEdit);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

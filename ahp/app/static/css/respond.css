@@ -140,6 +140,24 @@ button{font-family:inherit}
 .cr-summary-row.bad .csr-cr{color:var(--r-danger)}
 .cr-summary-row.ok .csr-cr{color:var(--r-good)}
 
+/* ── 제출 후: CR이 높게 나온 이유 설명 + 모순 예시 시각화 ── */
+.cr-explain{width:100%;max-width:440px;margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
+  background:color-mix(in srgb,var(--r-danger) 8%,var(--r-surface));
+  border:1px solid color-mix(in srgb,var(--r-danger) 32%,var(--r-border))}
+.cr-explain[hidden]{display:none}
+.cr-explain h3{margin:0 0 6px;font-size:13.5px;font-weight:800;color:var(--r-danger)}
+.cr-explain p{font-size:12.5px;line-height:1.65;margin:0 0 8px}
+.cr-explain p.small{font-size:11.5px;color:var(--r-muted);margin-bottom:0}
+.cr-explain-svg{display:block;width:100%;max-width:260px;height:auto;margin:10px auto}
+.cr-explain-svg .node{fill:var(--r-surface);stroke:var(--r-muted);stroke-width:1.5}
+.cr-explain-svg .lbl{fill:var(--r-ink);font-size:13px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+.cr-explain-svg .edge{stroke:var(--r-muted);stroke-width:2;fill:none;marker-end:url(#ah)}
+.cr-explain-svg .edge.bad{stroke:var(--r-danger);stroke-width:2;stroke-dasharray:5 3;marker-end:url(#ahbad)}
+.cr-explain-svg .etxt{font-size:10px;font-weight:700;fill:var(--r-muted);text-anchor:middle}
+.cr-explain-svg .etxt.bad{fill:var(--r-danger)}
+.cr-explain-svg .ah{fill:var(--r-muted)}
+.cr-explain-svg .ahbad{fill:var(--r-danger)}
+
 /* ── 섹션 리뷰 화면 — 한 매트릭스의 모든 쌍을 한 번에 보여주고 재조정 ── */
 .btn-ghost.sm{min-height:38px;min-width:0;padding:0 12px;font-size:13px}
 .review-title{font-size:15px;font-weight:800;margin:8px 2px 0;text-align:center}
@@ -170,3 +188,90 @@ button{font-family:inherit}
   z-index:60;background:var(--r-good);color:#fff;padding:10px 18px;border-radius:999px;
   font-size:13px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.18);
   max-width:calc(100% - 32px);text-align:center}
+
+/* ── CR 칸 (진행도 바 밑) ── */
+.cr-bar{margin-top:6px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:5px 10px;border-radius:9px;background:var(--r-chip-bg);color:var(--r-muted);text-align:center}
+.cr-bar[hidden]{display:none}
+.cr-bar.ok{background:color-mix(in srgb,var(--r-good) 16%,var(--r-surface));color:var(--r-good)}
+.cr-bar.bad{background:color-mix(in srgb,var(--r-danger) 14%,var(--r-surface));color:var(--r-danger)}
+.cr-bar.muted{background:var(--r-chip-bg);color:var(--r-muted);font-weight:600}
+
+/* ── 계층도 (기본 펼침, 화면 폭 맞춤 · ⤢로 실제 크기 토글) ── */
+.hd-card{margin-bottom:14px}
+.hd-card[hidden]{display:none}
+.hd-toggle{width:100%;text-align:left;background:var(--r-surface);border:1px solid var(--r-border);
+  border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;color:var(--r-ink);cursor:pointer}
+.hd-box-wrap{position:relative;overflow:auto;max-height:62vh;margin-top:8px;border:1px solid var(--r-border);
+  border-radius:12px;background:var(--r-surface);padding:8px}
+.hd-box-wrap[hidden]{display:none}
+.hd-box-wrap.fit{overflow-x:hidden}
+.hd-box-wrap.fit #hdCanvas svg{max-width:100%;height:auto;display:block}
+.hd-box-wrap #hdCanvas svg{display:block}
+.hd-zoom{position:absolute;top:6px;right:6px;z-index:2;width:32px;height:32px;border-radius:8px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);font-size:14px;cursor:pointer;opacity:.85}
+.hd-edge{fill:none;stroke:var(--r-border);stroke-width:1.6}
+.hd-box{box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:6px 8px;border-radius:9px;border:1.5px solid var(--r-border);
+  background:var(--r-bg);color:var(--r-ink);font-size:11.5px;font-weight:700;line-height:1.3;overflow:hidden}
+.hd-box.hd-root{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink)}
+
+/* ── 쌍대비교 목록 (한 기준 = 한 페이지) ── */
+.pair-list{display:flex;flex-direction:column;gap:16px;margin-top:4px}
+.pair-row{border:1.5px solid var(--r-border);border-radius:14px;background:var(--r-surface);padding:12px}
+.pair-row.worst{border-color:var(--r-danger)}
+.pair-names{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:800;margin-bottom:8px}
+.pair-names span:last-child{text-align:right}
+.pair-desc{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--r-muted);
+  margin-bottom:8px;line-height:1.4}
+.pair-desc span:last-child{text-align:right}
+.pair-suggest{font-size:11.5px;font-weight:700;color:var(--r-danger);
+  background:color-mix(in srgb,var(--r-danger) 10%,var(--r-surface));
+  border-radius:8px;padding:5px 8px;margin-bottom:8px}
+.pair-suggest b{font-size:13px}
+/* 눈금 양 끝 위 방향 안내 — 숫자가 한쪽에 치우쳐 보이는 문제 해소 */
+.pair-dir{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:700;
+  color:var(--r-muted);margin-bottom:5px}
+.pair-dir span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pair-dir span:last-child{text-align:right}
+/* 17칸이 모바일·데스크톱 모두 스크롤 없이 한 줄에 들어가도록 균등 축소 */
+.scale{display:flex;gap:1px}
+.scale-cell{flex:1 1 0;min-width:0;height:46px;padding:0;border-radius:6px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);
+  font-size:11px;font-weight:700;cursor:pointer;transition:background .08s,border-color .08s}
+.scale-cell.eq{background:var(--r-chip-bg);color:var(--r-muted)}
+.scale-cell:active{transform:scale(.9)}
+.scale-cell.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);
+  box-shadow:0 0 0 1px var(--r-accent)}
+@media (hover:hover){.scale-cell:hover{border-color:var(--r-accent)}}
+
+#submitBtn.ready{border-color:var(--r-accent);color:var(--r-accent);font-weight:800}
+
+/* ── 수정 화면 가중치 차트 ── */
+.wchart-card{border:1px solid var(--r-border);border-radius:14px;background:var(--r-surface);
+  padding:12px;margin-bottom:14px}
+.wchart{display:flex;flex-direction:column;gap:7px}
+.wc-row{display:grid;grid-template-columns:34% 1fr auto;align-items:center;gap:8px;font-size:12px;
+  padding:3px 4px;border-radius:8px}
+.wc-row.focus{background:color-mix(in srgb,var(--r-accent) 12%,var(--r-surface));font-weight:800}
+.wc-row.near{background:var(--r-chip-bg)}
+.wc-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-bar{height:10px;background:var(--r-track);border-radius:999px;overflow:hidden}
+.wc-bar>span{display:block;height:100%;background:var(--r-accent);border-radius:999px}
+.wc-row.focus .wc-bar>span{background:var(--r-danger)}
+.wc-val{font-variant-numeric:tabular-nums;font-weight:700}
+.wchart-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}
+.wchart-arrow{min-width:40px;min-height:36px;border:1px solid var(--r-border);border-radius:10px;
+  background:var(--r-bg);color:var(--r-ink);font-size:14px;cursor:pointer}
+.wchart-focus{font-size:12px;font-weight:700;color:var(--r-accent);min-width:120px;text-align:center}
+
+/* ── 인구통계 화면 ── */
+.demo-form{display:flex;flex-direction:column;gap:18px;margin:16px 0 20px}
+.demo-field .demo-q{font-size:14px;font-weight:700;margin-bottom:8px}
+.demo-field .demo-req{color:var(--r-danger)}
+.demo-choice{display:flex;align-items:center;gap:10px;font-size:14px;padding:8px 2px}
+.demo-choice input{width:20px;height:20px;flex-shrink:0;accent-color:var(--r-accent)}
+.demo-input{width:100%;min-height:46px;padding:10px 12px;font-size:15px;border-radius:12px;
+  border:1.5px solid var(--r-border);background:var(--r-surface);color:var(--r-ink)}
+.demo-input:focus{outline:none;border-color:var(--r-accent)}
+.demo-input::placeholder{color:var(--r-muted)}

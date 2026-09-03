@@ -69,6 +69,20 @@ class GalleryPost(BaseModel):
     schema_version: int = 2
 
 
+class FaqCategory(BaseModel):
+    uid: Optional[str] = None
+    name: str                   # 그룹 제목 (예: "01 · 지원 · 선발")
+    order: int = 0              # 카테고리(그룹) 표시 순서 (오름차순)
+
+
+class FaqItem(BaseModel):
+    uid: Optional[str] = None
+    category: str = ""          # FaqCategory.name 과 매칭되는 그룹 제목
+    question: str               # 앞의 "Q1." 번호는 렌더링 시 자동으로 붙는다
+    answer: str = ""            # 평문. 줄바꿈은 렌더링 시 <br>로 변환된다
+    order: int = 0              # 같은 카테고리 안에서의 정렬 순서 (오름차순)
+
+
 class Popup(BaseModel):
     uid: Optional[str] = None
     title: str
