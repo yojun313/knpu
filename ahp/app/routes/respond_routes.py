@@ -27,6 +27,7 @@ from app.services.ahp_calc import (
     IncompleteMatrixError,
 )
 from app.services.hub import hub
+from app.routes.survey_routes import DEFAULT_INTRO_TEXT, DEFAULT_CONSENT_TEXT
 from app.services.consistency import worst_offending_pairs
 from app.services.demographics import coerce_attributes, validate_required
 
@@ -117,8 +118,8 @@ async def respond_landing(token: str):
         },
         "survey": {
             "title": survey["title"],
-            "intro_text": survey.get("intro_text", ""),
-            "consent_text": survey.get("consent_text", ""),
+            "intro_text": survey.get("intro_text") or DEFAULT_INTRO_TEXT,
+            "consent_text": survey.get("consent_text") or DEFAULT_CONSENT_TEXT,
             "scale": (project or {}).get("settings", {}).get("scale", 9),
             "cr_threshold": (project or {})
             .get("settings", {})
