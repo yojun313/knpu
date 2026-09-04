@@ -44,7 +44,15 @@ PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
 - **코드 배포와 이 마이그레이션은 함께** 나가야 한다(개명된 코드는 DB에 `groups`/`group_id`가
   있어야 동작). 프로덕션 서버는 단일 워커라 lockstep 부담은 `pm2 restart` 1회 수준.
 
-### 2단계 — *(작성 예정)*
+### 2단계 — `mcdm/` 공유 코어 + `methods/` 플러그인 scaffold  *(코드: 완료 / 운영: 조치 없음)*
+
+`app/services/mcdm/`(재수출 shim: `linalg`·`aggregate`·`consistency`) +
+`app/services/methods/`(`base` 프로토콜, `ahp` 플러그인, `METHODS` 레지스트리) 추가.
+**순수 추가**: 기존 라우트·`build_results`·DB·프론트 무변경, 아무 데도 wiring 안 됨.
+
+- **DB 마이그레이션 없음. 별도 재기동 불필요** (다음 단계에서 dispatch 전환 시 함께 반영).
+- 검증: `ahp/tests/check_methods_ahp.py` — AhpPlugin 결과가 기존 직접 호출과 바이트 동일
+  (derive_local·aggregate_group AIP/AIJ·generate_group·overrides·CR locus).
 
 ---
 
