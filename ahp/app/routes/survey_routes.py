@@ -13,9 +13,10 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.auth import current_uid, is_admin
 from app.db import surveys_db, hierarchies_db, collections_db, responses_db, projects_db
-from app.services.survey_service import (
-    generate_matrices,
-    diff_matrices,
+from app.services.questions import (
+    generate_questions,
+    normalize_methods,
+    diff_groups,
     diff_has_impact,
     prune_answers,
 )
@@ -71,6 +72,7 @@ def _serialize_survey(doc: dict) -> dict:
         "consent_text": doc.get("consent_text") or DEFAULT_CONSENT_TEXT,
         "node_descriptions": doc.get("node_descriptions", {}),
         "groups": doc.get("groups", []),
+        "methods": doc.get("methods", {}),
         "demographics": doc.get("demographics", []),
         "status": doc.get("status", "draft"),
         "created_at": doc.get("created_at"),
@@ -97,9 +99,11 @@ async def _ensure_survey(project_doc: dict) -> dict:
         return existing
 
     hierarchy = await _latest_hierarchy(project_id)
-    alt_on = project_doc.get("settings", {}).get("alt_layer") == "on"
-    groups = generate_matrices(
-        hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
+    groups = generate_questions(
+        hierarchy["nodes"],
+        hierarchy.get("alternatives", []),
+        methods={},
+        settings=project_doc.get("settings", {}),
     )
     node_descriptions = {
         n["uuid"]: n.get("description", "")
@@ -116,6 +120,7 @@ async def _ensure_survey(project_doc: dict) -> dict:
         "consent_text": DEFAULT_CONSENT_TEXT,
         "node_descriptions": node_descriptions,
         "groups": groups,
+        "methods": {"criteria": {}, "alternatives": "ahp"},
         "demographics": [],
         "status": "draft",
         "created_at": _now(),
@@ -158,6 +163,10 @@ async def update_survey(project_id: str, request: Request):
     if "demographics" in body:
         # 인구통계 스키마는 계층/groups 구조와 무관 — node_descriptions처럼 버전 안 올린다.
         patch["demographics"] = normalize_demographics(body["demographics"])
+    if "methods" in body:
+        # 노드별 가중치 방법·대안 랭킹 방법 — 구조 아닌 편집물이라 버전 안 올린다.
+        # 다음 resync 때 generate_questions 가 이 값으로 그룹을 다시 만든다.
+        patch["methods"] = normalize_methods(body["methods"])
 
     if not patch:
         raise HTTPException(400, "변경할 내용이 없습니다")
@@ -212,11 +221,14 @@ async def resync_survey(project_id: str, request: Request):
     if hierarchy["version"] == current["hierarchy_version"]:
         return {"changed": False, "message": "계층이 그대로라 변경할 내용이 없습니다"}
 
-    alt_on = project.get("settings", {}).get("alt_layer") == "on"
-    new_matrices = generate_matrices(
-        hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
+    methods = normalize_methods(current.get("methods"))
+    new_matrices = generate_questions(
+        hierarchy["nodes"],
+        hierarchy.get("alternatives", []),
+        methods=methods,
+        settings=project.get("settings", {}),
     )
-    diff = diff_matrices(current["groups"], new_matrices)
+    diff = diff_groups(current["groups"], new_matrices)
     impact = diff_has_impact(diff)
 
     new_descriptions = dict(current.get("node_descriptions", {}))
@@ -235,6 +247,7 @@ async def resync_survey(project_id: str, request: Request):
         "consent_text": current.get("consent_text", DEFAULT_CONSENT_TEXT),
         "node_descriptions": new_descriptions,
         "groups": new_matrices,
+        "methods": methods,
         "demographics": current.get("demographics", []),
         "status": current.get("status", "draft"),
         "created_at": _now(),

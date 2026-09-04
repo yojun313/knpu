@@ -273,6 +273,15 @@ def _validate_and_normalize_nodes(nodes: list[dict]) -> list[dict]:
 
     normalized = []
     for n in nodes:
+        # type/measure/unit: 랭킹 방법(SAW/TOPSIS…)이 리프 기준을 편익/비용, 정성/정량,
+        # 단위로 구분해야 한다(PolyDecision 2단계). 0단계엔 기본값만 채우고 AHP는 무시.
+        ntype = n.get("type") if n.get("type") in ("benefit", "cost") else "benefit"
+        measure = (
+            n.get("measure")
+            if n.get("measure") in ("qualitative", "quantitative")
+            else "qualitative"
+        )
+        unit = n.get("unit") or None
         normalized.append(
             {
                 "uuid": n["uuid"],
@@ -281,6 +290,9 @@ def _validate_and_normalize_nodes(nodes: list[dict]) -> list[dict]:
                 "description": n.get("description", ""),
                 "order": n.get("order", 0),
                 "level": depth(n["uuid"]),
+                "type": ntype,
+                "measure": measure,
+                "unit": unit,
             }
         )
     return normalized
