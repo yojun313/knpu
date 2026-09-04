@@ -149,9 +149,11 @@ class AhpPlugin:
         try:
             if aggregation == "AIJ":
                 wr, _merged = aggregate_aij(child_uuids, non_empty)
-                group_w = wr.weights
+                group_w, avg_cr = wr.weights, wr.cr
             else:
-                group_w, _per, skipped = aggregate_aip(child_uuids, non_empty)
+                group_w, per, skipped = aggregate_aip(child_uuids, non_empty)
+                crs = [r.cr for r in per if r.cr is not None]
+                avg_cr = sum(crs) / len(crs) if crs else None
         except (ValueError, IncompleteMatrixError):
             return LocalResult(
                 weights={u: 0.0 for u in child_uuids},
@@ -163,6 +165,11 @@ class AhpPlugin:
             weights=group_w,
             ranking=_ranking(child_uuids, group_w),
             complete=True,
+            consistency=Consistency(
+                passed=None,
+                metrics={"avg_cr": avg_cr} if avg_cr is not None else {},
+                threshold=None,
+            ),
             skipped=skipped,
         )
 

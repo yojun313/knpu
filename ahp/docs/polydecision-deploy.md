@@ -48,16 +48,22 @@
 `app/services/mcdm/`(재수출 shim) + `app/services/methods/`(플러그인 골격) 순수 추가.
 DB 변화 없음, wiring 없음. 검증: `ahp/tests/check_methods_ahp.py`.
 
-### 3단계 — `questions.generate_questions` + `surveys.methods` + 노드 필드  *(코드: 완료 / 운영: 미실행)*
+### 3·4단계 — `generate_questions` + `surveys.methods` + 플러그인 dispatch  *(코드: 완료 / 운영: 미실행)*
 
-- `surveys.groups[]` 각 원소에 **`kind:"pairwise"`** · **`scale`**(프로젝트 `settings.scale`) 백필.
+- `surveys.groups[]` 각 원소에 **`kind:"pairwise"`** · **`method:"ahp"`** · **`scale`**(프로젝트 `settings.scale`) 백필.
 - `surveys.methods` 없으면 **`{"criteria":{}, "alternatives":"ahp"}`** 백필. 이후
   `PUT /api/projects/{id}/survey` body `methods` 로 편집(버전 bump 없음), `resync` 시
   `generate_questions` 가 이 값으로 그룹을 다시 만든다.
 - `hierarchies.nodes[]` 각 원소에 **`type:"benefit"`** · **`measure:"qualitative"`** ·
   **`unit:null`** 백필 (SAW/TOPSIS 등 랭킹 방법용, AHP는 무시).
-- 백필이 없어도 코드는 `m.get("kind","pairwise")` 로 견디지만, 데이터 uniform 을 위해
-  마이그레이션에 포함.
+- 백필이 없어도 코드는 `m.get("kind","pairwise")` / `get_method(None)`(→ AHP 폴백) 으로
+  견디지만, 데이터 uniform 을 위해 마이그레이션에 포함.
+- **4단계** — `build_results`·`respond_routes`·`entry_routes`·`collection_routes` 의 AHP
+  직접 호출(`derive_weights`·`aggregate_*`·`worst_offending_pairs`)을 `METHODS[...]` 플러그인
+  dispatch 로 전환. **동작·출력 무변경**(`build_results` 골든 바이트 동일, 라우트 헬퍼 패리티
+  9건). DB 조치는 위와 동일(별도 없음). 유일한 미세 차이: what-if 리뷰 차트(`group-eval`)의
+  **동점 항목 정렬 순서** — `reverse=True` → `-weight` 안정정렬로 바뀌어 가중치가 완전히
+  같을 때만 순서가 다름(실제 고유벡터 값에선 발생하지 않음).
 - dry-run 기준 대상: `surveys` 9건, `hierarchies` 22건.
 
 ---

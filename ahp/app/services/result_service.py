@@ -8,13 +8,9 @@ DB에서 이미 가져온 데이터(hierarchy nodes, survey groups, 응답자별
 
 from __future__ import annotations
 
-from app.services.ahp_calc import derive_weights, global_weights, IncompleteMatrixError
-from app.services.aggregate import (
-    aggregate_aij,
-    aggregate_aip,
-    kendalls_w,
-    find_outliers,
-)
+from app.services.ahp_calc import global_weights
+from app.services.aggregate import kendalls_w, find_outliers
+from app.services.methods import get_method
 
 
 def build_results(
@@ -26,7 +22,7 @@ def build_results(
     node_parent = {n["uuid"]: n["parent_id"] for n in hierarchy_nodes}
     node_name = {n["uuid"]: n["name"] for n in hierarchy_nodes}
     matrix_of_parent = {m["parent_uuid"]: m["group_id"] for m in groups}
-    aggregation = settings.get("aggregation", "AIP")
+    cr_threshold = settings.get("cr_threshold", 0.1)
 
     per_respondent_cr: dict[str, dict] = {rid: {} for rid in submissions_by_respondent}
     local_weights_by_matrix: dict[str, dict] = {}
@@ -36,6 +32,7 @@ def build_results(
     for m in groups:
         node_ids = m["child_uuids"]
         group_id = m["group_id"]
+        plugin = get_method(m.get("method"))
 
         respondent_pairs = []
         respondent_ids_with_data = []
@@ -47,11 +44,12 @@ def build_results(
             respondent_ids_with_data.append(rid)
 
             if len(node_ids) >= 3:
-                try:
-                    r = derive_weights(node_ids, pairs)
-                    per_respondent_cr[rid][group_id] = r.cr
-                except IncompleteMatrixError:
-                    per_respondent_cr[rid][group_id] = None
+                c = plugin.derive_local(
+                    m, pairs, cr_threshold=cr_threshold
+                ).consistency
+                per_respondent_cr[rid][group_id] = (
+                    c.metrics.get("cr") if c else None
+                )
 
         if not respondent_pairs:
             local_weights_by_matrix[group_id] = {nid: 0.0 for nid in node_ids}
@@ -61,27 +59,17 @@ def build_results(
             local_weights_by_matrix[group_id] = {node_ids[0]: 1.0}
             continue
 
-        # 이 매트릭스에 응답은 있지만(respondent_pairs 비어있지 않음) 전원이
-        # 불완전한 쌍만 갖고 있으면 aggregate_aij/aip가 예외를 던진다
-        # (aggregate_aij -> derive_weights의 IncompleteMatrixError,
-        # aggregate_aip -> "완전한 응답이 하나도 없음" ValueError). 예전엔 이걸
-        # 잡지 않아서 매트릭스 하나 때문에 /results 전체가 500으로 죽고, 그 여파로
-        # 프런트가 필터를 바꿔도 화면이 갱신되지 않는 문제로 이어졌다. 위
-        # "응답 없음" 분기(56행)와 동일하게 취급해 이 매트릭스만 0 가중치로 넘어간다.
-        try:
-            if aggregation == "AIJ":
-                result, merged_pairs = aggregate_aij(node_ids, respondent_pairs)
-                group_w = result.weights
-            else:
-                group_w, per_resp_results, skipped = aggregate_aip(
-                    node_ids, respondent_pairs
-                )
-        except (ValueError, IncompleteMatrixError):
-            local_weights_by_matrix[group_id] = {nid: 0.0 for nid in node_ids}
+        # 이 매트릭스에 응답은 있지만 전원이 불완전한 쌍만 갖고 있으면 플러그인의
+        # aggregate_group이 complete=False + 0 가중치를 돌려준다. 위 "응답 없음"
+        # 분기와 동일하게 취급해 이 매트릭스만 넘어간다(이전엔 예외가 /results
+        # 전체를 500으로 죽였다).
+        agg_lr = plugin.aggregate_group(m, respondent_pairs, settings)
+        local_weights_by_matrix[group_id] = agg_lr.weights
+        if not agg_lr.complete:
             continue
-        local_weights_by_matrix[group_id] = group_w
 
-        # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다
+        # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다.
+        # 쌍대비교 전용 진단이라 플러그인 밖에 둔다(비-pairwise kind가 생기면 이관).
         if len(respondent_pairs) >= 3:
             outliers = []
             all_pair_ids = set()
@@ -103,16 +91,13 @@ def build_results(
                     )
             outliers_by_matrix[group_id] = outliers
 
-        # 순위 기반 합의도(Kendall's W) — 응답자별 지역 가중치 순위를 비교
+        # 순위 기반 합의도(Kendall's W) — 응답자별 지역 순위를 비교
         if len(node_ids) >= 2 and len(respondent_pairs) >= 2:
             rankings = []
             for pairs in respondent_pairs:
-                try:
-                    r = derive_weights(node_ids, pairs)
-                    ranking = sorted(node_ids, key=lambda nid: -r.weights[nid])
-                    rankings.append(ranking)
-                except IncompleteMatrixError:
-                    continue
+                lr = plugin.derive_local(m, pairs)
+                if lr.complete:
+                    rankings.append(lr.ranking)
             if len(rankings) >= 2:
                 consensus_by_matrix[group_id] = {"kendalls_w": kendalls_w(rankings)}
 

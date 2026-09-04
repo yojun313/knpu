@@ -63,21 +63,23 @@ def generate_questions(
     groups: list[dict] = []
     for parent_id, children in by_parent.items():
         children_sorted = sorted(children, key=lambda c: c["order"])
-        plugin = get_method(criteria_methods.get(parent_id))
-        g = plugin.generate_group(
+        method_name = criteria_methods.get(parent_id) or "ahp"
+        g = get_method(method_name).generate_group(
             parent_uuid=parent_id,
             operand_uuids=[c["uuid"] for c in children_sorted],
             parent_name=by_id.get(parent_id, {}).get("name", ""),
             is_alternative=False,
             settings=settings,
         )
+        g["method"] = method_name
         g["scale"] = scale
         groups.append(g)
 
     if alt_layer_on and alternatives:
         alt_ids = [a["uuid"] for a in sorted(alternatives, key=lambda a: a["order"])]
         leaves = [n for n in nodes if n["uuid"] not in by_parent]
-        alt_plugin = get_method(methods["alternatives"])
+        alt_method = methods["alternatives"] or "ahp"
+        alt_plugin = get_method(alt_method)
         for leaf in leaves:
             g = alt_plugin.generate_group(
                 parent_uuid=leaf["uuid"],
@@ -86,6 +88,7 @@ def generate_questions(
                 is_alternative=True,
                 settings=settings,
             )
+            g["method"] = alt_method
             g["scale"] = scale
             groups.append(g)
 
