@@ -313,24 +313,24 @@ async def delete_respondent(collection_id: str, respondent_id: str, request: Req
     return {"status": "deleted"}
 
 
-def respondent_progress_summary(matrices: list[dict], answers: dict) -> dict:
+def respondent_progress_summary(groups: list[dict], answers: dict) -> dict:
     """이 응답자의 전체 진행률과 "가장 문제 있는" CR 하나를 요약한다.
     콘솔에서는 매트릭스별 CR을 전부 늘어놓기보다, 한눈에 "이 사람 뭔가
     이상하다"를 알 수 있는 게 더 쓸모 있어서 최댓값(worst) 하나만 보여준다."""
     total_pairs = sum(
-        len(m["child_uuids"]) * (len(m["child_uuids"]) - 1) // 2 for m in matrices
+        len(m["child_uuids"]) * (len(m["child_uuids"]) - 1) // 2 for m in groups
     )
-    answered_pairs = sum(len(answers.get(m["matrix_id"], {})) for m in matrices)
+    answered_pairs = sum(len(answers.get(m["group_id"], {})) for m in groups)
     progress = round(100 * answered_pairs / total_pairs) if total_pairs else 100
 
     worst_cr = None
     all_complete = True
-    for m in matrices:
+    for m in groups:
         node_ids = m["child_uuids"]
         if len(node_ids) < 2:
             continue
         try:
-            result = derive_weights(node_ids, answers.get(m["matrix_id"], {}))
+            result = derive_weights(node_ids, answers.get(m["group_id"], {}))
             if result.cr is not None:
                 worst_cr = result.cr if worst_cr is None else max(worst_cr, result.cr)
         except IncompleteMatrixError:
@@ -367,7 +367,7 @@ async def list_respondents(collection_id: str, request: Request):
             "consent_at": d.get("consent_at"),
             "attributes": d.get("attributes", {}),
             **respondent_progress_summary(
-                survey["matrices"], responses_by_rid.get(d["_id"], {})
+                survey["groups"], responses_by_rid.get(d["_id"], {})
             ),
         }
         for d in docs
@@ -390,7 +390,7 @@ async def advance_round(collection_id: str, request: Request):
     await collections_db.update_one({"_id": doc["_id"]}, {"$set": update})
     await respondents_db.update_many(
         {"collection_id": collection_id, "status": "submitted"},
-        {"$set": {"status": "in_progress"}, "$unset": {"revision_matrix_id": ""}},
+        {"$set": {"status": "in_progress"}, "$unset": {"revision_group_id": ""}},
     )
     await hub.publish(collection_id, "round.advanced", {"round": new_round})
     return {"round": new_round}
@@ -404,11 +404,11 @@ async def advance_round(collection_id: str, request: Request):
 # 기존 오프라인 입력 경로 PUT /api/entry/{collection_id}/answers를 그대로 재사용).
 
 
-@router.get("/api/collections/{collection_id}/sections/{matrix_id}/snapshot")
-async def section_snapshot(collection_id: str, matrix_id: str, request: Request):
+@router.get("/api/collections/{collection_id}/sections/{group_id}/snapshot")
+async def section_snapshot(collection_id: str, group_id: str, request: Request):
     collection = await _get_collection_checked(collection_id, request)
     survey = await surveys_db.find_one({"_id": collection["survey_id"]})
-    matrix = next((m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None)
+    matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
     if not matrix:
         raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
     node_ids = matrix["child_uuids"]
@@ -426,7 +426,7 @@ async def section_snapshot(collection_id: str, matrix_id: str, request: Request)
     pair_values: dict[str, dict[str, float]] = {}
     all_pairs_for_diagnosis: dict[str, list[float]] = {}
     for r in respondents:
-        pairs = responses_by_rid.get(r["_id"], {}).get(matrix_id, {})
+        pairs = responses_by_rid.get(r["_id"], {}).get(group_id, {})
         cr = None
         if len(node_ids) >= 3 and pairs:
             try:
@@ -476,40 +476,40 @@ async def section_snapshot(collection_id: str, matrix_id: str, request: Request)
             worst = []
 
     return {
-        "matrix_id": matrix_id,
-        "round": (collection.get("section_rounds") or {}).get(matrix_id, 1),
+        "group_id": group_id,
+        "round": (collection.get("section_rounds") or {}).get(group_id, 1),
         "respondents": rows,
         "outliers": outliers,
         "worst_pairs": worst,
     }
 
 
-@router.post("/api/collections/{collection_id}/sections/{matrix_id}/unlock")
-async def unlock_section(collection_id: str, matrix_id: str, request: Request):
+@router.post("/api/collections/{collection_id}/sections/{group_id}/unlock")
+async def unlock_section(collection_id: str, group_id: str, request: Request):
     """이 섹션(매트릭스)만 재응답 대상으로 다시 연다 — 이미 제출을 마친
     응답자도 이 매트릭스만 다시 편집할 수 있게 응답자 화면에 신호를 보낸다."""
     collection = await _get_collection_checked(collection_id, request)
     section_rounds = dict(collection.get("section_rounds") or {})
-    section_rounds[matrix_id] = section_rounds.get(matrix_id, 1) + 1
+    section_rounds[group_id] = section_rounds.get(group_id, 1) + 1
     await collections_db.update_one(
         {"_id": collection_id}, {"$set": {"section_rounds": section_rounds}}
     )
     if collection["mode"] == "realtime":
         # 실시간 게이팅 하에서는 이미 지난 섹션에 대한 PUT이 서버에서 막혀
-        # 있다(respond_routes.put_answer의 active_matrix_id 검사) — 전원에게
-        # revision_matrix_id를 부여해야 실제로 다시 응답할 수 있다. 개별
+        # 있다(respond_routes.put_answer의 active_group_id 검사) — 전원에게
+        # revision_group_id를 부여해야 실제로 다시 응답할 수 있다. 개별
         # 재조정 요청(request_individual_revision)과 같은 메커니즘을 전원
         # 대상으로 쓰는 것뿐이다.
         await respondents_db.update_many(
             {"collection_id": collection_id},
-            {"$set": {"revision_matrix_id": matrix_id}},
+            {"$set": {"revision_group_id": group_id}},
         )
     await hub.publish(
         collection_id,
         "section.unlock",
-        {"matrix_id": matrix_id, "round": section_rounds[matrix_id]},
+        {"group_id": group_id, "round": section_rounds[group_id]},
     )
-    return {"matrix_id": matrix_id, "round": section_rounds[matrix_id]}
+    return {"group_id": group_id, "round": section_rounds[group_id]}
 
 
 # ── 실시간 델파이 세션 진행 ────────────────────────────────────────────────
@@ -517,7 +517,7 @@ async def unlock_section(collection_id: str, matrix_id: str, request: Request):
 # 여기부터는 요구사항의 진짜 실시간 흐름 — 참여자는 연구자가 시작하기 전까지
 # 대기하고, 한 섹션을 마치면 다음 섹션이 열릴 때까지 다시 대기한다. 응답자
 # 측 게이팅(어느 섹션을 PUT할 수 있는지)은 respond_routes.put_answer가
-# active_section_index/revision_matrix_id를 보고 강제한다 — 여기 엔드포인트는
+# active_section_index/revision_group_id를 보고 강제한다 — 여기 엔드포인트는
 # 그 상태를 옮기고 알리기만 한다.
 
 
@@ -527,20 +527,20 @@ async def start_session(collection_id: str, request: Request):
     if doc["mode"] != "realtime":
         raise HTTPException(400, "실시간 수집에서만 세션을 시작할 수 있습니다")
     survey = await surveys_db.find_one({"_id": doc["survey_id"]})
-    if not survey or not survey["matrices"]:
+    if not survey or not survey["groups"]:
         raise HTTPException(400, "비교할 항목이 없습니다")
 
     await collections_db.update_one(
         {"_id": collection_id},
         {"$set": {"session_started": True, "active_section_index": 0}},
     )
-    first_matrix_id = survey["matrices"][0]["matrix_id"]
+    first_group_id = survey["groups"][0]["group_id"]
     await hub.publish(
         collection_id,
         "session.started",
-        {"matrix_id": first_matrix_id, "section_index": 0},
+        {"group_id": first_group_id, "section_index": 0},
     )
-    return {"session_started": True, "matrix_id": first_matrix_id}
+    return {"session_started": True, "group_id": first_group_id}
 
 
 @router.post("/api/collections/{collection_id}/sections/advance")
@@ -553,42 +553,42 @@ async def advance_section(collection_id: str, request: Request):
 
     survey = await surveys_db.find_one({"_id": doc["survey_id"]})
     next_index = doc.get("active_section_index", 0) + 1
-    done = next_index >= len(survey["matrices"])
+    done = next_index >= len(survey["groups"])
     await collections_db.update_one(
         {"_id": collection_id}, {"$set": {"active_section_index": next_index}}
     )
-    next_matrix_id = None if done else survey["matrices"][next_index]["matrix_id"]
+    next_group_id = None if done else survey["groups"][next_index]["group_id"]
     await hub.publish(
         collection_id,
         "section.advanced",
-        {"matrix_id": next_matrix_id, "section_index": next_index, "done": done},
+        {"group_id": next_group_id, "section_index": next_index, "done": done},
     )
-    return {"section_index": next_index, "matrix_id": next_matrix_id, "done": done}
+    return {"section_index": next_index, "group_id": next_group_id, "done": done}
 
 
-async def _matrix_and_answers(collection: dict, matrix_id: str):
+async def _matrix_and_answers(collection: dict, group_id: str):
     survey = await surveys_db.find_one({"_id": collection["survey_id"]})
     matrix = next(
-        (m for m in (survey or {}).get("matrices", []) if m["matrix_id"] == matrix_id),
+        (m for m in (survey or {}).get("groups", []) if m["group_id"] == group_id),
         None,
     )
     if not matrix:
         raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
     responses_by_rid = {
-        r["respondent_id"]: r.get("answers", {}).get(matrix_id, {})
+        r["respondent_id"]: r.get("answers", {}).get(group_id, {})
         async for r in responses_db.find({"collection_id": collection["_id"]})
     }
     return matrix, responses_by_rid
 
 
-@router.post("/api/collections/{collection_id}/sections/{matrix_id}/reveal-group")
-async def reveal_group_result(collection_id: str, matrix_id: str, request: Request):
+@router.post("/api/collections/{collection_id}/sections/{group_id}/reveal-group")
+async def reveal_group_result(collection_id: str, group_id: str, request: Request):
     """이 섹션의 현재 응답을 모아 그룹 가중치·평균 CR·최악의 쌍을 계산해
     접속 중인 모든 참여자의 대기 화면에 실시간으로 보여준다(요청사항 5단계
     "집계된 설문 결과를 공개"). 상태를 저장하지 않는 라이브 알림이라 — 다시
     보여주려면 버튼을 한 번 더 누르면 된다."""
     collection = await _get_collection_checked(collection_id, request)
-    matrix, responses_by_rid = await _matrix_and_answers(collection, matrix_id)
+    matrix, responses_by_rid = await _matrix_and_answers(collection, group_id)
     node_ids = matrix["child_uuids"]
     pairs_list = [p for p in responses_by_rid.values() if p]
     if len(node_ids) < 2 or not pairs_list:
@@ -623,7 +623,7 @@ async def reveal_group_result(collection_id: str, matrix_id: str, request: Reque
             worst = []
 
     payload = {
-        "matrix_id": matrix_id,
+        "group_id": group_id,
         "weights": group_weights,
         "avg_cr": avg_cr,
         "worst_pairs": worst,
@@ -633,22 +633,22 @@ async def reveal_group_result(collection_id: str, matrix_id: str, request: Reque
 
 
 @router.post(
-    "/api/collections/{collection_id}/sections/{matrix_id}/reveal-individual/{respondent_id}"
+    "/api/collections/{collection_id}/sections/{group_id}/reveal-individual/{respondent_id}"
 )
 async def reveal_individual_result(
-    collection_id: str, matrix_id: str, respondent_id: str, request: Request
+    collection_id: str, group_id: str, respondent_id: str, request: Request
 ):
     """이 참여자 본인의 가중치·CR만 본인에게 공개한다(요청사항 5단계 "개별
     참여자의 결과 가중치, CR까지 공개")."""
     collection = await _get_collection_checked(collection_id, request)
-    matrix, responses_by_rid = await _matrix_and_answers(collection, matrix_id)
+    matrix, responses_by_rid = await _matrix_and_answers(collection, group_id)
     pairs = responses_by_rid.get(respondent_id, {})
     try:
         result = derive_weights(matrix["child_uuids"], pairs)
     except IncompleteMatrixError:
         raise HTTPException(400, "이 참여자의 응답이 아직 완전하지 않습니다")
 
-    payload = {"matrix_id": matrix_id, "weights": result.weights, "cr": result.cr}
+    payload = {"group_id": group_id, "weights": result.weights, "cr": result.cr}
     await hub.publish(
         collection_id,
         "section.individual_result",
@@ -659,14 +659,14 @@ async def reveal_individual_result(
 
 
 @router.post(
-    "/api/collections/{collection_id}/sections/{matrix_id}/request-revision/{respondent_id}"
+    "/api/collections/{collection_id}/sections/{group_id}/request-revision/{respondent_id}"
 )
 async def request_individual_revision(
-    collection_id: str, matrix_id: str, respondent_id: str, request: Request
+    collection_id: str, group_id: str, respondent_id: str, request: Request
 ):
     """이 참여자 한 명만 이미 지난 섹션도 다시 조정할 수 있게 한다(요청사항
     5단계 "CR 값을 토대로 수정을 요구"). respond_routes.put_answer가
-    revision_matrix_id를 확인해 실제로 PUT을 허용한다."""
+    revision_group_id를 확인해 실제로 PUT을 허용한다."""
     collection = await _get_collection_checked(collection_id, request)
     r = await respondents_db.find_one(
         {"_id": respondent_id, "collection_id": collection_id}
@@ -674,14 +674,14 @@ async def request_individual_revision(
     if not r:
         raise HTTPException(404, "응답자를 찾을 수 없습니다")
     await respondents_db.update_one(
-        {"_id": respondent_id}, {"$set": {"revision_matrix_id": matrix_id}}
+        {"_id": respondent_id}, {"$set": {"revision_group_id": group_id}}
     )
 
     # 이 참여자 본인의 이 기준 답 중 가장 모순적인 쌍 + 응답형 추천값을 함께 보내
     # 수정 화면에서 "어디를 어떻게 고칠지"를 바로 보여준다.
     worst_pairs = []
     try:
-        matrix, responses_by_rid = await _matrix_and_answers(collection, matrix_id)
+        matrix, responses_by_rid = await _matrix_and_answers(collection, group_id)
         pairs = responses_by_rid.get(respondent_id, {})
         if len(matrix["child_uuids"]) >= 3 and pairs:
             worst_pairs = [
@@ -693,7 +693,7 @@ async def request_individual_revision(
     await hub.publish(
         collection_id,
         "section.revision_requested",
-        {"matrix_id": matrix_id, "worst_pairs": worst_pairs},
+        {"group_id": group_id, "worst_pairs": worst_pairs},
         only_role_prefix=f"respondent:{respondent_id}",
     )
     return {"status": "requested"}

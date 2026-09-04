@@ -163,10 +163,10 @@ async def get_grid(collection_id: str, request: Request):
         responses_by_rid[resp["respondent_id"]] = resp.get("answers", {})
 
     matrices_out = []
-    for m in survey["matrices"]:
+    for m in survey["groups"]:
         matrices_out.append(
             {
-                "matrix_id": m["matrix_id"],
+                "group_id": m["group_id"],
                 "parent_name": nodes_by_id.get(m["parent_uuid"], {}).get("name", ""),
                 "is_alternative": m.get("is_alternative", False),
                 "children": [
@@ -182,12 +182,12 @@ async def get_grid(collection_id: str, request: Request):
             }
         )
 
-    def _answers_in_display_order(matrices, raw_answers):
+    def _answers_in_display_order(groups, raw_answers):
         """저장 규약(사전순 min/max 방향)을 화면 표시 순서(child_uuids[i]/[j], i<j)
         방향으로 되돌린다 — 프런트가 저장 규약을 몰라도 되게 한다."""
         out = {}
-        for m in matrices:
-            stored = raw_answers.get(m["matrix_id"], {})
+        for m in groups:
+            stored = raw_answers.get(m["group_id"], {})
             resolved = {}
             for p in m["pairs"]:
                 pid = pair_id(p["uuid_a"], p["uuid_b"])
@@ -196,27 +196,27 @@ async def get_grid(collection_id: str, request: Request):
                 v = stored[pid]
                 lo, _hi = sorted([p["uuid_a"], p["uuid_b"]])
                 resolved[pid] = v if p["uuid_a"] == lo else (1.0 / v)
-            out[m["matrix_id"]] = resolved
+            out[m["group_id"]] = resolved
         return out
 
-    def _cr_by_matrix(raw_answers: dict) -> dict:
+    def _cr_by_group(raw_answers: dict) -> dict:
         """응답자별 매트릭스별 CR을 서버가 매번 계산해 돌려준다. 프런트가
         직전 PUT 응답을 DOM에 임시 캐시해 두는 방식은 그리드를 다시 그릴 때마다
         (응답자 전환 등) 캐시가 통째로 사라져 "완료된 매트릭스인데도 CR이 안
         보이는" 문제로 이어졌었다 — 그 캐시를 아예 없애고 매번 서버 계산값을 쓴다."""
         out = {}
-        for m in survey["matrices"]:
+        for m in survey["groups"]:
             if len(m["child_uuids"]) < 2:
                 continue
             cr_info = _compute_cr_for_matrix(m, raw_answers)
             if cr_info["complete"]:
-                out[m["matrix_id"]] = cr_info[
+                out[m["group_id"]] = cr_info[
                     "cr"
                 ]  # n<=2면 cr=None(정의상 무의미) — 그대로 전달
         return out
 
     return {
-        "matrices": matrices_out,
+        "groups": matrices_out,
         "demographics": survey.get("demographics", []),
         "respondents": [
             {
@@ -227,7 +227,7 @@ async def get_grid(collection_id: str, request: Request):
                 "answers": _answers_in_display_order(
                     matrices_out, responses_by_rid.get(r["_id"], {})
                 ),
-                "cr_by_matrix": _cr_by_matrix(responses_by_rid.get(r["_id"], {})),
+                "cr_by_group": _cr_by_group(responses_by_rid.get(r["_id"], {})),
             }
             for r in respondents
         ],
@@ -236,7 +236,7 @@ async def get_grid(collection_id: str, request: Request):
 
 def _compute_cr_for_matrix(matrix: dict, answers: dict) -> dict:
     node_ids = matrix["child_uuids"]
-    pairs = answers.get(matrix["matrix_id"], {})
+    pairs = answers.get(matrix["group_id"], {})
     try:
         result = derive_weights(node_ids, pairs)
         return {"complete": True, "cr": result.cr, "weights": result.weights}
@@ -249,13 +249,13 @@ async def put_answer(collection_id: str, request: Request):
     collection = await _get_collection_checked(collection_id, request)
     body = await request.json()
     respondent_id = body["respondent_id"]
-    matrix_id = body["matrix_id"]
+    group_id = body["group_id"]
     uuid_a = body["uuid_a"]
     uuid_b = body["uuid_b"]
     value_a_over_b = float(body["value"])
 
     survey, _nodes = await _survey_and_nodes(collection)
-    matrix = next((m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None)
+    matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
     if not matrix:
         raise HTTPException(404, "해당 비교 행렬을 찾을 수 없습니다")
 
@@ -267,9 +267,9 @@ async def put_answer(collection_id: str, request: Request):
         raise HTTPException(404, "응답 문서를 찾을 수 없습니다")
 
     answers = dict(resp.get("answers", {}))
-    matrix_answers = dict(answers.get(matrix_id, {}))
+    matrix_answers = dict(answers.get(group_id, {}))
     matrix_answers[pid] = stored_value
-    answers[matrix_id] = matrix_answers
+    answers[group_id] = matrix_answers
 
     await responses_db.update_one(
         {"_id": resp["_id"]},
@@ -298,7 +298,7 @@ async def put_answer(collection_id: str, request: Request):
         collection_id,
         "answer.override",
         {
-            "matrix_id": matrix_id,
+            "group_id": group_id,
             "uuid_a": uuid_a,
             "uuid_b": uuid_b,
             "value_a_over_b": value_a_over_b,
@@ -352,12 +352,12 @@ async def import_csv(
     n_demo = len(demographics)
     # 반입 양식 열 순서와 1:1로 맞춘 비교쌍 슬롯(부모별 i<j 전역 순서).
     # export_routes.export_import_template_csv·print.js와 같은 순서여야 한다.
-    slots = []  # (matrix_id, uuid_a, uuid_b)
-    for m in survey["matrices"]:
+    slots = []  # (group_id, uuid_a, uuid_b)
+    for m in survey["groups"]:
         cu = m["child_uuids"]
         for i in range(len(cu)):
             for j in range(i + 1, len(cu)):
-                slots.append((m["matrix_id"], cu[i], cu[j]))
+                slots.append((m["group_id"], cu[i], cu[j]))
 
     raw = await file.read()
     try:
@@ -404,7 +404,7 @@ async def import_csv(
 
         got = 0
         base = 1 + n_demo  # 비교쌍 첫 열 인덱스
-        for k, (matrix_id, uuid_a, uuid_b) in enumerate(slots):
+        for k, (group_id, uuid_a, uuid_b) in enumerate(slots):
             cell = row[base + k].strip() if base + k < len(row) else ""
             if not cell:
                 continue  # 그 쌍은 미입력 — 부분 응답 허용
@@ -415,7 +415,7 @@ async def import_csv(
                 errors.append(f"{i}행 [{col}]: {e}")
                 continue
             pid, stored = to_stored_pair(uuid_a, uuid_b, value)
-            by_respondent.setdefault(label, {}).setdefault(matrix_id, {})[pid] = stored
+            by_respondent.setdefault(label, {}).setdefault(group_id, {})[pid] = stored
             got += 1
         if got == 0:
             errors.append(f"{i}행: '{label}' 행에 비교값이 하나도 없습니다")

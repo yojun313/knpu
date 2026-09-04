@@ -53,12 +53,12 @@
 
   function renderConsensus() {
     const box = document.getElementById('consensusList');
-    const matrixIds = Object.keys(results.consensus || {});
-    if (!matrixIds.length) {
+    const groupIds = Object.keys(results.consensus || {});
+    if (!groupIds.length) {
       box.innerHTML = '<p style="padding:14px;font-size:12px;color:var(--sidebar-muted)">응답자가 2명 이상이어야 합의도를 계산합니다.</p>';
       return;
     }
-    box.innerHTML = matrixIds.map(function (mid) {
+    box.innerHTML = groupIds.map(function (mid) {
       const c = results.consensus[mid];
       const outliers = (results.outliers || {})[mid] || [];
       const outlierText = outliers.length

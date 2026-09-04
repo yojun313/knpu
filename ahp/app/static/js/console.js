@@ -78,7 +78,7 @@
     const m = activeSectionMatrix();
     if (!sessionStarted || !m) return;
     const sel = document.getElementById('sectionMatrixSelect');
-    if (sel.value !== m.matrix_id) sel.value = m.matrix_id;
+    if (sel.value !== m.group_id) sel.value = m.group_id;
     loadSectionSnapshot();
   }
 
@@ -147,25 +147,25 @@
 
   async function loadLiveMatrices() {
     const survey = await ahpApi('/api/projects/' + projectId + '/survey');
-    surveyMatricesCache = survey.matrices;
-    totalSections = survey.matrices.length;
+    surveyMatricesCache = survey.groups;
+    totalSections = survey.groups.length;
     renderPhaseBadge();
-    populateSectionMatrixSelect(survey.matrices);
+    populateSectionMatrixSelect(survey.groups);
     const box = document.getElementById('liveMatricesList');
-    if (!survey.matrices.length) {
+    if (!survey.groups.length) {
       box.innerHTML = '<p style="color:var(--sidebar-muted);font-size:12.5px">비교할 항목이 없습니다.</p>';
       return;
     }
-    box.innerHTML = survey.matrices.map(function (m) {
+    box.innerHTML = survey.groups.map(function (m) {
       const childrenHtml = m.child_uuids.map(function (cid) {
         const desc = survey.node_descriptions[cid] || '';
         return '<div class="field"><label>' + ahpEsc(nodeNameFromHierarchy(cid)) + '</label>' +
           '<textarea class="live-desc-input" data-node="' + cid + '">' + ahpEsc(desc) + '</textarea></div>';
       }).join('');
-      return '<div class="live-matrix" data-matrix="' + m.matrix_id + '">' +
+      return '<div class="live-matrix" data-matrix="' + m.group_id + '">' +
         '<h4>' + (m.is_alternative ? '[대안] ' : '') + ahpEsc(nodeNameFromHierarchy(m.parent_uuid)) + '</h4>' +
         '<div class="field"><label>질문 문구</label>' +
-        '<textarea class="live-question-input" data-matrix="' + m.matrix_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
+        '<textarea class="live-question-input" data-matrix="' + m.group_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
         childrenHtml + '</div>';
     }).join('');
   }
@@ -183,13 +183,13 @@
     document.querySelectorAll('.live-desc-input').forEach(function (el) {
       nodeDescriptions[el.dataset.node] = el.value.trim();
     });
-    const matrixQuestions = {};
+    const groupQuestions = {};
     document.querySelectorAll('.live-question-input').forEach(function (el) {
-      matrixQuestions[el.dataset.matrix] = el.value.trim();
+      groupQuestions[el.dataset.matrix] = el.value.trim();
     });
     try {
       await ahpApi('/api/projects/' + projectId + '/survey', {
-        method: 'PUT', body: { node_descriptions: nodeDescriptions, matrix_questions: matrixQuestions },
+        method: 'PUT', body: { node_descriptions: nodeDescriptions, group_questions: groupQuestions },
       });
       ahpToast('저장했습니다 — 접속 중인 응답자 화면에 반영됩니다');
     } catch (e) {
@@ -198,19 +198,19 @@
   }
 
   // ── 섹션(계층 매트릭스) 단위 델파이 진행 ─────────────────────────────────
-  function populateSectionMatrixSelect(matrices) {
+  function populateSectionMatrixSelect(groups) {
     const sel = document.getElementById('sectionMatrixSelect');
     const prev = sel.value;
-    sel.innerHTML = matrices.map(function (m) {
+    sel.innerHTML = groups.map(function (m) {
       const label = (m.is_alternative ? '[대안] ' : '') + nodeNameFromHierarchy(m.parent_uuid);
-      return '<option value="' + m.matrix_id + '">' + ahpEsc(label) + '</option>';
+      return '<option value="' + m.group_id + '">' + ahpEsc(label) + '</option>';
     }).join('');
-    if (prev && matrices.some(function (m) { return m.matrix_id === prev; })) sel.value = prev;
+    if (prev && groups.some(function (m) { return m.group_id === prev; })) sel.value = prev;
   }
 
   function currentSectionMatrix() {
     const mid = document.getElementById('sectionMatrixSelect').value;
-    return surveyMatricesCache.find(function (m) { return m.matrix_id === mid; });
+    return surveyMatricesCache.find(function (m) { return m.group_id === mid; });
   }
 
   function scaleOptionsHtml(nameA, nameB, currentAOverB) {
@@ -302,7 +302,7 @@
     try {
       await ahpApi('/api/entry/' + collectionId + '/answers', {
         method: 'PUT',
-        body: { respondent_id: rid, matrix_id: matrix.matrix_id, uuid_a: a, uuid_b: b, value: value },
+        body: { respondent_id: rid, group_id: matrix.group_id, uuid_a: a, uuid_b: b, value: value },
       });
       ahpToast('저장했습니다');
       await loadSectionSnapshot();
@@ -365,7 +365,7 @@
       if (!matrix) return;
       if (!confirm('"' + nodeNameFromHierarchy(matrix.parent_uuid) + '" 섹션을 다시 열까요? 이미 제출한 참여자도 이 항목만 다시 응답할 수 있게 됩니다.')) return;
       try {
-        await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.matrix_id + '/unlock', { method: 'POST' });
+        await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.group_id + '/unlock', { method: 'POST' });
         ahpToast('섹션을 다시 열었습니다');
         await loadSectionSnapshot();
       } catch (e) {
@@ -385,7 +385,7 @@
       const matrix = currentSectionMatrix();
       if (!matrix) return;
       const rid = btn.dataset.rid;
-      const path = '/api/collections/' + collectionId + '/sections/' + matrix.matrix_id + '/' + btn.dataset.act + '/' + rid;
+      const path = '/api/collections/' + collectionId + '/sections/' + matrix.group_id + '/' + btn.dataset.act + '/' + rid;
       if (btn.dataset.act === 'request-revision' &&
         !confirm('이 참여자에게만 이 섹션을 다시 조정하도록 요청할까요?')) return;
       try {
@@ -428,7 +428,7 @@
       const matrix = currentSectionMatrix();
       if (!matrix) return;
       try {
-        await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.matrix_id + '/reveal-group', { method: 'POST' });
+        await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.group_id + '/reveal-group', { method: 'POST' });
         ahpToast('그룹 결과를 공개했습니다');
       } catch (e) {
         ahpToast(e.message || '공개에 실패했습니다', true);

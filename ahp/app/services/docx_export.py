@@ -77,7 +77,7 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
 
     node_descriptions = survey.get("node_descriptions", {})
 
-    for m in survey.get("matrices", []):
+    for m in survey.get("groups", []):
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
         parent_desc = node_descriptions.get(m["parent_uuid"], "")
 
