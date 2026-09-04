@@ -19,7 +19,10 @@ for _p in (_REPO_ROOT, _AHP_DIR):
         sys.path.insert(0, _p)
 
 from app.services.ahp_calc import derive_weights, to_stored_pair  # noqa: E402
+from app.services.aggregate import aggregate_aij, aggregate_aip  # noqa: E402
 from app.services.consistency import worst_offending_pairs  # noqa: E402
+from app.routes.collection_routes import respondent_progress_summary  # noqa: E402
+from app.routes.entry_routes import _compute_cr_for_matrix  # noqa: E402
 from app.services.methods import KIND_VALIDATORS, METHODS, get_method  # noqa: E402
 from app.services.methods.ahp import AhpPlugin  # noqa: E402
 from app.services.questions import generate_questions, normalize_methods  # noqa: E402
@@ -157,6 +160,7 @@ def test_generate_questions_parity():
         assert gn["is_alternative"] == gl["is_alternative"]
         assert gn["parent_uuid"] == gl["parent_uuid"]
         assert gn["kind"] == "pairwise"
+        assert gn["method"] == "ahp"
         assert gn["scale"] == 5
     # 미등록 방법은 조용히 AHP 폴백 (그룹이 그대로 생성됨)
     m = normalize_methods({"criteria": {"root": "bwm"}, "alternatives": "topsis"})
@@ -164,6 +168,42 @@ def test_generate_questions_parity():
     fb = generate_questions(nodes, alts, methods=m, settings=settings)
     assert [g["group_id"] for g in fb] == [g["group_id"] for g in legacy]
     assert all(g["kind"] == "pairwise" for g in fb)
+
+
+def test_route_helpers_parity():
+    # 4단계에서 플러그인 dispatch로 바꾼 라우트 헬퍼가 기존 직접 호출과 동일한지.
+    groups = generate_questions(_NODES, methods={}, settings={"scale": 9})
+    root = [g for g in groups if g["group_id"] == "root"][0]
+    full = _pairs(("c1", "c2", 3.0), ("c1", "c3", 5.0), ("c2", "c3", 2.0))
+    part = _pairs(("c1", "c2", 3.0))
+
+    # entry_routes._compute_cr_for_matrix
+    ci = _compute_cr_for_matrix(root, {"root": full})
+    wr = derive_weights(root["child_uuids"], full)
+    assert ci["complete"] and approx(ci["cr"], wr.cr)
+    assert ci["weights"] == wr.weights
+    assert _compute_cr_for_matrix(root, {"root": part})["complete"] is False
+
+    # collection_routes.respondent_progress_summary — worst_cr = max 완성된 그룹 CR
+    ans = {"root": full}
+    s = respondent_progress_summary(groups, ans)
+    assert approx(s["worst_cr"], wr.cr)
+    s2 = respondent_progress_summary(groups, {"root": part})
+    assert s2["worst_cr"] is None and s2["complete"] is False
+
+    # reveal_group 식 avg_cr: aggregate_group.consistency.avg_cr == 기존 계산
+    rp = [full, _pairs(("c1", "c2", 2.0), ("c1", "c3", 4.0), ("c2", "c3", 2.0))]
+    for agg in ("AIP", "AIJ"):
+        lr = P.aggregate_group(root, rp, {"aggregation": agg})
+        if agg == "AIJ":
+            wexp, _m = aggregate_aij(root["child_uuids"], rp)
+            exp = wexp.cr
+        else:
+            _gw, per, _sk = aggregate_aip(root["child_uuids"], rp)
+            crs = [r.cr for r in per if r.cr is not None]
+            exp = sum(crs) / len(crs) if crs else None
+        got = lr.consistency.metrics.get("avg_cr")
+        assert (got is None and exp is None) or approx(got, exp), (agg, got, exp)
 
 
 def test_kind_validators():

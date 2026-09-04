@@ -23,9 +23,8 @@ from app.services.codes import (
     dedupe_label,
     seq_letters,
 )
-from app.services.ahp_calc import derive_weights, IncompleteMatrixError
-from app.services.aggregate import find_outliers, aggregate_aij, aggregate_aip
-from app.services.consistency import worst_offending_pairs
+from app.services.aggregate import find_outliers
+from app.services.methods import get_method
 from app.services.hub import hub
 
 router = APIRouter()
@@ -329,12 +328,13 @@ def respondent_progress_summary(groups: list[dict], answers: dict) -> dict:
         node_ids = m["child_uuids"]
         if len(node_ids) < 2:
             continue
-        try:
-            result = derive_weights(node_ids, answers.get(m["group_id"], {}))
-            if result.cr is not None:
-                worst_cr = result.cr if worst_cr is None else max(worst_cr, result.cr)
-        except IncompleteMatrixError:
+        lr = get_method(m.get("method")).derive_local(m, answers.get(m["group_id"], {}))
+        if not lr.complete:
             all_complete = False
+            continue
+        cr = lr.consistency.metrics.get("cr") if lr.consistency else None
+        if cr is not None:
+            worst_cr = cr if worst_cr is None else max(worst_cr, cr)
 
     return {
         "progress": progress,
@@ -429,10 +429,9 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
         pairs = responses_by_rid.get(r["_id"], {}).get(group_id, {})
         cr = None
         if len(node_ids) >= 3 and pairs:
-            try:
-                cr = derive_weights(node_ids, pairs).cr
-            except IncompleteMatrixError:
-                cr = None
+            lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
+            if lr.complete and lr.consistency:
+                cr = lr.consistency.metrics.get("cr")
         rows.append(
             {
                 "respondent_id": r["_id"],
@@ -462,18 +461,16 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
                 }
             )
 
-    # 그룹 전체가 어느 쌍에서 가장 흔들리는지(재고 지점) — 기하평균으로 응답을
-    # 합친 뒤(AHP에서 유일하게 올바른 평균) worst_offending_pairs를 돌린다.
+    # 그룹 전체가 어느 항목에서 가장 흔들리는지(재고 지점) — 쌍대비교는 기하평균으로
+    # 응답을 합친 뒤 plugin.validate 로 진단한다(방법별 공식은 플러그인 안).
     worst = []
     if len(node_ids) >= 3 and all_pairs_for_diagnosis:
         merged = {
             pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
             for pid, vs in all_pairs_for_diagnosis.items()
         }
-        try:
-            worst = [w.to_dict() for w in worst_offending_pairs(node_ids, merged)]
-        except Exception:
-            worst = []
+        c = get_method(matrix.get("method")).validate(matrix, merged)
+        worst = c.detail if c else []
 
     return {
         "group_id": group_id,
@@ -595,17 +592,12 @@ async def reveal_group_result(collection_id: str, group_id: str, request: Reques
         raise HTTPException(400, "아직 공개할 만큼 응답이 모이지 않았습니다")
 
     project = await _project_for_survey(collection["survey_id"])
-    aggregation = project.get("settings", {}).get("aggregation", "AIP")
-    try:
-        if aggregation == "AIJ":
-            result, _merged = aggregate_aij(node_ids, pairs_list)
-            group_weights, avg_cr = result.weights, result.cr
-        else:
-            group_weights, per_resp, _skipped = aggregate_aip(node_ids, pairs_list)
-            crs = [r.cr for r in per_resp if r.cr is not None]
-            avg_cr = sum(crs) / len(crs) if crs else None
-    except (ValueError, IncompleteMatrixError):
+    plugin = get_method(matrix.get("method"))
+    agg = plugin.aggregate_group(matrix, pairs_list, project.get("settings", {}))
+    if not agg.complete:
         raise HTTPException(400, "완전한 응답이 아직 없어 집계할 수 없습니다")
+    group_weights = agg.weights
+    avg_cr = agg.consistency.metrics.get("avg_cr") if agg.consistency else None
 
     worst = []
     if len(node_ids) >= 3:
@@ -617,10 +609,8 @@ async def reveal_group_result(collection_id: str, group_id: str, request: Reques
             pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
             for pid, vs in acc.items()
         }
-        try:
-            worst = [w.to_dict() for w in worst_offending_pairs(node_ids, merged_pairs)]
-        except Exception:
-            worst = []
+        c = plugin.validate(matrix, merged_pairs)
+        worst = c.detail if c else []
 
     payload = {
         "group_id": group_id,
@@ -643,12 +633,15 @@ async def reveal_individual_result(
     collection = await _get_collection_checked(collection_id, request)
     matrix, responses_by_rid = await _matrix_and_answers(collection, group_id)
     pairs = responses_by_rid.get(respondent_id, {})
-    try:
-        result = derive_weights(matrix["child_uuids"], pairs)
-    except IncompleteMatrixError:
+    lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
+    if not lr.complete:
         raise HTTPException(400, "이 참여자의 응답이 아직 완전하지 않습니다")
 
-    payload = {"group_id": group_id, "weights": result.weights, "cr": result.cr}
+    payload = {
+        "group_id": group_id,
+        "weights": lr.weights,
+        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+    }
     await hub.publish(
         collection_id,
         "section.individual_result",
@@ -684,9 +677,8 @@ async def request_individual_revision(
         matrix, responses_by_rid = await _matrix_and_answers(collection, group_id)
         pairs = responses_by_rid.get(respondent_id, {})
         if len(matrix["child_uuids"]) >= 3 and pairs:
-            worst_pairs = [
-                w.to_dict() for w in worst_offending_pairs(matrix["child_uuids"], pairs)
-            ]
+            c = get_method(matrix.get("method")).validate(matrix, pairs)
+            worst_pairs = c.detail if c else []
     except Exception:
         worst_pairs = []
 

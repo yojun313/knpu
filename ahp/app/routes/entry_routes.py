@@ -17,12 +17,8 @@ from app.db import (
     submissions_db,
     imports_db,
 )
-from app.services.ahp_calc import (
-    to_stored_pair,
-    pair_id,
-    derive_weights,
-    IncompleteMatrixError,
-)
+from app.services.ahp_calc import to_stored_pair, pair_id
+from app.services.methods import get_method
 from app.services.csv_schema import parse_value
 from app.services.codes import dedupe_label as _dedupe_label
 from app.services.hub import hub
@@ -237,11 +233,15 @@ async def get_grid(collection_id: str, request: Request):
 def _compute_cr_for_matrix(matrix: dict, answers: dict) -> dict:
     node_ids = matrix["child_uuids"]
     pairs = answers.get(matrix["group_id"], {})
-    try:
-        result = derive_weights(node_ids, pairs)
-        return {"complete": True, "cr": result.cr, "weights": result.weights}
-    except IncompleteMatrixError as e:
-        return {"complete": False, "missing": len(e.missing_pairs)}
+    lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
+    if not lr.complete:
+        n = len(node_ids)
+        return {"complete": False, "missing": max(n * (n - 1) // 2 - len(pairs), 0)}
+    return {
+        "complete": True,
+        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+        "weights": lr.weights,
+    }
 
 
 @router.put("/api/entry/{collection_id}/answers")

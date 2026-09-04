@@ -20,15 +20,10 @@ from app.db import (
     projects_db,
 )
 from app.services.codes import hash_code
-from app.services.ahp_calc import (
-    to_stored_pair,
-    pair_id,
-    derive_weights,
-    IncompleteMatrixError,
-)
+from app.services.ahp_calc import to_stored_pair, pair_id
+from app.services.methods import get_method
 from app.services.hub import hub
 from app.routes.survey_routes import DEFAULT_INTRO_TEXT, DEFAULT_CONSENT_TEXT
-from app.services.consistency import worst_offending_pairs
 from app.services.demographics import coerce_attributes, validate_required
 
 router = APIRouter()
@@ -78,6 +73,9 @@ def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
                 ),
                 "question_text": m["question_text"],
                 "is_alternative": m.get("is_alternative", False),
+                "kind": m.get("kind", "pairwise"),
+                "method": m.get("method", "ahp"),
+                "scale": m.get("scale", 9),
                 "children": children,
                 "pairs": [
                     {"uuid_a": m["child_uuids"][i], "uuid_b": m["child_uuids"][j]}
@@ -329,16 +327,18 @@ async def put_answer(token: str, request: Request):
         {"$set": {"answers": answers, "submitted_at": _now()}},
     )
 
-    node_ids = matrix["child_uuids"]
-    try:
-        result = derive_weights(node_ids, matrix_answers)
-        cr_info = {"complete": True, "cr": result.cr}
+    lr = get_method(matrix.get("method")).derive_local(matrix, matrix_answers)
+    if lr.complete:
+        cr_info = {
+            "complete": True,
+            "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+        }
         if (respondent or {}).get("revision_group_id") == group_id:
             await respondents_db.update_one(
                 {"_id": payload["respondent_id"]},
                 {"$unset": {"revision_group_id": ""}},
             )
-    except IncompleteMatrixError:
+    else:
         cr_info = {"complete": False}
 
     # 응답자는 HTTP로만 저장하지만(더 안정적이니까), 관리자 콘솔에는 실시간으로
@@ -414,31 +414,25 @@ async def group_eval(token: str, request: Request):
         stored[pid] = sv
 
     names = {cid: nodes_by_id.get(cid, {}).get("name", cid) for cid in node_ids}
-    try:
-        result = derive_weights(node_ids, stored)
-    except IncompleteMatrixError as e:
+    plugin = get_method(matrix.get("method"))
+    lr = plugin.derive_local(matrix, stored)
+    if not lr.complete:
+        n = len(node_ids)
         return {
             "incomplete": True,
-            "missing": len(e.missing_pairs),
+            "missing": max(n * (n - 1) // 2 - len(stored), 0),
             "child_uuids": node_ids,
             "names": names,
         }
 
-    ranking = sorted(node_ids, key=lambda u: result.weights.get(u, 0), reverse=True)
-    worst = []
-    if len(node_ids) >= 3:
-        try:
-            worst = [w.to_dict() for w in worst_offending_pairs(node_ids, stored)]
-        except Exception:
-            worst = []
     return {
         "incomplete": False,
         "child_uuids": node_ids,
         "names": names,
-        "weights": result.weights,
-        "ranking": ranking,
-        "cr": result.cr,
-        "worst_pairs": worst,
+        "weights": lr.weights,
+        "ranking": lr.ranking,
+        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+        "worst_pairs": lr.consistency.detail if lr.consistency else [],
     }
 
 
@@ -526,25 +520,24 @@ async def respond_summary(token: str, request: Request):
     items = []
     for m in matrices_view:
         node_ids = [c["uuid"] for c in m["children"]]
+        grp = {"group_id": m["group_id"], "child_uuids": node_ids, "method": m["method"]}
         pairs = sub["answers"].get(m["group_id"], {})
-        try:
-            result = derive_weights(node_ids, pairs)
-            worst_pair = None
-            if len(node_ids) >= 3:
-                # 이 응답자 본인의 판단 중 CR에 가장 큰 영향을 준(가장 모순적인)
-                # 쌍 — 리뷰 화면에서 바로 강조해 보여주기 위함(요청사항).
-                worst = worst_offending_pairs(node_ids, pairs, top_k=1)
-                if worst:
-                    worst_pair = {"uuid_a": worst[0].uuid_a, "uuid_b": worst[0].uuid_b}
-            items.append(
-                {
-                    "group_id": m["group_id"],
-                    "parent_name": m["parent_name"],
-                    "cr": result.cr,
-                    "worst_pair": worst_pair,
-                }
-            )
-        except IncompleteMatrixError:
+        lr = get_method(m["method"]).derive_local(grp, pairs, cr_threshold=cr_threshold)
+        if not lr.complete:
             continue
+        # 이 응답자 본인의 판단 중 CR에 가장 큰 영향을 준(가장 모순적인) 쌍 —
+        # 리뷰 화면에서 바로 강조해 보여주기 위함(요청사항).
+        worst_pair = None
+        detail = lr.consistency.detail if lr.consistency else []
+        if detail:
+            worst_pair = {"uuid_a": detail[0]["uuid_a"], "uuid_b": detail[0]["uuid_b"]}
+        items.append(
+            {
+                "group_id": m["group_id"],
+                "parent_name": m["parent_name"],
+                "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+                "worst_pair": worst_pair,
+            }
+        )
 
     return {"items": items, "cr_threshold": cr_threshold}

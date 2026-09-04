@@ -12,7 +12,7 @@
    `respondents.revision_matrix_id` → `revision_group_id`.
    `responses.answers` / `submissions.answers` 는 무변경 — 바깥 키가 리터럴이 아니라
    `parent_uuid` / `"alt:<uuid>"` **값**이고 그 값이 그대로 `group_id` 값이 된다.
-2. 백필: `surveys.groups[]` 각 원소에 `kind:"pairwise"`·`scale`(프로젝트 설정) 채움,
+2. 백필: `surveys.groups[]` 각 원소에 `kind:"pairwise"`·`method:"ahp"`·`scale`(프로젝트 설정) 채움,
    `surveys.methods` 없으면 `{"criteria":{}, "alternatives":"ahp"}` 채움.
 3. 백필: `hierarchies.nodes[]` 각 원소에 `type:"benefit"`·`measure:"qualitative"`·
    `unit:None` 채움 (랭킹 방법용, AHP는 무시).
@@ -65,6 +65,9 @@ async def migrate_surveys(dry_run: bool) -> tuple[int, int]:
                 changed_groups = True
             if "kind" not in m:
                 m["kind"] = "pairwise"
+                changed_groups = True
+            if "method" not in m:
+                m["method"] = "ahp"
                 changed_groups = True
             if "scale" not in m:
                 m["scale"] = scale
