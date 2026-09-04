@@ -48,7 +48,7 @@ def build_results(
                     m, pairs, cr_threshold=cr_threshold
                 ).consistency
                 per_respondent_cr[rid][group_id] = (
-                    c.metrics.get("cr") if c else None
+                    c.metrics.get("cr", c.metrics.get("cri")) if c else None
                 )
 
         if not respondent_pairs:
@@ -69,8 +69,8 @@ def build_results(
             continue
 
         # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다.
-        # 쌍대비교 전용 진단이라 플러그인 밖에 둔다(비-pairwise kind가 생기면 이관).
-        if len(respondent_pairs) >= 3:
+        # 쌍대비교 전용 진단(값이 로그 스케일 비율이라는 전제). 비-pairwise kind는 건너뛴다.
+        if m.get("kind", "pairwise") == "pairwise" and len(respondent_pairs) >= 3:
             outliers = []
             all_pair_ids = set()
             for p in respondent_pairs:
