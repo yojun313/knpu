@@ -8,7 +8,7 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
-from app.services.csv_schema import CSV_COLUMNS, format_value
+from app.services.csv_schema import CSV_COLUMNS, format_value, group_item_slots
 from app.services.ahp_calc import pair_id
 from app.services.demographics import resolve_for_export
 
@@ -30,27 +30,24 @@ def build_response_rows(
     for respondent_id, answers in submissions_by_respondent.items():
         label = respondent_id
         for m in groups:
-            child_uuids = m["child_uuids"]
             pairs = answers.get(m["group_id"], {})
             parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
-            for i in range(len(child_uuids)):
-                for j in range(i + 1, len(child_uuids)):
-                    a, b = child_uuids[i], child_uuids[j]
-                    pid = pair_id(a, b)
-                    if pid not in pairs:
-                        continue
-                    stored = pairs[pid]
-                    lo, _hi = sorted([a, b])
-                    a_over_b = stored if a == lo else (1.0 / stored)
-                    rows.append(
-                        [
-                            label,
-                            parent_name,
-                            nodes_by_uuid.get(a, {}).get("name", a),
-                            nodes_by_uuid.get(b, {}).get("name", b),
-                            format_value(a_over_b),
-                        ]
-                    )
+            for a, b in group_item_slots(m):
+                pid = pair_id(a, b)
+                if pid not in pairs:
+                    continue
+                stored = pairs[pid]
+                lo, _hi = sorted([a, b])
+                a_over_b = stored if a == lo else (1.0 / stored)
+                rows.append(
+                    [
+                        label,
+                        parent_name,
+                        nodes_by_uuid.get(a, {}).get("name", a),
+                        nodes_by_uuid.get(b, {}).get("name", b),
+                        format_value(a_over_b),
+                    ]
+                )
     return rows
 
 

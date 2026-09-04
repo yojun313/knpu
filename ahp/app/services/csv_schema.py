@@ -22,6 +22,25 @@ CSV_COLUMNS = ["respondent", "parent", "item_a", "item_b", "value"]
 RESPONDENT_COL = "respondent"
 
 
+def group_item_slots(group: dict) -> list[tuple[str, str]]:
+    """이 질문 그룹의 응답 항목(item)을 표시 순서대로 낸다.
+
+    pairwise: `child_uuids` 의 모든 i<j 조합 `(uuid_a, uuid_b)`.
+    반입 양식 열 순서·인쇄 설문지 문항 번호·내보내기 열이 전부 이 순서를 공유하므로
+    **한 곳에서만** 정의한다. BWM 등 다른 kind 는 여기 분기만 추가하면
+    양식/파서/내보내기가 그대로 따라온다.
+    """
+    kind = group.get("kind", "pairwise")
+    cu = group["child_uuids"]
+    if kind == "pairwise":
+        return [
+            (cu[i], cu[j])
+            for i in range(len(cu))
+            for j in range(i + 1, len(cu))
+        ]
+    raise ValueError(f"미지원 그룹 kind: {kind!r}")
+
+
 def pair_column_label(n: int, parent: str, name_a: str, name_b: str) -> str:
     """wide 반입 양식의 비교쌍 열 제목. 인쇄 설문지의 문항 번호(Qn)와 1:1로 맞춰
     종이 → CSV 전사 시 열을 바로 찾게 한다. n은 설문지 전체를 통틀어 1부터.

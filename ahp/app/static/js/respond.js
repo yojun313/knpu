@@ -326,6 +326,20 @@
       '<div class="scale">' + cells + '</div></div>';
   }
 
+  // kind별 렌더러 레지스트리 — 0단계에는 pairwise 하나뿐. BWM/직접평정 등은
+  // 여기 항목만 추가하면 설문·리뷰 화면이 그대로 dispatch한다.
+  //   items(group)      : 이 그룹의 응답 항목(질문) 목록
+  //   renderItem(q,opts) : 항목 하나를 HTML 문자열로 (opts는 리뷰 화면 강조용)
+  const RENDERERS = {
+    pairwise: {
+      items: function (group) { return pairsOfMatrix(group.group_id); },
+      renderItem: function (q, opts) { return renderPairScaleRow(q, opts); },
+    },
+  };
+  function rendererFor(group) {
+    return (group && RENDERERS[group.kind]) || RENDERERS.pairwise;
+  }
+
   function renderMatrixPage() {
     const m = activeMatrices[currentMatrixIndex];
     if (!m) return;
@@ -333,8 +347,9 @@
     document.getElementById('qParentDesc').textContent = m.parent_description || '';
     document.getElementById('qParentDesc').hidden = !m.parent_description;
     document.getElementById('qQuestionText').textContent = m.question_text;
-    document.getElementById('pairList').innerHTML = pairsOfMatrix(m.group_id)
-      .map(function (q) { return renderPairScaleRow(q); }).join('');
+    const R = rendererFor(m);
+    document.getElementById('pairList').innerHTML = R.items(m)
+      .map(function (q) { return R.renderItem(q); }).join('');
     document.getElementById('qCounter').textContent =
       (currentMatrixIndex + 1) + ' / ' + activeMatrices.length + ' 기준';
     document.getElementById('prevBtn').disabled = currentMatrixIndex === 0;
@@ -765,17 +780,19 @@
   }
 
   function renderReviewPairs() {
-    const qs = pairsOfMatrix(reviewGroupId);
-    document.getElementById('reviewPairs').innerHTML = qs.map(function (q) {
-      const pid = pairId(q.uuid_a, q.uuid_b);
-      const w = reviewWorstPids[pid];
-      return renderPairScaleRow(q, {
-        worst: !!w,
-        suggestBadge: !!w,
-        given: w ? (w.given_label || fmtValue(pairValue(q))) : '',
-        suggest: w ? w.suggested_label : '',
-      });
-    }).join('');
+    const m = matrixView(reviewGroupId);
+    const R = rendererFor(m);
+    document.getElementById('reviewPairs').innerHTML = R.items(m || { group_id: reviewGroupId })
+      .map(function (q) {
+        const pid = pairId(q.uuid_a, q.uuid_b);
+        const w = reviewWorstPids[pid];
+        return R.renderItem(q, {
+          worst: !!w,
+          suggestBadge: !!w,
+          given: w ? (w.given_label || fmtValue(pairValue(q))) : '',
+          suggest: w ? w.suggested_label : '',
+        });
+      }).join('');
   }
 
   function currentOverrides() {
@@ -853,7 +870,7 @@
       answers[answerKey(mid, a, b)] = v;
       clientSeq += 1;
       localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
-      queueAnswer({ group_id: mid, uuid_a: a, uuid_b: b, value: v, client_seq: clientSeq });
+      queueAnswer({ group_id: mid, kind: 'pairwise', uuid_a: a, uuid_b: b, value: v, client_seq: clientSeq });
       onPick();
     });
   }

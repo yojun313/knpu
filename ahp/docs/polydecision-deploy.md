@@ -64,7 +64,14 @@ DB 변화 없음, wiring 없음. 검증: `ahp/tests/check_methods_ahp.py`.
   9건). DB 조치는 위와 동일(별도 없음). 유일한 미세 차이: what-if 리뷰 차트(`group-eval`)의
   **동점 항목 정렬 순서** — `reverse=True` → `-weight` 안정정렬로 바뀌어 가중치가 완전히
   같을 때만 순서가 다름(실제 고유벡터 값에선 발생하지 않음).
+- **5단계** — 프론트 `respond.js` 에 `RENDERERS[kind]` 레지스트리(0단계엔 `pairwise` 하나) +
+  `csv_schema.group_item_slots(group)` 하나로 항목/열 순서 통일(반입 양식·파서·tidy CSV·
+  응답 화면 view). **코드만, DB 조치 없음.** 출력 바이트 동일(항목 순서 = 기존 `nC2` 이중 루프).
+  `docx_export`·`print.js`·`console.js`·`entry.js` 의 렌더링 루프는 그대로 — 방법별 표 레이아웃이라
+  BWM 붙일 때 새로 그린다.
 - dry-run 기준 대상: `surveys` 9건, `hierarchies` 22건.
+
+> **0단계 코드 완료.** 위 마이그레이션 1회 + `pm2 restart` 로 전체 반영된다.
 
 ---
 
