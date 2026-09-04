@@ -1,82 +1,88 @@
 # PolyDecision 확장 — 배포 시 필요한 작업 (누적)
 
-> 0단계(추상화 도입) 리팩터링을 운영에 반영할 때 **코드 배포 외에** 해야 하는 작업을
-> 단계별로 누적한다. 전체 설계는 `~/.claude/plans/ahp-compiled-shore.md` 참조.
+> 0단계(추상화 도입) 리팩터링을 운영에 반영할 때 **코드 배포 외에** 해야 하는 작업.
+> 전체 설계는 `~/.claude/plans/ahp-compiled-shore.md` 참조.
 >
 > 공통 전제: 단일 워커(인메모리 WS 허브) → 배포는 **코드 반영 + `pm2 restart ahp`** 로
 > 진행하며, 그 순간 접속 중이던 실시간 세션은 끊긴다. 실시간 세션 진행 중 배포 금지.
 
 ---
 
-## 배포 체크리스트 (0단계 전체를 한 번에 반영할 때, 순서대로)
+## 핵심: 새 DB `mcdm` 로 이전 (구 `ahp` DB는 그대로 보존)
 
-1. [ ] **백업**: `mongodump`  (ahp DB 전체)
+0단계부터 앱은 **`mcdm` DB** 를 쓴다(`app/db.py`, `AHP_DB_NAME` 으로 재정의 가능,
+기본값 `mcdm`). 구 `ahp` DB 는 **한 글자도 건드리지 않고** 롤백·이력용으로 남긴다.
+`scripts/migrate_ahp_to_mcdm.py` 가 `ahp` → `mcdm` 로 **변환 복사**한다(개명·백필 포함).
+
+## 배포 체크리스트 (0단계 전체, 순서대로)
+
+1. [ ] (선택) `mongodump -d ahp` — `ahp` 는 안 건드리지만 관례상 스냅샷
 2. [ ] 실시간 세션이 없는 시간대 확인
 3. [ ] 코드 배포 (이 브랜치 머지/pull)
-4. [ ] **DB 마이그레이션 1회 실행** — `ahp/scripts/migrate_polydecision_0dan.py`
-       (0단계 전체를 담은 단일 멱등 스크립트, 아래 상세)
+4. [ ] **`ahp` → `mcdm` 변환 복사 1회**
        ```bash
        PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
-         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_polydecision_0dan.py --dry-run  # 확인
+         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_ahp_to_mcdm.py --dry-run  # 확인
        PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
-         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_polydecision_0dan.py            # 실행
+         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_ahp_to_mcdm.py            # 실행
        ```
-5. [ ] `pm2 restart ahp` (`watch:false` 확인)
+5. [ ] `pm2 restart ahp` — 앱이 `mcdm` 로 붙는다. 기동 시 `ensure_indexes()` 가 `mcdm` 에
+       인덱스를 새로 만든다(스크립트가 안 만듦).
 6. [ ] 스모크: `/` 302, 관리자 로그인 → 프로젝트 목록 → 설문지 화면 → 결과 화면 로드,
        기존 응답의 가중치·CR 값이 배포 전과 동일한지 1건 대조
 
-> 마이그레이션은 **멱등**(재실행 안전)이고, 실행 끝에 잔존 검증(옛 필드 0, `groups.kind`
-> 누락 0)을 자체 수행한다. 남아 있으면 non-zero 종료.
+- **멱등**: 재실행하면 `mcdm` 문서가 최신 변환으로 `_id` 기준 덮어써진다. 완전 재동기화가
+  필요하면 `mcdm` 을 drop 하고 다시 실행.
+- 스크립트가 끝에 잔존 검증(`mcdm` 에 `surveys.matrices` / `revision_matrix_id` / `kind` 누락
+  0)을 하고 실패 시 non-zero 종료.
+- dry-run 기준(현재 `ahp`): projects 7 · hierarchies 22 · surveys 9 · collections 8 ·
+  respondents 14 · responses 14 · submissions 13 · results 0 · imports 1 (= 88 docs).
+
+## 롤백
+
+`mcdm` 은 새로 만든 것이고 `ahp` 는 온전하므로 롤백이 단순하다:
+
+1. 코드를 0단계 이전 커밋으로 되돌린다(구 코드는 `_client["ahp"]` 를 본다).
+2. `pm2 restart ahp`.
+3. `mcdm` DB 는 나중에 정리(drop)하면 된다.
+
+(구 코드로 `mcdm` 을 보게 하거나, 새 코드로 `ahp` 를 보게 하지 말 것 — 스키마가 안 맞는다.
+`AHP_DB_NAME` 은 로컬에서 구 DB 를 읽기 전용으로 들여다볼 때만.)
 
 ---
 
-## 단계별 상세 (마이그레이션 스크립트가 각각 처리하는 것)
+## 변환 복사 시 적용되는 스키마 변경 (단계별)
 
-### 1단계 — 식별자 개명 `matrix_id → group_id`  *(코드: 완료 / 운영: 미실행)*
+### 1단계 — 식별자 개명
 
-`surveys.matrices`→`surveys.groups`(원소 `matrix_id`→`group_id`),
-`respondents.revision_matrix_id`→`revision_group_id`.
+`surveys.matrices` → `surveys.groups`(원소 `matrix_id` → `group_id`),
+`respondents.revision_matrix_id` → `revision_group_id`.
 `responses`/`submissions` 문서 내용은 **무변경**(바깥 키가 리터럴이 아니라 `parent_uuid` /
-`"alt:<uuid>"` 값이라 그대로 `group_id` 값이 됨).
+`"alt:<uuid>"` 값이라 그대로 `group_id` 값).
 
-- **코드 배포와 이 마이그레이션은 함께** 나가야 한다(개명된 코드는 DB에 `groups`/`group_id`가
-  있어야 동작). 프로덕션 서버는 단일 워커라 lockstep 부담은 `pm2 restart` 1회 수준.
-- dry-run 기준 대상: `surveys` 9건.
+### 2단계 — 코드만 (`mcdm/` 공유 코어 + `methods/` 플러그인 골격)
 
-### 2단계 — `mcdm/` 공유 코어 + `methods/` 플러그인 scaffold  *(코드: 완료 / DB: 조치 없음)*
+DB 스키마 변화 없음.
 
-`app/services/mcdm/`(재수출 shim) + `app/services/methods/`(플러그인 골격) 순수 추가.
-DB 변화 없음, wiring 없음. 검증: `ahp/tests/check_methods_ahp.py`.
+### 3·4단계 — `generate_questions` + `surveys.methods` + 플러그인 dispatch
 
-### 3·4단계 — `generate_questions` + `surveys.methods` + 플러그인 dispatch  *(코드: 완료 / 운영: 미실행)*
-
-- `surveys.groups[]` 각 원소에 **`kind:"pairwise"`** · **`method:"ahp"`** · **`scale`**(프로젝트 `settings.scale`) 백필.
-- `surveys.methods` 없으면 **`{"criteria":{}, "alternatives":"ahp"}`** 백필. 이후
+- `surveys.groups[]` 각 원소에 `kind:"pairwise"` · `method:"ahp"` · `scale`(프로젝트
+  `settings.scale`) 백필.
+- `surveys.methods` 없으면 `{"criteria":{}, "alternatives":"ahp"}` 백필. 이후
   `PUT /api/projects/{id}/survey` body `methods` 로 편집(버전 bump 없음), `resync` 시
   `generate_questions` 가 이 값으로 그룹을 다시 만든다.
-- `hierarchies.nodes[]` 각 원소에 **`type:"benefit"`** · **`measure:"qualitative"`** ·
-  **`unit:null`** 백필 (SAW/TOPSIS 등 랭킹 방법용, AHP는 무시).
-- 백필이 없어도 코드는 `m.get("kind","pairwise")` / `get_method(None)`(→ AHP 폴백) 으로
-  견디지만, 데이터 uniform 을 위해 마이그레이션에 포함.
-- **4단계** — `build_results`·`respond_routes`·`entry_routes`·`collection_routes` 의 AHP
-  직접 호출(`derive_weights`·`aggregate_*`·`worst_offending_pairs`)을 `METHODS[...]` 플러그인
-  dispatch 로 전환. **동작·출력 무변경**(`build_results` 골든 바이트 동일, 라우트 헬퍼 패리티
-  9건). DB 조치는 위와 동일(별도 없음). 유일한 미세 차이: what-if 리뷰 차트(`group-eval`)의
-  **동점 항목 정렬 순서** — `reverse=True` → `-weight` 안정정렬로 바뀌어 가중치가 완전히
-  같을 때만 순서가 다름(실제 고유벡터 값에선 발생하지 않음).
-- **5단계** — 프론트 `respond.js` 에 `RENDERERS[kind]` 레지스트리(0단계엔 `pairwise` 하나) +
-  `csv_schema.group_item_slots(group)` 하나로 항목/열 순서 통일(반입 양식·파서·tidy CSV·
-  응답 화면 view). **코드만, DB 조치 없음.** 출력 바이트 동일(항목 순서 = 기존 `nC2` 이중 루프).
-  `docx_export`·`print.js`·`console.js`·`entry.js` 의 렌더링 루프는 그대로 — 방법별 표 레이아웃이라
-  BWM 붙일 때 새로 그린다.
-- dry-run 기준 대상: `surveys` 9건, `hierarchies` 22건.
+- `hierarchies.nodes[]` 각 원소에 `type:"benefit"` · `measure:"qualitative"` · `unit:null`
+  백필 (SAW/TOPSIS 등 랭킹 방법용, AHP는 무시).
+- 백필이 없어도 코드는 `m.get("kind","pairwise")` / `get_method(None)`(→ AHP 폴백)으로
+  견디지만, 데이터 uniform 을 위해 포함.
+- 4단계는 **코드만** — `build_results`·라우트의 AHP 직접 호출을 `METHODS[...]` dispatch 로.
+  동작·출력 무변경(`build_results` 골든 바이트 동일, 라우트 헬퍼 패리티 9건). 유일한 미세
+  차이: what-if 리뷰 차트(`group-eval`)의 동점 항목 정렬 순서(고유벡터 값에선 발생 안 함).
 
-> **0단계 코드 완료.** 위 마이그레이션 1회 + `pm2 restart` 로 전체 반영된다.
+### 5단계 — 코드만
 
----
+`respond.js` `RENDERERS[kind]` 레지스트리 + `csv_schema.group_item_slots(group)` 하나로
+항목/열 순서 통일. DB 조치 없음, 출력 바이트 동일. `docx_export`·`print.js`·`console.js`·
+`entry.js` 렌더 루프는 방법별 레이아웃이라 그대로(BWM 때 새로 그림).
 
-## 참고: 롤백
-
-코드를 이전 커밋으로 되돌리고 `mongodump` 백업을 복원한다. (역방향 스크립트는 만들지
-않았다 — 백필 필드는 남아 있어도 옛 코드가 무시하므로 무해하지만, 개명은 되돌려야 하니
-백업 복원이 정석.)
+> **0단계 코드 완료.** 변환 복사 1회 + `pm2 restart` 로 전체 반영.

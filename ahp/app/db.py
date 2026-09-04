@@ -45,18 +45,26 @@ else:
         f"@127.0.0.1:{_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
     )
 
-_client = AsyncIOMotorClient(_mongo_uri)
+mongo_client = _client = AsyncIOMotorClient(_mongo_uri)
 
-ahp_db = _client["ahp"]
-projects_db = ahp_db["projects"]
-hierarchies_db = ahp_db["hierarchies"]
-surveys_db = ahp_db["surveys"]
-collections_db = ahp_db["collections"]
-respondents_db = ahp_db["respondents"]
-responses_db = ahp_db["responses"]
-submissions_db = ahp_db["submissions"]
-results_db = ahp_db["results"]
-imports_db = ahp_db["imports"]
+# PolyDecision 0단계부터 새 DB 이름 `mcdm` 을 쓴다. 구 `ahp` DB는 롤백/이력용으로
+# 손대지 않고 남겨두고, scripts/migrate_ahp_to_mcdm.py 가 `ahp` → `mcdm` 로 변환
+# 복사한다. AHP_DB_NAME 으로 재정의 가능(로컬에서 구 DB를 직접 보고 싶을 때 등).
+DB_NAME = os.getenv("AHP_DB_NAME", "mcdm")
+
+mcdm_db = _client[DB_NAME]
+projects_db = mcdm_db["projects"]
+hierarchies_db = mcdm_db["hierarchies"]
+surveys_db = mcdm_db["surveys"]
+collections_db = mcdm_db["collections"]
+respondents_db = mcdm_db["respondents"]
+responses_db = mcdm_db["responses"]
+submissions_db = mcdm_db["submissions"]
+results_db = mcdm_db["results"]
+imports_db = mcdm_db["imports"]
+
+# 하위호환 별칭 — 예전 코드가 참조할 수 있으니 유지(둘 다 같은 DB를 가리킨다).
+ahp_db = mcdm_db
 
 
 async def ensure_indexes():
