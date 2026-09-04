@@ -22,6 +22,7 @@ from app.services.ahp_calc import derive_weights, to_stored_pair  # noqa: E402
 from app.services.consistency import worst_offending_pairs  # noqa: E402
 from app.services.methods import KIND_VALIDATORS, METHODS, get_method  # noqa: E402
 from app.services.methods.ahp import AhpPlugin  # noqa: E402
+from app.services.questions import generate_questions, normalize_methods  # noqa: E402
 from app.services.result_service import build_results  # noqa: E402
 from app.services.survey_service import generate_matrices  # noqa: E402
 
@@ -133,6 +134,36 @@ def test_generate_group_shape():
     assert gg["question_text"] == gm["question_text"]
     assert gg["is_alternative"] is False
     assert gg["kind"] == "pairwise"
+
+
+def test_generate_questions_parity():
+    # 대안 계층까지 켜서 순회 순서·question_text 가 generate_matrices 와 동일한지,
+    # 각 그룹에 kind="pairwise" · scale 이 붙는지.
+    nodes = _NODES + [
+        {"uuid": "c11", "parent_id": "c1", "name": "초기", "order": 0, "level": 2},
+        {"uuid": "c12", "parent_id": "c1", "name": "운영", "order": 1, "level": 2},
+    ]
+    alts = [
+        {"uuid": "A", "name": "안A", "order": 0},
+        {"uuid": "B", "name": "안B", "order": 1},
+    ]
+    settings = {"alt_layer": "on", "scale": 5}
+    legacy = generate_matrices(nodes, alts, alt_layer_on=True)
+    new = generate_questions(nodes, alts, methods={}, settings=settings)
+    assert [g["group_id"] for g in new] == [g["group_id"] for g in legacy]
+    for gn, gl in zip(new, legacy):
+        assert gn["child_uuids"] == gl["child_uuids"]
+        assert gn["question_text"] == gl["question_text"]
+        assert gn["is_alternative"] == gl["is_alternative"]
+        assert gn["parent_uuid"] == gl["parent_uuid"]
+        assert gn["kind"] == "pairwise"
+        assert gn["scale"] == 5
+    # 미등록 방법은 조용히 AHP 폴백 (그룹이 그대로 생성됨)
+    m = normalize_methods({"criteria": {"root": "bwm"}, "alternatives": "topsis"})
+    assert m == {"criteria": {"root": "bwm"}, "alternatives": "topsis"}
+    fb = generate_questions(nodes, alts, methods=m, settings=settings)
+    assert [g["group_id"] for g in fb] == [g["group_id"] for g in legacy]
+    assert all(g["kind"] == "pairwise" for g in fb)
 
 
 def test_kind_validators():

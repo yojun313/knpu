@@ -13,50 +13,57 @@
 1. [ ] **백업**: `mongodump`  (ahp DB 전체)
 2. [ ] 실시간 세션이 없는 시간대 확인
 3. [ ] 코드 배포 (이 브랜치 머지/pull)
-4. [ ] **DB 마이그레이션 실행** — 아래 "단계별 마이그레이션" 순서대로
+4. [ ] **DB 마이그레이션 1회 실행** — `ahp/scripts/migrate_polydecision_0dan.py`
+       (0단계 전체를 담은 단일 멱등 스크립트, 아래 상세)
+       ```bash
+       PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
+         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_polydecision_0dan.py --dry-run  # 확인
+       PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
+         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_polydecision_0dan.py            # 실행
+       ```
 5. [ ] `pm2 restart ahp` (`watch:false` 확인)
 6. [ ] 스모크: `/` 302, 관리자 로그인 → 프로젝트 목록 → 설문지 화면 → 결과 화면 로드,
        기존 응답의 가중치·CR 값이 배포 전과 동일한지 1건 대조
 
+> 마이그레이션은 **멱등**(재실행 안전)이고, 실행 끝에 잔존 검증(옛 필드 0, `groups.kind`
+> 누락 0)을 자체 수행한다. 남아 있으면 non-zero 종료.
+
 ---
 
-## 단계별 마이그레이션
+## 단계별 상세 (마이그레이션 스크립트가 각각 처리하는 것)
 
 ### 1단계 — 식별자 개명 `matrix_id → group_id`  *(코드: 완료 / 운영: 미실행)*
 
-`matrix_id`→`group_id`, `surveys.matrices`→`surveys.groups`,
-`respondents.revision_matrix_id`→`revision_group_id` 전면 개명.
+`surveys.matrices`→`surveys.groups`(원소 `matrix_id`→`group_id`),
+`respondents.revision_matrix_id`→`revision_group_id`.
 `responses`/`submissions` 문서 내용은 **무변경**(바깥 키가 리터럴이 아니라 `parent_uuid` /
 `"alt:<uuid>"` 값이라 그대로 `group_id` 값이 됨).
 
-```bash
-# repo 루트에서
-PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
-  /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_matrix_to_group.py --dry-run   # 확인
-PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
-  /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_matrix_to_group.py             # 실행
-```
-
-- 멱등: 이미 개명된 문서는 건너뛴다. 재실행 안전.
-- 실행 후 스크립트가 `surveys.matrices` / `respondents.revision_matrix_id` 잔존 0을 검증하고,
-  남아 있으면 non-zero 종료.
-- 검증 dry-run 기준 대상: `surveys` 9건.
 - **코드 배포와 이 마이그레이션은 함께** 나가야 한다(개명된 코드는 DB에 `groups`/`group_id`가
   있어야 동작). 프로덕션 서버는 단일 워커라 lockstep 부담은 `pm2 restart` 1회 수준.
+- dry-run 기준 대상: `surveys` 9건.
 
-### 2단계 — `mcdm/` 공유 코어 + `methods/` 플러그인 scaffold  *(코드: 완료 / 운영: 조치 없음)*
+### 2단계 — `mcdm/` 공유 코어 + `methods/` 플러그인 scaffold  *(코드: 완료 / DB: 조치 없음)*
 
-`app/services/mcdm/`(재수출 shim: `linalg`·`aggregate`·`consistency`) +
-`app/services/methods/`(`base` 프로토콜, `ahp` 플러그인, `METHODS` 레지스트리) 추가.
-**순수 추가**: 기존 라우트·`build_results`·DB·프론트 무변경, 아무 데도 wiring 안 됨.
+`app/services/mcdm/`(재수출 shim) + `app/services/methods/`(플러그인 골격) 순수 추가.
+DB 변화 없음, wiring 없음. 검증: `ahp/tests/check_methods_ahp.py`.
 
-- **DB 마이그레이션 없음. 별도 재기동 불필요** (다음 단계에서 dispatch 전환 시 함께 반영).
-- 검증: `ahp/tests/check_methods_ahp.py` — AhpPlugin 결과가 기존 직접 호출과 바이트 동일
-  (derive_local·aggregate_group AIP/AIJ·generate_group·overrides·CR locus).
+### 3단계 — `questions.generate_questions` + `surveys.methods` + 노드 필드  *(코드: 완료 / 운영: 미실행)*
+
+- `surveys.groups[]` 각 원소에 **`kind:"pairwise"`** · **`scale`**(프로젝트 `settings.scale`) 백필.
+- `surveys.methods` 없으면 **`{"criteria":{}, "alternatives":"ahp"}`** 백필. 이후
+  `PUT /api/projects/{id}/survey` body `methods` 로 편집(버전 bump 없음), `resync` 시
+  `generate_questions` 가 이 값으로 그룹을 다시 만든다.
+- `hierarchies.nodes[]` 각 원소에 **`type:"benefit"`** · **`measure:"qualitative"`** ·
+  **`unit:null`** 백필 (SAW/TOPSIS 등 랭킹 방법용, AHP는 무시).
+- 백필이 없어도 코드는 `m.get("kind","pairwise")` 로 견디지만, 데이터 uniform 을 위해
+  마이그레이션에 포함.
+- dry-run 기준 대상: `surveys` 9건, `hierarchies` 22건.
 
 ---
 
 ## 참고: 롤백
 
-1단계까지만 반영한 상태에서 롤백이 필요하면 — 코드를 이전 커밋으로 되돌리고 `mongodump`
-백업을 복원한다. (개명 마이그레이션의 역방향 스크립트는 만들지 않았다. 백업 복원이 정석.)
+코드를 이전 커밋으로 되돌리고 `mongodump` 백업을 복원한다. (역방향 스크립트는 만들지
+않았다 — 백필 필드는 남아 있어도 옛 코드가 무시하므로 무해하지만, 개명은 되돌려야 하니
+백업 복원이 정석.)
