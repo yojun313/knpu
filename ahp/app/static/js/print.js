@@ -30,7 +30,7 @@
 
     // 설문지 전체를 통틀어 매기는 문항 번호 — 반입 CSV의 열 제목(Q1, Q2, …)과 1:1.
     let qNum = 0;
-    survey.matrices.forEach(function (m) {
+    survey.groups.forEach(function (m) {
       const parentName = (nodes[m.parent_uuid] || {}).name || '';
       const parentDesc = survey.node_descriptions[m.parent_uuid] || '';
       let block = '<div class="matrix-block"><h2>\'' + esc(parentName) + '\' 측면 비교</h2>';

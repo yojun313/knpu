@@ -59,7 +59,7 @@ async def ws_console(ws: WebSocket, collection_id: str):
                 "status": r.get("status", "not_started"),
                 "online": r["_id"] in online,
                 **respondent_progress_summary(
-                    survey["matrices"], responses_by_rid.get(r["_id"], {})
+                    survey["groups"], responses_by_rid.get(r["_id"], {})
                 ),
             }
             for r in respondents

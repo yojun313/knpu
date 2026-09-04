@@ -1,6 +1,6 @@
 """분석 결과 조립 — 지역/전역 가중치, 개인별 CR, 그룹 합의도, 극단값.
 
-DB에서 이미 가져온 데이터(hierarchy nodes, survey matrices, 응답자별 최종 답)를
+DB에서 이미 가져온 데이터(hierarchy nodes, survey groups, 응답자별 최종 답)를
 받아서 계산만 한다. 오프라인+온라인 응답을 한 분석에 합치는 것(PLAN.md 1절)은
 호출부(result_routes)가 여러 collection의 응답을 하나의 respondent_id -> answers
 딕셔너리로 미리 합쳐서 넘겨주기만 하면 여기는 그 출처를 몰라도 된다.
@@ -19,13 +19,13 @@ from app.services.aggregate import (
 
 def build_results(
     hierarchy_nodes: list[dict],
-    matrices: list[dict],
+    groups: list[dict],
     submissions_by_respondent: dict[str, dict],
     settings: dict,
 ) -> dict:
     node_parent = {n["uuid"]: n["parent_id"] for n in hierarchy_nodes}
     node_name = {n["uuid"]: n["name"] for n in hierarchy_nodes}
-    matrix_of_parent = {m["parent_uuid"]: m["matrix_id"] for m in matrices}
+    matrix_of_parent = {m["parent_uuid"]: m["group_id"] for m in groups}
     aggregation = settings.get("aggregation", "AIP")
 
     per_respondent_cr: dict[str, dict] = {rid: {} for rid in submissions_by_respondent}
@@ -33,14 +33,14 @@ def build_results(
     consensus_by_matrix: dict[str, dict] = {}
     outliers_by_matrix: dict[str, list] = {}
 
-    for m in matrices:
+    for m in groups:
         node_ids = m["child_uuids"]
-        matrix_id = m["matrix_id"]
+        group_id = m["group_id"]
 
         respondent_pairs = []
         respondent_ids_with_data = []
         for rid, answers in submissions_by_respondent.items():
-            pairs = answers.get(matrix_id, {})
+            pairs = answers.get(group_id, {})
             if len(node_ids) >= 2 and not pairs:
                 continue
             respondent_pairs.append(pairs)
@@ -49,16 +49,16 @@ def build_results(
             if len(node_ids) >= 3:
                 try:
                     r = derive_weights(node_ids, pairs)
-                    per_respondent_cr[rid][matrix_id] = r.cr
+                    per_respondent_cr[rid][group_id] = r.cr
                 except IncompleteMatrixError:
-                    per_respondent_cr[rid][matrix_id] = None
+                    per_respondent_cr[rid][group_id] = None
 
         if not respondent_pairs:
-            local_weights_by_matrix[matrix_id] = {nid: 0.0 for nid in node_ids}
+            local_weights_by_matrix[group_id] = {nid: 0.0 for nid in node_ids}
             continue
 
         if len(node_ids) == 1:
-            local_weights_by_matrix[matrix_id] = {node_ids[0]: 1.0}
+            local_weights_by_matrix[group_id] = {node_ids[0]: 1.0}
             continue
 
         # 이 매트릭스에 응답은 있지만(respondent_pairs 비어있지 않음) 전원이
@@ -77,9 +77,9 @@ def build_results(
                     node_ids, respondent_pairs
                 )
         except (ValueError, IncompleteMatrixError):
-            local_weights_by_matrix[matrix_id] = {nid: 0.0 for nid in node_ids}
+            local_weights_by_matrix[group_id] = {nid: 0.0 for nid in node_ids}
             continue
-        local_weights_by_matrix[matrix_id] = group_w
+        local_weights_by_matrix[group_id] = group_w
 
         # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다
         if len(respondent_pairs) >= 3:
@@ -101,7 +101,7 @@ def build_results(
                             ],
                         }
                     )
-            outliers_by_matrix[matrix_id] = outliers
+            outliers_by_matrix[group_id] = outliers
 
         # 순위 기반 합의도(Kendall's W) — 응답자별 지역 가중치 순위를 비교
         if len(node_ids) >= 2 and len(respondent_pairs) >= 2:
@@ -114,11 +114,11 @@ def build_results(
                 except IncompleteMatrixError:
                     continue
             if len(rankings) >= 2:
-                consensus_by_matrix[matrix_id] = {"kendalls_w": kendalls_w(rankings)}
+                consensus_by_matrix[group_id] = {"kendalls_w": kendalls_w(rankings)}
 
     global_w = global_weights(node_parent, local_weights_by_matrix, matrix_of_parent)
     alternative_scores = synthesize_alternatives(
-        matrices, local_weights_by_matrix, global_w
+        groups, local_weights_by_matrix, global_w
     )
 
     return {
@@ -135,7 +135,7 @@ def build_results(
 
 
 def synthesize_alternatives(
-    matrices: list[dict],
+    groups: list[dict],
     local_weights_by_matrix: dict[str, dict],
     global_weights_: dict[str, float],
 ) -> dict[str, float]:
@@ -143,11 +143,11 @@ def synthesize_alternatives(
     아래 대안 로컬 가중치를 모든 리프에 대해 더한다. 대안 계층을 안 쓰면
     (is_alternative 매트릭스가 없으면) 빈 dict를 돌려준다."""
     scores: dict[str, float] = {}
-    for m in matrices:
+    for m in groups:
         if not m.get("is_alternative"):
             continue
         leaf_global = global_weights_.get(m["parent_uuid"], 0.0)
-        alt_local = local_weights_by_matrix.get(m["matrix_id"], {})
+        alt_local = local_weights_by_matrix.get(m["group_id"], {})
         for aid, w in alt_local.items():
             scores[aid] = scores.get(aid, 0.0) + leaf_global * w
 

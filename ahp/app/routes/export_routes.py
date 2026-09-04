@@ -64,11 +64,11 @@ async def export_package_xlsx(
         else {}
     )
 
-    response_rows = build_response_rows(survey["matrices"], nodes_by_uuid, submissions)
+    response_rows = build_response_rows(survey["groups"], nodes_by_uuid, submissions)
     results = (
         build_results(
             hierarchy["nodes"],
-            survey["matrices"],
+            survey["groups"],
             submissions,
             project.get("settings", {}),
         )
@@ -99,7 +99,7 @@ async def export_import_template_csv(project_id: str, request: Request):
 
     header = [RESPONDENT_COL] + demo_column_labels(survey.get("demographics", []))
     n = 0
-    for m in survey["matrices"]:
+    for m in survey["groups"]:
         child_uuids = m["child_uuids"]
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
         for i in range(len(child_uuids)):
@@ -174,7 +174,7 @@ async def export_responses_csv(
     submissions = await _gather_final_submissions(
         project_id, [collection_id] if collection_id else None
     )
-    rows = build_response_rows(survey["matrices"], nodes_by_uuid, submissions)
+    rows = build_response_rows(survey["groups"], nodes_by_uuid, submissions)
 
     buf = io.StringIO()
     writer = csv.writer(buf)

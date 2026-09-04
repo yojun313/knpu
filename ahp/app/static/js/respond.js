@@ -9,11 +9,11 @@
 
   let landing = null;
   let respondentToken = localStorage.getItem(STORAGE_TOKEN_KEY);
-  let pendingReopenMatrixId = null;
+  let pendingReopenGroupId = null;
   let questions = [];            // 평탄한 쌍 목록(리뷰·이름조회용)
   let activeMatrices = [];       // 현재 흐름에서 보여줄 기준(matrix) 뷰 목록
   let currentMatrixIndex = 0;
-  // answers 키 = matrixId + '::' + pairId  — 대안 비교 행렬은 matrix_id만 다르고
+  // answers 키 = groupId + '::' + pairId  — 대안 비교 행렬은 matrix_id만 다르고
   // child_uuids(대안 uuid)는 모든 leaf에서 같아서, pairId 하나로만 keying하면
   // 첫 대안 평가가 나머지에 그대로 복사된다(이 파일 이전 버전의 버그).
   let answers = {};
@@ -22,20 +22,20 @@
   let everSubmitted = localStorage.getItem(STORAGE_SUBMITTED_KEY) === '1';
   let matrixCrCache = {};
   let clientSeq = Number(localStorage.getItem(STORAGE_SEQ_KEY) || 0);
-  let revisionMatrixId = null;
+  let revisionGroupId = null;
   let revisionWorst = [];        // 진행자가 재조정 요청 시 함께 받은 문제 쌍
 
   const STORAGE_SECTIONS_DONE_KEY = 'ahp_sections_done_' + accessToken;
   function loadSectionsDone() {
     try { return JSON.parse(localStorage.getItem(STORAGE_SECTIONS_DONE_KEY) || '{}'); } catch (e) { return {}; }
   }
-  function markSectionDone(matrixId) {
+  function markSectionDone(groupId) {
     const done = loadSectionsDone();
-    done[landing.collection.round + ':' + matrixId] = true;
+    done[landing.collection.round + ':' + groupId] = true;
     localStorage.setItem(STORAGE_SECTIONS_DONE_KEY, JSON.stringify(done));
   }
-  function isSectionDone(matrixId) {
-    return !!loadSectionsDone()[landing.collection.round + ':' + matrixId];
+  function isSectionDone(groupId) {
+    return !!loadSectionsDone()[landing.collection.round + ':' + groupId];
   }
 
   function views() {
@@ -49,7 +49,7 @@
     show('viewError');
   }
   function pairId(a, b) { return [a, b].sort().join(':'); }
-  function answerKey(matrixId, a, b) { return matrixId + '::' + pairId(a, b); }
+  function answerKey(groupId, a, b) { return groupId + '::' + pairId(a, b); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -96,7 +96,7 @@
           if (res.status === 401) { await handleTokenExpired(); return; }
           if (!res.ok) throw new Error('save failed');
           const data = await res.json();
-          matrixCrCache[item.matrix_id] = { complete: data.complete, cr: data.cr };
+          matrixCrCache[item.group_id] = { complete: data.complete, cr: data.cr };
           queue.shift();
           saveQueue(queue);
           backoff = 1000;
@@ -144,12 +144,12 @@
 
   function buildQuestions() {
     questions = [];
-    landing.survey.matrices.forEach(function (m) {
+    landing.survey.groups.forEach(function (m) {
       m.pairs.forEach(function (p) {
         const a = m.children.find(function (c) { return c.uuid === p.uuid_a; });
         const b = m.children.find(function (c) { return c.uuid === p.uuid_b; });
         questions.push({
-          matrix_id: m.matrix_id, parent_name: m.parent_name, parent_description: m.parent_description,
+          group_id: m.group_id, parent_name: m.parent_name, parent_description: m.parent_description,
           question_text: m.question_text, uuid_a: p.uuid_a, uuid_b: p.uuid_b,
           name_a: a ? a.name : p.uuid_a, name_b: b ? b.name : p.uuid_b,
           desc_a: (a && a.description) || '', desc_b: (b && b.description) || '',
@@ -159,15 +159,15 @@
     });
   }
 
-  function matrixView(matrixId) {
-    return landing.survey.matrices.find(function (m) { return m.matrix_id === matrixId; });
+  function matrixView(groupId) {
+    return landing.survey.groups.find(function (m) { return m.group_id === groupId; });
   }
-  function pairsOfMatrix(matrixId) {
-    return questions.filter(function (q) { return q.matrix_id === matrixId; });
+  function pairsOfMatrix(groupId) {
+    return questions.filter(function (q) { return q.group_id === groupId; });
   }
 
   function mergeServerAnswers(serverAnswers) {
-    // serverAnswers: { matrix_id: { pair_id: value } } — 표시 방향으로 이미 해석돼 옴.
+    // serverAnswers: { group_id: { pair_id: value } } — 표시 방향으로 이미 해석돼 옴.
     Object.keys(serverAnswers || {}).forEach(function (mid) {
       Object.keys(serverAnswers[mid]).forEach(function (pid) {
         answers[mid + '::' + pid] = serverAnswers[mid][pid];
@@ -211,19 +211,19 @@
 
   function buildActiveMatrices() {
     if (landing.collection.mode !== 'realtime') {
-      activeMatrices = landing.survey.matrices.slice();
+      activeMatrices = landing.survey.groups.slice();
       return;
     }
-    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
-    activeMatrices = landing.survey.matrices.filter(function (m) { return m.matrix_id === targetId; });
+    const targetId = revisionGroupId || landing.collection.active_group_id;
+    activeMatrices = landing.survey.groups.filter(function (m) { return m.group_id === targetId; });
   }
 
   function pairValue(q) {
-    const k = answerKey(q.matrix_id, q.uuid_a, q.uuid_b);
+    const k = answerKey(q.group_id, q.uuid_a, q.uuid_b);
     return (k in answers) ? answers[k] : null;
   }
   function matrixComplete(m) {
-    return pairsOfMatrix(m.matrix_id).every(function (q) { return pairValue(q) !== null; });
+    return pairsOfMatrix(m.group_id).every(function (q) { return pairValue(q) !== null; });
   }
   function firstIncompleteMatrixIndex() {
     const i = activeMatrices.findIndex(function (m) { return !matrixComplete(m); });
@@ -234,9 +234,9 @@
   function enterRealtimeFlow() {
     buildActiveMatrices();
     if (!landing.collection.session_started) { showWaitStart(); return; }
-    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
+    const targetId = revisionGroupId || landing.collection.active_group_id;
     if (!targetId) { finishSurvey(); return; }
-    if (!revisionMatrixId && isSectionDone(targetId)) { showSectionWait(); return; }
+    if (!revisionGroupId && isSectionDone(targetId)) { showSectionWait(); return; }
     currentMatrixIndex = 0;
     startSurvey();
   }
@@ -300,7 +300,7 @@
   }
   const SCALE_CELLS = scaleCells();
 
-  // q: {matrix_id, uuid_a, uuid_b, name_a, name_b, desc_a, desc_b, is_alternative}
+  // q: {group_id, uuid_a, uuid_b, name_a, name_b, desc_a, desc_b, is_alternative}
   function renderPairScaleRow(q, opts) {
     opts = opts || {};
     const cur = opts.value !== undefined ? opts.value : pairValue(q);
@@ -317,7 +317,7 @@
       ? '<div class="pair-suggest">⚠ 가장 모순적인 응답 · 추천 ' +
         (opts.given ? esc(opts.given) + ' → ' : '') + '<b>' + esc(opts.suggest) + '</b></div>'
       : '';
-    return '<div class="pair-row' + (opts.worst ? ' worst' : '') + '" data-mid="' + q.matrix_id +
+    return '<div class="pair-row' + (opts.worst ? ' worst' : '') + '" data-mid="' + q.group_id +
       '" data-a="' + q.uuid_a + '" data-b="' + q.uuid_b + '">' +
       '<div class="pair-names"><span>' + esc(q.name_a) + '</span><span>' + esc(q.name_b) + '</span></div>' +
       descLine + badge +
@@ -333,7 +333,7 @@
     document.getElementById('qParentDesc').textContent = m.parent_description || '';
     document.getElementById('qParentDesc').hidden = !m.parent_description;
     document.getElementById('qQuestionText').textContent = m.question_text;
-    document.getElementById('pairList').innerHTML = pairsOfMatrix(m.matrix_id)
+    document.getElementById('pairList').innerHTML = pairsOfMatrix(m.group_id)
       .map(function (q) { return renderPairScaleRow(q); }).join('');
     document.getElementById('qCounter').textContent =
       (currentMatrixIndex + 1) + ' / ' + activeMatrices.length + ' 기준';
@@ -361,7 +361,7 @@
   function updateProgress() {
     let total = 0, done = 0;
     activeMatrices.forEach(function (m) {
-      pairsOfMatrix(m.matrix_id).forEach(function (q) { total += 1; if (pairValue(q) !== null) done += 1; });
+      pairsOfMatrix(m.group_id).forEach(function (q) { total += 1; if (pairValue(q) !== null) done += 1; });
     });
     const pct = total ? Math.round(100 * done / total) : 100;
     document.getElementById('progressFill').style.width = pct + '%';
@@ -384,7 +384,7 @@
       el.textContent = '일관성(CR)은 제출 후 공개됩니다';
       return;
     }
-    const info = matrixCrCache[m.matrix_id];
+    const info = matrixCrCache[m.group_id];
     const s = crState(info && info.complete ? info.cr : null);
     el.hidden = false;
     el.className = 'cr-bar ' + s.cls;
@@ -409,7 +409,7 @@
 
   function renderSectionWaitResults(msg, isIndividual) {
     if (document.getElementById('viewSectionWait').hidden) return;
-    if (msg.matrix_id !== (revisionMatrixId || landing.collection.active_matrix_id)) return;
+    if (msg.group_id !== (revisionGroupId || landing.collection.active_group_id)) return;
     const box = document.getElementById('sectionWaitResults');
     const cr = isIndividual ? msg.cr : msg.avg_cr;
     const crLine = (cr == null) ? '' : '<div class="swr-cr">CR ' + cr.toFixed(3) + '</div>';
@@ -463,7 +463,7 @@
   }
 
   async function handleSurveyPatch(msg) {
-    landing.survey.matrices = msg.matrices;
+    landing.survey.groups = msg.groups;
     landing.survey.node_descriptions = msg.node_descriptions;
     showNotice('연구자가 설문 문항을 수정했습니다. 최신 내용으로 갱신합니다.');
     try {
@@ -486,7 +486,7 @@
         const res = await fetch('/api/respond/' + accessToken);
         if (res.ok) { landing = await res.json(); buildQuestions(); }
       } catch (e) { /* keep */ }
-      revisionMatrixId = null;
+      revisionGroupId = null;
       const waiting = ['viewDone', 'viewWaitStart', 'viewSectionWait', 'viewSurvey', 'viewReview']
         .some(function (id) { return document.getElementById(id).hidden === false; });
       if (waiting) enterRealtimeFlow();
@@ -501,15 +501,15 @@
 
   function handleSessionStarted(msg) {
     landing.collection.session_started = true;
-    landing.collection.active_matrix_id = msg.matrix_id;
-    revisionMatrixId = null;
+    landing.collection.active_group_id = msg.group_id;
+    revisionGroupId = null;
     showNotice('연구자가 설문을 시작했습니다.');
     if (document.getElementById('viewWaitStart').hidden === false) enterRealtimeFlow();
   }
 
   function handleSectionAdvanced(msg) {
-    landing.collection.active_matrix_id = msg.matrix_id;
-    revisionMatrixId = null;
+    landing.collection.active_group_id = msg.group_id;
+    revisionGroupId = null;
     if (msg.done) { showNotice('모든 섹션이 끝났습니다. 제출을 마무리합니다.'); finishSurvey(); return; }
     showNotice('다음 섹션이 열렸습니다.');
     const waiting = ['viewSectionWait', 'viewWaitStart'].some(function (id) {
@@ -519,23 +519,23 @@
   }
 
   function handleRevisionRequested(msg) {
-    revisionMatrixId = msg.matrix_id;
+    revisionGroupId = msg.group_id;
     revisionWorst = msg.worst_pairs || [];
     showNotice('연구자가 이 항목의 응답을 다시 확인해 달라고 요청했습니다.');
     enterRealtimeFlow();
   }
 
   function handleSectionUnlock(msg) {
-    const q = pairsOfMatrix(msg.matrix_id)[0];
+    const q = pairsOfMatrix(msg.group_id)[0];
     const name = q ? q.parent_name : '이 항목';
     if (landing.collection.mode === 'realtime') {
-      revisionMatrixId = msg.matrix_id;
+      revisionGroupId = msg.group_id;
       revisionWorst = [];
       showNotice('연구자가 "' + name + '" 항목을 전원에게 다시 열었습니다. 이어서 응답해 주세요.');
       enterRealtimeFlow();
       return;
     }
-    pendingReopenMatrixId = msg.matrix_id;
+    pendingReopenGroupId = msg.group_id;
     const onDone = document.getElementById('viewDone').hidden === false;
     showNotice('연구자가 "' + name + '" 항목을 다시 열었습니다. ' +
       (onDone ? '아래 항목을 눌러 조정해 주세요.' : '이어서 응답해 주세요.'));
@@ -543,22 +543,22 @@
 
   // 진행자가 콘솔에서 이 참여자 답을 고침 → 로컬에 즉시 반영(원복 방지).
   function handleAnswerOverride(msg) {
-    const q = pairsOfMatrix(msg.matrix_id).find(function (x) {
+    const q = pairsOfMatrix(msg.group_id).find(function (x) {
       return pairId(x.uuid_a, x.uuid_b) === pairId(msg.uuid_a, msg.uuid_b);
     });
     if (!q) return;
     // msg.value_a_over_b 는 msg.uuid_a 기준. 이 화면 질문의 a 기준으로 방향 맞춤.
     const v = (q.uuid_a === msg.uuid_a) ? msg.value_a_over_b : (1 / msg.value_a_over_b);
-    answers[answerKey(q.matrix_id, q.uuid_a, q.uuid_b)] = v;
-    matrixCrCache[msg.matrix_id] = { complete: !!msg.complete, cr: msg.cr };
+    answers[answerKey(q.group_id, q.uuid_a, q.uuid_b)] = v;
+    matrixCrCache[msg.group_id] = { complete: !!msg.complete, cr: msg.cr };
     showNotice('연구자가 함께 확인한 값으로 응답이 조정되었습니다.');
     if (!document.getElementById('viewSurvey').hidden) renderMatrixPage();
-    if (!document.getElementById('viewReview').hidden && reviewMatrixId === msg.matrix_id) refreshReview();
+    if (!document.getElementById('viewReview').hidden && reviewGroupId === msg.group_id) refreshReview();
   }
 
   // ── 네비게이션 ──────────────────────────────────────────────────────────
-  function crWarningIfNeeded(matrixId) {
-    const info = matrixCrCache[matrixId];
+  function crWarningIfNeeded(groupId) {
+    const info = matrixCrCache[groupId];
     if (!info || !info.complete) return null;
     const th = landing.survey.cr_threshold || 0.1;
     return info.cr > th ? info : null;
@@ -573,7 +573,7 @@
     if (everSubmitted) {
       const m = activeMatrices[currentMatrixIndex];
       if (m && matrixComplete(m)) {
-        const warn = crWarningIfNeeded(m.matrix_id);
+        const warn = crWarningIfNeeded(m.group_id);
         if (warn) {
           const msg = '이 기준의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
           if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주세요.'); return false; }
@@ -592,8 +592,8 @@
       document.getElementById('viewSurvey').scrollTo && window.scrollTo(0, 0);
     } else if (landing.collection.mode === 'realtime') {
       const m = activeMatrices[currentMatrixIndex];
-      if (revisionMatrixId === m.matrix_id) revisionMatrixId = null;
-      else markSectionDone(m.matrix_id);
+      if (revisionGroupId === m.group_id) revisionGroupId = null;
+      else markSectionDone(m.group_id);
       enterRealtimeFlow();
     } else {
       await finishSurvey();
@@ -732,7 +732,7 @@
       box.innerHTML = data.items.map(function (it) {
         const cls = (it.cr == null) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
         const crText = (it.cr == null) ? '-' : ('CR ' + it.cr.toFixed(3));
-        return '<button type="button" class="cr-summary-row ' + cls + '" data-matrix="' + it.matrix_id + '">' +
+        return '<button type="button" class="cr-summary-row ' + cls + '" data-matrix="' + it.group_id + '">' +
           '<span class="csr-name">' + esc(it.parent_name) + '</span>' +
           '<span class="csr-cr">' + crText + '</span></button>';
       }).join('');
@@ -743,20 +743,20 @@
   }
 
   // ── 수정 화면 — what-if 가중치 차트 + 응답형 추천 ─────────────────────────
-  let reviewMatrixId = null;
+  let reviewGroupId = null;
   let reviewWorstPids = {};      // pid -> {given_label, suggested_label}
-  let reviewEval = null;         // 최근 matrix-eval 결과
+  let reviewEval = null;         // 최근 group-eval 결과
   let rankFocus = 0;            // 좌우 화살표 포커스 (ranking 인덱스)
   let evalTimer = null;
 
-  function enterReview(matrixId) {
-    reviewMatrixId = matrixId;
+  function enterReview(groupId) {
+    reviewGroupId = groupId;
     rankFocus = 0;
     reviewWorstPids = {};
-    (revisionMatrixId === matrixId ? revisionWorst : []).forEach(function (w) {
+    (revisionGroupId === groupId ? revisionWorst : []).forEach(function (w) {
       reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = w;
     });
-    const qs = pairsOfMatrix(matrixId);
+    const qs = pairsOfMatrix(groupId);
     document.getElementById('reviewTitle').textContent =
       (qs[0] && qs[0].is_alternative ? '대안 비교 · ' : '') + (qs[0] ? qs[0].parent_name : '');
     renderReviewPairs();
@@ -765,7 +765,7 @@
   }
 
   function renderReviewPairs() {
-    const qs = pairsOfMatrix(reviewMatrixId);
+    const qs = pairsOfMatrix(reviewGroupId);
     document.getElementById('reviewPairs').innerHTML = qs.map(function (q) {
       const pid = pairId(q.uuid_a, q.uuid_b);
       const w = reviewWorstPids[pid];
@@ -779,7 +779,7 @@
   }
 
   function currentOverrides() {
-    return pairsOfMatrix(reviewMatrixId).map(function (q) {
+    return pairsOfMatrix(reviewGroupId).map(function (q) {
       const v = pairValue(q);
       return v == null ? null : { uuid_a: q.uuid_a, uuid_b: q.uuid_b, value_a_over_b: v };
     }).filter(Boolean);
@@ -789,10 +789,10 @@
     clearTimeout(evalTimer);
     evalTimer = setTimeout(async function () {
       try {
-        const res = await fetch('/api/respond/' + accessToken + '/matrix-eval', {
+        const res = await fetch('/api/respond/' + accessToken + '/group-eval', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + respondentToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ matrix_id: reviewMatrixId, overrides: currentOverrides() }),
+          body: JSON.stringify({ group_id: reviewGroupId, overrides: currentOverrides() }),
         });
         if (!res.ok) return;
         reviewEval = await res.json();
@@ -853,7 +853,7 @@
       answers[answerKey(mid, a, b)] = v;
       clientSeq += 1;
       localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
-      queueAnswer({ matrix_id: mid, uuid_a: a, uuid_b: b, value: v, client_seq: clientSeq });
+      queueAnswer({ group_id: mid, uuid_a: a, uuid_b: b, value: v, client_seq: clientSeq });
       onPick();
     });
   }
@@ -896,10 +896,10 @@
 
     document.getElementById('editAnswersBtn').addEventListener('click', function () {
       buildActiveMatrices();
-      if (pendingReopenMatrixId) {
-        const i = activeMatrices.findIndex(function (m) { return m.matrix_id === pendingReopenMatrixId; });
+      if (pendingReopenGroupId) {
+        const i = activeMatrices.findIndex(function (m) { return m.group_id === pendingReopenGroupId; });
         currentMatrixIndex = i !== -1 ? i : 0;
-        pendingReopenMatrixId = null;
+        pendingReopenGroupId = null;
       } else {
         currentMatrixIndex = 0;
       }

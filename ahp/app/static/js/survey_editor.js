@@ -52,12 +52,12 @@
 
   function renderMatrices(nodesByUuid) {
     const box = document.getElementById('matricesList');
-    if (!survey.matrices.length) {
+    if (!survey.groups.length) {
       box.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div>' +
         '<h2>비교할 항목이 없습니다</h2><p>계층 설계에서 최상위 기준을 2개 이상 추가해 주세요.</p></div>';
       return;
     }
-    box.innerHTML = survey.matrices.map(function (m) {
+    box.innerHTML = survey.groups.map(function (m) {
       const parentDesc = survey.node_descriptions[m.parent_uuid] || '';
       const childrenHtml = m.child_uuids.map(function (cid) {
         const desc = survey.node_descriptions[cid] || '';
@@ -73,7 +73,7 @@
         '<div class="field"><label>이 기준 자체에 대한 설명(선택)</label>' +
         '<textarea class="node-desc-input" data-node="' + m.parent_uuid + '">' + ahpEsc(parentDesc) + '</textarea></div>' +
         '<div class="field" style="margin-top:10px"><label>비교 질문 문구</label>' +
-        '<textarea class="question-input" data-matrix="' + m.matrix_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
+        '<textarea class="question-input" data-matrix="' + m.group_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
         '</div>' +
         '<div class="matrix-children">' + childrenHtml + '</div>' +
         '</div>';
@@ -85,14 +85,14 @@
     document.querySelectorAll('.node-desc-input').forEach(function (el) {
       nodeDescriptions[el.dataset.node] = el.value.trim();
     });
-    const matrixQuestions = {};
+    const groupQuestions = {};
     document.querySelectorAll('.question-input').forEach(function (el) {
-      matrixQuestions[el.dataset.matrix] = el.value.trim();
+      groupQuestions[el.dataset.matrix] = el.value.trim();
     });
     try {
       await ahpApi('/api/projects/' + projectId + '/survey', {
         method: 'PUT',
-        body: { node_descriptions: nodeDescriptions, matrix_questions: matrixQuestions },
+        body: { node_descriptions: nodeDescriptions, group_questions: groupQuestions },
       });
       ahpToast('저장했습니다');
     } catch (e) {

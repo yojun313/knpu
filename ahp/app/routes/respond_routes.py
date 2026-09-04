@@ -60,7 +60,7 @@ async def _survey_and_nodes(collection: dict):
 
 def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
     out = []
-    for m in survey["matrices"]:
+    for m in survey["groups"]:
         children = [
             {
                 "uuid": cid,
@@ -71,7 +71,7 @@ def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
         ]
         out.append(
             {
-                "matrix_id": m["matrix_id"],
+                "group_id": m["group_id"],
                 "parent_name": nodes_by_id.get(m["parent_uuid"], {}).get("name", ""),
                 "parent_description": survey.get("node_descriptions", {}).get(
                     m["parent_uuid"], ""
@@ -99,12 +99,12 @@ async def respond_landing(token: str):
         {"nodes": 1},
     )
 
-    active_matrix_id = None
+    active_group_id = None
     if collection["mode"] == "realtime" and collection.get("session_started"):
         idx = collection.get("active_section_index", 0)
-        matrices = survey["matrices"]
-        if 0 <= idx < len(matrices):
-            active_matrix_id = matrices[idx]["matrix_id"]
+        groups = survey["groups"]
+        if 0 <= idx < len(groups):
+            active_group_id = groups[idx]["group_id"]
 
     return {
         "collection": {
@@ -114,7 +114,7 @@ async def respond_landing(token: str):
             "label": collection.get("label"),
             "round": collection.get("round", 1),
             "session_started": collection.get("session_started", False),
-            "active_matrix_id": active_matrix_id,
+            "active_group_id": active_group_id,
         },
         "survey": {
             "title": survey["title"],
@@ -130,7 +130,7 @@ async def respond_landing(token: str):
             .get("collect_demographics", "off")
             == "on",
             "demographics": survey.get("demographics", []),
-            "matrices": _build_matrices_view(survey, nodes_by_id),
+            "groups": _build_matrices_view(survey, nodes_by_id),
             "hierarchy_nodes": (hierarchy or {}).get("nodes", []),
         },
     }
@@ -198,7 +198,7 @@ async def verify_code(token: str, request: Request):
 def _resolve_display_answers(matrices_view: list[dict], raw_answers: dict) -> dict:
     out = {}
     for m in matrices_view:
-        stored = raw_answers.get(m["matrix_id"], {})
+        stored = raw_answers.get(m["group_id"], {})
         resolved = {}
         for p in m["pairs"]:
             pid = pair_id(p["uuid_a"], p["uuid_b"])
@@ -207,7 +207,7 @@ def _resolve_display_answers(matrices_view: list[dict], raw_answers: dict) -> di
             v = stored[pid]
             lo, _hi = sorted([p["uuid_a"], p["uuid_b"]])
             resolved[pid] = v if p["uuid_a"] == lo else (1.0 / v)
-        out[m["matrix_id"]] = resolved
+        out[m["group_id"]] = resolved
     return out
 
 
@@ -250,25 +250,25 @@ async def put_answer(token: str, request: Request):
         raise HTTPException(410, "이 설문은 마감되었습니다")
 
     body = await request.json()
-    matrix_id = body["matrix_id"]
+    group_id = body["group_id"]
     uuid_a, uuid_b = body["uuid_a"], body["uuid_b"]
     value = float(body["value"])
     client_seq = int(body.get("client_seq", 0))
 
     survey, _nodes = await _survey_and_nodes(collection)
-    matrix = next((m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None)
+    matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
     if not matrix:
         raise HTTPException(404, "해당 비교 항목을 찾을 수 없습니다")
 
     respondent = await respondents_db.find_one({"_id": payload["respondent_id"]})
     if collection["mode"] == "realtime" and collection.get("session_started"):
         idx = collection.get("active_section_index", 0)
-        matrices = survey["matrices"]
-        active_matrix_id = (
-            matrices[idx]["matrix_id"] if 0 <= idx < len(matrices) else None
+        groups = survey["groups"]
+        active_group_id = (
+            groups[idx]["group_id"] if 0 <= idx < len(groups) else None
         )
-        is_revision = (respondent or {}).get("revision_matrix_id") == matrix_id
-        if matrix_id != active_matrix_id and not is_revision:
+        is_revision = (respondent or {}).get("revision_group_id") == group_id
+        if group_id != active_group_id and not is_revision:
             # 예외를 던지면 클라이언트 큐(flushQueue)가 이걸 "일시적 네트워크
             # 실패"로 오인해 지수 백오프로 영원히 재시도한다(정지된 seq 처리와
             # 같은 이유로 200 + 플래그를 쓴다, 위 stale 분기 참고). 정상 UI라면
@@ -289,13 +289,13 @@ async def put_answer(token: str, request: Request):
 
     pid, stored_value = to_stored_pair(uuid_a, uuid_b, value)
     answers = dict(resp.get("answers", {}))
-    matrix_answers = dict(answers.get(matrix_id, {}))
+    matrix_answers = dict(answers.get(group_id, {}))
     matrix_answers[pid] = stored_value
-    answers[matrix_id] = matrix_answers
+    answers[group_id] = matrix_answers
 
     total_pairs = sum(
         len(m["child_uuids"]) * (len(m["child_uuids"]) - 1) // 2
-        for m in survey["matrices"]
+        for m in survey["groups"]
     )
     answered_pairs = sum(len(v) for v in answers.values())
     progress = round(100 * answered_pairs / total_pairs) if total_pairs else 100
@@ -333,10 +333,10 @@ async def put_answer(token: str, request: Request):
     try:
         result = derive_weights(node_ids, matrix_answers)
         cr_info = {"complete": True, "cr": result.cr}
-        if (respondent or {}).get("revision_matrix_id") == matrix_id:
+        if (respondent or {}).get("revision_group_id") == group_id:
             await respondents_db.update_one(
                 {"_id": payload["respondent_id"]},
-                {"$unset": {"revision_matrix_id": ""}},
+                {"$unset": {"revision_group_id": ""}},
             )
     except IncompleteMatrixError:
         cr_info = {"complete": False}
@@ -381,8 +381,8 @@ async def put_demographics(token: str, request: Request):
     return {"attributes": attributes}
 
 
-@router.post("/api/respond/{token}/matrix-eval")
-async def matrix_eval(token: str, request: Request):
+@router.post("/api/respond/{token}/group-eval")
+async def group_eval(token: str, request: Request):
     """수정 화면의 실시간 what-if — 저장된 답 위에 overrides를 얹어 이 기준의
     가중치·CR·순위·가장 모순적인 쌍을 재계산해 돌려준다(저장하지 않는다)."""
     payload = current_respondent(request)
@@ -391,10 +391,10 @@ async def matrix_eval(token: str, request: Request):
         raise HTTPException(403, "이 링크의 응답자가 아닙니다")
 
     body = await request.json()
-    matrix_id = body.get("matrix_id")
+    group_id = body.get("group_id")
     survey, nodes_by_id = await _survey_and_nodes(collection)
     matrix = next(
-        (m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None
+        (m for m in survey["groups"] if m["group_id"] == group_id), None
     )
     if not matrix:
         raise HTTPException(404, "해당 비교 항목을 찾을 수 없습니다")
@@ -403,7 +403,7 @@ async def matrix_eval(token: str, request: Request):
     resp = await responses_db.find_one(
         {"collection_id": collection["_id"], "respondent_id": payload["respondent_id"]}
     )
-    stored = dict((resp or {}).get("answers", {}).get(matrix_id, {}))
+    stored = dict((resp or {}).get("answers", {}).get(group_id, {}))
     for ov in body.get("overrides") or []:
         try:
             pid, sv = to_stored_pair(
@@ -526,7 +526,7 @@ async def respond_summary(token: str, request: Request):
     items = []
     for m in matrices_view:
         node_ids = [c["uuid"] for c in m["children"]]
-        pairs = sub["answers"].get(m["matrix_id"], {})
+        pairs = sub["answers"].get(m["group_id"], {})
         try:
             result = derive_weights(node_ids, pairs)
             worst_pair = None
@@ -538,7 +538,7 @@ async def respond_summary(token: str, request: Request):
                     worst_pair = {"uuid_a": worst[0].uuid_a, "uuid_b": worst[0].uuid_b}
             items.append(
                 {
-                    "matrix_id": m["matrix_id"],
+                    "group_id": m["group_id"],
                     "parent_name": m["parent_name"],
                     "cr": result.cr,
                     "worst_pair": worst_pair,

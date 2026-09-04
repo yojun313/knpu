@@ -20,7 +20,7 @@ def _header(ws, columns):
 
 
 def build_response_rows(
-    matrices: list[dict], nodes_by_uuid: dict, submissions_by_respondent: dict
+    groups: list[dict], nodes_by_uuid: dict, submissions_by_respondent: dict
 ) -> list[list]:
     """csv_schema.CSV_COLUMNS 순서(respondent,parent,item_a,item_b,value)의 long-format 행들.
     xlsx의 '응답 원자료' 시트와 CSV 내보내기가 이 함수 하나를 같이 쓴다 — 둘이
@@ -29,9 +29,9 @@ def build_response_rows(
     rows = []
     for respondent_id, answers in submissions_by_respondent.items():
         label = respondent_id
-        for m in matrices:
+        for m in groups:
             child_uuids = m["child_uuids"]
-            pairs = answers.get(m["matrix_id"], {})
+            pairs = answers.get(m["group_id"], {})
             parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
             for i in range(len(child_uuids)):
                 for j in range(i + 1, len(child_uuids)):
@@ -98,13 +98,13 @@ def build_workbook(
             )
 
     ws3 = wb.create_sheet("설문지")
-    _header(ws3, ["matrix_id", "기준(부모)", "하위 항목들", "질문 문구"])
-    for m in survey.get("matrices", []):
+    _header(ws3, ["group_id", "기준(부모)", "하위 항목들", "질문 문구"])
+    for m in survey.get("groups", []):
         children = ", ".join(
             nodes_by_uuid.get(c, {}).get("name", c) for c in m["child_uuids"]
         )
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
-        ws3.append([m["matrix_id"], parent_name, children, m.get("question_text", "")])
+        ws3.append([m["group_id"], parent_name, children, m.get("question_text", "")])
 
     ws4 = wb.create_sheet("응답 원자료")
     _header(ws4, CSV_COLUMNS)
@@ -135,7 +135,7 @@ def build_workbook(
         global_w = results.get("global_weights", {})
         local_w = results.get("local_weights", {})
         local_flat = {}
-        for matrix_id, weights in local_w.items():
+        for group_id, weights in local_w.items():
             for nid, w in weights.items():
                 local_flat[nid] = w
         for nid, gw in sorted(global_w.items(), key=lambda kv: -kv[1]):
@@ -146,14 +146,14 @@ def build_workbook(
         ws6 = wb.create_sheet("개인별 CR")
         _header(ws6, ["응답자ID", "기준", "CR"])
         for rid, per_matrix in results.get("per_respondent_cr", {}).items():
-            for matrix_id, cr in per_matrix.items():
+            for group_id, cr in per_matrix.items():
                 parent_uuid = next(
                     (
                         m["parent_uuid"]
-                        for m in survey["matrices"]
-                        if m["matrix_id"] == matrix_id
+                        for m in survey["groups"]
+                        if m["group_id"] == group_id
                     ),
-                    matrix_id,
+                    group_id,
                 )
                 ws6.append(
                     [

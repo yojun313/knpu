@@ -246,17 +246,17 @@ async def get_results(
     # 이게 없으면 화면에 이름 대신 uuid가 그대로 노출된다.
     alt_names = {a["uuid"]: a["name"] for a in hierarchy.get("alternatives", [])}
 
-    # matrix_id -> 부모 기준 이름. result.js가 이전엔 "matrix_id == parent_uuid"라는
-    # 전제로 이 매핑을 클라이언트에서 유추했는데, 대안 비교 행렬은 matrix_id가
+    # group_id -> 부모 기준 이름. result.js가 이전엔 "group_id == parent_uuid"라는
+    # 전제로 이 매핑을 클라이언트에서 유추했는데, 대안 비교 그룹은 group_id가
     # "alt:<leaf_uuid>" 형식이라(survey_service.generate_matrices) 그 전제가
     # 깨져 대안 섹션의 CR·합의도 행이 이름 대신 "alt:<uuid>"로 보였다.
     nodes_by_uuid = {n["uuid"]: n for n in hierarchy["nodes"]}
     matrix_parent_names = {
-        m["matrix_id"]: (
+        m["group_id"]: (
             ("[대안] " if m.get("is_alternative") else "")
             + nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
         )
-        for m in survey["matrices"]
+        for m in survey["groups"]
     }
 
     if not submissions:
@@ -282,7 +282,7 @@ async def get_results(
         }
 
     results = build_results(
-        hierarchy["nodes"], survey["matrices"], submissions, project.get("settings", {})
+        hierarchy["nodes"], survey["groups"], submissions, project.get("settings", {})
     )
     results["node_names"].update(alt_names)
     results["matrix_parent_names"] = matrix_parent_names
@@ -309,10 +309,10 @@ async def get_sensitivity(
         raise HTTPException(400, "응답이 없어 민감도 분석을 할 수 없습니다")
 
     results = build_results(
-        hierarchy["nodes"], survey["matrices"], submissions, project.get("settings", {})
+        hierarchy["nodes"], survey["groups"], submissions, project.get("settings", {})
     )
     node_parent = {n["uuid"]: n["parent_id"] for n in hierarchy["nodes"]}
-    matrix_of_parent = {m["parent_uuid"]: m["matrix_id"] for m in survey["matrices"]}
+    matrix_of_parent = {m["parent_uuid"]: m["group_id"] for m in survey["groups"]}
 
     if target_node not in node_parent:
         raise HTTPException(404, "해당 노드를 찾을 수 없습니다")

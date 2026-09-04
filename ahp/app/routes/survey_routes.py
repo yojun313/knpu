@@ -1,4 +1,4 @@
-"""설문지(survey) — 계층에서 자동 생성된 문항(matrices), 안내문, 노드별 설명.
+"""설문지(survey) — 계층에서 자동 생성된 문항(groups), 안내문, 노드별 설명.
 
 계층 설계(project_routes)와 설문지 준비(여기)를 의도적으로 분리했다. 계층의
 name/order는 트리 구조를 다루는 값이고, 여기서 다루는 node_descriptions는
@@ -70,7 +70,7 @@ def _serialize_survey(doc: dict) -> dict:
         "intro_text": doc.get("intro_text") or DEFAULT_INTRO_TEXT,
         "consent_text": doc.get("consent_text") or DEFAULT_CONSENT_TEXT,
         "node_descriptions": doc.get("node_descriptions", {}),
-        "matrices": doc.get("matrices", []),
+        "groups": doc.get("groups", []),
         "demographics": doc.get("demographics", []),
         "status": doc.get("status", "draft"),
         "created_at": doc.get("created_at"),
@@ -98,7 +98,7 @@ async def _ensure_survey(project_doc: dict) -> dict:
 
     hierarchy = await _latest_hierarchy(project_id)
     alt_on = project_doc.get("settings", {}).get("alt_layer") == "on"
-    matrices = generate_matrices(
+    groups = generate_matrices(
         hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
     )
     node_descriptions = {
@@ -115,7 +115,7 @@ async def _ensure_survey(project_doc: dict) -> dict:
         "intro_text": DEFAULT_INTRO_TEXT,
         "consent_text": DEFAULT_CONSENT_TEXT,
         "node_descriptions": node_descriptions,
-        "matrices": matrices,
+        "groups": groups,
         "demographics": [],
         "status": "draft",
         "created_at": _now(),
@@ -148,15 +148,15 @@ async def update_survey(project_id: str, request: Request):
         patch["consent_text"] = body["consent_text"] or DEFAULT_CONSENT_TEXT
     if "node_descriptions" in body and isinstance(body["node_descriptions"], dict):
         patch["node_descriptions"] = body["node_descriptions"]
-    if "matrix_questions" in body and isinstance(body["matrix_questions"], dict):
-        matrices = list(doc["matrices"])
-        by_id = {m["matrix_id"]: m for m in matrices}
-        for mid, text in body["matrix_questions"].items():
+    if "group_questions" in body and isinstance(body["group_questions"], dict):
+        groups = list(doc["groups"])
+        by_id = {m["group_id"]: m for m in groups}
+        for mid, text in body["group_questions"].items():
             if mid in by_id and text:
                 by_id[mid]["question_text"] = text
-        patch["matrices"] = matrices
+        patch["groups"] = groups
     if "demographics" in body:
-        # 인구통계 스키마는 계층/matrices 구조와 무관 — node_descriptions처럼 버전 안 올린다.
+        # 인구통계 스키마는 계층/groups 구조와 무관 — node_descriptions처럼 버전 안 올린다.
         patch["demographics"] = normalize_demographics(body["demographics"])
 
     if not patch:
@@ -188,7 +188,7 @@ async def update_survey(project_id: str, request: Request):
             "survey.patch",
             {
                 "node_descriptions": updated.get("node_descriptions", {}),
-                "matrices": updated.get("matrices", []),
+                "groups": updated.get("groups", []),
             },
         )
 
@@ -216,7 +216,7 @@ async def resync_survey(project_id: str, request: Request):
     new_matrices = generate_matrices(
         hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
     )
-    diff = diff_matrices(current["matrices"], new_matrices)
+    diff = diff_matrices(current["groups"], new_matrices)
     impact = diff_has_impact(diff)
 
     new_descriptions = dict(current.get("node_descriptions", {}))
@@ -234,7 +234,7 @@ async def resync_survey(project_id: str, request: Request):
         "intro_text": current.get("intro_text", ""),
         "consent_text": current.get("consent_text", DEFAULT_CONSENT_TEXT),
         "node_descriptions": new_descriptions,
-        "matrices": new_matrices,
+        "groups": new_matrices,
         "demographics": current.get("demographics", []),
         "status": current.get("status", "draft"),
         "created_at": _now(),
@@ -309,7 +309,7 @@ async def survey_print_data(survey_id: str, request: Request):
 async def publish_survey(project_id: str, request: Request):
     project = await _get_project_checked(project_id, request)
     doc = await _ensure_survey(project)
-    if not doc.get("matrices"):
+    if not doc.get("groups"):
         raise HTTPException(400, "비교할 항목이 없습니다. 계층을 먼저 완성해 주세요")
     await surveys_db.update_one(
         {"_id": doc["_id"]}, {"$set": {"status": "published", "updated_at": _now()}}
