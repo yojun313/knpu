@@ -86,3 +86,20 @@ DB 스키마 변화 없음.
 `entry.js` 렌더 루프는 방법별 레이아웃이라 그대로(BWM 때 새로 그림).
 
 > **0단계 코드 완료.** 변환 복사 1회 + `pm2 restart` 로 전체 반영.
+
+---
+
+## 1단계 (BWM) — 진행 중
+
+### 1-1. BWM 계산 코어  *(코드: 완료 / DB·운영: 조치 없음)*
+
+`mcdm/lp.py`(선형모형 LP, scipy.linprog) + `mcdm/bwm_consistency.py`(OR·CR^I·임계값 표) +
+`methods/bwm.py`(`BwmPlugin`) 추가, `METHODS["bwm"]` 등록. `KIND_VALIDATORS` 에
+`pick_best`/`pick_worst`/`vector` 추가(계약: `(item_id, value)`).
+
+- **순수 추가.** 관리자 UI 로 `surveys.methods` 에 `bwm` 을 배정할 수단이 아직 없고,
+  `put_answer` 저장 경로·프론트 렌더러도 없어 BWM 그룹은 실제로 응답할 수 없다. DB 마이그레이션
+  불필요, 재기동 불필요(다음 하위 단계와 함께).
+- `result_service`: 비-pairwise 그룹은 pairwise 전용 극단값 진단을 건너뛰고, per-respondent
+  CR 표시는 `cri` 로 폴백(방어적, 현재 도달 불가).
+- 검증: `ahp/tests/check_methods_bwm.py` (7건) + `check_methods_ahp.py` 회귀(9건) + 골든 동일.

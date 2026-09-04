@@ -47,7 +47,8 @@ def _pairs(*triples) -> dict:
 def test_registry():
     assert get_method("ahp") is METHODS["ahp"]
     assert get_method(None).name == "ahp"
-    assert get_method("bwm").name == "ahp"  # 미등록 → AHP 폴백
+    assert get_method("topsis").name == "ahp"  # 미등록 → AHP 폴백
+    assert get_method("bwm").name == "bwm"  # 등록됨
     assert P.question_kinds() == ("pairwise",)
 
 
@@ -162,12 +163,17 @@ def test_generate_questions_parity():
         assert gn["kind"] == "pairwise"
         assert gn["method"] == "ahp"
         assert gn["scale"] == 5
-    # 미등록 방법은 조용히 AHP 폴백 (그룹이 그대로 생성됨)
+    # 노드별 방법 배정: root=bwm(등록됨) → kind="bwm", 미등록 topsis → AHP 폴백.
     m = normalize_methods({"criteria": {"root": "bwm"}, "alternatives": "topsis"})
     assert m == {"criteria": {"root": "bwm"}, "alternatives": "topsis"}
     fb = generate_questions(nodes, alts, methods=m, settings=settings)
     assert [g["group_id"] for g in fb] == [g["group_id"] for g in legacy]
-    assert all(g["kind"] == "pairwise" for g in fb)
+    by_id = {g["group_id"]: g for g in fb}
+    assert by_id["root"]["kind"] == "bwm" and by_id["root"]["method"] == "bwm"
+    assert by_id["c1"]["kind"] == "pairwise"  # 배정 없는 노드 → ahp
+    assert all(
+        g["kind"] == "pairwise" for g in fb if g.get("is_alternative")
+    )  # topsis 미등록 → 폴백
 
 
 def test_route_helpers_parity():
@@ -207,15 +213,18 @@ def test_route_helpers_parity():
 
 
 def test_kind_validators():
+    # (item_id, value) 계약 — put_answer 가 answers[group_id][item_id]=value 로 저장
     assert KIND_VALIDATORS["pairwise"](
         {"uuid_a": "a", "uuid_b": "b", "value": "3"}
-    ) == {"uuid_a": "a", "uuid_b": "b", "value": 3.0}
-    for bad in ({"uuid_a": "a", "uuid_b": "b", "value": "0"},):
-        try:
-            KIND_VALIDATORS["pairwise"](bad)
-            raise AssertionError("should have raised")
-        except ValueError:
-            pass
+    ) == ("a:b", 3.0)
+    # 방향: 사전순 큰 쪽이 a면 역수로 저장
+    iid, v = KIND_VALIDATORS["pairwise"]({"uuid_a": "z", "uuid_b": "a", "value": "2"})
+    assert iid == "a:z" and abs(v - 0.5) < 1e-9
+    try:
+        KIND_VALIDATORS["pairwise"]({"uuid_a": "a", "uuid_b": "b", "value": "0"})
+        raise AssertionError("should have raised")
+    except ValueError:
+        pass
 
 
 def main() -> None:
