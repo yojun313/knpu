@@ -19,7 +19,7 @@ from app.db import (
 )
 from app.services.ahp_calc import to_stored_pair, pair_id
 from app.services.methods import get_method
-from app.services.csv_schema import parse_value
+from app.services.csv_schema import parse_value, group_item_slots
 from app.services.codes import dedupe_label as _dedupe_label
 from app.services.hub import hub
 from app.services.demographics import coerce_attributes, validate_required
@@ -169,11 +169,9 @@ async def get_grid(collection_id: str, request: Request):
                     {"uuid": cid, "name": nodes_by_id.get(cid, {}).get("name", cid)}
                     for cid in m["child_uuids"]
                 ],
-                # i<j 표시 순서 쌍 — PUT 때 그대로 uuid_a/uuid_b로 되돌려보내면 된다.
+                # 표시 순서 항목 — PUT 때 그대로 uuid_a/uuid_b로 되돌려보내면 된다.
                 "pairs": [
-                    {"uuid_a": m["child_uuids"][i], "uuid_b": m["child_uuids"][j]}
-                    for i in range(len(m["child_uuids"]))
-                    for j in range(i + 1, len(m["child_uuids"]))
+                    {"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)
                 ],
             }
         )
@@ -354,10 +352,8 @@ async def import_csv(
     # export_routes.export_import_template_csv·print.js와 같은 순서여야 한다.
     slots = []  # (group_id, uuid_a, uuid_b)
     for m in survey["groups"]:
-        cu = m["child_uuids"]
-        for i in range(len(cu)):
-            for j in range(i + 1, len(cu)):
-                slots.append((m["group_id"], cu[i], cu[j]))
+        for a, b in group_item_slots(m):
+            slots.append((m["group_id"], a, b))
 
     raw = await file.read()
     try:

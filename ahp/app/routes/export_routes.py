@@ -15,7 +15,12 @@ from app.routes.result_routes import (
 )
 from app.services.docx_export import build_survey_docx
 from app.services.sheet_export import build_workbook, build_response_rows
-from app.services.csv_schema import CSV_COLUMNS, RESPONDENT_COL, pair_column_label
+from app.services.csv_schema import (
+    CSV_COLUMNS,
+    RESPONDENT_COL,
+    group_item_slots,
+    pair_column_label,
+)
 from app.services.demographics import column_labels as demo_column_labels, resolve_for_export
 from app.services.result_service import build_results
 
@@ -100,20 +105,17 @@ async def export_import_template_csv(project_id: str, request: Request):
     header = [RESPONDENT_COL] + demo_column_labels(survey.get("demographics", []))
     n = 0
     for m in survey["groups"]:
-        child_uuids = m["child_uuids"]
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
-        for i in range(len(child_uuids)):
-            for j in range(i + 1, len(child_uuids)):
-                a, b = child_uuids[i], child_uuids[j]
-                n += 1
-                header.append(
-                    pair_column_label(
-                        n,
-                        parent_name,
-                        nodes_by_uuid.get(a, {}).get("name", a),
-                        nodes_by_uuid.get(b, {}).get("name", b),
-                    )
+        for a, b in group_item_slots(m):
+            n += 1
+            header.append(
+                pair_column_label(
+                    n,
+                    parent_name,
+                    nodes_by_uuid.get(a, {}).get("name", a),
+                    nodes_by_uuid.get(b, {}).get("name", b),
                 )
+            )
 
     buf = io.StringIO()
     writer = csv.writer(buf)

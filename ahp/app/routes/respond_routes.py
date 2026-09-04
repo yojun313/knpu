@@ -21,6 +21,7 @@ from app.db import (
 )
 from app.services.codes import hash_code
 from app.services.ahp_calc import to_stored_pair, pair_id
+from app.services.csv_schema import group_item_slots
 from app.services.methods import get_method
 from app.services.hub import hub
 from app.routes.survey_routes import DEFAULT_INTRO_TEXT, DEFAULT_CONSENT_TEXT
@@ -78,9 +79,7 @@ def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
                 "scale": m.get("scale", 9),
                 "children": children,
                 "pairs": [
-                    {"uuid_a": m["child_uuids"][i], "uuid_b": m["child_uuids"][j]}
-                    for i in range(len(m["child_uuids"]))
-                    for j in range(i + 1, len(m["child_uuids"]))
+                    {"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)
                 ],
             }
         )
