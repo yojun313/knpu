@@ -29,6 +29,7 @@ def build_results(
     consensus_by_matrix: dict[str, dict] = {}
     outliers_by_matrix: dict[str, list] = {}
     bwm_by_group: dict[str, dict] = {}
+    group_cr_by_matrix: dict[str, dict] = {}
 
     for m in groups:
         node_ids = m["child_uuids"]
@@ -86,6 +87,19 @@ def build_results(
         if not agg_lr.complete:
             continue
 
+        # 그룹 집계 일관성 — AIJ 는 합성 행렬 CR, AIP 는 개인 CR 평균(개인별 표
+        # 앞에서 "가중합의 합계 CR"로 보여줄 값). 방법이 metrics 로 이미 계산한다.
+        if len(node_ids) >= 3 and agg_lr.consistency and agg_lr.consistency.metrics:
+            gm = agg_lr.consistency.metrics
+            if gm.get("avg_cr") is not None:
+                group_cr_by_matrix[group_id] = {
+                    "value": gm["avg_cr"], "metric": "cr", "threshold": cr_threshold
+                }
+            elif gm.get("avg_cri") is not None:
+                group_cr_by_matrix[group_id] = {
+                    "value": gm["avg_cri"], "metric": "cri", "threshold": None
+                }
+
         # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다.
         # 쌍대비교 전용 진단(값이 로그 스케일 비율이라는 전제). 비-pairwise kind는 건너뛴다.
         if m.get("kind", "pairwise") == "pairwise" and len(respondent_pairs) >= 3:
@@ -136,6 +150,7 @@ def build_results(
         "alternative_scores": alternative_scores,
         "group_kinds": {m["group_id"]: m.get("kind", "pairwise") for m in groups},
         "bwm": bwm_by_group,
+        "group_cr": group_cr_by_matrix,
     }
 
 

@@ -29,6 +29,17 @@
 .cr-table .cr-ok{color:var(--success);font-weight:700}
 .cr-table .muted{color:var(--sidebar-muted);font-weight:400}
 
+/* 그룹 집계 CR — 개인별 표 위 */
+.group-cr-list{padding:6px 14px 10px;border-bottom:1px solid var(--sidebar-border)}
+.group-cr-list:empty{display:none}
+.gcr-row{display:flex;justify-content:space-between;align-items:baseline;
+  padding:4px 0;font-size:12.5px}
+.gcr-row .gcr-name{color:var(--text-strong)}
+.gcr-row .gcr-val{font-weight:700}
+.gcr-row .gcr-val.cr-bad{color:var(--danger)}
+.gcr-row .gcr-val.cr-ok{color:var(--success)}
+.gcr-row .gcr-val .muted{color:var(--sidebar-muted);font-weight:400}
+
 /* BWM Best/Worst 지목 분포 */
 .bwm-dist-group{padding:10px 0;border-bottom:1px solid var(--sidebar-border)}
 .bwm-dist-group:last-child{border-bottom:none}
