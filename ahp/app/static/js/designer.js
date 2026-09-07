@@ -259,9 +259,15 @@
       list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">비교할 대안을 추가해 주세요.</p>';
       return;
     }
-    list.innerHTML = alternatives.slice().sort(function (a, b) { return a.order - b.order; }).map(function (a) {
-      return '<div class="brain-card"><span class="bc-text">' + ahpEsc(a.name) + '</span>' +
-        '<span class="bc-actions"><button data-act="remove-alt" data-id="' + a.uuid + '" title="삭제">×</button></span></div>';
+    const sorted = alternatives.slice().sort(function (a, b) { return a.order - b.order; });
+    list.innerHTML = sorted.map(function (a, i) {
+      return '<div class="ni-child-row" data-id="' + a.uuid + '">' +
+        '<button class="nicr-name" data-act="rename-alt" data-id="' + a.uuid + '">' + ahpEsc(a.name) + '</button>' +
+        '<span class="nicr-actions">' +
+        '<button data-act="alt-up" data-id="' + a.uuid + '" title="위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button data-act="alt-down" data-id="' + a.uuid + '" title="아래로"' + (i === sorted.length - 1 ? ' disabled' : '') + '>↓</button>' +
+        '<button data-act="remove-alt" data-id="' + a.uuid + '" class="danger" title="삭제">🗑</button>' +
+        '</span></div>';
     }).join('');
   }
 
@@ -273,6 +279,28 @@
 
   function removeAlternative(id) {
     alternatives = alternatives.filter(function (a) { return a.uuid !== id; });
+    setDirty(true);
+    renderAltList();
+  }
+
+  function renameAlternative(id) {
+    const a = alternatives.find(function (x) { return x.uuid === id; });
+    if (!a) return;
+    const next = prompt('대안 이름', a.name);
+    if (next === null) return;
+    const t = next.trim();
+    if (!t || t === a.name) return;
+    a.name = t;
+    setDirty(true);
+    renderAltList();
+  }
+
+  function moveAlternative(id, dir) {
+    const sorted = alternatives.slice().sort(function (a, b) { return a.order - b.order; });
+    const idx = sorted.findIndex(function (a) { return a.uuid === id; });
+    const j = idx + dir;
+    if (idx < 0 || j < 0 || j >= sorted.length) return;
+    const tmp = sorted[idx].order; sorted[idx].order = sorted[j].order; sorted[j].order = tmp;
     setDirty(true);
     renderAltList();
   }
@@ -665,8 +693,12 @@
     });
     document.getElementById('altList').addEventListener('click', function (e) {
       const btn = e.target.closest('button');
-      if (!btn || btn.dataset.act !== 'remove-alt') return;
-      removeAlternative(btn.dataset.id);
+      if (!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if (act === 'remove-alt') removeAlternative(id);
+      else if (act === 'rename-alt') renameAlternative(id);
+      else if (act === 'alt-up') moveAlternative(id, -1);
+      else if (act === 'alt-down') moveAlternative(id, 1);
     });
 
     document.getElementById('brainInput').addEventListener('keydown', function (e) {

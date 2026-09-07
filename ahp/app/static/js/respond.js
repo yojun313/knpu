@@ -966,16 +966,57 @@
     return '‘' + nameB + '’이 약 ' + (Math.round((1 / v) * 10) / 10) + '배 더 중요';
   }
 
+  // BWM 응답 강도(1~9)를 일관된 값으로 되돌릴 방향·크기 안내.
+  function bwmStep(v) {
+    if (v == null || !isFinite(v)) return null;
+    return Math.max(1, Math.min(9, Math.round(v * 2) / 2));
+  }
+  function renderBwmGuide(box) {
+    const gid = reviewGroupId;
+    const best = bwmVal(gid, 'best'), worst = bwmVal(gid, 'worst');
+    const w = (reviewEval && reviewEval.weights) || {};
+    const names = (reviewEval && reviewEval.names) || {};
+    const bad = ((reviewEval && reviewEval.worst_pairs) || []).slice(0, 3);
+    if (!bad.length || !best || !worst) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = '<div class="rg-head">조정 가이드 · 일관성이 낮은 기준부터</div>' +
+      bad.map(function (d, i) {
+        const c = d.criterion;
+        const nm = names[c] || nodeNameByUuid(c) || c;
+        const parts = [];
+        if (c !== best) {
+          const g = bwmVal(gid, 'BO:' + c);
+          const rec = bwmStep((w[best] && w[c]) ? w[best] / w[c] : null);
+          if (g != null && rec != null) {
+            parts.push('가장 중요 ↔ ‘' + esc(nm) + '’: 지금 ' + g + '배 → 권장 <b>약 ' + rec + '배</b>');
+          }
+        }
+        if (c !== worst) {
+          const g = bwmVal(gid, 'OW:' + c);
+          const rec = bwmStep((w[c] && w[worst]) ? w[c] / w[worst] : null);
+          if (g != null && rec != null) {
+            parts.push('‘' + esc(nm) + '’ ↔ 가장 덜 중요: 지금 ' + g + '배 → 권장 <b>약 ' + rec + '배</b>');
+          }
+        }
+        return '<button type="button" class="rg-row" data-item="BO:' + c + '">' +
+          '<span class="rg-rank">' + (i + 1) + '</span>' +
+          '<span class="rg-body"><span class="rg-pair">' + esc(nm) + '</span>' +
+          '<span class="rg-move">' + (parts.join('<br>') || '이 기준의 응답을 재검토해 주세요') + '</span></span>' +
+          '<span class="rg-go">이동 ▸</span></button>';
+      }).join('');
+  }
+
   // 모순이 큰 답 최대 3개에 대해 "지금 → 권장" 방향·강도를 하단에 안내.
   function renderReviewGuide() {
     const box = document.getElementById('reviewGuide');
     const m = matrixView(reviewGroupId);
+    if (m && m.kind === 'bwm') { renderBwmGuide(box); return; }
     const list = Object.keys(reviewWorstPids)
       .map(function (k) { return reviewWorstPids[k]; })
       .filter(function (w) { return w && typeof w === 'object' && w.uuid_a; })
       .sort(function (a, b) { return (a.rank || 9) - (b.rank || 9); })
       .slice(0, 3);
-    if ((m && m.kind === 'bwm') || !list.length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
     box.innerHTML = '<div class="rg-head">조정 가이드 · 모순이 큰 답부터</div>' +
       list.map(function (w, i) {
@@ -1183,18 +1224,30 @@
     document.getElementById('reviewGuide').addEventListener('click', function (e) {
       const row = e.target.closest('.rg-row');
       if (!row) return;
-      const a = row.dataset.a, b = row.dataset.b;
-      const target = Array.prototype.find.call(
-        document.querySelectorAll('#reviewPairs .pair-row'),
-        function (el) {
-          return (el.dataset.a === a && el.dataset.b === b) ||
-            (el.dataset.a === b && el.dataset.b === a);
-        }
-      );
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        target.classList.add('flash');
-        setTimeout(function () { target.classList.remove('flash'); }, 1200);
+      let targets = [];
+      if (row.dataset.item) {
+        // BWM — 이 기준의 BO / OW 벡터 행 모두 강조
+        const c = row.dataset.item.slice(3);
+        targets = ['BO:' + c, 'OW:' + c].map(function (it) {
+          return document.querySelector('#reviewPairs .bwm-vrow[data-item="' + it + '"]');
+        }).filter(Boolean);
+      } else {
+        const a = row.dataset.a, b = row.dataset.b;
+        const el = Array.prototype.find.call(
+          document.querySelectorAll('#reviewPairs .pair-row'),
+          function (el) {
+            return (el.dataset.a === a && el.dataset.b === b) ||
+              (el.dataset.a === b && el.dataset.b === a);
+          }
+        );
+        if (el) targets = [el];
+      }
+      if (targets.length) {
+        targets[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targets.forEach(function (t) {
+          t.classList.add('flash');
+          setTimeout(function () { t.classList.remove('flash'); }, 1200);
+        });
       }
     });
     document.getElementById('reviewBackBtn').addEventListener('click', function () { showDone(); });
