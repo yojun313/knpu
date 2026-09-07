@@ -38,6 +38,11 @@ class Consistency:
     locus: list[str] = field(default_factory=list)   # 문제 item_id (재응답 유도)
     detail: list[dict] = field(default_factory=list)  # worst pair 등 표시용 상세
 
+    @property
+    def value(self) -> float | None:
+        """방법 무관 대표 비일관성 값 — AHP CR 또는 BWM CR^I. 화면·payload용."""
+        return self.metrics.get("cr", self.metrics.get("cri"))
+
 
 @dataclass
 class LocalResult:

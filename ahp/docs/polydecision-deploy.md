@@ -114,3 +114,17 @@ DB 스키마 변화 없음.
 - 아직 BWM 그룹을 만들 관리자 UI(1-4)도 렌더러(1-3)도 없어 실제로 도달 불가.
   DB 마이그레이션·재기동 불필요.
 - 검증: `check_methods_bwm.py` (9건 — +저장 경로 시뮬레이션) + `check_methods_ahp.py` (9건) + 골든 동일 + uvicorn 부팅.
+
+### 1-3. BWM 응답 렌더러 + 재개/what-if 배선  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `respond.js`: `RENDERERS[kind]` 계약 일반화(`renderBody`/`isComplete`/`answered`/`total`/
+  `overrides`). `RENDERERS.bwm` — Best/Worst 선택 버튼 + BO/OW 1~9 눈금 벡터. `bwmClickHandler`
+  (설문·리뷰 컨테이너에 위임). `renderMatrixPage`·`matrixComplete`·`updateProgress`·
+  `renderReviewPairs`·`enterReview` 가 렌더러에 dispatch.
+- 백엔드: `_build_matrices_view` 비-pairwise 는 `pairs:[]`; `_resolve_display_answers` 는
+  비-pairwise 답을 그대로 통과(재개 시 유실 방지); `group-eval` 은 overrides 적용을 플러그인에
+  위임 + `locus` 반환; `put_answer` 는 Best/Worst 변경 시 BO/OW 무효화(respond·entry).
+  `Consistency.value` 속성(AHP CR / BWM CR^I) 도입.
+- `respond.css`: `.bwm-*`.
+- **pairwise 무변경**(골든·패리티 9+9). BWM 그룹을 만들 관리자 UI(1-4)가 없어 라이브 E2E 는
+  1-4 이후. 위젯 렌더는 헤드리스(라이트·다크) 확인.

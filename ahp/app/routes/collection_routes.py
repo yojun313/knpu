@@ -331,7 +331,7 @@ def respondent_progress_summary(groups: list[dict], answers: dict) -> dict:
         if not lr.complete:
             all_complete = False
             continue
-        cr = lr.consistency.metrics.get("cr") if lr.consistency else None
+        cr = lr.consistency.value if lr.consistency else None
         if cr is not None:
             worst_cr = cr if worst_cr is None else max(worst_cr, cr)
 
@@ -431,7 +431,7 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
         if len(node_ids) >= 3 and pairs:
             lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
             if lr.complete and lr.consistency:
-                cr = lr.consistency.metrics.get("cr")
+                cr = lr.consistency.value
         rows.append(
             {
                 "respondent_id": r["_id"],
@@ -641,7 +641,7 @@ async def reveal_individual_result(
     payload = {
         "group_id": group_id,
         "weights": lr.weights,
-        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+        "cr": lr.consistency.value if lr.consistency else None,
     }
     await hub.publish(
         collection_id,

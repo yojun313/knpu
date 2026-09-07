@@ -245,6 +245,31 @@ button{font-family:inherit}
   box-shadow:0 0 0 1px var(--r-accent)}
 @media (hover:hover){.scale-cell:hover{border-color:var(--r-accent)}}
 
+/* ── BWM 위젯 ── */
+.bwm-step{margin-bottom:18px}
+.bwm-q{font-size:13.5px;font-weight:800;color:var(--r-ink);margin-bottom:8px}
+.bwm-q b{color:var(--r-accent)}
+.bwm-note,.bwm-q .bwm-note{font-size:11px;font-weight:600;color:var(--r-muted)}
+.bwm-hint{font-size:12px;color:var(--r-muted);margin:6px 2px 0}
+.bwm-pick-row{display:flex;flex-wrap:wrap;gap:8px}
+.bwm-pick{min-height:46px;padding:0 14px;border-radius:12px;border:1.5px solid var(--r-border);
+  background:var(--r-surface);color:var(--r-ink);font-size:13px;font-weight:700;cursor:pointer;flex:1 1 auto}
+.bwm-pick:active{transform:scale(.96)}
+.bwm-pick.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);font-weight:800}
+@media (hover:hover){.bwm-pick:hover{border-color:var(--r-accent)}}
+.bwm-vecs{border-top:1px solid var(--r-border);padding-top:14px;margin-top:4px}
+.bwm-vrow{border:1.5px solid var(--r-border);border-radius:12px;background:var(--r-surface);
+  padding:10px;margin-bottom:10px}
+.bwm-vrow.worst{border-color:var(--r-danger);box-shadow:0 0 0 1px var(--r-danger)}
+.bwm-vlabel{display:block;font-size:12px;font-weight:700;color:var(--r-muted);margin-bottom:7px}
+.scale.bwm-scale{gap:2px}
+.bwm-scale-cell{flex:1 1 0;min-width:0;height:44px;padding:0;border-radius:6px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);font-size:12px;font-weight:700;cursor:pointer}
+.bwm-scale-cell:active{transform:scale(.9)}
+.bwm-scale-cell.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);
+  box-shadow:0 0 0 1px var(--r-accent)}
+@media (hover:hover){.bwm-scale-cell:hover{border-color:var(--r-accent)}}
+
 #submitBtn.ready{border-color:var(--r-accent);color:var(--r-accent);font-weight:800}
 
 /* ── 수정 화면 가중치 차트 ── */

@@ -48,7 +48,7 @@ def build_results(
                     m, pairs, cr_threshold=cr_threshold
                 ).consistency
                 per_respondent_cr[rid][group_id] = (
-                    c.metrics.get("cr", c.metrics.get("cri")) if c else None
+                    c.value if c else None
                 )
 
         if not respondent_pairs:
