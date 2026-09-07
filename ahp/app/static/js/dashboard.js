@@ -2,6 +2,7 @@
   'use strict';
 
   const STATUS_BADGE = { draft: 'muted', active: 'ok', closed: 'warn' };
+  const STAGES = [['design', '설계'], ['collect', '수집'], ['analysis', '분석'], ['closed', '종료']];
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -31,19 +32,31 @@
     empty.hidden = true;
     grid.innerHTML = projects.map(function (p) {
       const badgeCls = STATUS_BADGE[p.status] || 'muted';
-      return '<div class="proj-card" data-id="' + p.id + '">' +
-        '<div class="pc-actions">' +
-        '<button data-act="rename" data-id="' + p.id + '" title="이름 변경">✎</button>' +
-        '<button data-act="delete" data-id="' + p.id + '" class="danger" title="삭제">🗑</button>' +
-        '</div>' +
+      const si = typeof p.stage_index === 'number' ? p.stage_index : 0;
+      const stepper = STAGES.map(function (s, i) {
+        const cls = i < si ? 'done' : (i === si ? 'now' : '');
+        return '<span class="pcs-step ' + cls + '">' + s[1] + '</span>';
+      }).join('<span class="pcs-sep">›</span>');
+      const prog = p.progress || { respondents: 0, submitted: 0 };
+      const closed = p.status === 'closed';
+      return '<div class="proj-card' + (p.pinned ? ' pinned' : '') + '" data-id="' + p.id + '">' +
         '<a class="pc-link" href="/design/' + p.id + '">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-        '<h3>' + ahpEsc(p.title) + '</h3>' +
+        '<div class="pc-top">' +
+        '<h3>' + (p.pinned ? '<span class="pc-pin-mark">★</span> ' : '') + ahpEsc(p.title) + '</h3>' +
         '<span class="badge ' + badgeCls + '">' + ahpEsc(p.status_label) + '</span></div>' +
-        '<p>' + ahpEsc(p.description || '설명 없음') + '</p>' +
-        '<p style="margin-top:10px;font-size:10.5px;opacity:.7">업데이트 ' + fmtDate(p.updated_at) +
-        (p.owner_name ? ' · ' + ahpEsc(p.owner_name) : '') + '</p>' +
-        '</a></div>';
+        '<p class="pc-desc">' + ahpEsc(p.description || '설명 없음') + '</p>' +
+        '<div class="pc-stepper">' + stepper + '</div>' +
+        '<div class="pc-meta"><span>진행 ' + prog.submitted + '/' + prog.respondents + '명</span>' +
+        '<span>업데이트 ' + fmtDate(p.updated_at) +
+        (p.owner_name ? ' · ' + ahpEsc(p.owner_name) : '') + '</span></div>' +
+        '</a>' +
+        '<div class="pc-actions">' +
+        '<button data-act="pin" data-id="' + p.id + '" title="중요 표시">' + (p.pinned ? '★' : '☆') + '</button>' +
+        '<button data-act="rename" data-id="' + p.id + '" title="이름 변경">✎</button>' +
+        '<button data-act="close" data-id="' + p.id + '" title="' + (closed ? '다시 열기' : '프로젝트 종료') + '">' +
+        (closed ? '↺ 재개' : '■ 종료') + '</button>' +
+        '<button data-act="delete" data-id="' + p.id + '" class="danger" title="삭제">🗑</button>' +
+        '</div></div>';
     }).join('');
   }
 
@@ -60,6 +73,33 @@
       await load();
     } catch (e) {
       ahpToast(e.message || '이름 변경에 실패했습니다', true);
+    }
+  }
+
+  async function togglePin(id) {
+    const card = document.querySelector('.proj-card[data-id="' + id + '"]');
+    const pinned = !!(card && card.classList.contains('pinned'));
+    try {
+      await ahpApi('/api/projects/' + id, { method: 'PUT', body: { pinned: !pinned } });
+      await load();
+    } catch (e) {
+      ahpToast(e.message || '변경에 실패했습니다', true);
+    }
+  }
+
+  async function toggleClose(id) {
+    const card = document.querySelector('.proj-card[data-id="' + id + '"]');
+    const title = card ? card.querySelector('h3').textContent.replace(/^★\s*/, '') : '이 프로젝트';
+    const badge = card ? card.querySelector('.badge').textContent : '';
+    const closed = badge.indexOf('종료') !== -1;
+    const next = closed ? 'active' : 'closed';
+    if (!closed && !confirm('"' + title + '"을(를) 종료할까요? 결과는 그대로 보이지만 완료된 프로젝트로 표시됩니다.')) return;
+    try {
+      await ahpApi('/api/projects/' + id, { method: 'PUT', body: { status: next } });
+      ahpToast(closed ? '프로젝트를 다시 열었습니다' : '프로젝트를 종료했습니다');
+      await load();
+    } catch (e) {
+      ahpToast(e.message || '변경에 실패했습니다', true);
     }
   }
 
@@ -96,6 +136,8 @@
       const id = btn.dataset.id;
       if (btn.dataset.act === 'rename') renameProject(id);
       else if (btn.dataset.act === 'delete') deleteProject(id);
+      else if (btn.dataset.act === 'pin') togglePin(id);
+      else if (btn.dataset.act === 'close') toggleClose(id);
     });
     document.getElementById('statusFilter').addEventListener('change', load);
     const allToggle = document.getElementById('allToggle');
