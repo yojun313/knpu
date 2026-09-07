@@ -132,10 +132,12 @@ async def create_collection(request: Request):
     }
     await collections_db.insert_one(doc)
 
-    # 배포 시작 = 방법론 설정 잠금(PLAN.md 11) — 이후엔 새 collection으로만 바꿀 수 있다.
-    await projects_db.update_one(
-        {"_id": project_id}, {"$set": {"settings_locked": True, "updated_at": _now()}}
-    )
+    # 배포 시작 = 방법론 설정 잠금(PLAN.md 11) + 프로젝트 상태를 "진행 중"으로.
+    _proj_patch = {"settings_locked": True, "updated_at": _now()}
+    _proj = await projects_db.find_one({"_id": project_id}, {"status": 1})
+    if (_proj or {}).get("status", "draft") == "draft":
+        _proj_patch["status"] = "active"
+    await projects_db.update_one({"_id": project_id}, {"$set": _proj_patch})
 
     return await _serialize_collection(doc)
 

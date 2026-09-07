@@ -44,6 +44,9 @@ LOCKED_AFTER_OPEN = {
 }
 
 STATUS_LABELS = {"draft": "설계 중", "active": "진행 중", "closed": "종료됨"}
+# 데이터에서 파생하는 완료 단계(1.2) — status(closed)와 published/collection/submission 유무로 결정.
+STAGE_LABELS = {"design": "설계", "collect": "수집", "analysis": "분석", "closed": "종료"}
+STAGE_ORDER = ["design", "collect", "analysis", "closed"]
 
 
 def _now():
@@ -59,6 +62,7 @@ def _serialize_project(doc: dict) -> dict:
         "status_label": STATUS_LABELS.get(
             doc.get("status", "draft"), doc.get("status")
         ),
+        "pinned": bool(doc.get("pinned", False)),
         "owner_uid": doc.get("owner_uid"),
         "owner_name": doc.get("owner_name"),
         "settings": {**DEFAULT_SETTINGS, **doc.get("settings", {})},
@@ -66,6 +70,62 @@ def _serialize_project(doc: dict) -> dict:
         "created_at": doc.get("created_at"),
         "updated_at": doc.get("updated_at"),
     }
+
+
+async def _lifecycle_by_project(project_ids: list[str]) -> dict:
+    """프로젝트별 완료 단계 판정 근거 + 진행 인원(전 collection 합)."""
+    out = {
+        pid: {"published": False, "has_collection": False, "has_submissions": False,
+              "respondents": 0, "submitted": 0}
+        for pid in project_ids
+    }
+    if not project_ids:
+        return out
+    sid_to_pid = {}
+    async for s in surveys_db.find(
+        {"project_id": {"$in": project_ids}}, {"project_id": 1, "status": 1}
+    ):
+        sid_to_pid[s["_id"]] = s["project_id"]
+        if s.get("status") == "published":
+            out[s["project_id"]]["published"] = True
+    if not sid_to_pid:
+        return out
+    cid_to_pid = {}
+    async for c in collections_db.find(
+        {"survey_id": {"$in": list(sid_to_pid)}}, {"survey_id": 1}
+    ):
+        pid = sid_to_pid.get(c["survey_id"])
+        if pid:
+            cid_to_pid[c["_id"]] = pid
+            out[pid]["has_collection"] = True
+    if not cid_to_pid:
+        return out
+    async for r in respondents_db.find(
+        {"collection_id": {"$in": list(cid_to_pid)}}, {"collection_id": 1, "status": 1}
+    ):
+        pid = cid_to_pid.get(r["collection_id"])
+        if not pid:
+            continue
+        out[pid]["respondents"] += 1
+        if r.get("status") == "submitted":
+            out[pid]["submitted"] += 1
+    async for x in submissions_db.find(
+        {"collection_id": {"$in": list(cid_to_pid)}}, {"collection_id": 1}
+    ):
+        pid = cid_to_pid.get(x["collection_id"])
+        if pid:
+            out[pid]["has_submissions"] = True
+    return out
+
+
+def _stage_of(status: str, lc: dict) -> str:
+    if status == "closed":
+        return "closed"
+    if lc["has_submissions"]:
+        return "analysis"
+    if lc["has_collection"] or lc["published"]:
+        return "collect"
+    return "design"
 
 
 @router.get("/api/me")
@@ -78,7 +138,25 @@ async def list_projects(request: Request, all: bool = Query(False)):
     uid = current_uid(request)
     query = {} if (all and is_admin(request)) else {"owner_uid": uid}
     docs = [d async for d in projects_db.find(query).sort("updated_at", -1)]
-    return [_serialize_project(d) for d in docs]
+    out = [_serialize_project(d) for d in docs]
+
+    lifecycle = await _lifecycle_by_project([p["id"] for p in out])
+    for p in out:
+        lc = lifecycle.get(p["id"], {})
+        stage = _stage_of(p["status"], lc or {
+            "has_submissions": False, "has_collection": False, "published": False
+        })
+        p["stage"] = stage
+        p["stage_label"] = STAGE_LABELS[stage]
+        p["stage_index"] = STAGE_ORDER.index(stage)
+        p["progress"] = {
+            "respondents": (lc or {}).get("respondents", 0),
+            "submitted": (lc or {}).get("submitted", 0),
+        }
+
+    # 중요(pinned) 우선, 그다음 기존 정렬(updated_at desc) 유지.
+    out.sort(key=lambda p: (0 if p["pinned"] else 1))
+    return out
 
 
 @router.post("/api/projects")
@@ -97,6 +175,7 @@ async def create_project(request: Request):
         "title": title,
         "description": (body.get("description") or "").strip(),
         "status": "draft",
+        "pinned": False,
         "settings": dict(DEFAULT_SETTINGS),
         "settings_locked": False,
         "created_at": now,
@@ -159,6 +238,8 @@ async def update_project(project_id: str, request: Request):
         patch["description"] = (body["description"] or "").strip()
     if "status" in body and body["status"] in STATUS_LABELS:
         patch["status"] = body["status"]
+    if "pinned" in body:
+        patch["pinned"] = bool(body["pinned"])
     if not patch:
         raise HTTPException(400, "변경할 내용이 없습니다")
     patch["updated_at"] = _now()
