@@ -202,9 +202,9 @@ button{font-family:inherit}
 .rg-move{font-size:11.5px;color:var(--r-muted);line-height:1.45}
 .rg-move b{color:var(--r-ink)}
 .rg-go{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--r-accent)}
-.pair-row.flash{animation:pairflash 1.2s ease}
+.pair-row.flash,.bwm-vrow.flash{animation:pairflash 1.2s ease}
 @keyframes pairflash{0%,100%{box-shadow:none}20%,60%{box-shadow:0 0 0 3px color-mix(in srgb,var(--r-accent) 45%,transparent)}}
-@media (prefers-reduced-motion:reduce){.pair-row.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--r-accent) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){.pair-row.flash,.bwm-vrow.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--r-accent) 45%,transparent)}}
 
 .review-pairs{display:flex;flex-direction:column;gap:10px;padding-top:6px}
 .review-pair-row{border:1.5px solid var(--r-border);border-radius:14px;background:var(--r-surface);

@@ -1,4 +1,6 @@
 .designer-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+/* 그리드 자식은 기본 min-width:auto 라 트리가 깊어지면 칸을 밀어내 페이지가 틀어진다 */
+.designer-layout>.table-card{min-width:0}
 @media (max-width:900px){.designer-layout{grid-template-columns:1fr}}
 
 /* 노드 인스펙터 (오른쪽 패널) */
@@ -30,7 +32,7 @@
 .warn-item{background:rgba(224,138,46,.1);border:1px solid rgba(224,138,46,.3);
   color:var(--warn);border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:10px}
 
-.tree-root{padding:10px}
+.tree-root{padding:10px;overflow-x:auto}
 .tree-node{border-radius:10px}
 .tree-node-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;
   cursor:default}
