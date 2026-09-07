@@ -314,8 +314,8 @@
         '<span>' + (q.desc_b ? esc(q.name_b) + ': ' + esc(q.desc_b) : '') + '</span></div>'
       : '';
     const badge = opts.suggestBadge
-      ? '<div class="pair-suggest">⚠ 가장 모순적인 응답 · 추천 ' +
-        (opts.given ? esc(opts.given) + ' → ' : '') + '<b>' + esc(opts.suggest) + '</b></div>'
+      ? '<div class="pair-suggest">⚠ ' + (opts.rank ? opts.rank + '순위 재고 · ' : '') +
+        '지금 ' + esc(opts.given || '?') + ' → 권장 <b>' + esc(opts.suggest || '?') + '</b></div>'
       : '';
     return '<div class="pair-row' + (opts.worst ? ' worst' : '') + '" data-mid="' + q.group_id +
       '" data-a="' + q.uuid_a + '" data-b="' + q.uuid_b + '">' +
@@ -429,10 +429,14 @@
         worstSet = worstSet || {};
         return pairsOfMatrix(group.group_id).map(function (q) {
           const w = worstSet[pairId(q.uuid_a, q.uuid_b)];
-          return renderPairScaleRow(q, w ? {
-            worst: true, suggestBadge: true,
-            given: w.given_label || fmtValue(pairValue(q)), suggest: w.suggested_label,
-          } : {});
+          const a = q.name_a, b = q.name_b;
+          return renderPairScaleRow(q, (w && typeof w === 'object') ? {
+            worst: true, suggestBadge: true, rank: w.rank,
+            given: w.given_value != null ? directionPhrase(a, b, w.given_value)
+              : (w.given_label || fmtValue(pairValue(q))),
+            suggest: w.suggested_value != null ? directionPhrase(a, b, w.suggested_value)
+              : w.suggested_label,
+          } : (w ? { worst: true } : {}));
         }).join('');
       },
       isComplete: function (group) {
@@ -936,8 +940,8 @@
     reviewWorstPids = {};
     const m = matrixView(groupId);
     if (revisionGroupId === groupId && (!m || m.kind !== 'bwm')) {
-      revisionWorst.forEach(function (w) {
-        reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = w;
+      revisionWorst.slice(0, 3).forEach(function (w, i) {
+        reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = Object.assign({ rank: i + 1 }, w);
       });
     }
     document.getElementById('reviewTitle').textContent =
@@ -951,6 +955,43 @@
     const m = matrixView(reviewGroupId) || { group_id: reviewGroupId, children: [] };
     document.getElementById('reviewPairs').innerHTML =
       rendererFor(m).renderBody(m, reviewWorstPids);
+    renderReviewGuide();
+  }
+
+  // 쌍대비교 값 v(=A가 B보다 몇 배)를 사람이 읽는 방향·강도 문구로.
+  function directionPhrase(nameA, nameB, v) {
+    if (v == null) return '-';
+    if (Math.abs(v - 1) < 0.05) return '두 항목이 비슷하게 중요';
+    if (v > 1) return '‘' + nameA + '’이 약 ' + (Math.round(v * 10) / 10) + '배 더 중요';
+    return '‘' + nameB + '’이 약 ' + (Math.round((1 / v) * 10) / 10) + '배 더 중요';
+  }
+
+  // 모순이 큰 답 최대 3개에 대해 "지금 → 권장" 방향·강도를 하단에 안내.
+  function renderReviewGuide() {
+    const box = document.getElementById('reviewGuide');
+    const m = matrixView(reviewGroupId);
+    const list = Object.keys(reviewWorstPids)
+      .map(function (k) { return reviewWorstPids[k]; })
+      .filter(function (w) { return w && typeof w === 'object' && w.uuid_a; })
+      .sort(function (a, b) { return (a.rank || 9) - (b.rank || 9); })
+      .slice(0, 3);
+    if ((m && m.kind === 'bwm') || !list.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = '<div class="rg-head">조정 가이드 · 모순이 큰 답부터</div>' +
+      list.map(function (w, i) {
+        const a = nodeNameByUuid(w.uuid_a), b = nodeNameByUuid(w.uuid_b);
+        const now = w.given_value != null
+          ? directionPhrase(a, b, w.given_value)
+          : (w.given_label || '');
+        const rec = w.suggested_value != null
+          ? directionPhrase(a, b, w.suggested_value)
+          : (w.suggested_label || '');
+        return '<button type="button" class="rg-row" data-a="' + w.uuid_a + '" data-b="' + w.uuid_b + '">' +
+          '<span class="rg-rank">' + (w.rank || i + 1) + '</span>' +
+          '<span class="rg-body"><span class="rg-pair">' + esc(a) + ' ↔ ' + esc(b) + '</span>' +
+          '<span class="rg-move">지금 ' + esc(now) + ' → 권장 <b>' + esc(rec) + '</b></span></span>' +
+          '<span class="rg-go">이동 ▸</span></button>';
+      }).join('');
   }
 
   function currentOverrides() {
@@ -969,17 +1010,18 @@
         });
         if (!res.ok) return;
         reviewEval = await res.json();
-        // worst 힌트를 서버 최신값으로 갱신
+        // worst 힌트를 서버 최신값으로 갱신 — 모순이 큰 순서로 최대 3개.
         reviewWorstPids = {};
         const rm = matrixView(reviewGroupId);
         if (rm && rm.kind === 'bwm') {
           (reviewEval.locus || []).forEach(function (iid) { reviewWorstPids[iid] = true; });
         } else {
-          (reviewEval.worst_pairs || []).slice(0, 1).forEach(function (w) {
-            reviewWorstPids[w.pair_id] = w;
+          (reviewEval.worst_pairs || []).slice(0, 3).forEach(function (w, i) {
+            reviewWorstPids[w.pair_id] = Object.assign({ rank: i + 1 }, w);
           });
         }
         renderReviewPairs();
+        renderReviewGuide();
         renderReviewChart();
       } catch (e) { /* ignore */ }
     }, 250);
@@ -1137,6 +1179,23 @@
     document.getElementById('crSummaryList').addEventListener('click', function (e) {
       const row = e.target.closest('.cr-summary-row');
       if (row) enterReview(row.dataset.matrix);
+    });
+    document.getElementById('reviewGuide').addEventListener('click', function (e) {
+      const row = e.target.closest('.rg-row');
+      if (!row) return;
+      const a = row.dataset.a, b = row.dataset.b;
+      const target = Array.prototype.find.call(
+        document.querySelectorAll('#reviewPairs .pair-row'),
+        function (el) {
+          return (el.dataset.a === a && el.dataset.b === b) ||
+            (el.dataset.a === b && el.dataset.b === a);
+        }
+      );
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('flash');
+        setTimeout(function () { target.classList.remove('flash'); }, 1200);
+      }
     });
     document.getElementById('reviewBackBtn').addEventListener('click', function () { showDone(); });
     document.getElementById('reviewDoneBtn').addEventListener('click', async function () {
