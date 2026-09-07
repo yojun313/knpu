@@ -137,6 +137,9 @@ def build_results(
     alternative_scores = synthesize_alternatives(
         groups, local_weights_by_matrix, global_w
     )
+    alt_breakdown = alternative_breakdown(
+        groups, local_weights_by_matrix, global_w, node_name
+    )
 
     per_respondent_result = {
         rid: _one_respondent_result(
@@ -159,6 +162,7 @@ def build_results(
         "bwm": bwm_by_group,
         "group_cr": group_cr_by_matrix,
         "per_respondent": per_respondent_result,
+        "alternative_breakdown": alt_breakdown,
     }
 
 
@@ -183,6 +187,41 @@ def synthesize_alternatives(
     if total > 0:
         scores = {k: v / total for k, v in scores.items()}
     return scores
+
+
+def alternative_breakdown(
+    groups: list[dict],
+    local_weights_by_matrix: dict[str, dict],
+    global_weights_: dict[str, float],
+    node_name: dict[str, str],
+) -> dict[str, dict]:
+    """대안별 합성 과정 — 리프 기준마다 (리프 전역가중치 × 대안 국소가중치 =
+    기여)를 남긴다. `synthesize_alternatives` 가 버리는 중간 계산(4.2)."""
+    by_alt: dict[str, dict] = {}
+    for m in groups:
+        if not m.get("is_alternative"):
+            continue
+        leaf_uuid = m["parent_uuid"]
+        leaf_g = global_weights_.get(leaf_uuid, 0.0)
+        alt_local = local_weights_by_matrix.get(m["group_id"], {})
+        for aid, w in alt_local.items():
+            entry = by_alt.setdefault(aid, {"rows": [], "raw_total": 0.0})
+            contribution = leaf_g * w
+            entry["rows"].append(
+                {
+                    "leaf_uuid": leaf_uuid,
+                    "leaf_name": node_name.get(leaf_uuid, leaf_uuid),
+                    "leaf_global_w": leaf_g,
+                    "alt_local_w": w,
+                    "contribution": contribution,
+                }
+            )
+            entry["raw_total"] += contribution
+    grand = sum(e["raw_total"] for e in by_alt.values())
+    for aid, e in by_alt.items():
+        e["rows"].sort(key=lambda r: -r["contribution"])
+        e["score"] = (e["raw_total"] / grand) if grand > 0 else 0.0
+    return by_alt
 
 
 def _one_respondent_result(

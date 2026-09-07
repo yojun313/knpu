@@ -59,6 +59,30 @@
 
   function matrixParentName(mid) { return (results.matrix_parent_names || {})[mid] || mid; }
 
+  // 대안 최종 점수가 어떻게 합성됐는지 — 리프 기준별 (전역가중치 × 지역가중치) 기여.
+  function renderAltBreakdown() {
+    const box = document.getElementById('altBreakdown');
+    if (!box) return;
+    const bd = results.alternative_breakdown || {};
+    const aids = Object.keys(bd).sort(function (a, b) { return (bd[b].score || 0) - (bd[a].score || 0); });
+    if (!aids.length) { box.innerHTML = ''; return; }
+    box.innerHTML = aids.map(function (aid) {
+      const e = bd[aid];
+      const rows = (e.rows || []).map(function (r) {
+        return '<tr><td>' + ahpEsc(r.leaf_name) + '</td>' +
+          '<td>' + (r.leaf_global_w * 100).toFixed(1) + '%</td>' +
+          '<td>' + (r.alt_local_w * 100).toFixed(1) + '%</td>' +
+          '<td>' + (r.contribution * 100).toFixed(2) + '%</td></tr>';
+      }).join('');
+      return '<details class="alt-bd"><summary>' + ahpEsc(altNames[aid] || aid) +
+        ' <span class="muted">— 합성 점수 ' + ((e.score || 0) * 100).toFixed(1) + '%</span></summary>' +
+        '<table class="alt-bd-table"><thead><tr><th>리프 기준</th><th>전역 가중치</th>' +
+        '<th>대안 지역 가중치</th><th>기여</th></tr></thead><tbody>' + rows +
+        '<tr class="alt-bd-total"><td>합계 (정규화 전)</td><td>–</td><td>–</td><td>' +
+        ((e.raw_total || 0) * 100).toFixed(2) + '%</td></tr></tbody></table></details>';
+    }).join('');
+  }
+
   function renderConsensus() {
     const box = document.getElementById('consensusList');
     const groupIds = Object.keys(results.consensus || {});
@@ -321,6 +345,7 @@
     document.getElementById('altRankCard').hidden = !hasAlts;
     if (hasAlts) {
       renderWeightChart(document.getElementById('altRankChart'), altScores, altNames);
+      renderAltBreakdown();
     }
 
     const proj = await ahpApi('/api/projects/' + projectId);
