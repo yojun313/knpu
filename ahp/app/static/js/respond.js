@@ -966,12 +966,20 @@
     return '‘' + nameB + '’이 약 ' + (Math.round((1 / v) * 10) / 10) + '배 더 중요';
   }
 
+  // 이번 what-if 결과가 이미 일관성 기준을 충족하면(가이드 불필요) true.
+  function crWithinThreshold() {
+    return !!(reviewEval && !reviewEval.incomplete &&
+      reviewEval.cr != null && reviewEval.cr_threshold != null &&
+      reviewEval.cr <= reviewEval.cr_threshold);
+  }
+
   // BWM 응답 강도(1~9)를 일관된 값으로 되돌릴 방향·크기 안내.
   function bwmStep(v) {
     if (v == null || !isFinite(v)) return null;
     return Math.max(1, Math.min(9, Math.round(v * 2) / 2));
   }
   function renderBwmGuide(box) {
+    if (crWithinThreshold()) { box.hidden = true; box.innerHTML = ''; return; }
     const gid = reviewGroupId;
     const best = bwmVal(gid, 'best'), worst = bwmVal(gid, 'worst');
     const w = (reviewEval && reviewEval.weights) || {};
@@ -1011,6 +1019,7 @@
     const box = document.getElementById('reviewGuide');
     const m = matrixView(reviewGroupId);
     if (m && m.kind === 'bwm') { renderBwmGuide(box); return; }
+    if (crWithinThreshold()) { box.hidden = true; box.innerHTML = ''; return; }
     const list = Object.keys(reviewWorstPids)
       .map(function (k) { return reviewWorstPids[k]; })
       .filter(function (w) { return w && typeof w === 'object' && w.uuid_a; })
@@ -1051,15 +1060,17 @@
         });
         if (!res.ok) return;
         reviewEval = await res.json();
-        // worst 힌트를 서버 최신값으로 갱신 — 모순이 큰 순서로 최대 3개.
+        // 일관성 기준을 이미 충족하면 "가장 모순적인 답" 강조·가이드를 띄우지 않는다.
         reviewWorstPids = {};
         const rm = matrixView(reviewGroupId);
-        if (rm && rm.kind === 'bwm') {
-          (reviewEval.locus || []).forEach(function (iid) { reviewWorstPids[iid] = true; });
-        } else {
-          (reviewEval.worst_pairs || []).slice(0, 3).forEach(function (w, i) {
-            reviewWorstPids[w.pair_id] = Object.assign({ rank: i + 1 }, w);
-          });
+        if (!crWithinThreshold()) {
+          if (rm && rm.kind === 'bwm') {
+            (reviewEval.locus || []).forEach(function (iid) { reviewWorstPids[iid] = true; });
+          } else {
+            (reviewEval.worst_pairs || []).slice(0, 3).forEach(function (w, i) {
+              reviewWorstPids[w.pair_id] = Object.assign({ rank: i + 1 }, w);
+            });
+          }
         }
         renderReviewPairs();
         renderReviewGuide();

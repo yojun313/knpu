@@ -1,6 +1,8 @@
 .designer-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
 /* 그리드 자식은 기본 min-width:auto 라 트리가 깊어지면 칸을 밀어내 페이지가 틀어진다 */
 .designer-layout>.table-card{min-width:0}
+/* 두 카드 헤더 높이를 맞춰 본문(트리 첫 행 / 이름 입력)이 같은 선에서 시작하게 */
+.designer-layout>.table-card>.tc-head{min-height:47px;box-sizing:border-box}
 @media (max-width:900px){.designer-layout{grid-template-columns:1fr}}
 
 /* 노드 인스펙터 (오른쪽 패널) */
