@@ -95,6 +95,52 @@
     }).join('');
   }
 
+  // ── 개인별 결과 (델파이) ──────────────────────────────────────────────
+  function _withoutRoot(w) {
+    const out = {};
+    Object.keys(w || {}).forEach(function (k) { if (w[k] < 0.9999) out[k] = w[k]; });
+    return out;
+  }
+  function renderPerRespondent() {
+    const card = document.getElementById('perRespondentCard');
+    const pr = results.per_respondent || {};
+    const rids = Object.keys(pr);
+    if (!rids.length) { card.hidden = true; return; }
+    card.hidden = false;
+    const sel = document.getElementById('prRespondentSelect');
+    const prev = sel.value;
+    sel.innerHTML = rids.map(function (rid, i) {
+      return '<option value="' + rid + '">응답자 ' + (i + 1) + ' · ' + ahpEsc(rid.slice(0, 6)) + '</option>';
+    }).join('');
+    if (prev && rids.indexOf(prev) !== -1) sel.value = prev;
+    renderPrBody(sel.value);
+  }
+  function renderPrBody(rid) {
+    const box = document.getElementById('prBody');
+    const one = (results.per_respondent || {})[rid];
+    if (!one) { box.innerHTML = ''; return; }
+    const hasAlt = Object.keys(one.alt_scores || {}).length > 0;
+    let h = '<div class="pr-sec"><h5>기준 종합 가중치</h5><div class="weight-chart" id="prGlobal"></div></div>';
+    if (hasAlt) h += '<div class="pr-sec"><h5>대안 평가 순위</h5><div class="weight-chart" id="prAlt"></div></div>';
+    const crg = one.cr_by_group || {};
+    const crKeys = Object.keys(crg);
+    if (crKeys.length) {
+      const thr = results.cr_threshold || 0.1;
+      const kinds = results.group_kinds || {};
+      h += '<div class="pr-sec"><h5>그룹별 일관성</h5><div class="group-cr-list">' +
+        crKeys.map(function (gid) {
+          const v = crg[gid];
+          const lbl = kinds[gid] === 'bwm' ? 'CR<sup>I</sup>' : 'CR';
+          const cls = v > thr ? 'cr-bad' : 'cr-ok';
+          return '<div class="gcr-row"><span class="gcr-name">' + ahpEsc(matrixParentName(gid)) + '</span>' +
+            '<span class="gcr-val ' + cls + '">' + lbl + ' ' + v.toFixed(3) + '</span></div>';
+        }).join('') + '</div></div>';
+    }
+    box.innerHTML = h;
+    renderWeightChart(document.getElementById('prGlobal'), _withoutRoot(one.global), results.node_names);
+    if (hasAlt) renderWeightChart(document.getElementById('prAlt'), one.alt_scores, results.node_names);
+  }
+
   function renderCrTable() {
     const table = document.getElementById('crTable');
     const kinds = results.group_kinds || {};
@@ -268,6 +314,7 @@
     renderBwmDistribution();
     renderGroupCr();
     renderCrTable();
+    renderPerRespondent();
 
     const altScores = results.alternative_scores || {};
     const hasAlts = Object.keys(altScores).length > 0;
@@ -419,6 +466,9 @@
     });
     document.getElementById('scopeApplyBtn').addEventListener('click', applyScopeSelection);
     document.getElementById('sensRunBtn').addEventListener('click', runSensitivity);
+    document.getElementById('prRespondentSelect').addEventListener('change', function (e) {
+      renderPrBody(e.target.value);
+    });
 
     document.getElementById('demoCardBody').addEventListener('click', function (e) {
       const chip = e.target.closest('.demo-chip');
