@@ -410,9 +410,16 @@
   function updateMethodDoc(m) {
     document.getElementById('methodDoc').textContent = METHOD_DOCS[m] || '';
   }
-  function criteriaParents() {
-    return ((methodsSurvey && methodsSurvey.groups) || [])
-      .filter(function (g) { return !g.is_alternative; });
+  // 기준 비교 그룹이 생기는 노드 = 자식이 있는 내부 노드. survey.groups(재생성
+  // 전이면 낡음)가 아니라 현재 계층(tree.nodes)에서 바로 뽑는다.
+  function criteriaParentNodes() {
+    const hasChild = new Set(
+      tree.nodes.filter(function (n) { return n.parent_id != null; })
+        .map(function (n) { return n.parent_id; })
+    );
+    return tree.nodes
+      .filter(function (n) { return hasChild.has(n.uuid); })
+      .sort(function (a, b) { return (a.level - b.level) || (a.order - b.order); });
   }
   function renderPerNodeList(show) {
     const box = document.getElementById('perNodeList');
@@ -420,11 +427,16 @@
     if (!show) { box.innerHTML = ''; return; }
     const enabled = checkedMethods();
     const crit = (methodsSurvey.methods || {}).criteria || {};
-    box.innerHTML = criteriaParents().map(function (g) {
-      const cur = crit[g.parent_uuid] || enabled[0];
-      const nm = (byId(g.parent_uuid) || {}).name || g.parent_uuid;
+    const parents = criteriaParentNodes();
+    if (!parents.length) {
+      box.innerHTML = '<p class="pn-empty">아직 하위 기준이 있는 항목이 없습니다.</p>';
+      return;
+    }
+    box.innerHTML = parents.map(function (n) {
+      const cur = crit[n.uuid] || enabled[0];
+      const nm = n.name || n.uuid;
       return '<div class="pn-row"><span class="pn-name">' + ahpEsc(nm) + '</span>' +
-        '<select class="pn-method" data-node="' + g.parent_uuid + '"' + (methodsLocked ? ' disabled' : '') + '>' +
+        '<select class="pn-method" data-node="' + n.uuid + '"' + (methodsLocked ? ' disabled' : '') + '>' +
         enabled.map(function (v) {
           return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' +
             (METHOD_LABEL[v] || v) + '</option>';
@@ -440,6 +452,9 @@
   }
 
   async function openMethodsModal() {
+    if (dirty && !confirm('저장하지 않은 계층 변경이 있습니다.\n계층을 먼저 저장해야 분석방법이 최신 항목에 정확히 배정됩니다.\n그대로 여시겠습니까?')) {
+      return;
+    }
     try {
       methodsSurvey = await ahpApi('/api/projects/' + projectId + '/survey');
     } catch (e) {
@@ -462,7 +477,7 @@
     }).join('');
     updateMethodDoc(enabled[0]);
 
-    const vals = criteriaParents().map(function (g) { return (m.criteria || {})[g.parent_uuid] || 'ahp'; });
+    const vals = criteriaParentNodes().map(function (n) { return (m.criteria || {})[n.uuid] || 'ahp'; });
     const common = (vals.length && vals.every(function (v) { return v === vals[0]; })) ? vals[0] : enabled[0];
     fillMethodSelect('criteriaMethodMaster', enabled, common);
     document.getElementById('criteriaPerNodeToggle').checked = perNode;
@@ -489,7 +504,7 @@
     if (methodsLocked) { document.getElementById('methodsModal').hidden = true; return; }
     const enabled = checkedMethods();
     const perNode = document.getElementById('criteriaPerNodeToggle').checked;
-    const parents = criteriaParents().map(function (g) { return g.parent_uuid; });
+    const parents = criteriaParentNodes().map(function (n) { return n.uuid; });
     const criteria = {};
     if (perNode) {
       document.querySelectorAll('#perNodeList .pn-method').forEach(function (el) {
