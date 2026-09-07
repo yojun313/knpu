@@ -94,6 +94,13 @@
     }
     box.innerHTML = grid.groups.map(function (m) {
       const answers = resp.answers[m.group_id] || {};
+      if (m.kind && m.kind !== 'pairwise') {
+        return '<div class="entry-matrix" data-matrix-block="' + m.group_id + '">' +
+          '<div class="entry-matrix-head"><h4><span class="badge" style="margin-right:6px">' +
+          ahpEsc(String(m.kind).toUpperCase()) + '</span>' + ahpEsc(m.parent_name) + '</h4></div>' +
+          '<p style="color:var(--sidebar-muted);font-size:12px;padding:8px 4px">' +
+          '이 항목은 격자 입력을 지원하지 않습니다. <b>CSV 반입</b>으로 입력해 주세요.</p></div>';
+      }
       const rows = m.pairs.map(function (p) {
         const pid = [p.uuid_a, p.uuid_b].sort().join(':');
         const nameA = (m.children.find(function (c) { return c.uuid === p.uuid_a; }) || {}).name || p.uuid_a;
