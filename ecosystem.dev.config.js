@@ -41,7 +41,7 @@ module.exports = {
     app("kemkim-dev", "kemkim", "kemkim"),
     app("statistics-dev", "statistics", "statistics"),
     app("manager_web-dev", "manager/web", "progress"),
-    app("ahp-dev", "ahp", "ahp"),
+    app("mcdm-dev", "ahp", "mcdm"),
     app("complaint-dev", "complaint/server", "complaint"),
     app("dashboard-dev", "admin", "dashboard"),
   ],
