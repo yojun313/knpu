@@ -36,8 +36,12 @@ for _p in (_REPO_ROOT, _AHP_DIR):
 
 from app.db import mongo_client  # noqa: E402  (연결/터널 설정 재사용)
 
-SRC_NAME = "ahp"
-DST_NAME = os.getenv("AHP_DB_NAME", "mcdm")
+# 기본: 운영 ahp → mcdm.
+# 개발 시드는  MODE=0 AHP_SRC_DB=ahp_dev  로 실행 → ahp_dev → mcdm_dev.
+SRC_NAME = os.getenv("AHP_SRC_DB", "ahp")
+DST_NAME = os.getenv("AHP_DB_NAME") or (
+    "mcdm_dev" if os.getenv("MODE", "1") == "0" else "mcdm"
+)
 
 COLLECTIONS = [
     "projects",

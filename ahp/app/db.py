@@ -47,10 +47,17 @@ else:
 
 mongo_client = _client = AsyncIOMotorClient(_mongo_uri)
 
-# PolyDecision 0단계부터 새 DB 이름 `mcdm` 을 쓴다. 구 `ahp` DB는 롤백/이력용으로
-# 손대지 않고 남겨두고, scripts/migrate_ahp_to_mcdm.py 가 `ahp` → `mcdm` 로 변환
-# 복사한다. AHP_DB_NAME 으로 재정의 가능(로컬에서 구 DB를 직접 보고 싶을 때 등).
-DB_NAME = os.getenv("AHP_DB_NAME", "mcdm")
+# PolyDecision 0단계부터 새 DB 이름을 쓴다. 구 `ahp`(운영) / `ahp_dev`(개발) DB는
+# 롤백·이력용으로 손대지 않고 남기고, scripts/migrate_ahp_to_mcdm.py 가 변환 복사한다.
+#   운영(MODE=1): `mcdm`      ← ahp
+#   개발(MODE=0): `mcdm_dev`  ← ahp_dev   (개발 테스트가 운영 데이터를 건드리지 않게 분리.
+#                                          이 서비스는 원래 ahp_dev 로 dev DB 가 분리돼 있었다.)
+# AHP_DB_NAME 으로 명시 재정의 가능(로컬에서 특정 DB 를 직접 볼 때 등).
+try:
+    from system.endpoints import IS_DEV as _IS_DEV
+except Exception:  # endpoints 미로딩 환경 방어
+    _IS_DEV = os.getenv("MODE", "1") == "0"
+DB_NAME = os.getenv("AHP_DB_NAME") or ("mcdm_dev" if _IS_DEV else "mcdm")
 
 mcdm_db = _client[DB_NAME]
 projects_db = mcdm_db["projects"]
