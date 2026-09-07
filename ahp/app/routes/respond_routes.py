@@ -20,7 +20,7 @@ from app.db import (
     projects_db,
 )
 from app.services.codes import hash_code
-from app.services.ahp_calc import pair_id, to_stored_pair
+from app.services.ahp_calc import pair_id
 from app.services.csv_schema import group_item_count, group_item_slots
 from app.services.methods import KIND_VALIDATORS, get_method
 from app.services.hub import hub
@@ -78,9 +78,11 @@ def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
                 "method": m.get("method", "ahp"),
                 "scale": m.get("scale", 9),
                 "children": children,
-                "pairs": [
-                    {"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)
-                ],
+                "pairs": (
+                    [{"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)]
+                    if m.get("kind", "pairwise") == "pairwise"
+                    else []
+                ),
             }
         )
     return out
@@ -196,6 +198,10 @@ def _resolve_display_answers(matrices_view: list[dict], raw_answers: dict) -> di
     out = {}
     for m in matrices_view:
         stored = raw_answers.get(m["group_id"], {})
+        if m.get("kind", "pairwise") != "pairwise":
+            # 쌍대비교가 아니면 방향(역수) 개념이 없다 — 저장값을 그대로 돌려준다.
+            out[m["group_id"]] = dict(stored)
+            continue
         resolved = {}
         for p in m["pairs"]:
             pid = pair_id(p["uuid_a"], p["uuid_b"])
@@ -292,6 +298,13 @@ async def put_answer(token: str, request: Request):
         raise HTTPException(400, "응답 형식이 올바르지 않습니다")
     answers = dict(resp.get("answers", {}))
     matrix_answers = dict(answers.get(group_id, {}))
+    if kind in ("pick_best", "pick_worst"):
+        # Best/Worst가 바뀌면 BO/OW 벡터의 의미가 무효화된다 — 다시 응답받는다.
+        matrix_answers = {
+            k: v
+            for k, v in matrix_answers.items()
+            if not k.startswith("BO:") and not k.startswith("OW:")
+        }
     matrix_answers[item_id] = stored_value
     answers[group_id] = matrix_answers
 
@@ -330,9 +343,10 @@ async def put_answer(token: str, request: Request):
 
     lr = get_method(matrix.get("method")).derive_local(matrix, matrix_answers)
     if lr.complete:
+        _c = lr.consistency
         cr_info = {
             "complete": True,
-            "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+            "cr": _c.value if _c else None,
         }
         if (respondent or {}).get("revision_group_id") == group_id:
             await respondents_db.update_one(
@@ -405,35 +419,29 @@ async def group_eval(token: str, request: Request):
         {"collection_id": collection["_id"], "respondent_id": payload["respondent_id"]}
     )
     stored = dict((resp or {}).get("answers", {}).get(group_id, {}))
-    for ov in body.get("overrides") or []:
-        try:
-            pid, sv = to_stored_pair(
-                ov["uuid_a"], ov["uuid_b"], float(ov["value_a_over_b"])
-            )
-        except (KeyError, TypeError, ValueError):
-            continue
-        stored[pid] = sv
 
     names = {cid: nodes_by_id.get(cid, {}).get("name", cid) for cid in node_ids}
     plugin = get_method(matrix.get("method"))
-    lr = plugin.derive_local(matrix, stored)
+    # overrides 적용은 플러그인 몫 — pairwise: [{uuid_a,uuid_b,value_a_over_b}],
+    # bwm: [{item_id, value}]. group_eval 은 저장하지 않는다.
+    lr = plugin.derive_local(matrix, stored, overrides=body.get("overrides"))
     if not lr.complete:
-        n = len(node_ids)
         return {
             "incomplete": True,
-            "missing": max(n * (n - 1) // 2 - len(stored), 0),
             "child_uuids": node_ids,
             "names": names,
         }
 
+    cons = lr.consistency
     return {
         "incomplete": False,
         "child_uuids": node_ids,
         "names": names,
         "weights": lr.weights,
         "ranking": lr.ranking,
-        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
-        "worst_pairs": lr.consistency.detail if lr.consistency else [],
+        "cr": (cons.value if cons else None),
+        "worst_pairs": cons.detail if cons else [],
+        "locus": cons.locus if cons else [],
     }
 
 
@@ -536,7 +544,7 @@ async def respond_summary(token: str, request: Request):
             {
                 "group_id": m["group_id"],
                 "parent_name": m["parent_name"],
-                "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+                "cr": lr.consistency.value if lr.consistency else None,
                 "worst_pair": worst_pair,
             }
         )

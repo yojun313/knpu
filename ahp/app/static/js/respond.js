@@ -223,7 +223,7 @@
     return (k in answers) ? answers[k] : null;
   }
   function matrixComplete(m) {
-    return pairsOfMatrix(m.group_id).every(function (q) { return pairValue(q) !== null; });
+    return rendererFor(m).isComplete(m);
   }
   function firstIncompleteMatrixIndex() {
     const i = activeMatrices.findIndex(function (m) { return !matrixComplete(m); });
@@ -326,14 +326,135 @@
       '<div class="scale">' + cells + '</div></div>';
   }
 
-  // kind별 렌더러 레지스트리 — 0단계에는 pairwise 하나뿐. BWM/직접평정 등은
-  // 여기 항목만 추가하면 설문·리뷰 화면이 그대로 dispatch한다.
-  //   items(group)      : 이 그룹의 응답 항목(질문) 목록
-  //   renderItem(q,opts) : 항목 하나를 HTML 문자열로 (opts는 리뷰 화면 강조용)
+  // ── BWM 렌더러 보조 ───────────────────────────────────────────────────
+  function bwmVal(gid, itemId) {
+    const k = gid + '::' + itemId;
+    return (k in answers) ? answers[k] : null;
+  }
+  function bwmNames(group) {
+    const nm = {};
+    (group.children || []).forEach(function (c) { nm[c.uuid] = c.name; });
+    return nm;
+  }
+  function bwmScaleRow(gid, itemId, cur) {
+    let cells = '';
+    for (let n = 1; n <= 9; n++) {
+      cells += '<button type="button" class="bwm-scale-cell' +
+        (cur === n ? ' on' : '') + '" data-v="' + n + '">' + n + '</button>';
+    }
+    return '<div class="scale bwm-scale">' + cells + '</div>';
+  }
+  function bwmRenderBody(group, worstSet) {
+    worstSet = worstSet || {};
+    const gid = group.group_id, nm = bwmNames(group);
+    const kids = (group.children || []).map(function (c) { return c.uuid; });
+    const best = bwmVal(gid, 'best'), worst = bwmVal(gid, 'worst');
+    let h = '';
+
+    // 1) Best 선택
+    h += '<div class="bwm-step"><div class="bwm-q">가장 <b>중요한</b> 항목</div><div class="bwm-pick-row">' +
+      kids.map(function (u) {
+        return '<button type="button" class="bwm-pick' + (best === u ? ' on' : '') +
+          '" data-item="best" data-v="' + u + '">' + esc(nm[u] || u) + '</button>';
+      }).join('') + '</div></div>';
+
+    // 2) Worst 선택 (Best 고른 뒤)
+    if (best) {
+      h += '<div class="bwm-step"><div class="bwm-q">가장 <b>덜 중요한</b> 항목</div><div class="bwm-pick-row">' +
+        kids.filter(function (u) { return u !== best; }).map(function (u) {
+          return '<button type="button" class="bwm-pick' + (worst === u ? ' on' : '') +
+            '" data-item="worst" data-v="' + u + '">' + esc(nm[u] || u) + '</button>';
+        }).join('') + '</div></div>';
+    } else {
+      h += '<p class="bwm-hint">먼저 가장 중요한 항목을 고르세요.</p>';
+    }
+
+    // 3) Best-to-Others · 4) Others-to-Worst 벡터 (Best·Worst 모두 고른 뒤)
+    if (best && worst && best !== worst) {
+      h += '<div class="bwm-vecs"><div class="bwm-q">‘' + esc(nm[best]) +
+        '’이(가) 각 항목보다 얼마나 더 중요합니까? <span class="bwm-note">1=비슷 · 9=압도적</span></div>';
+      kids.filter(function (u) { return u !== best; }).forEach(function (u) {
+        const it = 'BO:' + u;
+        h += '<div class="bwm-vrow' + (worstSet[it] ? ' worst' : '') + '" data-item="' + it + '">' +
+          '<span class="bwm-vlabel">‘' + esc(nm[best]) + '’ vs ‘' + esc(nm[u]) + '’</span>' +
+          bwmScaleRow(gid, it, bwmVal(gid, it)) + '</div>';
+      });
+      h += '<div class="bwm-q" style="margin-top:14px">각 항목이 ‘' + esc(nm[worst]) +
+        '’보다 얼마나 더 중요합니까?</div>';
+      kids.filter(function (u) { return u !== worst; }).forEach(function (u) {
+        const it = 'OW:' + u;
+        h += '<div class="bwm-vrow' + (worstSet[it] ? ' worst' : '') + '" data-item="' + it + '">' +
+          '<span class="bwm-vlabel">‘' + esc(nm[u]) + '’ vs ‘' + esc(nm[worst]) + '’</span>' +
+          bwmScaleRow(gid, it, bwmVal(gid, it)) + '</div>';
+      });
+      h += '</div>';
+    }
+    return h;
+  }
+  function bwmComplete(group) {
+    const gid = group.group_id;
+    const b = bwmVal(gid, 'best'), w = bwmVal(gid, 'worst');
+    if (!b || !w || b === w) return false;
+    return (group.children || []).every(function (c) {
+      if (c.uuid !== b && bwmVal(gid, 'BO:' + c.uuid) == null) return false;
+      if (c.uuid !== w && bwmVal(gid, 'OW:' + c.uuid) == null) return false;
+      return true;
+    });
+  }
+  function bwmAnswered(group) {
+    const p = group.group_id + '::';
+    return Object.keys(answers).filter(function (k) { return k.indexOf(p) === 0; }).length;
+  }
+  function bwmOverrides(group) {
+    const gid = group.group_id, out = [];
+    ['best', 'worst'].forEach(function (it) {
+      const v = bwmVal(gid, it); if (v != null) out.push({ item_id: it, value: v });
+    });
+    (group.children || []).forEach(function (c) {
+      ['BO:' + c.uuid, 'OW:' + c.uuid].forEach(function (it) {
+        const v = bwmVal(gid, it); if (v != null) out.push({ item_id: it, value: v });
+      });
+    });
+    return out;
+  }
+
+  // ── kind별 렌더러 레지스트리 ──────────────────────────────────────────
+  //   renderBody(group, worstSet)  : #pairList / #reviewPairs 본문 HTML
+  //   isComplete(group)            : 이 그룹 응답이 완료됐는가
+  //   answered(group) / total(group): 진행률
+  //   overrides(group)             : group-eval what-if 페이로드
   const RENDERERS = {
     pairwise: {
-      items: function (group) { return pairsOfMatrix(group.group_id); },
-      renderItem: function (q, opts) { return renderPairScaleRow(q, opts); },
+      renderBody: function (group, worstSet) {
+        worstSet = worstSet || {};
+        return pairsOfMatrix(group.group_id).map(function (q) {
+          const w = worstSet[pairId(q.uuid_a, q.uuid_b)];
+          return renderPairScaleRow(q, w ? {
+            worst: true, suggestBadge: true,
+            given: w.given_label || fmtValue(pairValue(q)), suggest: w.suggested_label,
+          } : {});
+        }).join('');
+      },
+      isComplete: function (group) {
+        return pairsOfMatrix(group.group_id).every(function (q) { return pairValue(q) !== null; });
+      },
+      answered: function (group) {
+        return pairsOfMatrix(group.group_id).filter(function (q) { return pairValue(q) !== null; }).length;
+      },
+      total: function (group) { return pairsOfMatrix(group.group_id).length; },
+      overrides: function (group) {
+        return pairsOfMatrix(group.group_id).map(function (q) {
+          const v = pairValue(q);
+          return v == null ? null : { uuid_a: q.uuid_a, uuid_b: q.uuid_b, value_a_over_b: v };
+        }).filter(Boolean);
+      },
+    },
+    bwm: {
+      renderBody: bwmRenderBody,
+      isComplete: bwmComplete,
+      answered: bwmAnswered,
+      total: function (group) { return 2 * (group.children || []).length; },
+      overrides: bwmOverrides,
     },
   };
   function rendererFor(group) {
@@ -347,9 +468,7 @@
     document.getElementById('qParentDesc').textContent = m.parent_description || '';
     document.getElementById('qParentDesc').hidden = !m.parent_description;
     document.getElementById('qQuestionText').textContent = m.question_text;
-    const R = rendererFor(m);
-    document.getElementById('pairList').innerHTML = R.items(m)
-      .map(function (q) { return R.renderItem(q); }).join('');
+    document.getElementById('pairList').innerHTML = rendererFor(m).renderBody(m);
     document.getElementById('qCounter').textContent =
       (currentMatrixIndex + 1) + ' / ' + activeMatrices.length + ' 기준';
     document.getElementById('prevBtn').disabled = currentMatrixIndex === 0;
@@ -376,7 +495,8 @@
   function updateProgress() {
     let total = 0, done = 0;
     activeMatrices.forEach(function (m) {
-      pairsOfMatrix(m.group_id).forEach(function (q) { total += 1; if (pairValue(q) !== null) done += 1; });
+      const R = rendererFor(m);
+      total += R.total(m); done += R.answered(m);
     });
     const pct = total ? Math.round(100 * done / total) : 100;
     document.getElementById('progressFill').style.width = pct + '%';
@@ -768,38 +888,28 @@
     reviewGroupId = groupId;
     rankFocus = 0;
     reviewWorstPids = {};
-    (revisionGroupId === groupId ? revisionWorst : []).forEach(function (w) {
-      reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = w;
-    });
-    const qs = pairsOfMatrix(groupId);
+    const m = matrixView(groupId);
+    if (revisionGroupId === groupId && (!m || m.kind !== 'bwm')) {
+      revisionWorst.forEach(function (w) {
+        reviewWorstPids[pairId(w.uuid_a, w.uuid_b)] = w;
+      });
+    }
     document.getElementById('reviewTitle').textContent =
-      (qs[0] && qs[0].is_alternative ? '대안 비교 · ' : '') + (qs[0] ? qs[0].parent_name : '');
+      (m && m.is_alternative ? '대안 비교 · ' : '') + (m ? m.parent_name : '');
     renderReviewPairs();
     show('viewReview');
     refreshReview();
   }
 
   function renderReviewPairs() {
-    const m = matrixView(reviewGroupId);
-    const R = rendererFor(m);
-    document.getElementById('reviewPairs').innerHTML = R.items(m || { group_id: reviewGroupId })
-      .map(function (q) {
-        const pid = pairId(q.uuid_a, q.uuid_b);
-        const w = reviewWorstPids[pid];
-        return R.renderItem(q, {
-          worst: !!w,
-          suggestBadge: !!w,
-          given: w ? (w.given_label || fmtValue(pairValue(q))) : '',
-          suggest: w ? w.suggested_label : '',
-        });
-      }).join('');
+    const m = matrixView(reviewGroupId) || { group_id: reviewGroupId, children: [] };
+    document.getElementById('reviewPairs').innerHTML =
+      rendererFor(m).renderBody(m, reviewWorstPids);
   }
 
   function currentOverrides() {
-    return pairsOfMatrix(reviewGroupId).map(function (q) {
-      const v = pairValue(q);
-      return v == null ? null : { uuid_a: q.uuid_a, uuid_b: q.uuid_b, value_a_over_b: v };
-    }).filter(Boolean);
+    const m = matrixView(reviewGroupId) || { group_id: reviewGroupId, children: [] };
+    return rendererFor(m).overrides(m);
   }
 
   function refreshReview() {
@@ -813,11 +923,16 @@
         });
         if (!res.ok) return;
         reviewEval = await res.json();
-        // worst 힌트를 서버 최신값으로 갱신(응답형 라벨 포함)
+        // worst 힌트를 서버 최신값으로 갱신
         reviewWorstPids = {};
-        (reviewEval.worst_pairs || []).slice(0, 1).forEach(function (w) {
-          reviewWorstPids[w.pair_id] = w;
-        });
+        const rm = matrixView(reviewGroupId);
+        if (rm && rm.kind === 'bwm') {
+          (reviewEval.locus || []).forEach(function (iid) { reviewWorstPids[iid] = true; });
+        } else {
+          (reviewEval.worst_pairs || []).slice(0, 1).forEach(function (w) {
+            reviewWorstPids[w.pair_id] = w;
+          });
+        }
         renderReviewPairs();
         renderReviewChart();
       } catch (e) { /* ignore */ }
@@ -828,7 +943,7 @@
     const el = document.getElementById('reviewChart');
     const crBar = document.getElementById('reviewCrBar');
     if (!reviewEval || reviewEval.incomplete) {
-      el.innerHTML = '<p class="muted" style="font-size:12.5px">모든 쌍을 응답하면 가중치·CR이 표시됩니다.</p>';
+      el.innerHTML = '<p class="muted" style="font-size:12.5px">모든 항목에 응답하면 가중치·CR이 표시됩니다.</p>';
       crBar.hidden = true;
       document.getElementById('rankFocusLabel').textContent = '';
       return;
@@ -875,6 +990,48 @@
     });
   }
 
+  // BWM 위젯 클릭(Best/Worst 선택 · 1~9 눈금). onPick(rerender) — rerender면 화면
+  // 전체를 다시 그려야 한다(다음 단계가 열리므로).
+  function bwmClickHandler(container, onPick) {
+    container.addEventListener('click', function (e) {
+      const gid = container.id === 'reviewPairs'
+        ? reviewGroupId
+        : (activeMatrices[currentMatrixIndex] || {}).group_id;
+      if (!gid) return;
+
+      const pick = e.target.closest('.bwm-pick');
+      if (pick && container.contains(pick)) {
+        const item = pick.dataset.item;                 // 'best' | 'worst'
+        const uuid = pick.dataset.v;
+        if (answers[gid + '::' + item] === uuid) return;
+        answers[gid + '::' + item] = uuid;
+        // Best/Worst가 바뀌면 벡터 응답 무효화(서버도 put_answer에서 동일 처리)
+        Object.keys(answers).forEach(function (k) {
+          if (k.indexOf(gid + '::BO:') === 0 || k.indexOf(gid + '::OW:') === 0) delete answers[k];
+        });
+        clientSeq += 1; localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
+        queueAnswer({
+          group_id: gid, kind: item === 'best' ? 'pick_best' : 'pick_worst',
+          value: uuid, client_seq: clientSeq,
+        });
+        onPick(true);
+        return;
+      }
+
+      const cell = e.target.closest('.bwm-scale-cell');
+      const row = e.target.closest('.bwm-vrow');
+      if (cell && row && container.contains(row)) {
+        const item = row.dataset.item;                  // 'BO:<uuid>' | 'OW:<uuid>'
+        const v = Number(cell.dataset.v);
+        row.querySelectorAll('.bwm-scale-cell').forEach(function (c) { c.classList.toggle('on', c === cell); });
+        answers[gid + '::' + item] = v;
+        clientSeq += 1; localStorage.setItem(STORAGE_SEQ_KEY, String(clientSeq));
+        queueAnswer({ group_id: gid, kind: 'vector', item_id: item, value: v, client_seq: clientSeq });
+        onPick(false);
+      }
+    });
+  }
+
   function init() {
     document.getElementById('consentCheck').addEventListener('change', function (e) {
       document.getElementById('consentNextBtn').disabled = !e.target.checked;
@@ -903,6 +1060,14 @@
       updateProgress(); updateNav(); refreshCrBar();
     });
     scaleClickHandler(document.getElementById('reviewPairs'), function () {
+      refreshReview();
+    });
+    bwmClickHandler(document.getElementById('pairList'), function (rerender) {
+      if (rerender) renderMatrixPage();
+      else { updateProgress(); updateNav(); refreshCrBar(); }
+    });
+    bwmClickHandler(document.getElementById('reviewPairs'), function (rerender) {
+      if (rerender) renderReviewPairs();
       refreshReview();
     });
 

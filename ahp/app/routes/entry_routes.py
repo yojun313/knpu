@@ -235,9 +235,10 @@ def _compute_cr_for_matrix(matrix: dict, answers: dict) -> dict:
     if not lr.complete:
         n = len(node_ids)
         return {"complete": False, "missing": max(n * (n - 1) // 2 - len(pairs), 0)}
+    _c = lr.consistency
     return {
         "complete": True,
-        "cr": lr.consistency.metrics.get("cr") if lr.consistency else None,
+        "cr": _c.value if _c else None,
         "weights": lr.weights,
     }
 
@@ -270,6 +271,12 @@ async def put_answer(collection_id: str, request: Request):
 
     answers = dict(resp.get("answers", {}))
     matrix_answers = dict(answers.get(group_id, {}))
+    if kind in ("pick_best", "pick_worst"):
+        matrix_answers = {
+            k: v
+            for k, v in matrix_answers.items()
+            if not k.startswith("BO:") and not k.startswith("OW:")
+        }
     matrix_answers[item_id] = stored_value
     answers[group_id] = matrix_answers
 
