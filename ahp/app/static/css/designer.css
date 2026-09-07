@@ -1,8 +1,10 @@
 .designer-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
 /* 그리드 자식은 기본 min-width:auto 라 트리가 깊어지면 칸을 밀어내 페이지가 틀어진다 */
 .designer-layout>.table-card{min-width:0}
-/* 두 카드 헤더 높이를 맞춰 본문(트리 첫 행 / 이름 입력)이 같은 선에서 시작하게 */
-.designer-layout>.table-card>.tc-head{min-height:47px;box-sizing:border-box}
+/* 두 카드 헤더 높이를 고정해 본문(트리 첫 행 / 이름 입력)이 같은 선에서
+   시작하게 — 왼쪽은 버튼, 오른쪽은 텍스트라 내용 높이가 달라 어긋났었다. */
+.designer-layout>.table-card>.tc-head{height:52px;box-sizing:border-box;padding-top:0;padding-bottom:0}
+.designer-layout>.table-card>.tc-head .btn.sm{margin:0}
 @media (max-width:900px){.designer-layout{grid-template-columns:1fr}}
 
 /* 노드 인스펙터 (오른쪽 패널) */
