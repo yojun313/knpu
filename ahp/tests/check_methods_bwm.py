@@ -28,6 +28,8 @@ from app.services.csv_schema import group_item_count  # noqa: E402
 from app.services.methods import KIND_VALIDATORS, METHODS, get_method  # noqa: E402
 from app.services.methods.bwm import BwmPlugin  # noqa: E402
 from app.services.questions import generate_questions  # noqa: E402
+from app.services.result_service import build_results  # noqa: E402
+from app.services.ahp_calc import to_stored_pair  # noqa: E402
 
 P = BwmPlugin()
 
@@ -177,6 +179,46 @@ def test_pairwise_storage_unchanged():
         {"group_id": "g", "kind": "pairwise", "uuid_a": "z", "uuid_b": "a", "value": "3"}
     )
     assert iid == "a:z" and approx(v, 1 / 3)
+
+
+def test_mixed_method_build_results():
+    # root(AHP) → c1·c2·c3 ; c1(BWM) → c11·c12·c13. 혼합 방법 설문의 분석 파이프라인.
+    nodes = [
+        {"uuid": "root", "parent_id": None, "name": "목표", "order": 0, "level": 0},
+        {"uuid": "c1", "parent_id": "root", "name": "비용", "order": 0, "level": 1},
+        {"uuid": "c2", "parent_id": "root", "name": "성능", "order": 1, "level": 1},
+        {"uuid": "c3", "parent_id": "root", "name": "안전", "order": 2, "level": 1},
+        {"uuid": "c11", "parent_id": "c1", "name": "초기", "order": 0, "level": 2},
+        {"uuid": "c12", "parent_id": "c1", "name": "운영", "order": 1, "level": 2},
+        {"uuid": "c13", "parent_id": "c1", "name": "폐기", "order": 2, "level": 2},
+    ]
+    groups = generate_questions(
+        nodes, methods={"criteria": {"c1": "bwm"}}, settings={}
+    )
+    by_id = {g["group_id"]: g for g in groups}
+    assert by_id["root"]["kind"] == "pairwise" and by_id["c1"]["kind"] == "bwm"
+
+    def PW(*t):
+        d = {}
+        for a, b, v in t:
+            pid, sv = to_stored_pair(a, b, v)
+            d[pid] = sv
+        return d
+
+    bwm_c1 = {"best": "c11", "worst": "c13", "BO:c12": 2, "BO:c13": 4, "OW:c11": 4, "OW:c12": 2}
+    subs = {
+        "r1": {"root": PW(("c1", "c2", 3), ("c1", "c3", 5), ("c2", "c3", 2)), "c1": dict(bwm_c1)},
+        "r2": {"root": PW(("c1", "c2", 2), ("c1", "c3", 4), ("c2", "c3", 2)), "c1": dict(bwm_c1)},
+    }
+    res = build_results(nodes, groups, subs, {"aggregation": "AIP", "cr_threshold": 0.1})
+    gw = res["global_weights"]
+    # c1 하위(BWM)의 지역 가중치는 4/7·2/7·1/7 → 전역 = c1전역 × 그 값
+    lw = res["local_weights"]["c1"]
+    assert approx(lw["c11"], 4 / 7, 1e-3) and approx(lw["c13"], 1 / 7, 1e-3)
+    assert approx(gw["c11"], gw["c1"] * lw["c11"], 1e-6)
+    # 크래시 없이 per-respondent CR(= BWM은 CR^I) 이 채워짐
+    assert res["per_respondent_cr"]["r1"].get("c1") is not None
+    assert approx(sum(v for k, v in gw.items() if k in ("c11", "c12", "c13", "c2", "c3")), 1.0, 1e-6)
 
 
 def main() -> None:

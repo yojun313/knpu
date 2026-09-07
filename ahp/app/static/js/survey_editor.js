@@ -50,6 +50,16 @@
     document.getElementById('publishBtn').textContent = survey.status === 'published' ? '발행됨' : '발행';
   }
 
+  const WEIGHT_METHODS = [
+    { v: 'ahp', label: 'AHP — 모든 쌍을 1:1 비교' },
+    { v: 'bwm', label: 'BWM — 가장/가장 덜 중요한 것 기준 비교' },
+  ];
+
+  function methodOf(nodeUuid) {
+    return (survey.methods && survey.methods.criteria && survey.methods.criteria[nodeUuid]) ||
+      'ahp';
+  }
+
   function renderMatrices(nodesByUuid) {
     const box = document.getElementById('matricesList');
     if (!survey.groups.length) {
@@ -66,11 +76,23 @@
           '<textarea class="node-desc-input" data-node="' + cid + '" placeholder="응답자에게 보여줄 설명(선택)">' +
           ahpEsc(desc) + '</textarea></div>';
       }).join('');
+      // 방법 선택 — 대안 비교 그룹은 아직 AHP 고정
+      const cur = m.is_alternative ? 'ahp' : methodOf(m.parent_uuid);
+      const methodHtml = m.is_alternative ? '' : (
+        '<div class="field" style="margin-top:10px"><label>가중치 산출 방법</label>' +
+        '<select class="method-input" data-node="' + m.parent_uuid + '">' +
+        WEIGHT_METHODS.map(function (o) {
+          return '<option value="' + o.v + '"' + (o.v === cur ? ' selected' : '') + '>' +
+            o.label + '</option>';
+        }).join('') + '</select></div>'
+      );
       return '<div class="table-card matrix-block">' +
         '<div class="matrix-parent">' +
-        '<div class="mp-name">' + (m.is_alternative ? '<span class="badge ok" style="margin-right:6px">대안 비교</span>' : '') +
+        '<div class="mp-name">' + (m.is_alternative ? '<span class="badge ok" style="margin-right:6px">대안 비교</span>' :
+          (cur === 'bwm' ? '<span class="badge" style="margin-right:6px">BWM</span>' : '')) +
         ahpEsc(nodeName(m.parent_uuid, nodesByUuid)) + '</div>' +
-        '<div class="field"><label>이 기준 자체에 대한 설명(선택)</label>' +
+        methodHtml +
+        '<div class="field" style="margin-top:10px"><label>이 기준 자체에 대한 설명(선택)</label>' +
         '<textarea class="node-desc-input" data-node="' + m.parent_uuid + '">' + ahpEsc(parentDesc) + '</textarea></div>' +
         '<div class="field" style="margin-top:10px"><label>비교 질문 문구</label>' +
         '<textarea class="question-input" data-matrix="' + m.group_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
@@ -78,6 +100,36 @@
         '<div class="matrix-children">' + childrenHtml + '</div>' +
         '</div>';
     }).join('');
+  }
+
+  async function saveMethods() {
+    const criteria = {};
+    document.querySelectorAll('.method-input').forEach(function (el) {
+      criteria[el.dataset.node] = el.value;
+    });
+    if (survey.status === 'published' &&
+      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) {
+      await init();
+      return;
+    }
+    try {
+      const res = await ahpApi('/api/projects/' + projectId + '/survey', {
+        method: 'PUT',
+        body: {
+          methods: {
+            criteria: criteria,
+            alternatives: (survey.methods && survey.methods.alternatives) || 'ahp',
+          },
+        },
+      });
+      const cleared = res.cleared_answers || 0;
+      ahpToast(cleared > 0
+        ? '방법을 저장했습니다. 형식이 바뀐 항목의 응답 ' + cleared + '건이 초기화됐습니다.'
+        : '방법을 저장했습니다.');
+      await init();
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    }
   }
 
   async function saveMatrixEdits() {
@@ -190,6 +242,9 @@
         saveMatrixEdits();
       }
     }, true);
+    document.getElementById('matricesList').addEventListener('change', function (e) {
+      if (e.target.classList.contains('method-input')) saveMethods();
+    });
 
     document.getElementById('resyncBtn').addEventListener('click', resync);
     document.getElementById('previewBtn').addEventListener('click', function () {

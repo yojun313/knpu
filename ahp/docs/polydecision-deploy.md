@@ -128,3 +128,17 @@ DB 스키마 변화 없음.
 - `respond.css`: `.bwm-*`.
 - **pairwise 무변경**(골든·패리티 9+9). BWM 그룹을 만들 관리자 UI(1-4)가 없어 라이브 E2E 는
   1-4 이후. 위젯 렌더는 헤드리스(라이트·다크) 확인.
+
+### 1-4. 관리자 방법 선택 UI  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- 설문지 편집 화면(`survey_editor.js`): 각 기준 그룹 카드에 **"가중치 산출 방법" 드롭다운**
+  (AHP / BWM). 변경 시 `PUT /api/projects/{id}/survey {methods:{criteria, alternatives}}`.
+- `survey_routes.update_survey`: `methods` 가 오면 **그 자리에서** 현재 계층으로 `groups` 를
+  다시 만든다(버전 bump 없음 — `group_id`/`child_uuids` 는 그대로, `kind`/`method`/
+  `question_text` 만 갱신). 종류(kind)가 바뀐 그룹은 `responses`·`submissions` 에서
+  `answers.<group_id>` 를 `$unset`(형식이 달라 기존 응답 무의미). 응답 `cleared_answers` 반환.
+  종류가 그대로면 연구자가 다듬은 질문 문구는 유지.
+- **여기서부터 BWM 을 실제로 만들 수 있다** — 노드를 BWM 으로 바꾸고 발행하면 응답자 화면(1-3)에
+  BWM 흐름이 나온다.
+- 검증: `check_methods_bwm.py` 10건(+혼합방법 `build_results` 파이프라인 — root=AHP·c1=BWM
+  전역가중치 합성) + `check_methods_ahp.py` 9건 + 골든 동일 + `node --check` + 부팅.
