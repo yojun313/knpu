@@ -422,10 +422,16 @@ async def group_eval(token: str, request: Request):
     stored = dict((resp or {}).get("answers", {}).get(group_id, {}))
 
     names = {cid: nodes_by_id.get(cid, {}).get("name", cid) for cid in node_ids}
+    project = await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1})
+    settings = (project or {}).get("settings", {})
+    cr_threshold = settings.get("cr_threshold", 0.1)
     plugin = get_method(matrix.get("method"))
     # overrides 적용은 플러그인 몫 — pairwise: [{uuid_a,uuid_b,value_a_over_b}],
     # bwm: [{item_id, value}]. group_eval 은 저장하지 않는다.
-    lr = plugin.derive_local(matrix, stored, overrides=body.get("overrides"))
+    lr = plugin.derive_local(
+        matrix, stored, overrides=body.get("overrides"),
+        cr_threshold=cr_threshold, settings=settings,
+    )
     if not lr.complete:
         return {
             "incomplete": True,
@@ -441,6 +447,7 @@ async def group_eval(token: str, request: Request):
         "weights": lr.weights,
         "ranking": lr.ranking,
         "cr": (cons.value if cons else None),
+        "cr_threshold": (cons.threshold if cons and cons.threshold is not None else cr_threshold),
         "worst_pairs": cons.detail if cons else [],
         "locus": cons.locus if cons else [],
     }
