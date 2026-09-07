@@ -22,7 +22,7 @@ from system.notify.discord import notify_discord
 from system.logging.user_log import AuditLogMiddleware
 from system.shared_ui import mount_shared_ui
 
-app = FastAPI(title="KNPU AHP")
+app = FastAPI(title="KNPU PolyDecision")
 
 app.add_middleware(
     AuthMiddleware,
@@ -53,10 +53,10 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    print(f"[AHP] Exception at {request.url.path}:\n{tb}")
+    print(f"[PolyDecision] Exception at {request.url.path}:\n{tb}")
     notify_discord(
         "system_error",
-        f"[AHP] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
+        f"[PolyDecision] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
     )
     return JSONResponse(
         status_code=500,
@@ -98,4 +98,4 @@ async def _startup():
     await ensure_indexes()
 
 
-print("AHP server is running...")
+print("PolyDecision server is running...")

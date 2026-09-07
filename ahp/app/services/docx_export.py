@@ -53,7 +53,7 @@ def _set_cell_text(cell, text, *, bold=False, size=10, align_center=False):
 def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
     doc = Document()
 
-    title = doc.add_heading(survey.get("title") or "AHP 설문지", level=0)
+    title = doc.add_heading(survey.get("title") or "PolyDecision 설문지", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     if survey.get("intro_text"):
