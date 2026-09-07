@@ -140,6 +140,23 @@ button{font-family:inherit}
 .cr-summary-row.bad .csr-cr{color:var(--r-danger)}
 .cr-summary-row.ok .csr-cr{color:var(--r-good)}
 
+/* ── 제출 후: 본인 응답 결과(전역 가중치 + 대안 순위) ── */
+.my-result{width:100%;max-width:min(560px,92vw);margin:12px 0 4px;padding:14px 16px;
+  border-radius:14px;text-align:left;background:var(--r-surface);border:1px solid var(--r-border)}
+.my-result[hidden]{display:none}
+.my-result h3{margin:0 0 8px;font-size:13.5px;font-weight:800;color:var(--r-ink)}
+.my-result .mr-block{margin-bottom:12px}
+.my-result .mr-block:last-of-type{margin-bottom:6px}
+.my-result h4{margin:0 0 6px;font-size:11.5px;font-weight:700;color:var(--r-muted);
+  text-transform:uppercase;letter-spacing:.03em}
+.mr-row{display:grid;grid-template-columns:minmax(72px,38%) 1fr auto;align-items:center;
+  gap:8px;padding:3px 0;font-size:12.5px}
+.mr-row .mr-name{color:var(--r-ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-row .mr-bar{height:8px;border-radius:5px;background:var(--r-border);overflow:hidden}
+.mr-row .mr-bar>span{display:block;height:100%;background:var(--r-accent);border-radius:5px}
+.mr-row .mr-pct{font-variant-numeric:tabular-nums;font-weight:700;color:var(--r-ink)}
+.my-result p.small{font-size:11px;margin:4px 0 0}
+
 /* ── 제출 후: CR이 높게 나온 이유 설명 + 모순 예시 시각화 ── */
 .cr-explain{width:100%;max-width:440px;margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
   background:color-mix(in srgb,var(--r-danger) 8%,var(--r-surface));

@@ -863,6 +863,35 @@
     }
   }
 
+  // 제출 완료 화면에 응답자 본인의 결과(전역 가중치 + 대안 순위)를 그린다.
+  function weightBars(weights, names) {
+    const ent = Object.keys(weights || {})
+      .map(function (k) { return [k, weights[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; });
+    if (!ent.length) return '';
+    const max = ent[0][1] || 1;
+    return ent.map(function (e) {
+      const pct = (e[1] * 100).toFixed(1);
+      return '<div class="mr-row"><span class="mr-name">' + esc((names && names[e[0]]) || e[0]) + '</span>' +
+        '<span class="mr-bar"><span style="width:' + (100 * e[1] / max) + '%"></span></span>' +
+        '<span class="mr-pct">' + pct + '%</span></div>';
+    }).join('');
+  }
+  function renderMyResult(mr) {
+    const box = document.getElementById('myResult');
+    if (!mr || (!Object.keys(mr.global_weights || {}).length && !Object.keys(mr.alt_scores || {}).length)) {
+      box.hidden = true; box.innerHTML = ''; return;
+    }
+    let h = '<h3>내 응답 결과</h3>';
+    const gw = weightBars(mr.global_weights, mr.node_names);
+    if (gw) h += '<div class="mr-block"><h4>기준 종합 가중치</h4>' + gw + '</div>';
+    const alt = weightBars(mr.alt_scores, mr.alt_names);
+    if (alt) h += '<div class="mr-block"><h4>대안 평가 순위</h4>' + alt + '</div>';
+    h += '<p class="small muted">이 결과는 귀하의 응답만으로 계산한 것으로, 전체 집계 결과와 다를 수 있습니다.</p>';
+    box.innerHTML = h;
+    box.hidden = false;
+  }
+
   // ── 제출 완료 화면 ──────────────────────────────────────────────────────────
   async function showDone() {
     show('viewDone');
@@ -874,6 +903,7 @@
       });
       if (!res.ok) throw new Error('summary failed');
       const data = await res.json();
+      renderMyResult(data.my_result);
       const anyBad = data.items.some(function (it) {
         return it.cr != null && it.cr > data.cr_threshold;
       });
@@ -889,6 +919,7 @@
     } catch (e) {
       box.innerHTML = '';
       document.getElementById('crExplain').hidden = true;
+      document.getElementById('myResult').hidden = true;
     }
   }
 
