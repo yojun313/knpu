@@ -138,6 +138,13 @@ def build_results(
         groups, local_weights_by_matrix, global_w
     )
 
+    per_respondent_result = {
+        rid: _one_respondent_result(
+            node_parent, matrix_of_parent, groups, answers, cr_threshold
+        )
+        for rid, answers in submissions_by_respondent.items()
+    }
+
     return {
         "node_names": node_name,
         "local_weights": local_weights_by_matrix,
@@ -151,6 +158,7 @@ def build_results(
         "group_kinds": {m["group_id"]: m.get("kind", "pairwise") for m in groups},
         "bwm": bwm_by_group,
         "group_cr": group_cr_by_matrix,
+        "per_respondent": per_respondent_result,
     }
 
 
@@ -175,3 +183,38 @@ def synthesize_alternatives(
     if total > 0:
         scores = {k: v / total for k, v in scores.items()}
     return scores
+
+
+def _one_respondent_result(
+    node_parent: dict,
+    matrix_of_parent: dict,
+    groups: list[dict],
+    answers: dict,
+    cr_threshold: float,
+) -> dict:
+    """한 응답자의 답만으로 전역 가중치·대안 점수·그룹별 CR을 낸다.
+    개인 종료 화면(3.1)과 결과 화면 개인별 카드(4.1)가 공유한다."""
+    local: dict[str, dict] = {}
+    cr_by_group: dict[str, float] = {}
+    for m in groups:
+        gid = m["group_id"]
+        node_ids = m["child_uuids"]
+        if len(node_ids) == 1:
+            local[gid] = {node_ids[0]: 1.0}
+            continue
+        lr = get_method(m.get("method")).derive_local(
+            m, answers.get(gid, {}), cr_threshold=cr_threshold
+        )
+        if lr.complete:
+            local[gid] = lr.weights
+            if lr.consistency and lr.consistency.value is not None:
+                cr_by_group[gid] = lr.consistency.value
+        else:
+            local[gid] = {nid: 0.0 for nid in node_ids}
+    gw = global_weights(node_parent, local, matrix_of_parent)
+    return {
+        "global": gw,
+        "local_by_group": local,
+        "alt_scores": synthesize_alternatives(groups, local, gw),
+        "cr_by_group": cr_by_group,
+    }

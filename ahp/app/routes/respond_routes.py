@@ -23,6 +23,7 @@ from app.services.codes import hash_code
 from app.services.ahp_calc import pair_id
 from app.services.csv_schema import group_item_count, group_item_slots
 from app.services.methods import KIND_VALIDATORS, get_method
+from app.services.result_service import build_results
 from app.services.hub import hub
 from app.routes.survey_routes import DEFAULT_INTRO_TEXT, DEFAULT_CONSENT_TEXT
 from app.services.demographics import coerce_attributes, validate_required
@@ -517,14 +518,9 @@ async def respond_summary(token: str, request: Request):
 
     survey, nodes_by_id = await _survey_and_nodes(collection)
     matrices_view = _build_matrices_view(survey, nodes_by_id)
-    cr_threshold = (
-        (
-            (await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1}))
-            or {}
-        )
-        .get("settings", {})
-        .get("cr_threshold", 0.1)
-    )
+    project = await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1})
+    settings = (project or {}).get("settings", {})
+    cr_threshold = settings.get("cr_threshold", 0.1)
 
     items = []
     for m in matrices_view:
@@ -549,4 +545,35 @@ async def respond_summary(token: str, request: Request):
             }
         )
 
-    return {"items": items, "cr_threshold": cr_threshold}
+    # 본인 결과 — 이 응답자 답만으로 전역 가중치·대안 순위를 낸다(3.1).
+    # 온라인/오프라인/실시간 모두, BWM·대안 계층 포함(build_results 가 방법 무관).
+    my_result = None
+    hierarchy = await hierarchies_db.find_one(
+        {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
+    )
+    if hierarchy:
+        rid = payload["respondent_id"]
+        res = build_results(
+            hierarchy["nodes"], survey["groups"], {rid: sub["answers"]}, settings
+        )
+        mine = (res.get("per_respondent") or {}).get(rid, {})
+        root_ids = {
+            n["uuid"] for n in hierarchy["nodes"] if n.get("parent_id") is None
+        }
+        gw = {
+            k: v
+            for k, v in (mine.get("global") or {}).items()
+            if v and k not in root_ids
+        }
+        alt = mine.get("alt_scores") or {}
+        if gw or alt:
+            my_result = {
+                "global_weights": gw,
+                "alt_scores": alt,
+                "node_names": res.get("node_names", {}),
+                "alt_names": {
+                    a["uuid"]: a["name"] for a in hierarchy.get("alternatives", [])
+                },
+            }
+
+    return {"items": items, "cr_threshold": cr_threshold, "my_result": my_result}
