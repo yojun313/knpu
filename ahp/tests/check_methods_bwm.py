@@ -117,6 +117,27 @@ def test_plugin_aggregate_group():
     assert lr.ranking[0] == "c1"
 
 
+def test_merge_responses_and_outliers():
+    group = {"group_id": "g", "child_uuids": ["c1", "c2", "c3"]}
+    rlist = [
+        {"best": "c1", "worst": "c3", "BO:c2": 2, "BO:c3": 4, "OW:c1": 4, "OW:c2": 2},
+        {"best": "c1", "worst": "c3", "BO:c2": 4, "BO:c3": 6, "OW:c1": 6, "OW:c2": 2},
+        {"best": "c2", "worst": "c3", "BO:c1": 2, "BO:c3": 3, "OW:c1": 2, "OW:c2": 3},
+    ]
+    merged = P.merge_responses(group, rlist)
+    assert merged["best"] == "c1" and merged["worst"] == "c3"  # 최빈
+    assert approx(merged["BO:c2"], (2 * 4) ** 0.5)  # 기하평균 (c2 는 best 아님)
+    assert "BO:c1" not in merged  # c1 == best → BO 생략
+    # 병합 결과는 그대로 validate 로 흘러가 worst 상세를 낸다(라우트 500 방지)
+    c = P.validate(group, merged)
+    assert c is not None
+    # best/worst 없으면 {}
+    assert P.merge_responses(group, [{"BO:c2": 2}]) == {}
+    assert P.merge_responses(group, []) == {}
+    # BWM 은 항목별 이상치를 정의하지 않는다
+    assert P.response_outliers(group, {"r0": rlist[0], "r1": rlist[1]}) == []
+
+
 def test_kind_validators_bwm():
     assert KIND_VALIDATORS["pick_best"]({"value": "u1"}) == ("best", "u1")
     assert KIND_VALIDATORS["pick_worst"]({"value": "u9"}) == ("worst", "u9")

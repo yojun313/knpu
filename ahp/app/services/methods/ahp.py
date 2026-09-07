@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
-from app.services.mcdm.aggregate import aggregate_aij, aggregate_aip
+import math
+
+from app.services.mcdm.aggregate import aggregate_aij, aggregate_aip, find_outliers
 from app.services.mcdm.consistency import worst_offending_pairs
 from app.services.mcdm.linalg import (
     IncompleteMatrixError,
@@ -172,6 +174,50 @@ class AhpPlugin:
             ),
             skipped=skipped,
         )
+
+    # ── 표시 계층 보조 ─────────────────────────────────────────────────
+    def merge_responses(self, group: dict, responses: list[dict]) -> dict:
+        acc: dict[str, list[float]] = {}
+        for r in responses or []:
+            for pid, v in (r or {}).items():
+                try:
+                    fv = float(v)
+                except (TypeError, ValueError):
+                    continue
+                if fv > 0:
+                    acc.setdefault(pid, []).append(fv)
+        return {
+            pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
+            for pid, vs in acc.items()
+            if vs
+        }
+
+    def response_outliers(
+        self, group: dict, responses_by_rid: dict[str, dict]
+    ) -> list[dict]:
+        by_item: dict[str, dict[str, float]] = {}
+        for rid, ans in (responses_by_rid or {}).items():
+            for pid, v in (ans or {}).items():
+                try:
+                    fv = float(v)
+                except (TypeError, ValueError):
+                    continue
+                by_item.setdefault(pid, {})[rid] = fv
+        out: list[dict] = []
+        for pid, vals_by_rid in by_item.items():
+            if len(vals_by_rid) < 4:
+                continue
+            rids = list(vals_by_rid.keys())
+            indexed = {i: vals_by_rid[rids[i]] for i in range(len(rids))}
+            bad = find_outliers(indexed)
+            if bad:
+                out.append(
+                    {
+                        "item_id": pid,
+                        "outlier_respondents": [rids[i] for i in bad],
+                    }
+                )
+        return out
 
 
 PLUGIN = AhpPlugin()

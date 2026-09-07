@@ -104,3 +104,20 @@ class MethodPlugin(Protocol):
         settings: dict,
     ) -> LocalResult:
         ...
+
+    # ── 표시 계층 보조 (실시간 콘솔 / 결과 공개) ──────────────────────────
+    # 라우트가 쌍대비교 전용 수식(쌍별 기하평균 병합, 항목별 이상치)을 직접
+    # 들고 있으면 방법이 늘 때마다 깨진다. 그 두 가지를 방법이 책임진다.
+    def merge_responses(self, group: dict, responses: list[dict]) -> dict:
+        """여러 응답자의 raw 답(`{item_id: value}`)을 그룹 진단용 대표 답 1개로
+        합친다. 빈 입력이면 `{}`. `validate(group, merge_responses(...))` 로
+        그룹 수준 비일관성·문제 문항(worst)을 뽑는 데 쓴다."""
+        ...
+
+    def response_outliers(
+        self, group: dict, responses_by_rid: dict[str, dict]
+    ) -> list[dict]:
+        """응답자 간 편차가 큰 item 을
+        `[{"item_id": str, "outlier_respondents": [rid, ...]}]` 로 낸다.
+        방법상 정의되지 않으면 `[]`."""
+        ...
