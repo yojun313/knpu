@@ -70,6 +70,23 @@
     }).join('');
   }
 
+  // 개인별 CR 표 앞에 그룹 집계 CR(AIJ면 합성 행렬 CR, AIP면 개인 CR 평균).
+  function renderGroupCr() {
+    const box = document.getElementById('groupCrList');
+    const gcr = results.group_cr || {};
+    const gids = Object.keys(gcr);
+    if (!gids.length) { box.innerHTML = ''; return; }
+    box.innerHTML = gids.map(function (mid) {
+      const g = gcr[mid];
+      const label = g.metric === 'cri' ? 'CR<sup>I</sup>' : 'CR';
+      const thr = g.threshold;
+      const cls = thr == null ? '' : (g.value > thr ? 'cr-bad' : 'cr-ok');
+      return '<div class="gcr-row"><span class="gcr-name">' + ahpEsc(matrixParentName(mid)) + '</span>' +
+        '<span class="gcr-val ' + cls + '">' + label + ' ' + g.value.toFixed(3) +
+        (thr != null ? ' <span class="muted">/ ' + thr.toFixed(2) + '</span>' : '') + '</span></div>';
+    }).join('');
+  }
+
   function renderCrTable() {
     const table = document.getElementById('crTable');
     const kinds = results.group_kinds || {};
@@ -241,6 +258,7 @@
     renderWeightChart(document.getElementById('globalWeightsChart'), results.global_weights, results.node_names);
     renderConsensus();
     renderBwmDistribution();
+    renderGroupCr();
     renderCrTable();
 
     const altScores = results.alternative_scores || {};
