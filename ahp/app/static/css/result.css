@@ -49,6 +49,24 @@
   text-transform:uppercase;letter-spacing:.04em}
 .pr-sec .group-cr-list{border-bottom:none;padding:0}
 
+/* 대안 합성 과정 (4.2) */
+.alt-breakdown{padding:4px 14px 12px}
+.alt-bd{border-top:1px solid var(--sidebar-border);padding:6px 0}
+.alt-bd summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-strong);
+  list-style:none;padding:4px 0}
+.alt-bd summary::-webkit-details-marker{display:none}
+.alt-bd summary::before{content:'\25B8 ';color:var(--sidebar-muted)}
+.alt-bd[open] summary::before{content:'\25BE '}
+.alt-bd summary .muted{font-weight:400;color:var(--sidebar-muted)}
+.alt-bd-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0 8px}
+.alt-bd-table th{text-align:right;padding:5px 8px;color:var(--sidebar-muted);font-size:10px;
+  text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--sidebar-border)}
+.alt-bd-table th:first-child{text-align:left}
+.alt-bd-table td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--sidebar-border);
+  font-variant-numeric:tabular-nums}
+.alt-bd-table td:first-child{text-align:left}
+.alt-bd-table .alt-bd-total td{font-weight:700;border-bottom:none}
+
 /* BWM Best/Worst 지목 분포 */
 .bwm-dist-group{padding:10px 0;border-bottom:1px solid var(--sidebar-border)}
 .bwm-dist-group:last-child{border-bottom:none}
