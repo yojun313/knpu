@@ -16,6 +16,14 @@
 
   // 계층도는 다른 단계에서도 참고할 수 있어야 한다는 요청사항 — design.html의
   // hierarchy_diagram.js를 그대로 재사용, 접이식 카드로 두고 처음 펼칠 때만 불러온다.
+  // 계층도 노드에 전역 가중치를 얹는다(hierarchy_diagram.js 가 node.weight 를 표기).
+  function nodesWithWeights(nodes) {
+    const gw = (results && results.global_weights) || {};
+    return (nodes || []).map(function (n) {
+      return gw[n.uuid] != null ? Object.assign({}, n, { weight: gw[n.uuid] }) : n;
+    });
+  }
+
   function wireDiagramToggle() {
     const toggle = document.getElementById('diagramToggle');
     if (!toggle) return;
@@ -28,7 +36,7 @@
       diagramLoaded = true;
       try {
         const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
-        window.AHPHierarchyDiagram.render(box, h.nodes);
+        window.AHPHierarchyDiagram.render(box, nodesWithWeights(h.nodes));
       } catch (e) {
         box.innerHTML = '<p class="muted" style="padding:16px;font-size:12px">계층도를 불러오지 못했습니다.</p>';
       }
@@ -367,7 +375,7 @@
         if (!hierarchyNodes.length) { ahpToast('계층이 없습니다', true); return; }
         const title = (document.getElementById('projTitle').textContent || '계층도')
           .replace(/ · 결과 분석$/, '').trim();
-        window.AHPHierarchyDiagram.download(hierarchyNodes, { format: format, filename: title + '_계층도' });
+        window.AHPHierarchyDiagram.download(nodesWithWeights(hierarchyNodes), { format: format, filename: title + '_계층도' });
       } catch (e) {
         ahpToast('계층도를 불러오지 못했습니다', true);
       }

@@ -95,6 +95,12 @@
     });
   }
 
+  // node.weight(0~1 분수)가 주어지면 박스에 함께 표기. 루트는 항상 100%라 생략.
+  function fmtWeight(w) {
+    var n = Number(w);
+    return isFinite(n) ? (n * 100).toFixed(1) + '%' : '';
+  }
+
   // 박스 폭(150px, 12px bold)에 맞춰 이름을 최대 2줄로 자른다. 한국어는 공백이 없어
   // 글자 수 기준으로 끊고, 공백이 있으면 그 자리를 우선한다. 넘치면 말줄임.
   function wrapLabel(name, maxCharsPerLine, maxLines) {
@@ -147,8 +153,12 @@
       fo.setAttribute('y', b.y);
       fo.setAttribute('width', GEO.BOX_W);
       fo.setAttribute('height', GEO.BOX_H);
+      var wLine = (node.parent_id != null && node.weight != null)
+        ? '<span xmlns="http://www.w3.org/1999/xhtml" class="hd-w">' + fmtWeight(node.weight) + '</span>'
+        : '';
       fo.innerHTML = '<div xmlns="http://www.w3.org/1999/xhtml" class="hd-box' +
-        (node.parent_id == null ? ' hd-root' : '') + '">' + esc(node.name) + '</div>';
+        (node.parent_id == null ? ' hd-root' : '') + '"><span xmlns="http://www.w3.org/1999/xhtml">' +
+        esc(node.name) + '</span>' + wLine + '</div>';
       svg.appendChild(fo);
     });
 
@@ -189,10 +199,16 @@
       var cx = b.x + GEO.BOX_W / 2;
       var cy = b.y + GEO.BOX_H / 2;
       var lines = wrapLabel(node.name, 13, 2);
-      var startDy = -((lines.length - 1) / 2) * LH;
+      var wStr = (!isRoot && node.weight != null) ? fmtWeight(node.weight) : '';
+      var total = lines.length + (wStr ? 1 : 0);
+      var startDy = -((total - 1) / 2) * LH;
       var tspans = lines.map(function (ln, i) {
         return '<tspan x="' + cx + '" dy="' + (i === 0 ? startDy : LH) + '">' + esc(ln) + '</tspan>';
       }).join('');
+      if (wStr) {
+        tspans += '<tspan x="' + cx + '" dy="' + LH + '" font-size="10" font-weight="400">' +
+          esc(wStr) + '</tspan>';
+      }
       parts.push(
         '<g class="' + (isRoot ? 'hd-r' : '') + '">' +
         '<rect class="hd-b" x="' + b.x + '" y="' + b.y + '" width="' + GEO.BOX_W +
