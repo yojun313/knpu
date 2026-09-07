@@ -59,9 +59,11 @@
 
 <div id="viewSurvey" class="view" hidden>
   <div class="survey-top">
-    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-label"><span id="progressText">0%</span></div>
-    <div class="cr-bar" id="matrixCrBar" hidden></div>
+    <div class="survey-top-inner">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label"><span id="progressText">0%</span></div>
+      <div class="cr-bar" id="matrixCrBar" hidden></div>
+    </div>
   </div>
 
   <div class="survey-body">
@@ -79,10 +81,12 @@
   </div>
 
   <div class="survey-nav">
-    <button class="btn-ghost" id="prevBtn">이전</button>
-    <span id="qCounter" class="q-counter"></span>
-    <button class="btn-ghost" id="submitBtn" hidden>제출하기</button>
-    <button class="btn-primary" id="nextBtn">다음</button>
+    <div class="survey-nav-inner">
+      <button class="btn-ghost" id="prevBtn">이전</button>
+      <span id="qCounter" class="q-counter"></span>
+      <button class="btn-ghost" id="submitBtn" hidden>제출하기</button>
+      <button class="btn-primary" id="nextBtn">다음</button>
+    </div>
   </div>
 </div>
 
