@@ -325,6 +325,140 @@
     document.getElementById('promoteModal').hidden = false;
   }
 
+  // ── 분석방법 모달 (활용 분석 선언 + 역할별 배정) ─────────────────────────
+  const METHOD_DEFS = [
+    { v: 'ahp', label: 'AHP — 모든 쌍을 1:1 비교' },
+    { v: 'bwm', label: 'BWM — 가장/가장 덜 중요한 것 기준 비교' },
+  ];
+  const METHOD_LABEL = { ahp: 'AHP', bwm: 'BWM' };
+  const METHOD_DOCS = {
+    ahp: 'AHP — 항목을 두 개씩 모두 짝지어 상대 중요도를 1~9로 매기고, 고유벡터로 ' +
+      '가중치를 얻습니다. 논리적 일관성을 CR로 점검합니다. 문항 수는 n(n-1)/2.',
+    bwm: 'BWM — 가장 중요한 항목과 가장 덜 중요한 항목을 고른 뒤 그 둘 기준으로만 ' +
+      '나머지를 비교합니다(문항 2n-3). 입력 일관성(CR^I)·순서 일관성(OR)으로 점검합니다.',
+  };
+  let methodsSurvey = null;
+
+  function checkedMethods() {
+    const v = Array.prototype.map.call(
+      document.querySelectorAll('#methodsModal .em-check:checked'), function (el) { return el.value; }
+    );
+    return v.length ? v : ['ahp'];
+  }
+  function fillMethodSelect(id, list, cur) {
+    const sel = document.getElementById(id);
+    const keep = list.indexOf(cur) !== -1 ? cur : list[0];
+    sel.innerHTML = list.map(function (m) {
+      return '<option value="' + m + '"' + (m === keep ? ' selected' : '') + '>' +
+        (METHOD_LABEL[m] || m) + '</option>';
+    }).join('');
+  }
+  function updateMethodDoc(m) {
+    document.getElementById('methodDoc').textContent = METHOD_DOCS[m] || '';
+  }
+  function criteriaParents() {
+    return ((methodsSurvey && methodsSurvey.groups) || [])
+      .filter(function (g) { return !g.is_alternative; });
+  }
+  function renderPerNodeList(show) {
+    const box = document.getElementById('perNodeList');
+    box.hidden = !show;
+    if (!show) { box.innerHTML = ''; return; }
+    const enabled = checkedMethods();
+    const crit = (methodsSurvey.methods || {}).criteria || {};
+    box.innerHTML = criteriaParents().map(function (g) {
+      const cur = crit[g.parent_uuid] || enabled[0];
+      const nm = (byId(g.parent_uuid) || {}).name || g.parent_uuid;
+      return '<div class="pn-row"><span class="pn-name">' + ahpEsc(nm) + '</span>' +
+        '<select class="pn-method" data-node="' + g.parent_uuid + '">' +
+        enabled.map(function (v) {
+          return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' +
+            (METHOD_LABEL[v] || v) + '</option>';
+        }).join('') + '</select></div>';
+    }).join('');
+  }
+  function refreshMethodSelects() {
+    const en = checkedMethods();
+    ['criteriaMethodMaster', 'altMethodSelect'].forEach(function (id) {
+      const sel = document.getElementById(id);
+      if (sel && !sel.closest('[hidden]')) fillMethodSelect(id, en, sel.value);
+    });
+  }
+
+  async function openMethodsModal() {
+    try {
+      methodsSurvey = await ahpApi('/api/projects/' + projectId + '/survey');
+    } catch (e) {
+      ahpToast(e.message || '설문지를 불러오지 못했습니다', true);
+      return;
+    }
+    const m = methodsSurvey.methods || {};
+    const enabled = (Array.isArray(m.enabled) && m.enabled.length) ? m.enabled : ['ahp'];
+    const perNode = !!m.criteria_per_node;
+
+    document.getElementById('enabledMethods').innerHTML = METHOD_DEFS.map(function (o) {
+      const on = enabled.indexOf(o.v) !== -1;
+      return '<label class="em-chip' + (on ? ' on' : '') + '" data-m="' + o.v + '">' +
+        '<input type="checkbox" class="em-check" value="' + o.v + '"' + (on ? ' checked' : '') + '> ' +
+        ahpEsc(o.label) + '</label>';
+    }).join('');
+    updateMethodDoc(enabled[0]);
+
+    const vals = criteriaParents().map(function (g) { return (m.criteria || {})[g.parent_uuid] || 'ahp'; });
+    const common = (vals.length && vals.every(function (v) { return v === vals[0]; })) ? vals[0] : enabled[0];
+    fillMethodSelect('criteriaMethodMaster', enabled, common);
+    document.getElementById('criteriaPerNodeToggle').checked = perNode;
+    document.getElementById('criteriaMethodMaster').disabled = perNode;
+    renderPerNodeList(perNode);
+
+    const altOn = !document.getElementById('altPanel').hidden;
+    const altField = document.getElementById('altMethodField');
+    altField.hidden = !altOn;
+    if (altOn) fillMethodSelect('altMethodSelect', enabled, m.alternatives || 'ahp');
+
+    document.getElementById('methodsModal').hidden = false;
+  }
+
+  async function saveMethodsModal() {
+    const enabled = checkedMethods();
+    const perNode = document.getElementById('criteriaPerNodeToggle').checked;
+    const parents = criteriaParents().map(function (g) { return g.parent_uuid; });
+    const criteria = {};
+    if (perNode) {
+      document.querySelectorAll('#perNodeList .pn-method').forEach(function (el) {
+        criteria[el.dataset.node] = enabled.indexOf(el.value) !== -1 ? el.value : enabled[0];
+      });
+    } else {
+      const master = document.getElementById('criteriaMethodMaster').value || enabled[0];
+      parents.forEach(function (u) { criteria[u] = master; });
+    }
+    const altField = document.getElementById('altMethodField');
+    const alternatives = altField.hidden
+      ? ((methodsSurvey.methods || {}).alternatives || 'ahp')
+      : document.getElementById('altMethodSelect').value;
+
+    if (methodsSurvey.status === 'published' &&
+      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) return;
+    try {
+      const res = await ahpApi('/api/projects/' + projectId + '/survey', {
+        method: 'PUT',
+        body: {
+          methods: {
+            criteria: criteria, alternatives: alternatives,
+            enabled: enabled, criteria_per_node: perNode,
+          },
+        },
+      });
+      const cleared = res.cleared_answers || 0;
+      ahpToast(cleared > 0
+        ? '방법을 저장했습니다. 형식이 바뀐 항목의 응답 ' + cleared + '건이 초기화됐습니다.'
+        : '방법을 저장했습니다.');
+      document.getElementById('methodsModal').hidden = true;
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    }
+  }
+
   // ── 상세설정 모달 (공통 · 방법별 탭) ─────────────────────────────────────
   function showSettingsTab(name) {
     document.querySelectorAll('#settingsTabs .settings-tab').forEach(function (b) {
@@ -520,6 +654,28 @@
       renderBrainList();
       renderTree();
       ahpToast('트리에 추가했습니다. 저장을 눌러야 반영됩니다.');
+    });
+
+    document.getElementById('methodsBtn').addEventListener('click', openMethodsModal);
+    document.getElementById('methodsClose').addEventListener('click', function () {
+      document.getElementById('methodsModal').hidden = true;
+    });
+    document.getElementById('methodsSave').addEventListener('click', saveMethodsModal);
+    document.getElementById('methodsModal').addEventListener('change', function (e) {
+      if (e.target.classList.contains('em-check')) {
+        const chip = e.target.closest('.em-chip');
+        if (chip) chip.classList.toggle('on', e.target.checked);
+        if (e.target.checked) updateMethodDoc(e.target.value);
+        refreshMethodSelects();
+        renderPerNodeList(document.getElementById('criteriaPerNodeToggle').checked);
+      } else if (e.target.id === 'criteriaPerNodeToggle') {
+        document.getElementById('criteriaMethodMaster').disabled = e.target.checked;
+        renderPerNodeList(e.target.checked);
+      }
+    });
+    document.getElementById('methodsModal').addEventListener('mouseover', function (e) {
+      const chip = e.target.closest('.em-chip');
+      if (chip) updateMethodDoc(chip.dataset.m);
     });
 
     document.getElementById('settingsBtn').addEventListener('click', openSettings);

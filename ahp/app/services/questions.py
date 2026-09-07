@@ -59,7 +59,17 @@ def normalize_methods(raw: dict | None) -> dict:
             enabled.append(m)
     if not enabled:
         enabled = ["ahp"]
-    return {"criteria": criteria, "alternatives": alternatives, "enabled": enabled}
+
+    per_node = raw.get("criteria_per_node")
+    if not isinstance(per_node, bool):
+        per_node = len(set(criteria.values())) > 1  # 이미 혼합이면 고급 모드로 본다
+
+    return {
+        "criteria": criteria,
+        "alternatives": alternatives,
+        "enabled": enabled,
+        "criteria_per_node": per_node,
+    }
 
 
 def generate_questions(
