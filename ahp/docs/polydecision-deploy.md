@@ -103,3 +103,14 @@ DB 스키마 변화 없음.
 - `result_service`: 비-pairwise 그룹은 pairwise 전용 극단값 진단을 건너뛰고, per-respondent
   CR 표시는 `cri` 로 폴백(방어적, 현재 도달 불가).
 - 검증: `ahp/tests/check_methods_bwm.py` (7건) + `check_methods_ahp.py` 회귀(9건) + 골든 동일.
+
+### 1-2. 저장 경로 일반화  *(코드: 완료 / DB·운영: 조치 없음)*
+
+`put_answer`(respond·entry)가 `kind` 로 dispatch: `KIND_VALIDATORS[kind](body) → (item_id, value)`
+→ `answers[group_id][item_id] = value`. 진행률은 `csv_schema.group_item_count(group)`
+(pairwise n(n-1)/2, bwm 2n)로 계산. **pairwise 는 바이트 동일**(골든·패리티·9+9건).
+`section_snapshot` 은 비-pairwise 그룹의 쌍 진단을 건너뛴다.
+
+- 아직 BWM 그룹을 만들 관리자 UI(1-4)도 렌더러(1-3)도 없어 실제로 도달 불가.
+  DB 마이그레이션·재기동 불필요.
+- 검증: `check_methods_bwm.py` (9건 — +저장 경로 시뮬레이션) + `check_methods_ahp.py` (9건) + 골든 동일 + uvicorn 부팅.

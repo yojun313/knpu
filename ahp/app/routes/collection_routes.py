@@ -25,6 +25,7 @@ from app.services.codes import (
 )
 from app.services.aggregate import find_outliers
 from app.services.methods import get_method
+from app.services.csv_schema import group_item_count
 from app.services.hub import hub
 
 router = APIRouter()
@@ -316,11 +317,9 @@ def respondent_progress_summary(groups: list[dict], answers: dict) -> dict:
     """이 응답자의 전체 진행률과 "가장 문제 있는" CR 하나를 요약한다.
     콘솔에서는 매트릭스별 CR을 전부 늘어놓기보다, 한눈에 "이 사람 뭔가
     이상하다"를 알 수 있는 게 더 쓸모 있어서 최댓값(worst) 하나만 보여준다."""
-    total_pairs = sum(
-        len(m["child_uuids"]) * (len(m["child_uuids"]) - 1) // 2 for m in groups
-    )
-    answered_pairs = sum(len(answers.get(m["group_id"], {})) for m in groups)
-    progress = round(100 * answered_pairs / total_pairs) if total_pairs else 100
+    total_items = sum(group_item_count(m) for m in groups)
+    answered_items = sum(len(answers.get(m["group_id"], {})) for m in groups)
+    progress = round(100 * answered_items / total_items) if total_items else 100
 
     worst_cr = None
     all_complete = True
@@ -412,7 +411,8 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
     if not matrix:
         raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
     node_ids = matrix["child_uuids"]
-    total_pairs = len(node_ids) * (len(node_ids) - 1) // 2
+    is_pairwise = matrix.get("kind", "pairwise") == "pairwise"
+    total_pairs = group_item_count(matrix)
 
     respondents = [
         r async for r in respondents_db.find({"collection_id": collection_id})
@@ -442,9 +442,10 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
                 "answers": pairs,
             }
         )
-        for pid, v in pairs.items():
-            pair_values.setdefault(pid, {})[r["_id"]] = v
-            all_pairs_for_diagnosis.setdefault(pid, []).append(v)
+        if is_pairwise:
+            for pid, v in pairs.items():
+                pair_values.setdefault(pid, {})[r["_id"]] = v
+                all_pairs_for_diagnosis.setdefault(pid, []).append(v)
 
     outliers = []
     for pid, values_by_rid in pair_values.items():

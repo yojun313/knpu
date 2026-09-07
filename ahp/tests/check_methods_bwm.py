@@ -24,8 +24,10 @@ from app.services.mcdm.bwm_consistency import (  # noqa: E402
     ordinal_consistency,
 )
 from app.services.mcdm.lp import bwm_linear_weights  # noqa: E402
+from app.services.csv_schema import group_item_count  # noqa: E402
 from app.services.methods import KIND_VALIDATORS, METHODS, get_method  # noqa: E402
 from app.services.methods.bwm import BwmPlugin  # noqa: E402
+from app.services.questions import generate_questions  # noqa: E402
 
 P = BwmPlugin()
 
@@ -127,6 +129,54 @@ def test_kind_validators_bwm():
             raise AssertionError("should have raised")
         except ValueError:
             pass
+
+
+def test_storage_path():
+    # put_answer 가 하는 일을 흉내: KIND_VALIDATORS 로 (item_id, value) 뽑아
+    # answers[group_id][item_id] 에 누적 → derive_local 완성 → 진행률 100%.
+    _NODES = [
+        {"uuid": "root", "parent_id": None, "name": "목표", "order": 0, "level": 0},
+        {"uuid": "c1", "parent_id": "root", "name": "비용", "order": 0, "level": 1},
+        {"uuid": "c2", "parent_id": "root", "name": "성능", "order": 1, "level": 1},
+        {"uuid": "c3", "parent_id": "root", "name": "안전", "order": 2, "level": 1},
+    ]
+    group = generate_questions(
+        _NODES, methods={"criteria": {"root": "bwm"}}, settings={}
+    )[0]
+    assert group["kind"] == "bwm" and group["method"] == "bwm"
+    assert group_item_count(group) == 2 * 3  # 2n
+
+    bodies = [
+        {"group_id": "root", "kind": "pick_best", "value": "c1"},
+        {"group_id": "root", "kind": "pick_worst", "value": "c3"},
+        {"group_id": "root", "kind": "vector", "item_id": "BO:c2", "value": "2"},
+        {"group_id": "root", "kind": "vector", "item_id": "BO:c3", "value": "4"},
+        {"group_id": "root", "kind": "vector", "item_id": "OW:c1", "value": "4"},
+        {"group_id": "root", "kind": "vector", "item_id": "OW:c2", "value": "2"},
+    ]
+    answers: dict = {}
+    for b in bodies:
+        iid, val = KIND_VALIDATORS[b["kind"]](b)
+        answers.setdefault(b["group_id"], {})[iid] = val
+
+    assert answers["root"] == {
+        "best": "c1", "worst": "c3", "BO:c2": 2.0, "BO:c3": 4.0,
+        "OW:c1": 4.0, "OW:c2": 2.0,
+    }
+    assert len(answers["root"]) == group_item_count(group)  # 진행률 100%
+
+    lr = get_method(group["method"]).derive_local(group, answers["root"])
+    assert lr.complete
+    assert approx(lr.weights["c1"], 4 / 7, 1e-4)
+    assert approx(lr.consistency.metrics["cri"], 0.0)
+
+
+def test_pairwise_storage_unchanged():
+    # pairwise 항목도 같은 (item_id, value) 계약을 지나며 방향 보정이 그대로 유지.
+    iid, v = KIND_VALIDATORS["pairwise"](
+        {"group_id": "g", "kind": "pairwise", "uuid_a": "z", "uuid_b": "a", "value": "3"}
+    )
+    assert iid == "a:z" and approx(v, 1 / 3)
 
 
 def main() -> None:

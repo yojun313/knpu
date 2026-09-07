@@ -41,6 +41,20 @@ def group_item_slots(group: dict) -> list[tuple[str, str]]:
     raise ValueError(f"미지원 그룹 kind: {kind!r}")
 
 
+def group_item_count(group: dict) -> int:
+    """이 그룹의 완전 응답에 필요한 항목 수(진행률 분모).
+
+    pairwise: n(n-1)/2 쌍.
+    bwm: Best·Worst 지목 2개 + Best-to-Others (n-1) + Others-to-Worst (n-1) = 2n.
+    미지원 kind 는 pairwise 로 가정(진행률 분모라 죽지 않게 — build_results 방어 철학).
+    """
+    n = len(group["child_uuids"])
+    kind = group.get("kind", "pairwise")
+    if kind == "bwm":
+        return 2 * n
+    return n * (n - 1) // 2
+
+
 def pair_column_label(n: int, parent: str, name_a: str, name_b: str) -> str:
     """wide 반입 양식의 비교쌍 열 제목. 인쇄 설문지의 문항 번호(Qn)와 1:1로 맞춰
     종이 → CSV 전사 시 열을 바로 찾게 한다. n은 설문지 전체를 통틀어 1부터.
