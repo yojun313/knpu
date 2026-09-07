@@ -533,10 +533,11 @@ async def respond_summary(token: str, request: Request):
         if not lr.complete:
             continue
         # 이 응답자 본인의 판단 중 CR에 가장 큰 영향을 준(가장 모순적인) 쌍 —
-        # 리뷰 화면에서 바로 강조해 보여주기 위함(요청사항).
+        # 리뷰 화면에서 바로 강조해 보여주기 위함(요청사항). BWM 등 비-쌍대비교
+        # 방법의 detail 은 쌍(uuid_a/uuid_b) 형태가 아니므로 건너뛴다.
         worst_pair = None
         detail = lr.consistency.detail if lr.consistency else []
-        if detail:
+        if detail and detail[0].get("uuid_a"):
             worst_pair = {"uuid_a": detail[0]["uuid_a"], "uuid_b": detail[0]["uuid_b"]}
         items.append(
             {
