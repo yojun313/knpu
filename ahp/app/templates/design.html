@@ -18,7 +18,7 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="dirtyBadge" class="badge warn" hidden>저장 안 됨</span>
-      <button class="btn" id="settingsBtn">⚙ 방법론 설정</button>
+      <button class="btn" id="settingsBtn">⚙ 상세설정</button>
       <button class="btn danger" id="deleteProjectBtn">삭제</button>
       <button class="btn primary" id="saveHierarchyBtn">저장</button>
     </div>
@@ -100,64 +100,109 @@
 
 <div id="settingsModal" class="modal-overlay" hidden>
   <div class="modal-card">
-    <div class="modal-head"><span>방법론 설정</span><button class="modal-close" id="settingsClose">×</button></div>
+    <div class="modal-head"><span>상세설정</span><button class="modal-close" id="settingsClose">×</button></div>
     <div id="settingsLockNotice" class="callout warn" hidden style="margin-bottom:14px">
       이미 배포된 수집이 있어 일부 항목은 잠겨 있습니다. 바꾸려면 새 collection으로 다시 시작하세요.
     </div>
-    <div class="field">
-      <label>집계 방식</label>
-      <select id="setAggregation">
-        <option value="AIP">AIP — 개인 가중치 먼저 (개별 CR 즉시 확보, 기본값)</option>
-        <option value="AIJ">AIJ — 판단값 먼저 집계 (단일 합의 결과)</option>
-      </select>
+
+    <div class="settings-tabs" id="settingsTabs">
+      <button type="button" class="settings-tab active" data-tab="common">공통</button>
+      <button type="button" class="settings-tab" data-tab="ahp">AHP</button>
+      <button type="button" class="settings-tab" data-tab="bwm">BWM</button>
     </div>
-    <div class="field">
-      <label>가중치 도출법</label>
-      <select id="setWeightMethod">
-        <option value="eigen">고유벡터법 (Saaty 표준, 기본값)</option>
-        <option value="geomean">행 기하평균법</option>
-      </select>
+
+    <div class="settings-tab-panel" data-tab="common">
+      <div class="field">
+        <label>집계 방식</label>
+        <select id="setAggregation">
+          <option value="AIP">AIP — 개인 가중치 먼저 (개별 CR 즉시 확보, 기본값)</option>
+          <option value="AIJ">AIJ — 판단값 먼저 집계 (단일 합의 결과)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>대안 계층</label>
+        <select id="setAltLayer">
+          <option value="off">사용 안 함 — 기준 가중치만 (기본값)</option>
+          <option value="on">사용 — 대안 평가까지</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>척도</label>
+        <select id="setScale">
+          <option value="9">9점 척도 (Saaty 표준, 기본값)</option>
+          <option value="5">5점 축약형</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>인구통계 수집</label>
+        <select id="setCollectDemographics">
+          <option value="off">사용 안 함 (기본값)</option>
+          <option value="on">사용 — 설문지 하단에서 항목 설계</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>대안 계층</label>
-      <select id="setAltLayer">
-        <option value="off">사용 안 함 — 기준 가중치만 (기본값)</option>
-        <option value="on">사용 — 대안 평가까지</option>
-      </select>
+
+    <div class="settings-tab-panel" data-tab="ahp" hidden>
+      <div class="field">
+        <label>가중치 도출법</label>
+        <select id="setWeightMethod">
+          <option value="eigen">고유벡터법 (Saaty 표준, 기본값)</option>
+          <option value="geomean">행 기하평균법</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>불완전 응답 처리</label>
+        <select id="setIncomplete">
+          <option value="block">제출 차단 (기본값)</option>
+          <option value="allow_partial">완료율만 표시하고 허용</option>
+          <option value="harker">불완전 AHP(Harker법) 적용</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>CR 임계값</label>
+        <input type="number" id="setCrThreshold" step="0.01" min="0" max="1">
+      </div>
+      <div class="field">
+        <label>CR 초과 시</label>
+        <select id="setCrAction">
+          <option value="warn">경고만 (기본값)</option>
+          <option value="block">제출 차단</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>불완전 응답 처리</label>
-      <select id="setIncomplete">
-        <option value="block">제출 차단 (기본값)</option>
-        <option value="allow_partial">완료율만 표시하고 허용</option>
-        <option value="harker">불완전 AHP(Harker법) 적용</option>
-      </select>
+
+    <div class="settings-tab-panel" data-tab="bwm" hidden>
+      <p class="callout" style="margin-bottom:12px;font-size:12px">
+        BWM은 AHP의 CR 하나로 판정하지 않습니다 — 입력 일관성(CR<sup>I</sup>)과
+        순서 일관성(OR)을 함께 봅니다.</p>
+      <div class="field">
+        <label>CR<sup>I</sup> 임계값</label>
+        <input type="number" id="setBwmCriThreshold" step="0.01" min="0" max="1">
+        <span class="tc-meta">0 = 자동(Liang 2020 표에서 n·척도로 결정)</span>
+      </div>
+      <div class="field">
+        <label>순서 일관성(OR)</label>
+        <select id="setBwmOrGate">
+          <option value="on">위반 시 함께 표시 (기본값)</option>
+          <option value="off">표시 안 함</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>일관성 초과 시</label>
+        <select id="setBwmConsistencyAction">
+          <option value="warn">경고만 (기본값)</option>
+          <option value="block">제출 차단</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>개인 가중치 통합</label>
+        <select id="setBwmAggregation">
+          <option value="geomean">기하평균 후 재정규화 (비율척도 정합, 기본값)</option>
+          <option value="arithmetic">산술평균</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>척도</label>
-      <select id="setScale">
-        <option value="9">9점 척도 (Saaty 표준, 기본값)</option>
-        <option value="5">5점 축약형</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>CR 임계값</label>
-      <input type="number" id="setCrThreshold" step="0.01" min="0" max="1">
-    </div>
-    <div class="field">
-      <label>CR 초과 시</label>
-      <select id="setCrAction">
-        <option value="warn">경고만 (기본값)</option>
-        <option value="block">제출 차단</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>인구통계 수집</label>
-      <select id="setCollectDemographics">
-        <option value="off">사용 안 함 (기본값)</option>
-        <option value="on">사용 — 설문지 하단에서 항목 설계</option>
-      </select>
-    </div>
+
     <button class="btn primary" id="settingsSave" style="width:100%">저장</button>
   </div>
 </div>

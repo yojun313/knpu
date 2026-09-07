@@ -527,7 +527,9 @@ async def respond_summary(token: str, request: Request):
         node_ids = [c["uuid"] for c in m["children"]]
         grp = {"group_id": m["group_id"], "child_uuids": node_ids, "method": m["method"]}
         pairs = sub["answers"].get(m["group_id"], {})
-        lr = get_method(m["method"]).derive_local(grp, pairs, cr_threshold=cr_threshold)
+        lr = get_method(m["method"]).derive_local(
+            grp, pairs, cr_threshold=cr_threshold, settings=settings
+        )
         if not lr.complete:
             continue
         # 이 응답자 본인의 판단 중 CR에 가장 큰 영향을 준(가장 모순적인) 쌍 —

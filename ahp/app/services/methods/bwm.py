@@ -104,6 +104,7 @@ class BwmPlugin:
         *,
         overrides=None,
         cr_threshold: float = 0.1,
+        settings: dict | None = None,
     ) -> LocalResult:
         parsed = _parse(group, responses, overrides)
         if parsed is None:
@@ -120,11 +121,17 @@ class BwmPlugin:
         oc = ordinal_consistency(child, best, worst, bo, ow)
         a_bw = bo.get(worst, ow.get(best, 1.0))
 
+        # BWM 전용 필터 설정(2.2) — AHP의 cr_threshold 와 별개.
+        s = settings or {}
+        manual = float(s.get("bwm_cri_threshold") or 0)
+        thr = manual if manual > 0 else ic["threshold"]
+        or_gate = s.get("bwm_or_gate", "on") != "off"
+
         bad = [
             c
             for c in child
-            if ic["CRI_by_criterion"].get(c, 0.0) > ic["threshold"]
-            or oc["OR_by_criterion"].get(c, 0.0) > 1e-9
+            if ic["CRI_by_criterion"].get(c, 0.0) > thr
+            or (or_gate and oc["OR_by_criterion"].get(c, 0.0) > 1e-9)
         ]
         bad.sort(key=lambda c: -(ic["CRI_by_criterion"].get(c, 0.0)))
         locus = [BO + c for c in bad] + [OW + c for c in bad]
@@ -138,14 +145,14 @@ class BwmPlugin:
         ]
 
         cons = Consistency(
-            passed=ic["passed"] and oc["OR"] <= 1e-9,  # 안내용 — 게이트 아님
+            passed=ic["CRI"] <= thr and (not or_gate or oc["OR"] <= 1e-9),  # 안내용
             metrics={
                 "cri": ic["CRI"],
                 "or": oc["OR"],
                 "xi": out["xi"],
                 "cro": _cro(out["xi"], a_bw),
             },
-            threshold=ic["threshold"],
+            threshold=thr,
             locus=locus,
             detail=detail,
         )
@@ -160,9 +167,14 @@ class BwmPlugin:
         *,
         cr_threshold: float = 0.1,
         overrides=None,
+        settings: dict | None = None,
     ) -> Consistency | None:
         return self.derive_local(
-            group, responses, overrides=overrides, cr_threshold=cr_threshold
+            group,
+            responses,
+            overrides=overrides,
+            cr_threshold=cr_threshold,
+            settings=settings,
         ).consistency
 
     # ── ⑤ 그룹 계산 ────────────────────────────────────────────────────

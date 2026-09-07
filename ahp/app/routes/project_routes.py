@@ -30,12 +30,18 @@ DEFAULT_SETTINGS = {
     "cr_threshold": 0.1,
     "cr_action": "warn",  # warn | block
     "collect_demographics": "off",  # off | on — 켜면 설문지 하단에 인구통계 설계 패널
+    # ── BWM 전용 (2.2) — AHP의 CR 하나로 필터하지 않는다 ──
+    "bwm_cri_threshold": 0,  # 0 = 자동(Liang 2020 표) / >0 = 수동 CR^I 임계
+    "bwm_or_gate": "on",  # on = 순서 일관성(OR) 위반도 함께 표시
+    "bwm_consistency_action": "warn",  # warn | block (응답자 화면 안내/차단)
+    "bwm_aggregation": "geomean",  # geomean | arithmetic — 개인 가중치 벡터 통합
 }
 
 # 배포(수집 시작) 이후에는 방법론이 바뀌면 이미 받은 응답과 이후 응답의 계산
-# 방식이 어긋나 결과가 오염된다(PLAN.md 11). 이 4개는 첫 collection이 열리는
-# 순간부터 잠긴다.
-LOCKED_AFTER_OPEN = {"aggregation", "weight_method", "alt_layer", "scale"}
+# 방식이 어긋나 결과가 오염된다(PLAN.md 11). 첫 collection이 열리는 순간부터 잠긴다.
+LOCKED_AFTER_OPEN = {
+    "aggregation", "weight_method", "alt_layer", "scale", "bwm_aggregation"
+}
 
 STATUS_LABELS = {"draft": "설계 중", "active": "진행 중", "closed": "종료됨"}
 

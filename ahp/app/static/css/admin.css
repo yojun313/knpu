@@ -243,6 +243,15 @@ html[data-ui-theme="mesh"] select option{background:var(--mesh-base);color:var(-
 .method-adv{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;
   font-weight:400;color:var(--sidebar-muted);cursor:pointer}
 .method-adv input{margin:0}
+
+/* 상세설정 모달 — 공통 · 방법별 탭 */
+.settings-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--sidebar-border)}
+.settings-tab{border:none;background:none;padding:8px 12px;font-size:12.5px;font-weight:700;
+  color:var(--sidebar-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.settings-tab.active{color:var(--text-strong);border-bottom-color:var(--accent)}
+.settings-tab[hidden]{display:none}
+.settings-tab-panel[hidden]{display:none}
+.settings-tab-panel .tc-meta{display:block;margin-top:4px;font-size:11px;color:var(--sidebar-muted)}
 .tc-head.collapsible{cursor:pointer;user-select:none}
 
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
