@@ -28,11 +28,13 @@ def build_results(
     local_weights_by_matrix: dict[str, dict] = {}
     consensus_by_matrix: dict[str, dict] = {}
     outliers_by_matrix: dict[str, list] = {}
+    bwm_by_group: dict[str, dict] = {}
 
     for m in groups:
         node_ids = m["child_uuids"]
         group_id = m["group_id"]
         plugin = get_method(m.get("method"))
+        is_bwm = m.get("kind") == "bwm"
 
         respondent_pairs = []
         respondent_ids_with_data = []
@@ -47,9 +49,25 @@ def build_results(
                 c = plugin.derive_local(
                     m, pairs, cr_threshold=cr_threshold
                 ).consistency
-                per_respondent_cr[rid][group_id] = (
-                    c.value if c else None
+                per_respondent_cr[rid][group_id] = c.value if c else None
+                if is_bwm and c:
+                    bg = bwm_by_group.setdefault(
+                        group_id, {"bw_distribution": {"best": {}, "worst": {}}, "per_respondent": {}}
+                    )
+                    bg["per_respondent"][rid] = {
+                        "cri": c.metrics.get("cri"),
+                        "cri_threshold": c.threshold,
+                        "or": c.metrics.get("or"),
+                    }
+            if is_bwm:
+                bg = bwm_by_group.setdefault(
+                    group_id, {"bw_distribution": {"best": {}, "worst": {}}, "per_respondent": {}}
                 )
+                for role in ("best", "worst"):
+                    v = pairs.get(role)
+                    if v:
+                        d = bg["bw_distribution"][role]
+                        d[v] = d.get(v, 0) + 1
 
         if not respondent_pairs:
             local_weights_by_matrix[group_id] = {nid: 0.0 for nid in node_ids}
@@ -116,6 +134,8 @@ def build_results(
         "respondent_count": len(submissions_by_respondent),
         "cr_threshold": settings.get("cr_threshold", 0.1),
         "alternative_scores": alternative_scores,
+        "group_kinds": {m["group_id"]: m.get("kind", "pairwise") for m in groups},
+        "bwm": bwm_by_group,
     }
 
 
