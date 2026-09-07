@@ -110,6 +110,13 @@
     const menuBtn = document.getElementById('railMenuBtn');
     const mq = window.matchMedia('(max-width: 860px)');
 
+    // 모바일에선 상단 크로스-서비스 nav 가 안 들어가므로 서랍 안으로 복제한다.
+    const navSrc = document.querySelector('.top-header .top-nav');
+    const svcDst = document.getElementById('railServices');
+    if (navSrc && svcDst && !svcDst.childElementCount) {
+      svcDst.innerHTML = '<div class="rail-svc-label">KNPU 서비스</div>' + navSrc.innerHTML;
+    }
+
     function closeRail() {
       if (rail) rail.classList.remove('rail-open');
       if (backdrop) backdrop.hidden = true;

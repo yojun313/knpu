@@ -300,16 +300,31 @@ label.method-adv{display:flex;align-items:center;gap:8px;margin-top:10px;font-si
 .empty-state .es-icon{font-size:38px;opacity:.5}
 .empty-state h2{font-size:15px;font-weight:700;color:var(--text-strong)}
 
-/* 모바일 햄버거 — 데스크톱에선 숨김 */
+/* 모바일 햄버거 · 서랍 안 서비스 목록 — 데스크톱에선 숨김 */
 .rail-menu-btn{display:none}
+.rail-services{display:none}
 
 @media (max-width: 860px){
+  /* 상단 크로스-서비스 nav 는 폭이 부족해 서랍 안으로 내린다 */
+  .top-header .top-nav{display:none}
+  .top-header{gap:10px;padding:0 12px}
+  .top-header-logo{height:26px}
+
   /* 사이드바를 오프캔버스 서랍으로 — 기본은 화면 밖, 햄버거로 슬라이드 인 */
   .rail-menu-btn{display:flex;align-items:center;justify-content:center;
     width:38px;height:38px;flex-shrink:0;border:1px solid rgba(255,255,255,.28);
     border-radius:8px;background:rgba(255,255,255,.10);color:#fff;font-size:17px;
     line-height:1;cursor:pointer}
   .rail-menu-btn:hover{background:rgba(255,255,255,.2)}
+
+  .rail-services{display:flex;flex-direction:column;gap:2px;padding:10px 8px;
+    border-top:1px solid var(--sidebar-border)}
+  .rail-services .rail-svc-label{font-size:10px;font-weight:800;letter-spacing:.5px;
+    color:var(--sidebar-muted);padding:2px 8px 6px;text-transform:uppercase}
+  .rail-services .top-nav-link{display:block;color:var(--sidebar-text);text-decoration:none;
+    font-size:13px;font-weight:700;padding:9px 10px;border-radius:8px;white-space:nowrap}
+  .rail-services .top-nav-link:hover{background:var(--sidebar-panel2)}
+  .rail-services .top-nav-link.active{background:var(--sidebar-panel2);color:var(--accent)}
   .rail{position:fixed;top:58px;left:0;bottom:0;z-index:95;width:min(280px,82vw);
     transform:translateX(-100%);transition:transform .22s ease;
     box-shadow:4px 0 24px rgba(0,0,0,.30)}
