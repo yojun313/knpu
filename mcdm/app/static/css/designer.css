@@ -1,0 +1,111 @@
+.designer-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+/* 그리드 자식은 기본 min-width:auto 라 트리가 깊어지면 칸을 밀어내 페이지가 틀어진다 */
+.designer-layout>.table-card{min-width:0}
+/* admin.css 의 .table-card+.table-card{margin-top:14px} 가 그리드 두 번째 칸을
+   14px 밀어 내려 두 카드가 어긋나던 것 — 그리드 안에서는 무효화 */
+.designer-layout>.table-card+.table-card{margin-top:0}
+/* 두 카드 헤더 높이를 고정해 본문(트리 첫 행 / 이름 입력)이 같은 선에서
+   시작하게 — 왼쪽은 버튼, 오른쪽은 텍스트라 내용 높이가 달라 어긋났었다. */
+.designer-layout>.table-card>.tc-head{height:52px;box-sizing:border-box;padding-top:0;padding-bottom:0}
+.designer-layout>.table-card>.tc-head .btn.sm{margin:0}
+@media (max-width:900px){.designer-layout{grid-template-columns:1fr}}
+
+/* 노드 인스펙터 (오른쪽 패널) */
+#nodeInspector .ni-body{padding:14px 16px}
+#nodeInspector .field{margin-bottom:12px}
+#nodeInspector .field label{display:block;font-size:11.5px;font-weight:700;color:var(--sidebar-muted);margin-bottom:5px}
+#nodeInspector .field input,#nodeInspector .field textarea{width:100%;padding:9px 12px;border-radius:8px;
+  border:1px solid var(--sidebar-border);background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px;font-family:inherit}
+#nodeInspector .field input:focus,#nodeInspector .field textarea:focus,#niAddChild:focus{outline:none;border-color:var(--accent)}
+#nodeInspector textarea{min-height:52px;resize:vertical}
+.ni-children-head{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:11.5px;font-weight:700;color:var(--sidebar-muted);margin-bottom:6px}
+.ni-child-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.ni-empty{font-size:12px;color:var(--sidebar-muted);padding:4px 0;margin:0}
+.ni-child-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;background:var(--sidebar-panel2)}
+.ni-child-row .nicr-name{flex:1;min-width:0;text-align:left;background:none;border:none;font-family:inherit;
+  font-size:12.5px;font-weight:600;color:var(--text-strong);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ni-child-row .nicr-name:hover{text-decoration:underline}
+.ni-child-row .nicr-actions{display:flex;gap:2px;flex-shrink:0}
+.ni-child-row .nicr-actions button{width:24px;height:24px;border:none;border-radius:6px;background:transparent;
+  color:var(--sidebar-muted);cursor:pointer;font-size:12px}
+.ni-child-row .nicr-actions button:hover:not(:disabled){background:var(--sidebar-bg);color:var(--text-strong)}
+.ni-child-row .nicr-actions button:disabled{opacity:.3;cursor:default}
+.ni-child-row .nicr-actions button.danger:hover{background:var(--danger);color:#fff}
+.ni-add-row{display:flex;gap:6px}
+#niAddChild{flex:1;min-width:0;padding:9px 12px;border-radius:8px;border:1px dashed var(--sidebar-border);
+  background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px;font-family:inherit}
+.ni-add-btn{flex:0 0 auto;width:38px;border-radius:8px;border:1px solid var(--accent);
+  background:var(--accent);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.ni-add-btn:hover{filter:brightness(1.08)}
+
+#warningsBox:empty{display:none}
+.warn-item{background:rgba(224,138,46,.1);border:1px solid rgba(224,138,46,.3);
+  color:var(--warn);border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:10px}
+
+.tree-root{padding:10px;overflow-x:auto}
+.tree-node{border-radius:10px}
+.tree-node-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;
+  cursor:default}
+.tree-node-row:hover{background:var(--sidebar-panel2)}
+.tree-node-row.selected{background:var(--overlay-hover);outline:1.5px solid var(--accent)}
+.tn-toggle{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:var(--sidebar-muted);cursor:pointer;font-size:10px;border-radius:4px}
+.tn-toggle:hover{background:var(--sidebar-panel2)}
+.tn-toggle.leaf{visibility:hidden}
+.tn-main{flex:1;min-width:0;cursor:pointer}
+.tn-name{font-size:13px;font-weight:700;color:var(--text-strong);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.tn-desc{font-size:11px;color:var(--sidebar-muted);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-top:1px}
+.tn-count{font-size:10px;color:var(--sidebar-muted);background:var(--sidebar-panel2);
+  padding:2px 7px;border-radius:999px;flex-shrink:0}
+.tn-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
+.tree-node-row:hover .tn-actions{opacity:1}
+/* 선택된 행은 버튼 상시 표시 — 호버가 없는 터치 환경 대응 */
+.tree-node-row.selected .tn-actions{opacity:1}
+.tn-actions button{width:24px;height:24px;border:none;background:transparent;
+  color:var(--sidebar-muted);border-radius:6px;cursor:pointer;font-size:12px;
+  display:flex;align-items:center;justify-content:center}
+.tn-actions button:hover{background:var(--sidebar-panel2);color:var(--text-strong)}
+/* ── 좁은 화면(모바일·태블릿 세로) ──────────────────────────────────────
+   호버가 없으니 "호버해야 버튼" 방식을 버린다. 비선택 행은 버튼을 아예
+   레이아웃에서 빼 이름 공간을 최대로 주고, 선택(탭)한 행만 버튼을 이름 아래
+   줄로 내려 보여준다. 이름은 잘리지 않고 줄바꿈. */
+@media (max-width: 860px){
+  .tree-node-row{padding:10px 10px;gap:8px}
+  .tree-node-row:not(.selected) .tn-actions{display:none}
+  .tn-name{white-space:normal;overflow:visible;word-break:break-word;line-height:1.4}
+  .tn-desc{white-space:normal;overflow:visible}
+  .tn-count{display:none}
+  .tn-toggle.leaf{display:none}
+  .tree-children{margin-left:14px}
+  .tree-root>.tree-node>.tree-children{margin-left:6px}
+
+  .tree-node-row.selected{flex-wrap:wrap;padding:11px 12px}
+  .tree-node-row.selected .tn-main{flex:1 1 100%}
+  .tree-node-row.selected .tn-actions{flex-basis:100%;opacity:1;
+    justify-content:flex-end;margin-top:8px;gap:6px}
+  .tree-node-row.selected .tn-actions button{width:36px;height:36px;font-size:15px;
+    background:var(--sidebar-panel2)}
+}
+.tn-actions button.danger:hover{background:var(--danger);color:#fff}
+.tree-children{margin-left:22px;border-left:1px dashed var(--sidebar-border);padding-left:4px}
+.tree-root>.tree-node>.tree-children{margin-left:9px}
+
+.brainstorm-add{padding:12px 16px 0}
+.brainstorm-add input{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--sidebar-border);
+  background:var(--sidebar-bg);color:var(--text-strong);font-size:13px}
+.brainstorm-list{padding:12px 16px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto}
+.brain-card{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:9px;
+  border:1px solid var(--sidebar-border);background:var(--sidebar-bg)}
+.brain-card.promoted{opacity:.5}
+.brain-card .bc-text{flex:1;font-size:12.5px;color:var(--text-strong);word-break:break-word}
+.brain-card .bc-actions{display:flex;gap:4px;flex-shrink:0}
+.brain-card .bc-actions button{width:26px;height:26px;border:none;border-radius:7px;
+  background:var(--sidebar-panel2);color:var(--sidebar-muted);cursor:pointer;font-size:12px}
+.brain-card .bc-actions button:hover{background:var(--accent);color:#fff}
+
+/* 계층도(SVG) 공용 스타일은 admin.css로 옮김 — design.html뿐 아니라
+   survey/collect/result.html에서도 같은 다이어그램을 재사용하기 때문
+   (admin.css는 base.html에서 모든 관리자 화면에 항상 로드됨). */

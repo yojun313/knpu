@@ -1,0 +1,400 @@
+"""설문지(survey) — 계층에서 자동 생성된 문항(groups), 안내문, 노드별 설명.
+
+계층 설계(project_routes)와 설문지 준비(여기)를 의도적으로 분리했다. 계층의
+name/order는 트리 구조를 다루는 값이고, 여기서 다루는 node_descriptions는
+"응답자에게 실제로 보여줄 설명 문구"다 — 연구자가 설계 단계에서 대충 적어둔
+메모와, 설문 단계에서 다듬은 안내문이 같은 값일 필요가 없어서 따로 둔다.
+"""
+
+import uuid
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, HTTPException, Request
+
+from app.auth import current_uid, is_admin
+from app.db import (
+    surveys_db,
+    hierarchies_db,
+    collections_db,
+    responses_db,
+    submissions_db,
+    projects_db,
+)
+from app.services.questions import (
+    generate_questions,
+    normalize_methods,
+    diff_groups,
+    diff_has_impact,
+    prune_answers,
+)
+from app.services.demographics import normalize_demographics
+from app.services.hub import hub
+
+router = APIRouter()
+
+# 연구실 이름 — homepage about.html의 FPEI_NAME과 동일하게 유지한다.
+LAB_NAME = "경찰대학 미래치안공학연구원(FPEI)"
+
+DEFAULT_INTRO_TEXT = (
+    f"본 설문은 {LAB_NAME}의 연구를 위해 실시됩니다. "
+    "여러 평가 기준(또는 대안)의 상대적 중요도를 알아보기 위해, 두 항목씩 짝지어 "
+    "어느 쪽이 얼마나 더 중요한지 비교하는 방식(쌍대비교)으로 진행됩니다. "
+    "정답은 없으니 귀하의 전문적 판단과 경험에 따라 응답해 주시면 됩니다. "
+    "문항 수에 따라 대략 5~15분 정도 소요됩니다."
+)
+
+DEFAULT_CONSENT_TEXT = (
+    f"이 설문은 {LAB_NAME}이 수행하는 연구를 위한 것으로, 응답 내용은 연구 목적으로만 "
+    "사용됩니다. 모든 응답은 익명으로 처리되며 통계적으로만 분석되어, 개인을 식별할 수 "
+    "있는 형태로 공개되거나 제3자에게 제공되지 않습니다. 참여는 전적으로 자발적이며, "
+    "응답 도중 언제든 중단할 수 있고 그로 인한 어떠한 불이익도 없습니다. "
+    f"문의: {LAB_NAME}."
+)
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+async def _get_project_checked(project_id: str, request: Request):
+    doc = await projects_db.find_one({"_id": project_id})
+    if not doc:
+        raise HTTPException(404, "프로젝트를 찾을 수 없습니다")
+    uid = current_uid(request)
+    if doc.get("owner_uid") != uid and not is_admin(request):
+        raise HTTPException(403, "이 프로젝트에 접근할 권한이 없습니다")
+    return doc
+
+
+def _serialize_survey(doc: dict) -> dict:
+    return {
+        "id": doc["_id"],
+        "project_id": doc["project_id"],
+        "hierarchy_version": doc["hierarchy_version"],
+        "version": doc["version"],
+        "title": doc.get("title", ""),
+        # 비어 있으면 구체적 기본 문구로 채운다 — 참여자에게 보이는 연구 안내는
+        # 공백이 바람직하지 않고, 연구자가 다르게 쓰면 그 편집이 저장·표시된다.
+        "intro_text": doc.get("intro_text") or DEFAULT_INTRO_TEXT,
+        "consent_text": doc.get("consent_text") or DEFAULT_CONSENT_TEXT,
+        "node_descriptions": doc.get("node_descriptions", {}),
+        "groups": doc.get("groups", []),
+        "methods": doc.get("methods", {}),
+        "demographics": doc.get("demographics", []),
+        "status": doc.get("status", "draft"),
+        "created_at": doc.get("created_at"),
+        "updated_at": doc.get("updated_at"),
+    }
+
+
+async def _latest_hierarchy(project_id: str) -> dict:
+    h = await hierarchies_db.find_one(
+        {"project_id": project_id}, sort=[("version", -1)]
+    )
+    if not h:
+        raise HTTPException(404, "계층을 먼저 설계해 주세요")
+    return h
+
+
+async def _ensure_survey(project_doc: dict) -> dict:
+    """이 프로젝트의 최신 설문지를 반환한다. 아직 없으면 최신 계층에서 v1을 만든다."""
+    project_id = project_doc["_id"]
+    existing = await surveys_db.find_one(
+        {"project_id": project_id}, sort=[("version", -1)]
+    )
+    if existing:
+        return existing
+
+    hierarchy = await _latest_hierarchy(project_id)
+    groups = generate_questions(
+        hierarchy["nodes"],
+        hierarchy.get("alternatives", []),
+        methods={},
+        settings=project_doc.get("settings", {}),
+    )
+    node_descriptions = {
+        n["uuid"]: n.get("description", "")
+        for n in hierarchy["nodes"]
+        if n.get("description")
+    }
+    doc = {
+        "_id": uuid.uuid4().hex,
+        "project_id": project_id,
+        "hierarchy_version": hierarchy["version"],
+        "version": 1,
+        "title": project_doc["title"],
+        "intro_text": DEFAULT_INTRO_TEXT,
+        "consent_text": DEFAULT_CONSENT_TEXT,
+        "node_descriptions": node_descriptions,
+        "groups": groups,
+        "methods": {"criteria": {}, "alternatives": "ahp"},
+        "demographics": [],
+        "status": "draft",
+        "created_at": _now(),
+        "updated_at": _now(),
+    }
+    await surveys_db.insert_one(doc)
+    return doc
+
+
+@router.get("/api/projects/{project_id}/survey")
+async def get_survey(project_id: str, request: Request):
+    project = await _get_project_checked(project_id, request)
+    doc = await _ensure_survey(project)
+    return _serialize_survey(doc)
+
+
+@router.put("/api/projects/{project_id}/survey")
+async def update_survey(project_id: str, request: Request):
+    """구조를 바꾸지 않는 편집(문구·설명·안내문) — 버전을 올리지 않는다."""
+    project = await _get_project_checked(project_id, request)
+    doc = await _ensure_survey(project)
+    body = await request.json()
+
+    patch = {}
+    if "title" in body:
+        patch["title"] = (body["title"] or "").strip() or doc["title"]
+    if "intro_text" in body:
+        patch["intro_text"] = body["intro_text"] or ""
+    if "consent_text" in body:
+        patch["consent_text"] = body["consent_text"] or DEFAULT_CONSENT_TEXT
+    if "node_descriptions" in body and isinstance(body["node_descriptions"], dict):
+        patch["node_descriptions"] = body["node_descriptions"]
+    if "demographics" in body:
+        # 인구통계 스키마는 계층/groups 구조와 무관 — node_descriptions처럼 버전 안 올린다.
+        patch["demographics"] = normalize_demographics(body["demographics"])
+
+    methods_kind_changed: list[str] = []
+    if "methods" in body:
+        # 노드별 가중치 방법·대안 랭킹 방법. group_id/child_uuids 는 그대로이고
+        # kind/method/question_text 만 바뀌므로 버전은 안 올린다 — 그 자리에서
+        # 현재 계층으로 groups 를 다시 만든다.
+        new_methods = normalize_methods(body["methods"])
+        # 발행된 설문은 분석방법을 바꿀 수 없다 — 이미 받은 응답과 계산 방식이
+        # 어긋난다(상세설정의 LOCKED_AFTER_OPEN 과 같은 취지).
+        if doc.get("status") == "published" and new_methods != normalize_methods(
+            doc.get("methods")
+        ):
+            raise HTTPException(
+                409, "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경하세요."
+            )
+        patch["methods"] = new_methods
+        hierarchy = await hierarchies_db.find_one(
+            {"project_id": project_id, "version": doc["hierarchy_version"]}
+        )
+        if hierarchy:
+            regen = generate_questions(
+                hierarchy["nodes"],
+                hierarchy.get("alternatives", []),
+                methods=new_methods,
+                settings=project.get("settings", {}),
+            )
+            old_by_id = {g["group_id"]: g for g in doc["groups"]}
+            for g in regen:
+                old = old_by_id.get(g["group_id"])
+                if old and old.get("kind", "pairwise") == g["kind"]:
+                    # 종류가 그대로면 연구자가 다듬은 질문 문구를 유지
+                    g["question_text"] = old.get("question_text", g["question_text"])
+                elif old:
+                    methods_kind_changed.append(g["group_id"])
+            patch["groups"] = regen
+
+    if "group_questions" in body and isinstance(body["group_questions"], dict):
+        groups = list(patch.get("groups", doc["groups"]))
+        by_id = {m["group_id"]: m for m in groups}
+        for mid, text in body["group_questions"].items():
+            if mid in by_id and text:
+                by_id[mid]["question_text"] = text
+        patch["groups"] = groups
+
+    if not patch:
+        raise HTTPException(400, "변경할 내용이 없습니다")
+    patch["updated_at"] = _now()
+    await surveys_db.update_one({"_id": doc["_id"]}, {"$set": patch})
+    updated = await surveys_db.find_one({"_id": doc["_id"]})
+
+    # 방법(kind)이 바뀐 그룹은 기존 응답이 무의미(pairwise 답 ↔ BWM 답 형식이 다름)
+    # → 이 프로젝트의 모든 응답·스냅샷에서 그 그룹만 비운다.
+    cleared_answers = 0
+    if methods_kind_changed:
+        survey_ids = [
+            s["_id"]
+            async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
+        ]
+        cids = [
+            c["_id"]
+            async for c in collections_db.find(
+                {"survey_id": {"$in": survey_ids}}, {"_id": 1}
+            )
+        ]
+        if cids:
+            unset = {f"answers.{gid}": "" for gid in methods_kind_changed}
+            r1 = await responses_db.update_many(
+                {"collection_id": {"$in": cids}}, {"$unset": unset}
+            )
+            await submissions_db.update_many(
+                {"collection_id": {"$in": cids}}, {"$unset": unset}
+            )
+            cleared_answers = r1.modified_count
+
+    # 문구·설명만 바뀐 경우도 실시간 collection이 열려 있으면 그 자리에서
+    # 응답자 화면에 반영한다(PLAN.md 7.3) — 전체 스냅샷을 그대로 보내는 게
+    # 부분 diff보다 단순하고, 설문지 크기가 작아서 비용도 무시할 만하다.
+    open_realtime = collections_db.find(
+        {
+            "survey_id": {
+                "$in": [
+                    s["_id"]
+                    async for s in surveys_db.find(
+                        {"project_id": project_id}, {"_id": 1}
+                    )
+                ]
+            },
+            "mode": "realtime",
+            "status": "open",
+        }
+    )
+    async for coll in open_realtime:
+        await hub.publish(
+            coll["_id"],
+            "survey.patch",
+            {
+                "node_descriptions": updated.get("node_descriptions", {}),
+                "groups": updated.get("groups", []),
+            },
+        )
+
+    out = _serialize_survey(updated)
+    if methods_kind_changed:
+        out["methods_kind_changed"] = methods_kind_changed
+        out["cleared_answers"] = cleared_answers
+    return out
+
+
+@router.post("/api/projects/{project_id}/survey/resync")
+async def resync_survey(project_id: str, request: Request):
+    """최신 계층에서 matrices를 다시 뽑아 설문지에 반영한다.
+
+    구조가 실제로 바뀐 경우(형제 추가/삭제/이동)에만 이 프로젝트의 모든 collection에
+    걸린 기존 응답을 정리한다(PLAN.md 4.4) — 이름·설명만 바뀐 경우는 응답을 건드리지
+    않는다. 정리 전 원본은 손대지 않고 그대로 두고, 정리된 결과만 새로 저장한다
+    (완전한 이력 보존은 향후 change-log 컬렉션 과제로 남겨둔다 — 지금은 최소한
+    "몇 건이 어떻게 정리됐는지"를 응답으로 알려준다).
+    """
+    project = await _get_project_checked(project_id, request)
+    current = await _ensure_survey(project)
+    hierarchy = await _latest_hierarchy(project_id)
+
+    if hierarchy["version"] == current["hierarchy_version"]:
+        return {"changed": False, "message": "계층이 그대로라 변경할 내용이 없습니다"}
+
+    methods = normalize_methods(current.get("methods"))
+    new_matrices = generate_questions(
+        hierarchy["nodes"],
+        hierarchy.get("alternatives", []),
+        methods=methods,
+        settings=project.get("settings", {}),
+    )
+    diff = diff_groups(current["groups"], new_matrices)
+    impact = diff_has_impact(diff)
+
+    new_descriptions = dict(current.get("node_descriptions", {}))
+    for n in hierarchy["nodes"]:
+        if n["uuid"] not in new_descriptions and n.get("description"):
+            new_descriptions[n["uuid"]] = n["description"]
+
+    next_version = current["version"] + 1
+    new_doc = {
+        "_id": uuid.uuid4().hex,
+        "project_id": project_id,
+        "hierarchy_version": hierarchy["version"],
+        "version": next_version,
+        "title": current["title"],
+        "intro_text": current.get("intro_text", ""),
+        "consent_text": current.get("consent_text", DEFAULT_CONSENT_TEXT),
+        "node_descriptions": new_descriptions,
+        "groups": new_matrices,
+        "methods": methods,
+        "demographics": current.get("demographics", []),
+        "status": current.get("status", "draft"),
+        "created_at": _now(),
+        "updated_at": _now(),
+    }
+    await surveys_db.insert_one(new_doc)
+
+    pruned_count = 0
+    if impact:
+        old_survey_ids = [
+            s["_id"]
+            async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
+        ]
+        collection_ids = [
+            c["_id"]
+            async for c in collections_db.find(
+                {"survey_id": {"$in": old_survey_ids}}, {"_id": 1}
+            )
+        ]
+        if collection_ids:
+            async for resp in responses_db.find(
+                {"collection_id": {"$in": collection_ids}}
+            ):
+                pruned_answers, changed = prune_answers(resp.get("answers", {}), diff)
+                if changed:
+                    pruned_count += 1
+                    await responses_db.update_one(
+                        {"_id": resp["_id"]},
+                        {"$set": {"answers": pruned_answers, "updated_at": _now()}},
+                    )
+
+    return {
+        "changed": True,
+        "impact": impact,
+        "version": next_version,
+        "diff": diff,
+        "pruned_responses": pruned_count,
+    }
+
+
+@router.get("/api/surveys/{survey_id}/print-data")
+async def survey_print_data(survey_id: str, request: Request):
+    """인쇄 미리보기 전용 — survey_id로 직접 조회한다(특정 과거 버전을 인쇄할 수도
+    있어서 "프로젝트의 최신 설문지"가 아니라 정확히 이 버전을 찾는다)."""
+    survey = await surveys_db.find_one({"_id": survey_id})
+    if not survey:
+        raise HTTPException(404, "설문지를 찾을 수 없습니다")
+    project = await projects_db.find_one({"_id": survey["project_id"]})
+    if not project:
+        raise HTTPException(404, "프로젝트를 찾을 수 없습니다")
+    uid = current_uid(request)
+    if project.get("owner_uid") != uid and not is_admin(request):
+        raise HTTPException(403, "이 설문지에 접근할 권한이 없습니다")
+
+    hierarchy = await hierarchies_db.find_one(
+        {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
+    )
+    nodes_by_uuid = {n["uuid"]: n for n in hierarchy["nodes"]} if hierarchy else {}
+    # 대안 비교 행렬의 child_uuids는 대안 uuid라, 이것도 같이 넣어야 인쇄물에서
+    # 대안 이름이 uuid로 안 보이고 정상 표시된다.
+    for a in (hierarchy or {}).get("alternatives", []):
+        nodes_by_uuid[a["uuid"]] = a
+    return {
+        "survey": _serialize_survey(survey),
+        "nodes": nodes_by_uuid,
+        # 계층도 렌더용 원본 트리 배열(위 nodes는 대안이 섞인 uuid 맵이라 부적합).
+        "nodes_tree": hierarchy["nodes"] if hierarchy else [],
+    }
+
+
+@router.post("/api/projects/{project_id}/survey/publish")
+async def publish_survey(project_id: str, request: Request):
+    project = await _get_project_checked(project_id, request)
+    doc = await _ensure_survey(project)
+    if not doc.get("groups"):
+        raise HTTPException(400, "비교할 항목이 없습니다. 계층을 먼저 완성해 주세요")
+    await surveys_db.update_one(
+        {"_id": doc["_id"]}, {"$set": {"status": "published", "updated_at": _now()}}
+    )
+    await projects_db.update_one(
+        {"_id": project_id}, {"$set": {"status": "active", "updated_at": _now()}}
+    )
+    return {"status": "published", "survey_id": doc["_id"]}
