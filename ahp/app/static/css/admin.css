@@ -230,6 +230,19 @@ html[data-ui-theme="mesh"] select option{background:var(--mesh-base);color:var(-
   font-size:12px;font-weight:700;line-height:1.35;overflow:hidden}
 .hd-box.hd-root{background:var(--accent);border-color:var(--accent);color:#fff}
 .hd-box .hd-w{font-size:10px;font-weight:600;opacity:.72;margin-top:2px}
+
+/* 활용 분석 선언 (설문지 편집) */
+.enabled-methods{display:flex;flex-wrap:wrap;gap:8px}
+.em-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:10px;
+  border:1.5px solid var(--sidebar-border);background:var(--sidebar-bg);font-size:12.5px;
+  font-weight:600;cursor:pointer;user-select:none}
+.em-chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--sidebar-bg))}
+.em-chip input{margin:0}
+.method-doc{margin-top:10px;font-size:12px;line-height:1.6;color:var(--sidebar-muted);min-height:2.4em}
+.method-doc:empty{display:none}
+.method-adv{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;
+  font-weight:400;color:var(--sidebar-muted);cursor:pointer}
+.method-adv input{margin:0}
 .tc-head.collapsible{cursor:pointer;user-select:none}
 
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
