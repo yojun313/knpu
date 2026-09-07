@@ -62,10 +62,33 @@
   padding:2px 7px;border-radius:999px;flex-shrink:0}
 .tn-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
 .tree-node-row:hover .tn-actions{opacity:1}
+/* 선택된 행은 버튼 상시 표시 — 호버가 없는 터치 환경 대응 */
+.tree-node-row.selected .tn-actions{opacity:1}
 .tn-actions button{width:24px;height:24px;border:none;background:transparent;
   color:var(--sidebar-muted);border-radius:6px;cursor:pointer;font-size:12px;
   display:flex;align-items:center;justify-content:center}
 .tn-actions button:hover{background:var(--sidebar-panel2);color:var(--text-strong)}
+/* ── 좁은 화면(모바일·태블릿 세로) ──────────────────────────────────────
+   호버가 없으니 "호버해야 버튼" 방식을 버린다. 비선택 행은 버튼을 아예
+   레이아웃에서 빼 이름 공간을 최대로 주고, 선택(탭)한 행만 버튼을 이름 아래
+   줄로 내려 보여준다. 이름은 잘리지 않고 줄바꿈. */
+@media (max-width: 860px){
+  .tree-node-row{padding:10px 10px;gap:8px}
+  .tree-node-row:not(.selected) .tn-actions{display:none}
+  .tn-name{white-space:normal;overflow:visible;word-break:break-word;line-height:1.4}
+  .tn-desc{white-space:normal;overflow:visible}
+  .tn-count{display:none}
+  .tn-toggle.leaf{display:none}
+  .tree-children{margin-left:14px}
+  .tree-root>.tree-node>.tree-children{margin-left:6px}
+
+  .tree-node-row.selected{flex-wrap:wrap;padding:11px 12px}
+  .tree-node-row.selected .tn-main{flex:1 1 100%}
+  .tree-node-row.selected .tn-actions{flex-basis:100%;opacity:1;
+    justify-content:flex-end;margin-top:8px;gap:6px}
+  .tree-node-row.selected .tn-actions button{width:36px;height:36px;font-size:15px;
+    background:var(--sidebar-panel2)}
+}
 .tn-actions button.danger:hover{background:var(--danger);color:#fff}
 .tree-children{margin-left:22px;border-left:1px dashed var(--sidebar-border);padding-left:4px}
 .tree-root>.tree-node>.tree-children{margin-left:9px}
