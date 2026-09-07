@@ -34,9 +34,9 @@
       "prod_domain": "manager.knpu.re.kr", "dev_domain": "dev.manager.knpu.re.kr",
       "public_path": "/progress"
     },
-    "ahp": {
+    "mcdm": {
       "prod_port": 8007, "dev_port": 18007,
-      "prod_domain": "ahp.knpu.re.kr", "dev_domain": "dev.ahp.knpu.re.kr"
+      "prod_domain": "ahp.knpu.re.kr", "dev_domain": "dev.mcdm.knpu.re.kr"
     },
     "dashboard": {
       "prod_port": 8009, "dev_port": 18009,

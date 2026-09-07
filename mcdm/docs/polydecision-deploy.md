@@ -1,0 +1,244 @@
+# PolyDecision 확장 — 배포 시 필요한 작업 (누적)
+
+> 0단계(추상화 도입) 리팩터링을 운영에 반영할 때 **코드 배포 외에** 해야 하는 작업.
+> 전체 설계는 `~/.claude/plans/ahp-compiled-shore.md` 참조.
+>
+> 공통 전제: 단일 워커(인메모리 WS 허브) → 배포는 **코드 반영 + `pm2 restart ahp`** 로
+> 진행하며, 그 순간 접속 중이던 실시간 세션은 끊긴다. 실시간 세션 진행 중 배포 금지.
+
+---
+
+## 개명 대조표 · 적용 현황
+
+`ahp` → `mcdm`(PolyDecision) 개명이 5개 층에 걸쳐 있다. **dev 는 적용 완료,
+운영은 미적용** — 아래 체크리스트의 "운영(prod)" 절을 배포 창구에서 수행한다.
+
+| 층 | 구 | 신 | dev | prod |
+|---|---|---|---|---|
+| `services.json` 서비스 키 | `ahp` | `mcdm` | ✅ | ✅ (코드) |
+| 리포지터리 디렉터리 | `ahp/` | `mcdm/` | ✅ | ✅ (코드) |
+| pm2 앱 이름 | `ahp-dev` / `ahp` | `mcdm-dev` / `mcdm` | ✅ 적용 | ⬜ 미적용 |
+| MongoDB | `ahp_dev` / `ahp` | `mcdm_dev` / `mcdm` | ✅ 시드 완료 | ⬜ 미적용 |
+| 도메인 | `dev.ahp.knpu.re.kr` | `dev.mcdm.knpu.re.kr` | ⬜ nginx 미적용 | 변경 없음 (`ahp.knpu.re.kr`) |
+| 화면 문구 | "AHP" | "PolyDecision" | ✅ | ✅ (코드) |
+
+- **코드**(services.json·디렉터리·문구)는 머지되면 dev/prod 모두 자동 반영.
+- **런타임**(pm2 앱 이름·DB)은 각 스택에서 수동 전환이 필요하다.
+- 도메인·포트(8007)는 운영 기준 그대로라 **운영 nginx 는 손대지 않는다**.
+- 내부 식별자(`localStorage ahp_*`, JS 전역 `ahpApi`/`AHPHierarchyDiagram`,
+  `"ahp"` 방법명)는 의도적으로 유지 — 기능적이고, localStorage 키를 바꾸면
+  응답자의 저장된 임시 답이 버려진다.
+
+**롤백**: 구 DB(`ahp`/`ahp_dev`)를 그대로 남기므로, 코드를 이전 커밋으로 되돌리고
+pm2 앱을 옛 이름으로 다시 띄우면 원복된다(§롤백 절 참조).
+
+---
+
+## 핵심: 새 DB 로 이전 (구 DB는 그대로 보존)
+
+0단계부터 앱은 새 DB 이름을 쓴다(`app/db.py`). **MODE 로 dev/prod 를 가른다**
+(`AHP_DB_NAME` 으로 명시 재정의 가능):
+
+| | 새 DB | 구 DB(보존) | pm2 스택 |
+|---|---|---|---|
+| 운영 (MODE=1) | `mcdm` | `ahp` | `/home/lab/knpu`, `pm2` (user `lab`) |
+| 개발 (MODE=0) | `mcdm_dev` | `ahp_dev` | `/home/wcchoi/knpu`, `pm2` (user `wcchoi`) |
+
+구 DB 는 **한 글자도 건드리지 않고** 롤백·이력용으로 남긴다.
+`scripts/migrate_ahp_to_mcdm.py` 가 **변환 복사**한다(개명·백필 포함):
+- 운영: (기본) `ahp` → `mcdm`
+- 개발: `MODE=0 AHP_SRC_DB=ahp_dev ...` → `ahp_dev` → `mcdm_dev`
+
+> `system/db/__init__.py` 의 `systems`(인증) DB 는 dev/prod 공유 그대로 — 콘텐츠 DB 만 분리한다.
+
+## 배포 체크리스트
+
+### 개발(dev) — `/home/wcchoi/knpu`, `pm2` (user `wcchoi`), MODE=0
+
+1. [ ] `cd /home/wcchoi/knpu && git pull`
+2. [ ] `mongosh --quiet --eval 'db.getMongo().getDBNames()'` — dev 데이터가 `ahp_dev` 인지 `ahp` 인지 확인
+3. [ ] **`ahp_dev` → `mcdm_dev` 변환 복사**
+       ```bash
+       MODE=0 AHP_SRC_DB=ahp_dev PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
+         /home/wcchoi/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
+       # 카운트 확인 후 --dry-run 제거하고 실행
+       ```
+4. [ ] `pm2 restart mcdm-dev --update-env && pm2 save`
+5. [ ] nginx: `dev.mcdm.knpu.re.kr` 전용 server 블록(→ `localhost:18007`) + `certbot -d dev.mcdm.knpu.re.kr`,
+       `dev.ahp` 는 301, 443 `default_server` 명시. (아래 "nginx" 절)
+6. [ ] 스모크: `curl -sI https://dev.mcdm.knpu.re.kr/` → 302, 로그인 후 프로젝트 목록 표시
+
+### 운영(prod) — `/home/lab/knpu`, `pm2` (user `lab`), MODE=1  *(나중, 이번 아님)*
+
+1. [ ] `mongodump -d ahp` (관례상 스냅샷 — `ahp` 는 안 건드림)
+2. [ ] 실시간 세션 없는 시간대
+3. [ ] `cd /home/lab/knpu && git pull`
+4. [ ] **`ahp` → `mcdm` 변환 복사**
+       ```bash
+       PYTHONPATH=/home/lab/knpu:/home/lab/knpu/mcdm \
+         /home/lab/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
+       # → 없이 실행
+       ```
+5. [ ] `pm2 delete ahp 2>/dev/null; pm2 delete mcdm 2>/dev/null; pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
+       (구 pm2 앱 이름은 `ahp` — 서비스·폴더 개명이 이번에 한꺼번에 적용된다.
+        MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
+6. [ ] 도메인 `ahp.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
+
+- **멱등**: 재실행하면 대상 문서가 최신 변환으로 `_id` 기준 덮어써짐. 완전 재동기화는 대상 DB drop 후 재실행.
+- 스크립트 끝에 잔존 검증(대상에 `surveys.matrices` / `revision_matrix_id` / `groups.kind` 누락 0), 실패 시 non-zero.
+- dry-run 기준(`ahp`, 확인 시점): projects 7 · hierarchies 22 · surveys 9 · collections 8 ·
+  respondents 14 · responses 14 · submissions 13 · results 0 · imports 1 (= 88 docs). `ahp_dev` 는 실행 시 확인.
+
+## nginx — dev.mcdm 전용 블록 + 폴백 차단
+
+배경: `*.knpu.re.kr` DNS 와일드카드 + `dev.mcdm` server 블록 부재 + 443 `default_server` 부재
+→ `dev.mcdm`(및 아무 미정의 서브도메인)이 알파벳 첫 443 블록 = **운영 `ahp.knpu.re.kr:8007`** 로
+폴백되고 운영 인증서를 제시(브라우저 이름 경고). 아래로 정리:
+
+```bash
+# 1) dev.mcdm 전용 블록 (dev.ahp 복사 → server_name 만 교체, proxy_pass localhost:18007 유지)
+sudo cp /etc/nginx/sites-available/dev.ahp.knpu.re.kr /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
+sudo sed -i 's/dev\.ahp\.knpu\.re\.kr/dev.mcdm.knpu.re.kr/g' /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
+sudo ln -sf /etc/nginx/sites-available/dev.mcdm.knpu.re.kr /etc/nginx/sites-enabled/
+sudo certbot --nginx -d dev.mcdm.knpu.re.kr        # 전용 인증서 → 이름 경고 해소
+
+# 2) dev.ahp 은퇴 → 301 (location / 만 교체)
+#    location / { return 301 https://dev.mcdm.knpu.re.kr$request_uri; }
+
+# 3) 443 기본 서버 명시 — 오타/미정의 서브도메인이 운영으로 새는 것 차단
+#    sites-available/00-default-ssl (알파벳 맨 앞) :
+#      server { listen 443 ssl default_server; listen [::]:443 ssl default_server;
+#        server_name _;
+#        ssl_certificate /etc/letsencrypt/live/ahp.knpu.re.kr/fullchain.pem;
+#        ssl_certificate_key /etc/letsencrypt/live/ahp.knpu.re.kr/privkey.pem;
+#        return 444; }
+#    sudo ln -sf .../00-default-ssl /etc/nginx/sites-enabled/
+
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+## 롤백
+
+`mcdm` 은 새로 만든 것이고 `ahp` 는 온전하므로 롤백이 단순하다:
+
+1. 코드를 0단계 이전 커밋으로 되돌린다(구 코드는 `_client["ahp"]` 를 본다).
+2. `pm2 restart ahp`.
+3. `mcdm` DB 는 나중에 정리(drop)하면 된다.
+
+(구 코드로 `mcdm` 을 보게 하거나, 새 코드로 `ahp` 를 보게 하지 말 것 — 스키마가 안 맞는다.
+`AHP_DB_NAME` 은 로컬에서 구 DB 를 읽기 전용으로 들여다볼 때만.)
+
+---
+
+## 변환 복사 시 적용되는 스키마 변경 (단계별)
+
+### 1단계 — 식별자 개명
+
+`surveys.matrices` → `surveys.groups`(원소 `matrix_id` → `group_id`),
+`respondents.revision_matrix_id` → `revision_group_id`.
+`responses`/`submissions` 문서 내용은 **무변경**(바깥 키가 리터럴이 아니라 `parent_uuid` /
+`"alt:<uuid>"` 값이라 그대로 `group_id` 값).
+
+### 2단계 — 코드만 (`mcdm/` 공유 코어 + `methods/` 플러그인 골격)
+
+DB 스키마 변화 없음.
+
+### 3·4단계 — `generate_questions` + `surveys.methods` + 플러그인 dispatch
+
+- `surveys.groups[]` 각 원소에 `kind:"pairwise"` · `method:"ahp"` · `scale`(프로젝트
+  `settings.scale`) 백필.
+- `surveys.methods` 없으면 `{"criteria":{}, "alternatives":"ahp"}` 백필. 이후
+  `PUT /api/projects/{id}/survey` body `methods` 로 편집(버전 bump 없음), `resync` 시
+  `generate_questions` 가 이 값으로 그룹을 다시 만든다.
+- `hierarchies.nodes[]` 각 원소에 `type:"benefit"` · `measure:"qualitative"` · `unit:null`
+  백필 (SAW/TOPSIS 등 랭킹 방법용, AHP는 무시).
+- 백필이 없어도 코드는 `m.get("kind","pairwise")` / `get_method(None)`(→ AHP 폴백)으로
+  견디지만, 데이터 uniform 을 위해 포함.
+- 4단계는 **코드만** — `build_results`·라우트의 AHP 직접 호출을 `METHODS[...]` dispatch 로.
+  동작·출력 무변경(`build_results` 골든 바이트 동일, 라우트 헬퍼 패리티 9건). 유일한 미세
+  차이: what-if 리뷰 차트(`group-eval`)의 동점 항목 정렬 순서(고유벡터 값에선 발생 안 함).
+
+### 5단계 — 코드만
+
+`respond.js` `RENDERERS[kind]` 레지스트리 + `csv_schema.group_item_slots(group)` 하나로
+항목/열 순서 통일. DB 조치 없음, 출력 바이트 동일. `docx_export`·`print.js`·`console.js`·
+`entry.js` 렌더 루프는 방법별 레이아웃이라 그대로(BWM 때 새로 그림).
+
+> **0단계 코드 완료.** 변환 복사 1회 + `pm2 restart` 로 전체 반영.
+
+---
+
+## 1단계 (BWM) — 진행 중
+
+### 1-1. BWM 계산 코어  *(코드: 완료 / DB·운영: 조치 없음)*
+
+`mcdm/lp.py`(선형모형 LP, scipy.linprog) + `mcdm/bwm_consistency.py`(OR·CR^I·임계값 표) +
+`methods/bwm.py`(`BwmPlugin`) 추가, `METHODS["bwm"]` 등록. `KIND_VALIDATORS` 에
+`pick_best`/`pick_worst`/`vector` 추가(계약: `(item_id, value)`).
+
+- **순수 추가.** 관리자 UI 로 `surveys.methods` 에 `bwm` 을 배정할 수단이 아직 없고,
+  `put_answer` 저장 경로·프론트 렌더러도 없어 BWM 그룹은 실제로 응답할 수 없다. DB 마이그레이션
+  불필요, 재기동 불필요(다음 하위 단계와 함께).
+- `result_service`: 비-pairwise 그룹은 pairwise 전용 극단값 진단을 건너뛰고, per-respondent
+  CR 표시는 `cri` 로 폴백(방어적, 현재 도달 불가).
+- 검증: `ahp/tests/check_methods_bwm.py` (7건) + `check_methods_ahp.py` 회귀(9건) + 골든 동일.
+
+### 1-2. 저장 경로 일반화  *(코드: 완료 / DB·운영: 조치 없음)*
+
+`put_answer`(respond·entry)가 `kind` 로 dispatch: `KIND_VALIDATORS[kind](body) → (item_id, value)`
+→ `answers[group_id][item_id] = value`. 진행률은 `csv_schema.group_item_count(group)`
+(pairwise n(n-1)/2, bwm 2n)로 계산. **pairwise 는 바이트 동일**(골든·패리티·9+9건).
+`section_snapshot` 은 비-pairwise 그룹의 쌍 진단을 건너뛴다.
+
+- 아직 BWM 그룹을 만들 관리자 UI(1-4)도 렌더러(1-3)도 없어 실제로 도달 불가.
+  DB 마이그레이션·재기동 불필요.
+- 검증: `check_methods_bwm.py` (9건 — +저장 경로 시뮬레이션) + `check_methods_ahp.py` (9건) + 골든 동일 + uvicorn 부팅.
+
+### 1-3. BWM 응답 렌더러 + 재개/what-if 배선  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `respond.js`: `RENDERERS[kind]` 계약 일반화(`renderBody`/`isComplete`/`answered`/`total`/
+  `overrides`). `RENDERERS.bwm` — Best/Worst 선택 버튼 + BO/OW 1~9 눈금 벡터. `bwmClickHandler`
+  (설문·리뷰 컨테이너에 위임). `renderMatrixPage`·`matrixComplete`·`updateProgress`·
+  `renderReviewPairs`·`enterReview` 가 렌더러에 dispatch.
+- 백엔드: `_build_matrices_view` 비-pairwise 는 `pairs:[]`; `_resolve_display_answers` 는
+  비-pairwise 답을 그대로 통과(재개 시 유실 방지); `group-eval` 은 overrides 적용을 플러그인에
+  위임 + `locus` 반환; `put_answer` 는 Best/Worst 변경 시 BO/OW 무효화(respond·entry).
+  `Consistency.value` 속성(AHP CR / BWM CR^I) 도입.
+- `respond.css`: `.bwm-*`.
+- **pairwise 무변경**(골든·패리티 9+9). BWM 그룹을 만들 관리자 UI(1-4)가 없어 라이브 E2E 는
+  1-4 이후. 위젯 렌더는 헤드리스(라이트·다크) 확인.
+
+### 1-4. 관리자 방법 선택 UI  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- 설문지 편집 화면(`survey_editor.js`): 각 기준 그룹 카드에 **"가중치 산출 방법" 드롭다운**
+  (AHP / BWM). 변경 시 `PUT /api/projects/{id}/survey {methods:{criteria, alternatives}}`.
+- `survey_routes.update_survey`: `methods` 가 오면 **그 자리에서** 현재 계층으로 `groups` 를
+  다시 만든다(버전 bump 없음 — `group_id`/`child_uuids` 는 그대로, `kind`/`method`/
+  `question_text` 만 갱신). 종류(kind)가 바뀐 그룹은 `responses`·`submissions` 에서
+  `answers.<group_id>` 를 `$unset`(형식이 달라 기존 응답 무의미). 응답 `cleared_answers` 반환.
+  종류가 그대로면 연구자가 다듬은 질문 문구는 유지.
+- **여기서부터 BWM 을 실제로 만들 수 있다** — 노드를 BWM 으로 바꾸고 발행하면 응답자 화면(1-3)에
+  BWM 흐름이 나온다.
+- 검증: `check_methods_bwm.py` 10건(+혼합방법 `build_results` 파이프라인 — root=AHP·c1=BWM
+  전역가중치 합성) + `check_methods_ahp.py` 9건 + 골든 동일 + `node --check` + 부팅.
+
+### 1-5. 오프라인 BWM — CSV 반입 + 인쇄/Word 양식  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `csv_schema.group_import_slots(group)`: 반입 열 슬롯을 kind별로 — pairwise `n(n-1)/2` 쌍 /
+  bwm `best·worst + BO×n + OW×n` (`2+2n`).
+- `entry_routes.import_csv`: 슬롯 kind별 파싱(pairwise / pick_best·worst(기준 이름 또는
+  1-base 번호 → uuid) / vector 1~9). `get_grid` 는 비-pairwise 를 `pairs:[]` 로.
+- `export-template.csv` BWM 열 헤더, `sheet_export` BWM tidy 행, `print.js`/`docx_export`
+  BWM 인쇄·Word 양식(Best/Worst 선택 줄 + 1~9 눈금표 2개, Q번호 = CSV 열 순서).
+- `entry.js`: 비-pairwise 그룹은 "CSV 반입으로 입력" 안내.
+
+### 1-6. 결과 화면 BWM 표시  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `build_results` 추가 키: `group_kinds`, `bwm`({gid:{bw_distribution, per_respondent:
+  {rid:{cri, cri_threshold, or}}}}). 기존 키 바이트 동일.
+- `result.js`: 개인별 일관성 표가 방법별 — BWM 은 응답자별 **CR^I 임계값**((n,척도) 표)로
+  판정 + **순서 일관성(OR)** 열. `renderBwmDistribution` — Best/Worst 지목 분포 막대.
+- `result.html`/`result.css`: `#bwmDistCard` + `.bwm-dist-*`.
+
+> **1단계(BWM) 완료.** 온라인·실시간·오프라인 3모드 + 결과 화면. 수집 계층 코드는
+> `KIND_VALIDATORS`/`group_item_count` 배선 외 무수정(설계 합격 기준 충족).

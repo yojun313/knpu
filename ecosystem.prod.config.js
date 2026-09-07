@@ -41,7 +41,7 @@ module.exports = {
     app("kemkim", "kemkim", "kemkim"),
     app("statistics", "statistics", "statistics"),
     app("manager_web", "manager/web", "progress", { watch: true }),
-    app("ahp", "ahp", "ahp"),
+    app("mcdm", "mcdm", "mcdm"),
     app("complaint", "complaint/server", "complaint", { watch: true }),
     app("dashboard", "admin", "dashboard", { watch: true }),
     app("bot", "system/bot", null, { watch: true }),

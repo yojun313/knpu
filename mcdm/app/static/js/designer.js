@@ -1,0 +1,849 @@
+(function () {
+  'use strict';
+
+  const projectId = location.pathname.split('/')[2];
+  let tree = { version: 0, nodes: [] };
+  let alternatives = [];
+  let dirty = false;
+  let selectedParentId = null;
+  const expanded = new Set();
+  const BRAIN_KEY = 'ahp_brainstorm_' + projectId;
+
+  function setDirty(v) {
+    dirty = v;
+    document.getElementById('dirtyBadge').hidden = !v;
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  function byId(id) { return tree.nodes.find(function (n) { return n.uuid === id; }); }
+  function childrenOf(id) {
+    return tree.nodes
+      .filter(function (n) { return n.parent_id === id; })
+      .sort(function (a, b) { return a.order - b.order; });
+  }
+  function root() { return tree.nodes.find(function (n) { return n.parent_id === null; }); }
+
+  function descendantCount(id) {
+    let count = 0;
+    const stack = childrenOf(id).map(function (n) { return n.uuid; });
+    while (stack.length) {
+      const cur = stack.pop();
+      count += 1;
+      childrenOf(cur).forEach(function (c) { stack.push(c.uuid); });
+    }
+    return count;
+  }
+
+  // ── 트리 렌더링 ──────────────────────────────────────────────────────────
+  function renderTree() {
+    const rootNode = root();
+    const container = document.getElementById('treeRoot');
+    if (!rootNode) { container.innerHTML = ''; } else {
+      container.innerHTML = '';
+      container.appendChild(renderNode(rootNode));
+    }
+    // 계층도는 별도 버튼 없이 트리를 편집할 때마다(추가/삭제/이동/이름변경)
+    // 항상 최신 상태로 갱신된다 — 팝업을 열어야만 보이던 이전 UX를 인라인으로 바꿈.
+    window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
+    renderInspector();
+  }
+
+  function renderNode(node) {
+    const kids = childrenOf(node.uuid);
+    const wrap = document.createElement('div');
+    wrap.className = 'tree-node';
+
+    const row = document.createElement('div');
+    row.className = 'tree-node-row' + (selectedParentId === node.uuid ? ' selected' : '');
+    row.dataset.id = node.uuid;
+
+    const toggle = document.createElement('span');
+    toggle.className = 'tn-toggle' + (kids.length ? '' : ' leaf');
+    toggle.textContent = kids.length ? (expanded.has(node.uuid) ? '▾' : '▸') : '';
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!kids.length) return;
+      if (expanded.has(node.uuid)) expanded.delete(node.uuid); else expanded.add(node.uuid);
+      renderTree();
+    });
+
+    const main = document.createElement('div');
+    main.className = 'tn-main';
+    main.innerHTML = '<div class="tn-name">' + ahpEsc(node.name) + '</div>' +
+      (node.description ? '<div class="tn-desc">' + ahpEsc(node.description) + '</div>' : '');
+    main.addEventListener('click', function () {
+      selectedParentId = node.uuid;
+      renderTree();
+      renderInspector();
+    });
+
+    const count = document.createElement('span');
+    count.className = 'tn-count';
+    count.hidden = !kids.length;
+    count.textContent = kids.length + '개';
+
+    const actions = document.createElement('div');
+    actions.className = 'tn-actions';
+    actions.innerHTML =
+      '<button data-act="add" title="하위 기준 추가">＋</button>' +
+      (node.parent_id !== null ? '<button data-act="up" title="위로">↑</button>' +
+        '<button data-act="down" title="아래로">↓</button>' +
+        '<button data-act="move" title="다른 항목의 하위로 이동">⇥</button>' +
+        '<button data-act="del" class="danger" title="삭제">🗑</button>' : '');
+    actions.addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if (act === 'add') focusAddChild(node.uuid);
+      else if (act === 'up') moveSibling(node.uuid, -1);
+      else if (act === 'down') moveSibling(node.uuid, 1);
+      else if (act === 'move') openMoveTarget(node.uuid);
+      else if (act === 'del') deleteNode(node.uuid);
+    });
+
+    row.appendChild(toggle);
+    row.appendChild(main);
+    row.appendChild(count);
+    row.appendChild(actions);
+    wrap.appendChild(row);
+
+    if (kids.length && expanded.has(node.uuid)) {
+      const childBox = document.createElement('div');
+      childBox.className = 'tree-children';
+      kids.forEach(function (k) { childBox.appendChild(renderNode(k)); });
+      wrap.appendChild(childBox);
+    } else if (!kids.length) {
+      // 리프도 처음엔 접힘 상태로 취급하지 않도록(토글이 안 보이니 무해)
+    }
+    return wrap;
+  }
+
+  // 최초 로드시 전부 펼쳐서 보여준다(구조가 작을 때 파악이 쉽도록)
+  function expandAll() {
+    tree.nodes.forEach(function (n) { if (childrenOf(n.uuid).length) expanded.add(n.uuid); });
+  }
+
+  // ── 노드 인스펙터(오른쪽 패널) ──────────────────────────────────────────
+  function renderInspector() {
+    const node = byId(selectedParentId) || root();
+    const nameEl = document.getElementById('niName');
+    const descEl = document.getElementById('niDesc');
+    if (!node) { nameEl.value = ''; descEl.value = ''; document.getElementById('niChildList').innerHTML = ''; return; }
+    selectedParentId = node.uuid;
+    document.getElementById('niTitle').textContent = node.parent_id === null ? '목표' : '기준 정보';
+    if (document.activeElement !== nameEl) nameEl.value = node.name;
+    if (document.activeElement !== descEl) descEl.value = node.description || '';
+
+    const kids = childrenOf(node.uuid);
+    document.getElementById('niChildCount').textContent = kids.length ? kids.length + '개' : '';
+    document.getElementById('niChildList').innerHTML = kids.length
+      ? kids.map(function (k, i) {
+        return '<div class="ni-child-row" data-id="' + k.uuid + '">' +
+          '<button class="nicr-name" data-act="select" data-id="' + k.uuid + '">' + ahpEsc(k.name || '(이름 없음)') + '</button>' +
+          '<span class="nicr-actions">' +
+          '<button data-act="up" data-id="' + k.uuid + '" title="위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button data-act="down" data-id="' + k.uuid + '" title="아래로"' + (i === kids.length - 1 ? ' disabled' : '') + '>↓</button>' +
+          '<button data-act="del" data-id="' + k.uuid + '" class="danger" title="삭제">🗑</button>' +
+          '</span></div>';
+      }).join('')
+      : '<p class="ni-empty">아직 하위 기준이 없습니다. 아래에 입력해 추가하세요.</p>';
+  }
+
+  function focusAddChild(parentId) {
+    selectedParentId = parentId;
+    expanded.add(parentId);
+    renderTree();
+    renderInspector();
+    const inp = document.getElementById('niAddChild');
+    inp.focus();
+    inp.scrollIntoView({ block: 'nearest' });
+  }
+
+  function addChildNode(parentId, name) {
+    const kids = childrenOf(parentId);
+    tree.nodes.push({
+      uuid: crypto.randomUUID(),
+      parent_id: parentId,
+      name: name, description: '',
+      order: kids.length ? Math.max.apply(null, kids.map(function (k) { return k.order; })) + 1 : 0,
+    });
+    expanded.add(parentId);
+    setDirty(true);
+    renderTree();
+    renderInspector();
+  }
+
+  function deleteNode(id) {
+    const node = byId(id);
+    if (node.parent_id === null) { ahpToast('최상위 목표는 삭제할 수 없습니다', true); return; }
+    const n = descendantCount(id);
+    const msg = n > 0
+      ? ('"' + node.name + '"과(와) 하위 ' + n + '개 항목이 함께 삭제됩니다. 계속할까요?')
+      : ('"' + node.name + '"을(를) 삭제할까요?');
+    if (!confirm(msg)) return;
+    const toRemove = new Set([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      tree.nodes.forEach(function (nd) {
+        if (nd.parent_id && toRemove.has(nd.parent_id) && !toRemove.has(nd.uuid)) {
+          toRemove.add(nd.uuid); changed = true;
+        }
+      });
+    }
+    tree.nodes = tree.nodes.filter(function (nd) { return !toRemove.has(nd.uuid); });
+    setDirty(true);
+    renderTree();
+  }
+
+  function moveSibling(id, dir) {
+    const node = byId(id);
+    const sibs = childrenOf(node.parent_id);
+    const idx = sibs.findIndex(function (s) { return s.uuid === id; });
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= sibs.length) return;
+    const a = sibs[idx], b = sibs[swapIdx];
+    const tmp = a.order; a.order = b.order; b.order = tmp;
+    setDirty(true);
+    renderTree();
+  }
+
+  // ── 재부모화(다른 항목의 하위로 이동) ───────────────────────────────────────
+  function descendantIds(id) {
+    const out = new Set();
+    const stack = childrenOf(id).map(function (n) { return n.uuid; });
+    while (stack.length) {
+      const cur = stack.pop();
+      out.add(cur);
+      childrenOf(cur).forEach(function (c) { stack.push(c.uuid); });
+    }
+    return out;
+  }
+
+  let movingNodeId = null;
+  function openMoveTarget(id) {
+    movingNodeId = id;
+    const excluded = descendantIds(id);
+    excluded.add(id);
+    const sel = document.getElementById('moveTargetSelect');
+    sel.innerHTML = tree.nodes
+      .filter(function (n) { return !excluded.has(n.uuid); })
+      .slice()
+      .sort(function (a, b) { return a.level - b.level; })
+      .map(function (n) { return '<option value="' + n.uuid + '">' + '　'.repeat(n.level) + ahpEsc(n.name) + '</option>'; })
+      .join('');
+    document.getElementById('moveModal').hidden = false;
+  }
+
+  function moveNode() {
+    const newParentId = document.getElementById('moveTargetSelect').value;
+    if (!newParentId) { ahpToast('이동할 위치를 선택해 주세요', true); return; }
+    const node = byId(movingNodeId);
+    node.parent_id = newParentId;
+    const sibs = childrenOf(newParentId).filter(function (s) { return s.uuid !== node.uuid; });
+    node.order = sibs.length ? Math.max.apply(null, sibs.map(function (s) { return s.order; })) + 1 : 0;
+    expanded.add(newParentId);
+    setDirty(true);
+    document.getElementById('moveModal').hidden = true;
+    renderTree();
+    ahpToast('이동했습니다. 저장을 눌러야 반영됩니다.');
+  }
+
+  // ── 대안 관리 ────────────────────────────────────────────────────────────
+  function renderAltList() {
+    const list = document.getElementById('altList');
+    if (!alternatives.length) {
+      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">비교할 대안을 추가해 주세요.</p>';
+      return;
+    }
+    const sorted = alternatives.slice().sort(function (a, b) { return a.order - b.order; });
+    list.innerHTML = sorted.map(function (a, i) {
+      return '<div class="ni-child-row" data-id="' + a.uuid + '">' +
+        '<button class="nicr-name" data-act="rename-alt" data-id="' + a.uuid + '">' + ahpEsc(a.name) + '</button>' +
+        '<span class="nicr-actions">' +
+        '<button data-act="alt-up" data-id="' + a.uuid + '" title="위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button data-act="alt-down" data-id="' + a.uuid + '" title="아래로"' + (i === sorted.length - 1 ? ' disabled' : '') + '>↓</button>' +
+        '<button data-act="remove-alt" data-id="' + a.uuid + '" class="danger" title="삭제">🗑</button>' +
+        '</span></div>';
+    }).join('');
+  }
+
+  function addAlternative(name) {
+    alternatives.push({ uuid: crypto.randomUUID(), name: name, description: '', order: alternatives.length });
+    setDirty(true);
+    renderAltList();
+  }
+
+  function removeAlternative(id) {
+    alternatives = alternatives.filter(function (a) { return a.uuid !== id; });
+    setDirty(true);
+    renderAltList();
+  }
+
+  function renameAlternative(id) {
+    const a = alternatives.find(function (x) { return x.uuid === id; });
+    if (!a) return;
+    const next = prompt('대안 이름', a.name);
+    if (next === null) return;
+    const t = next.trim();
+    if (!t || t === a.name) return;
+    a.name = t;
+    setDirty(true);
+    renderAltList();
+  }
+
+  function moveAlternative(id, dir) {
+    const sorted = alternatives.slice().sort(function (a, b) { return a.order - b.order; });
+    const idx = sorted.findIndex(function (a) { return a.uuid === id; });
+    const j = idx + dir;
+    if (idx < 0 || j < 0 || j >= sorted.length) return;
+    const tmp = sorted[idx].order; sorted[idx].order = sorted[j].order; sorted[j].order = tmp;
+    setDirty(true);
+    renderAltList();
+  }
+
+  // ── 저장 ────────────────────────────────────────────────────────────────
+  async function saveHierarchy() {
+    const btn = document.getElementById('saveHierarchyBtn');
+    btn.disabled = true;
+    try {
+      const payload = tree.nodes.map(function (n) {
+        return { uuid: n.uuid, parent_id: n.parent_id, name: n.name, description: n.description, order: n.order };
+      });
+      const altPayload = alternatives.map(function (a) {
+        return { uuid: a.uuid, name: a.name, description: a.description, order: a.order };
+      });
+      const res = await ahpApi('/api/projects/' + projectId + '/hierarchy', {
+        method: 'PUT', body: { nodes: payload, alternatives: altPayload },
+      });
+      tree.version = res.version;
+      tree.nodes = res.nodes;
+      alternatives = res.alternatives || [];
+      setDirty(false);
+      renderWarnings(res.warnings || []);
+      ahpToast('저장했습니다 (v' + res.version + ')');
+      renderTree();
+      renderAltList();
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderWarnings(warnings) {
+    const box = document.getElementById('warningsBox');
+    box.innerHTML = warnings.map(function (w) {
+      return '<div class="warn-item">⚠ ' + ahpEsc(w.message) + '</div>';
+    }).join('');
+  }
+
+  // ── 브레인스토밍 패드 ────────────────────────────────────────────────────
+  function loadBrainCards() {
+    try { return JSON.parse(localStorage.getItem(BRAIN_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveBrainCards(cards) {
+    localStorage.setItem(BRAIN_KEY, JSON.stringify(cards));
+  }
+  let brainCards = loadBrainCards();
+
+  function renderBrainList() {
+    const list = document.getElementById('brainList');
+    if (!brainCards.length) {
+      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">떠오르는 기준·항목을 자유롭게 적어보세요.</p>';
+      return;
+    }
+    list.innerHTML = brainCards.map(function (c, i) {
+      return '<div class="brain-card' + (c.promoted ? ' promoted' : '') + '">' +
+        '<span class="bc-text">' + ahpEsc(c.text) + (c.promoted ? ' <small>(승격됨)</small>' : '') + '</span>' +
+        '<span class="bc-actions">' +
+        (c.promoted ? '' : '<button data-act="promote" data-i="' + i + '" title="트리로 승격">↗</button>') +
+        '<button data-act="remove" data-i="' + i + '" title="삭제">×</button>' +
+        '</span></div>';
+    }).join('');
+  }
+
+  let promotingIndex = null;
+  function openPromote(i) {
+    promotingIndex = i;
+    const sel = document.getElementById('promoteParentSelect');
+    sel.innerHTML = tree.nodes
+      .slice()
+      .sort(function (a, b) { return a.level - b.level; })
+      .map(function (n) { return '<option value="' + n.uuid + '">' + '　'.repeat(n.level) + ahpEsc(n.name) + '</option>'; })
+      .join('');
+    document.getElementById('promoteModal').hidden = false;
+  }
+
+  // ── 분석방법 모달 (활용 분석 선언 + 역할별 배정) ─────────────────────────
+  const METHOD_DEFS = [
+    { v: 'ahp', name: 'AHP', sub: '모든 쌍을 1:1로 비교 (Analytic Hierarchy Process)' },
+    { v: 'bwm', name: 'BWM', sub: '가장/가장 덜 중요한 것을 기준으로 비교 (Best-Worst Method)' },
+  ];
+  const METHOD_LABEL = { ahp: 'AHP', bwm: 'BWM' };
+  const METHOD_DOCS = {
+    ahp: 'AHP — 항목을 두 개씩 모두 짝지어 상대 중요도를 1~9로 매기고, 고유벡터로 ' +
+      '가중치를 얻습니다. 논리적 일관성을 CR로 점검합니다. 문항 수는 n(n-1)/2.',
+    bwm: 'BWM — 가장 중요한 항목과 가장 덜 중요한 항목을 고른 뒤 그 둘 기준으로만 ' +
+      '나머지를 비교합니다(문항 2n-3). 입력 일관성(CR^I)·순서 일관성(OR)으로 점검합니다.',
+  };
+  let methodsSurvey = null;
+  let methodsLocked = false;
+
+  function checkedMethods() {
+    const v = Array.prototype.map.call(
+      document.querySelectorAll('#methodsModal .em-check:checked'), function (el) { return el.value; }
+    );
+    return v.length ? v : ['ahp'];
+  }
+  function fillMethodSelect(id, list, cur) {
+    const sel = document.getElementById(id);
+    const keep = list.indexOf(cur) !== -1 ? cur : list[0];
+    sel.innerHTML = list.map(function (m) {
+      return '<option value="' + m + '"' + (m === keep ? ' selected' : '') + '>' +
+        (METHOD_LABEL[m] || m) + '</option>';
+    }).join('');
+  }
+  function updateMethodDoc(m) {
+    document.getElementById('methodDoc').textContent = METHOD_DOCS[m] || '';
+  }
+  // 기준 비교 그룹이 생기는 노드 = 자식이 있는 내부 노드. survey.groups(재생성
+  // 전이면 낡음)가 아니라 현재 계층(tree.nodes)에서 바로 뽑는다.
+  function criteriaParentNodes() {
+    const hasChild = new Set(
+      tree.nodes.filter(function (n) { return n.parent_id != null; })
+        .map(function (n) { return n.parent_id; })
+    );
+    return tree.nodes
+      .filter(function (n) { return hasChild.has(n.uuid); })
+      .sort(function (a, b) { return (a.level - b.level) || (a.order - b.order); });
+  }
+  function renderPerNodeList(show) {
+    const box = document.getElementById('perNodeList');
+    box.hidden = !show;
+    if (!show) { box.innerHTML = ''; return; }
+    const enabled = checkedMethods();
+    const crit = (methodsSurvey.methods || {}).criteria || {};
+    const parents = criteriaParentNodes();
+    if (!parents.length) {
+      box.innerHTML = '<p class="pn-empty">아직 하위 기준이 있는 항목이 없습니다.</p>';
+      return;
+    }
+    box.innerHTML = parents.map(function (n) {
+      const cur = crit[n.uuid] || enabled[0];
+      const nm = n.name || n.uuid;
+      return '<div class="pn-row"><span class="pn-name">' + ahpEsc(nm) + '</span>' +
+        '<select class="pn-method" data-node="' + n.uuid + '"' + (methodsLocked ? ' disabled' : '') + '>' +
+        enabled.map(function (v) {
+          return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' +
+            (METHOD_LABEL[v] || v) + '</option>';
+        }).join('') + '</select></div>';
+    }).join('');
+  }
+  function refreshMethodSelects() {
+    const en = checkedMethods();
+    ['criteriaMethodMaster', 'altMethodSelect'].forEach(function (id) {
+      const sel = document.getElementById(id);
+      if (sel && !sel.closest('[hidden]')) fillMethodSelect(id, en, sel.value);
+    });
+  }
+
+  async function openMethodsModal() {
+    if (dirty && !confirm('저장하지 않은 계층 변경이 있습니다.\n계층을 먼저 저장해야 분석방법이 최신 항목에 정확히 배정됩니다.\n그대로 여시겠습니까?')) {
+      return;
+    }
+    try {
+      methodsSurvey = await ahpApi('/api/projects/' + projectId + '/survey');
+    } catch (e) {
+      ahpToast(e.message || '설문지를 불러오지 못했습니다', true);
+      return;
+    }
+    const m = methodsSurvey.methods || {};
+    const enabled = (Array.isArray(m.enabled) && m.enabled.length) ? m.enabled : ['ahp'];
+    const perNode = !!m.criteria_per_node;
+    const locked = methodsSurvey.status === 'published';
+    methodsLocked = locked;
+
+    document.getElementById('enabledMethods').innerHTML = METHOD_DEFS.map(function (o) {
+      const on = enabled.indexOf(o.v) !== -1;
+      return '<label class="em-chip' + (on ? ' on' : '') + '" data-m="' + o.v + '">' +
+        '<span class="em-txt"><span class="em-name">' + ahpEsc(o.name) + '</span>' +
+        '<span class="em-sub">' + ahpEsc(o.sub) + '</span></span>' +
+        '<input type="checkbox" class="em-check" value="' + o.v + '"' +
+        (on ? ' checked' : '') + (locked ? ' disabled' : '') + '></label>';
+    }).join('');
+    updateMethodDoc(enabled[0]);
+
+    const vals = criteriaParentNodes().map(function (n) { return (m.criteria || {})[n.uuid] || 'ahp'; });
+    const common = (vals.length && vals.every(function (v) { return v === vals[0]; })) ? vals[0] : enabled[0];
+    fillMethodSelect('criteriaMethodMaster', enabled, common);
+    document.getElementById('criteriaPerNodeToggle').checked = perNode;
+    document.getElementById('criteriaMethodMaster').disabled = perNode || locked;
+    renderPerNodeList(perNode);
+
+    const altOn = !document.getElementById('altPanel').hidden;
+    const altField = document.getElementById('altMethodField');
+    altField.hidden = !altOn;
+    if (altOn) fillMethodSelect('altMethodSelect', enabled, m.alternatives || 'ahp');
+
+    // 발행 후에는 변경 잠금 — 계산 방식이 이미 받은 응답과 어긋난다.
+    document.getElementById('methodsLockNotice').hidden = !locked;
+    ['criteriaPerNodeToggle', 'altMethodSelect', 'methodsSave'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.disabled = locked;
+    });
+    document.querySelectorAll('#perNodeList .pn-method').forEach(function (el) { el.disabled = locked; });
+
+    document.getElementById('methodsModal').hidden = false;
+  }
+
+  async function saveMethodsModal() {
+    if (methodsLocked) { document.getElementById('methodsModal').hidden = true; return; }
+    const enabled = checkedMethods();
+    const perNode = document.getElementById('criteriaPerNodeToggle').checked;
+    const parents = criteriaParentNodes().map(function (n) { return n.uuid; });
+    const criteria = {};
+    if (perNode) {
+      document.querySelectorAll('#perNodeList .pn-method').forEach(function (el) {
+        criteria[el.dataset.node] = enabled.indexOf(el.value) !== -1 ? el.value : enabled[0];
+      });
+    } else {
+      const master = document.getElementById('criteriaMethodMaster').value || enabled[0];
+      parents.forEach(function (u) { criteria[u] = master; });
+    }
+    const altField = document.getElementById('altMethodField');
+    // 대안 계층을 안 쓰면 alternatives 는 실제로 안 쓰이지만, 저장된 값이 옛
+    // 방법(예: 'ahp')이면 normalize_methods 의 "배정된 방법은 항상 enabled 포함"
+    // 가드가 해제한 방법을 되살린다 → 계층 미사용 시 enabled 안의 값으로 맞춘다.
+    let alternatives;
+    if (!altField.hidden) {
+      alternatives = document.getElementById('altMethodSelect').value;
+    } else {
+      const stored = (methodsSurvey.methods || {}).alternatives || enabled[0];
+      alternatives = enabled.indexOf(stored) !== -1 ? stored : enabled[0];
+    }
+
+    if (methodsSurvey.status === 'published' &&
+      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) return;
+    try {
+      const res = await ahpApi('/api/projects/' + projectId + '/survey', {
+        method: 'PUT',
+        body: {
+          methods: {
+            criteria: criteria, alternatives: alternatives,
+            enabled: enabled, criteria_per_node: perNode,
+          },
+        },
+      });
+      const cleared = res.cleared_answers || 0;
+      const savedEnabled = (res.methods && res.methods.enabled) || enabled;
+      const kept = savedEnabled.filter(function (m) { return enabled.indexOf(m) === -1; });
+      let msg = cleared > 0
+        ? '방법을 저장했습니다. 형식이 바뀐 항목의 응답 ' + cleared + '건이 초기화됐습니다.'
+        : '방법을 저장했습니다.';
+      if (kept.length) {
+        msg += ' (' + kept.map(function (m) { return METHOD_LABEL[m] || m; }).join(', ') +
+          ' 은(는) 대안 평가에 쓰이고 있어 해제되지 않았습니다)';
+      }
+      ahpToast(msg);
+      document.getElementById('methodsModal').hidden = true;
+    } catch (e) {
+      ahpToast(e.message || '저장에 실패했습니다', true);
+    }
+  }
+
+  // ── 상세설정 모달 (공통 · 방법별 탭) ─────────────────────────────────────
+  function showSettingsTab(name) {
+    document.querySelectorAll('#settingsTabs .settings-tab').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tab === name);
+    });
+    document.querySelectorAll('.settings-tab-panel').forEach(function (p) {
+      p.hidden = p.dataset.tab !== name;
+    });
+  }
+
+  async function openSettings() {
+    const data = await ahpApi('/api/projects/' + projectId + '/settings');
+    let enabled = ['ahp'];
+    try {
+      const survey = await ahpApi('/api/projects/' + projectId + '/survey');
+      if (survey.methods && Array.isArray(survey.methods.enabled) && survey.methods.enabled.length) {
+        enabled = survey.methods.enabled;
+      }
+    } catch (e) { /* 설문 없으면 AHP 기본 */ }
+
+    const s = data.settings;
+    document.getElementById('setAggregation').value = s.aggregation;
+    document.getElementById('setWeightMethod').value = s.weight_method;
+    document.getElementById('setAltLayer').value = s.alt_layer;
+    document.getElementById('setIncomplete').value = s.incomplete_policy;
+    document.getElementById('setScale').value = String(s.scale);
+    document.getElementById('setCrThreshold').value = s.cr_threshold;
+    document.getElementById('setCrAction').value = s.cr_action;
+    document.getElementById('setCollectDemographics').value = s.collect_demographics || 'off';
+    document.getElementById('setBwmCriThreshold').value = s.bwm_cri_threshold != null ? s.bwm_cri_threshold : 0;
+    document.getElementById('setBwmOrGate').value = s.bwm_or_gate || 'on';
+    document.getElementById('setBwmConsistencyAction').value = s.bwm_consistency_action || 'warn';
+    document.getElementById('setBwmAggregation').value = s.bwm_aggregation || 'geomean';
+
+    // 활용 분석에서 선언한 방법만 탭으로 보인다.
+    document.querySelectorAll('#settingsTabs .settings-tab').forEach(function (b) {
+      if (b.dataset.tab === 'common') return;
+      b.hidden = enabled.indexOf(b.dataset.tab) === -1;
+    });
+    showSettingsTab('common');
+
+    document.getElementById('settingsLockNotice').hidden = !data.locked;
+    ['setAggregation', 'setWeightMethod', 'setAltLayer', 'setScale', 'setBwmAggregation']
+      .forEach(function (id) { document.getElementById(id).disabled = !!data.locked; });
+    document.getElementById('settingsModal').hidden = false;
+  }
+
+  async function saveSettings() {
+    const body = {
+      aggregation: document.getElementById('setAggregation').value,
+      weight_method: document.getElementById('setWeightMethod').value,
+      alt_layer: document.getElementById('setAltLayer').value,
+      incomplete_policy: document.getElementById('setIncomplete').value,
+      scale: Number(document.getElementById('setScale').value),
+      cr_threshold: Number(document.getElementById('setCrThreshold').value),
+      cr_action: document.getElementById('setCrAction').value,
+      collect_demographics: document.getElementById('setCollectDemographics').value,
+      bwm_cri_threshold: Number(document.getElementById('setBwmCriThreshold').value) || 0,
+      bwm_or_gate: document.getElementById('setBwmOrGate').value,
+      bwm_consistency_action: document.getElementById('setBwmConsistencyAction').value,
+      bwm_aggregation: document.getElementById('setBwmAggregation').value,
+    };
+    try {
+      await ahpApi('/api/projects/' + projectId + '/settings', { method: 'PUT', body: body });
+      document.getElementById('settingsModal').hidden = true;
+      document.getElementById('altPanel').hidden = body.alt_layer !== 'on';
+      ahpToast('설정을 저장했습니다');
+    } catch (e) {
+      ahpToast(e.message || '설정 저장에 실패했습니다', true);
+    }
+  }
+
+  // ── 초기화 ──────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const project = await ahpApi('/api/projects/' + projectId);
+      document.getElementById('projTitle').textContent = project.title;
+      document.getElementById('altPanel').hidden = project.settings.alt_layer !== 'on';
+      if (window.AHPShell) window.AHPShell.setActiveProject(projectId);
+    } catch (e) {
+      ahpToast('프로젝트를 불러오지 못했습니다', true);
+      return;
+    }
+
+    const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
+    tree = { version: h.version, nodes: h.nodes };
+    alternatives = h.alternatives || [];
+    selectedParentId = root() ? root().uuid : null;
+    expandAll();
+    renderTree();
+    renderWarnings(h.warnings || []);
+    renderBrainList();
+    renderAltList();
+
+    // 스테이지 탭 링크 연결
+    document.querySelectorAll('#stageTabs .stage-tab').forEach(function (tab) {
+      tab.addEventListener('click', function (e) {
+        e.preventDefault();
+        const stage = tab.dataset.stage;
+        if (stage === 'design') return;
+        if (stage === 'survey') location.href = '/survey/' + projectId + '?from=project';
+        if (stage === 'collect') location.href = '/collect/' + projectId + '?from=project';
+        if (stage === 'result') location.href = '/result/' + projectId + '?from=project';
+      });
+    });
+
+    document.getElementById('addRootChildBtn').addEventListener('click', function () {
+      focusAddChild(root() ? root().uuid : null);
+    });
+    document.getElementById('saveHierarchyBtn').addEventListener('click', saveHierarchy);
+
+    // ── 노드 인스펙터 배선 ──
+    document.getElementById('niName').addEventListener('input', function (e) {
+      const node = byId(selectedParentId);
+      if (!node) return;
+      node.name = e.target.value;
+      setDirty(true);
+      // 트리·계층도만 갱신(패널은 안 다시 그려 커서 유지)
+      window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
+      const row = document.querySelector('.tree-node-row[data-id="' + node.uuid + '"] .tn-name');
+      if (row) row.textContent = node.name || '(이름 없음)';
+    });
+    document.getElementById('niDesc').addEventListener('input', function (e) {
+      const node = byId(selectedParentId);
+      if (!node) return;
+      node.description = e.target.value;
+      setDirty(true);
+    });
+    const addChildInput = document.getElementById('niAddChild');
+    function commitAddChild() {
+      const name = addChildInput.value.trim();
+      if (!name || !selectedParentId) return;
+      addChildNode(selectedParentId, name);
+      addChildInput.value = '';
+      addChildInput.focus();
+    }
+    addChildInput.addEventListener('keydown', function (e) {
+      // 모바일 IME 는 Enter 를 keyCode 229 로 보내거나 "다음"으로 포커스 이동시킨다.
+      if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); commitAddChild(); }
+    });
+    document.getElementById('niAddChildBtn').addEventListener('click', commitAddChild);
+    document.getElementById('niChildList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if (act === 'select') { selectedParentId = id; renderTree(); renderInspector(); }
+      else if (act === 'up') moveSibling(id, -1);
+      else if (act === 'down') moveSibling(id, 1);
+      else if (act === 'del') deleteNode(id);
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveHierarchy(); }
+    });
+
+    function downloadDiagram(format) {
+      if (!tree.nodes.length) { ahpToast('먼저 계층을 만들어 주세요', true); return; }
+      const title = (document.getElementById('projTitle').textContent || '계층도').trim();
+      window.AHPHierarchyDiagram.download(tree.nodes, { format: format, filename: title + '_계층도' });
+    }
+    document.getElementById('dlDiagramSvg').addEventListener('click', function () { downloadDiagram('svg'); });
+    document.getElementById('dlDiagramPng').addEventListener('click', function () { downloadDiagram('png'); });
+
+
+    document.getElementById('altInput').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      const text = e.target.value.trim();
+      if (!text) return;
+      addAlternative(text);
+      e.target.value = '';
+    });
+    document.getElementById('altList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if (act === 'remove-alt') removeAlternative(id);
+      else if (act === 'rename-alt') renameAlternative(id);
+      else if (act === 'alt-up') moveAlternative(id, -1);
+      else if (act === 'alt-down') moveAlternative(id, 1);
+    });
+
+    document.getElementById('brainInput').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      const text = e.target.value.trim();
+      if (!text) return;
+      brainCards.push({ text: text, promoted: false });
+      saveBrainCards(brainCards);
+      e.target.value = '';
+      renderBrainList();
+    });
+    document.getElementById('brainList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const i = Number(btn.dataset.i);
+      if (btn.dataset.act === 'remove') {
+        brainCards.splice(i, 1);
+        saveBrainCards(brainCards);
+        renderBrainList();
+      } else if (btn.dataset.act === 'promote') {
+        openPromote(i);
+      }
+    });
+    document.getElementById('moveClose').addEventListener('click', function () {
+      document.getElementById('moveModal').hidden = true;
+    });
+    document.getElementById('moveSave').addEventListener('click', moveNode);
+
+    document.getElementById('promoteClose').addEventListener('click', function () {
+      document.getElementById('promoteModal').hidden = true;
+    });
+    document.getElementById('promoteSave').addEventListener('click', function () {
+      const parentId = document.getElementById('promoteParentSelect').value;
+      const card = brainCards[promotingIndex];
+      const kids = childrenOf(parentId);
+      tree.nodes.push({
+        uuid: crypto.randomUUID(), parent_id: parentId,
+        name: card.text, description: '',
+        order: kids.length ? Math.max.apply(null, kids.map(function (k) { return k.order; })) + 1 : 0,
+      });
+      card.promoted = true;
+      saveBrainCards(brainCards);
+      expanded.add(parentId);
+      setDirty(true);
+      document.getElementById('promoteModal').hidden = true;
+      renderBrainList();
+      renderTree();
+      ahpToast('트리에 추가했습니다. 저장을 눌러야 반영됩니다.');
+    });
+
+    document.getElementById('methodsBtn').addEventListener('click', openMethodsModal);
+    document.getElementById('methodsClose').addEventListener('click', function () {
+      document.getElementById('methodsModal').hidden = true;
+    });
+    document.getElementById('methodsSave').addEventListener('click', saveMethodsModal);
+    document.getElementById('methodsModal').addEventListener('change', function (e) {
+      if (e.target.classList.contains('em-check')) {
+        const chip = e.target.closest('.em-chip');
+        if (chip) chip.classList.toggle('on', e.target.checked);
+        if (e.target.checked) updateMethodDoc(e.target.value);
+        refreshMethodSelects();
+        renderPerNodeList(document.getElementById('criteriaPerNodeToggle').checked);
+      } else if (e.target.id === 'criteriaPerNodeToggle') {
+        document.getElementById('criteriaMethodMaster').disabled = e.target.checked;
+        renderPerNodeList(e.target.checked);
+      }
+    });
+    document.getElementById('methodsModal').addEventListener('mouseover', function (e) {
+      const chip = e.target.closest('.em-chip');
+      if (chip) updateMethodDoc(chip.dataset.m);
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('settingsClose').addEventListener('click', function () {
+      document.getElementById('settingsModal').hidden = true;
+    });
+    document.getElementById('settingsSave').addEventListener('click', saveSettings);
+    document.getElementById('settingsTabs').addEventListener('click', function (e) {
+      const btn = e.target.closest('.settings-tab');
+      if (btn) showSettingsTab(btn.dataset.tab);
+    });
+
+    document.getElementById('renameProjectBtn').addEventListener('click', async function () {
+      const current = document.getElementById('projTitle').textContent;
+      const next = prompt('새 프로젝트 이름', current);
+      if (next === null) return;
+      const trimmed = next.trim();
+      if (!trimmed || trimmed === current) return;
+      try {
+        await ahpApi('/api/projects/' + projectId, { method: 'PUT', body: { title: trimmed } });
+        document.getElementById('projTitle').textContent = trimmed;
+        if (window.AHPShell) window.AHPShell.refreshProjects();
+        ahpToast('이름을 변경했습니다');
+      } catch (e) {
+        ahpToast(e.message || '이름 변경에 실패했습니다', true);
+      }
+    });
+
+    document.getElementById('deleteProjectBtn').addEventListener('click', async function () {
+      const title = document.getElementById('projTitle').textContent;
+      if (!confirm('"' + title + '"을(를) 삭제할까요?\n계층·설문지·수집된 모든 응답이 함께 삭제되며 되돌릴 수 없습니다.')) return;
+      try {
+        await ahpApi('/api/projects/' + projectId, { method: 'DELETE' });
+        ahpToast('삭제했습니다');
+        location.href = '/';
+      } catch (e) {
+        ahpToast(e.message || '삭제에 실패했습니다', true);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

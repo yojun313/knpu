@@ -1,0 +1,347 @@
+/* ── 응답자 화면 전용 스타일 ───────────────────────────────────────────────
+   관리자 화면의 테마 시스템(/shared-ui/theme.css)을 로드하지 않는다 — 요청사항대로
+   시스템 설정에 따른 라이트/다크 두 가지만 존재하고, 테마 선택지·상단 내비게이션
+   바는 없다. 모바일이 기본값이고, 큰 화면은 clamp()로 자연스럽게 확장한다. */
+:root{
+  --r-bg:#F6F7FA; --r-surface:#FFFFFF; --r-ink:#12161F; --r-muted:#5B6472;
+  --r-accent:#2F5EA8; --r-accent-ink:#FFFFFF; --r-border:#DFE3EA; --r-danger:#C0342A;
+  --r-good:#1B7A4C; --r-chip-bg:#EEF1F6; --r-track:#E4E8EF;
+  --r-safe-t:env(safe-area-inset-top,0px); --r-safe-b:env(safe-area-inset-bottom,0px);
+  /* 본문은 넓은 화면에서 좌우 공간을 더 쓰고, 상·하단 바 내용과 버튼은
+     화면 양끝이 아니라 중앙 컬럼으로 모은다(4K 대응). */
+  --r-col:min(880px,92vw); --r-col-narrow:min(560px,92vw);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --r-bg:#0C0F16; --r-surface:#161B26; --r-ink:#EDEFF4; --r-muted:#98A1B3;
+    --r-accent:#6E9BE0; --r-accent-ink:#0B111C; --r-border:#262C3A; --r-danger:#E8837A;
+    --r-good:#5DBF92; --r-chip-bg:#1E2430; --r-track:#232A38;
+  }
+}
+@media (prefers-contrast:more){
+  :root{ --r-border:#8A93A6; }
+  @media (prefers-color-scheme:dark){ :root{ --r-border:#6b7386; } }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--r-bg); color:var(--r-ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Malgun Gothic',system-ui,sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:contain;
+}
+h1{font-size:clamp(19px,5vw,24px);line-height:1.3;letter-spacing:-.01em;font-weight:800;margin:0 0 10px}
+.muted{color:var(--r-muted);font-size:14px}
+button{font-family:inherit}
+
+.view{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.view.center{align-items:center;justify-content:center;text-align:center;padding:24px;gap:6px}
+.view[hidden]{display:none}
+
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--r-border);
+  border-top-color:var(--r-accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:1.6s}}
+
+.err-icon,.done-icon{font-size:40px;margin-bottom:6px}
+.done-icon{color:var(--r-good)}
+.err-icon{color:var(--r-danger)}
+
+/* ── 연결 상태 배너 ── */
+.conn-bar{position:sticky;top:0;z-index:50;padding:8px 16px;text-align:center;font-size:12.5px;
+  font-weight:700;background:var(--r-danger);color:#fff;
+  padding-top:calc(8px + var(--r-safe-t))}
+.conn-bar.reconnecting{background:#B8860B}
+
+/* ── 동의 / 코드 입력 카드 ── */
+.card{width:100%;max-width:var(--r-col-narrow);margin:0 auto;padding:max(24px,var(--r-safe-t)) 20px 32px;
+  display:flex;flex-direction:column;gap:14px}
+.intro{white-space:pre-wrap}
+.consent-box{background:var(--r-surface);border:1px solid var(--r-border);border-radius:14px;
+  padding:16px;max-height:220px;overflow-y:auto;font-size:13.5px;color:var(--r-muted);line-height:1.65}
+.check-row{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 2px}
+.check-row input{width:22px;height:22px;flex-shrink:0;accent-color:var(--r-accent)}
+
+.btn-primary{min-height:52px;border:none;border-radius:14px;background:var(--r-accent);
+  color:var(--r-accent-ink);font-size:16px;font-weight:800;cursor:pointer;
+  transition:filter .12s,transform .08s}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-ghost{min-height:48px;min-width:88px;border:1px solid var(--r-border);border-radius:12px;
+  background:transparent;color:var(--r-ink);font-size:14.5px;font-weight:700;cursor:pointer}
+.btn-ghost:disabled{opacity:.35;cursor:not-allowed}
+
+.code-input{min-height:56px;border:1.5px solid var(--r-border);border-radius:14px;
+  background:var(--r-surface);color:var(--r-ink);font-size:22px;font-weight:800;
+  letter-spacing:.08em;text-align:center;text-transform:uppercase;padding:0 16px}
+.code-input:focus{outline:none;border-color:var(--r-accent)}
+.err-text{color:var(--r-danger);font-size:13px;font-weight:600}
+
+/* ── 설문 화면 ── */
+.survey-top{position:sticky;top:0;z-index:40;background:var(--r-bg);
+  padding:calc(10px + var(--r-safe-t)) 18px 8px}
+.survey-top-inner{max-width:var(--r-col);margin:0 auto;width:100%}
+.progress-track{height:6px;border-radius:999px;background:var(--r-track);overflow:hidden}
+.progress-fill{height:100%;background:var(--r-accent);border-radius:999px;
+  transition:width .25s ease}
+@media (prefers-reduced-motion:reduce){.progress-fill{transition:none}}
+.progress-label{text-align:right;margin-top:5px;font-size:11.5px;color:var(--r-muted);
+  font-variant-numeric:tabular-nums}
+
+.survey-body{flex:1;padding:8px 20px 24px;max-width:var(--r-col);margin:0 auto;width:100%}
+.q-parent{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--r-accent);margin-bottom:6px}
+.q-desc{font-size:13px;color:var(--r-muted);margin-bottom:14px;line-height:1.6}
+.q-title{margin-bottom:22px;text-wrap:balance}
+
+.picker{display:flex;flex-direction:column;gap:16px}
+.side-labels{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;
+  color:var(--r-muted);padding:0 2px}
+.side-labels span{flex:1;text-align:center}
+.side-labels span:first-child{text-align:left}
+.side-labels span:last-child{text-align:right}
+.item-descs{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;
+  color:var(--r-muted);padding:0 2px;margin-top:-8px;line-height:1.5}
+.item-descs[hidden]{display:none}
+.item-descs span{flex:1}
+.item-descs span:first-child{text-align:left}
+.item-descs span:last-child{text-align:right}
+.side-buttons{display:grid;grid-template-columns:1fr auto 1fr;gap:8px}
+.side-btn{min-height:64px;border-radius:14px;border:1.5px solid var(--r-border);
+  background:var(--r-surface);color:var(--r-ink);font-size:14.5px;font-weight:700;
+  cursor:pointer;padding:8px 10px;transition:border-color .12s,background .12s,transform .08s}
+.side-btn:active{transform:scale(.97)}
+.side-btn.equal{min-width:72px;font-size:13px;color:var(--r-muted)}
+.side-btn.selected{border-color:var(--r-accent);border-width:2px;background:color-mix(in srgb, var(--r-accent) 12%, var(--r-surface));
+  color:var(--r-accent);font-weight:800}
+
+.intensity-wrap{padding-top:2px}
+.intensity-hint{font-size:12.5px;color:var(--r-muted);margin-bottom:10px;text-align:center;min-height:16px}
+.intensity-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.intensity-chip{min-width:44px;min-height:44px;border-radius:10px;border:1.5px solid var(--r-border);
+  background:var(--r-chip-bg);color:var(--r-ink);font-size:14px;font-weight:700;cursor:pointer;
+  flex:1 1 44px;max-width:56px}
+.intensity-chip.selected{border-color:var(--r-accent);background:var(--r-accent);color:var(--r-accent-ink)}
+
+.survey-nav{position:sticky;bottom:0;padding:12px 18px calc(14px + var(--r-safe-b));
+  background:var(--r-bg);border-top:1px solid var(--r-border)}
+.survey-nav-inner{max-width:var(--r-col-narrow);margin:0 auto;width:100%;
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
+.q-counter{font-size:12.5px;color:var(--r-muted);font-variant-numeric:tabular-nums}
+
+:focus-visible{outline:2.5px solid var(--r-accent);outline-offset:2px}
+
+/* ── 제출 완료 화면 — 기준별 CR 요약(섹션별로 눌러서 바로 이동) ── */
+.cr-summary-list{width:100%;max-width:var(--r-col-narrow);margin:14px 0;display:flex;flex-direction:column;
+  gap:8px;text-align:left}
+.cr-summary-row{display:flex;justify-content:space-between;align-items:center;width:100%;
+  padding:10px 14px;border-radius:12px;background:var(--r-surface);border:1px solid var(--r-border);
+  font-size:13px;font-family:inherit;cursor:pointer;transition:border-color .12s}
+.cr-summary-row:active{transform:scale(.99)}
+.cr-summary-row .csr-name{font-weight:700;color:var(--r-ink)}
+.cr-summary-row .csr-cr{font-variant-numeric:tabular-nums;font-weight:700}
+.cr-summary-row.bad{border-color:var(--r-danger)}
+.cr-summary-row.bad .csr-cr{color:var(--r-danger)}
+.cr-summary-row.ok .csr-cr{color:var(--r-good)}
+
+/* ── 제출 후: 본인 응답 결과(전역 가중치 + 대안 순위) ── */
+.my-result{width:100%;max-width:min(560px,92vw);margin:12px 0 4px;padding:14px 16px;
+  border-radius:14px;text-align:left;background:var(--r-surface);border:1px solid var(--r-border)}
+.my-result[hidden]{display:none}
+.my-result h3{margin:0 0 8px;font-size:13.5px;font-weight:800;color:var(--r-ink)}
+.my-result .mr-block{margin-bottom:12px}
+.my-result .mr-block:last-of-type{margin-bottom:6px}
+.my-result h4{margin:0 0 6px;font-size:11.5px;font-weight:700;color:var(--r-muted);
+  text-transform:uppercase;letter-spacing:.03em}
+.mr-row{display:grid;grid-template-columns:minmax(72px,38%) 1fr auto;align-items:center;
+  gap:8px;padding:3px 0;font-size:12.5px}
+.mr-row .mr-name{color:var(--r-ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-row .mr-bar{height:8px;border-radius:5px;background:var(--r-border);overflow:hidden}
+.mr-row .mr-bar>span{display:block;height:100%;background:var(--r-accent);border-radius:5px}
+.mr-row .mr-pct{font-variant-numeric:tabular-nums;font-weight:700;color:var(--r-ink)}
+.my-result p.small{font-size:11px;margin:4px 0 0}
+
+/* ── 제출 후: CR이 높게 나온 이유 설명 + 모순 예시 시각화 ── */
+.cr-explain{width:100%;max-width:var(--r-col-narrow);margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
+  background:color-mix(in srgb,var(--r-danger) 8%,var(--r-surface));
+  border:1px solid color-mix(in srgb,var(--r-danger) 32%,var(--r-border))}
+.cr-explain[hidden]{display:none}
+.cr-explain h3{margin:0 0 6px;font-size:13.5px;font-weight:800;color:var(--r-danger)}
+.cr-explain p{font-size:12.5px;line-height:1.65;margin:0 0 8px}
+.cr-explain p.small{font-size:11.5px;color:var(--r-muted);margin-bottom:0}
+.cr-explain-svg{display:block;width:100%;max-width:260px;height:auto;margin:10px auto}
+.cr-explain-svg .node{fill:var(--r-surface);stroke:var(--r-muted);stroke-width:1.5}
+.cr-explain-svg .lbl{fill:var(--r-ink);font-size:13px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+.cr-explain-svg .edge{stroke:var(--r-muted);stroke-width:2;fill:none;marker-end:url(#ah)}
+.cr-explain-svg .edge.bad{stroke:var(--r-danger);stroke-width:2;stroke-dasharray:5 3;marker-end:url(#ahbad)}
+.cr-explain-svg .etxt{font-size:10px;font-weight:700;fill:var(--r-muted);text-anchor:middle}
+.cr-explain-svg .etxt.bad{fill:var(--r-danger)}
+.cr-explain-svg .ah{fill:var(--r-muted)}
+.cr-explain-svg .ahbad{fill:var(--r-danger)}
+
+/* ── 섹션 리뷰 화면 — 한 매트릭스의 모든 쌍을 한 번에 보여주고 재조정 ── */
+.btn-ghost.sm{min-height:38px;min-width:0;padding:0 12px;font-size:13px}
+.review-title{font-size:15px;font-weight:800;margin:8px 2px 0;text-align:center}
+
+/* 조정 가이드 — 모순이 큰 답부터 3개, 방향·강도 안내 */
+.review-guide{margin:8px 0 4px;padding:10px 12px;border-radius:14px;
+  background:color-mix(in srgb,var(--r-danger) 7%,var(--r-surface));
+  border:1px solid color-mix(in srgb,var(--r-danger) 28%,var(--r-border))}
+.review-guide[hidden]{display:none}
+.review-guide .rg-head{font-size:11.5px;font-weight:800;color:var(--r-danger);margin-bottom:8px}
+.rg-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:var(--r-surface);border:1px solid var(--r-border);border-radius:10px;
+  padding:9px 10px;margin-top:6px;font-family:inherit;cursor:pointer}
+.rg-row:first-of-type{margin-top:0}
+.rg-row:active{transform:scale(.99)}
+.rg-rank{flex:0 0 22px;height:22px;border-radius:999px;background:var(--r-danger);color:#fff;
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.rg-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rg-pair{font-size:12.5px;font-weight:700;color:var(--r-ink)}
+.rg-move{font-size:11.5px;color:var(--r-muted);line-height:1.45}
+.rg-move b{color:var(--r-ink)}
+.rg-go{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--r-accent)}
+.pair-row.flash,.bwm-vrow.flash{animation:pairflash 1.2s ease}
+@keyframes pairflash{0%,100%{box-shadow:none}20%,60%{box-shadow:0 0 0 3px color-mix(in srgb,var(--r-accent) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){.pair-row.flash,.bwm-vrow.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--r-accent) 45%,transparent)}}
+
+.review-pairs{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.review-pair-row{border:1.5px solid var(--r-border);border-radius:14px;background:var(--r-surface);
+  padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.review-pair-row.worst{border-color:var(--r-danger)}
+.review-worst-badge{align-self:flex-start;background:var(--r-danger);color:#fff;font-size:11px;
+  font-weight:700;padding:3px 9px;border-radius:999px}
+.review-pair-row .rp-label{font-size:13.5px;font-weight:700;color:var(--r-ink)}
+.review-pair-row select{width:100%;min-height:44px;border:1.5px solid var(--r-border);
+  border-radius:10px;background:var(--r-bg);color:var(--r-ink);font-size:13px;padding:0 10px}
+
+/* ── 대기 화면(실시간) — 세션 시작 전 / 섹션 완료 후 공개된 결과 ── */
+.section-wait-results{width:100%;max-width:min(480px,92vw);margin:16px 0 0;padding:14px 16px;
+  border-radius:14px;background:var(--r-surface);border:1px solid var(--r-border);
+  text-align:left}
+.section-wait-results[hidden]{display:none}
+.section-wait-results h3{margin:0 0 8px;font-size:14px;font-weight:800}
+.section-wait-results .swr-cr{font-size:12.5px;color:var(--r-muted);margin-bottom:8px;
+  font-variant-numeric:tabular-nums}
+.section-wait-results .swr-row{display:flex;justify-content:space-between;font-size:13px;
+  padding:4px 0;border-top:1px solid var(--r-border)}
+.section-wait-results .swr-row:first-of-type{border-top:none}
+
+/* ── 실시간 문항 수정 알림 배너 ── */
+.patch-notice{position:fixed;top:calc(10px + var(--r-safe-t));left:50%;transform:translateX(-50%);
+  z-index:60;background:var(--r-good);color:#fff;padding:10px 18px;border-radius:999px;
+  font-size:13px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.18);
+  max-width:calc(100% - 32px);text-align:center}
+
+/* ── CR 칸 (진행도 바 밑) ── */
+.cr-bar{margin-top:6px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:5px 10px;border-radius:9px;background:var(--r-chip-bg);color:var(--r-muted);text-align:center}
+.cr-bar[hidden]{display:none}
+.cr-bar.ok{background:color-mix(in srgb,var(--r-good) 16%,var(--r-surface));color:var(--r-good)}
+.cr-bar.bad{background:color-mix(in srgb,var(--r-danger) 14%,var(--r-surface));color:var(--r-danger)}
+.cr-bar.muted{background:var(--r-chip-bg);color:var(--r-muted);font-weight:600}
+
+/* ── 계층도 (기본 펼침, 화면 폭 맞춤 · ⤢로 실제 크기 토글) ── */
+.hd-card{margin-bottom:14px}
+.hd-card[hidden]{display:none}
+.hd-toggle{width:100%;text-align:left;background:var(--r-surface);border:1px solid var(--r-border);
+  border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;color:var(--r-ink);cursor:pointer}
+.hd-box-wrap{position:relative;overflow:auto;max-height:62vh;margin-top:8px;border:1px solid var(--r-border);
+  border-radius:12px;background:var(--r-surface);padding:8px}
+.hd-box-wrap[hidden]{display:none}
+.hd-box-wrap.fit{overflow-x:hidden}
+.hd-box-wrap.fit #hdCanvas svg{max-width:100%;height:auto;display:block}
+.hd-box-wrap #hdCanvas svg{display:block}
+.hd-zoom{position:absolute;top:6px;right:6px;z-index:2;width:32px;height:32px;border-radius:8px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);font-size:14px;cursor:pointer;opacity:.85}
+.hd-edge{fill:none;stroke:var(--r-border);stroke-width:1.6}
+.hd-box{box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:6px 8px;border-radius:9px;border:1.5px solid var(--r-border);
+  background:var(--r-bg);color:var(--r-ink);font-size:11.5px;font-weight:700;line-height:1.3;overflow:hidden}
+.hd-box.hd-root{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink)}
+
+/* ── 쌍대비교 목록 (한 기준 = 한 페이지) ── */
+.pair-list{display:flex;flex-direction:column;gap:16px;margin-top:4px}
+.pair-row{border:1.5px solid var(--r-border);border-radius:14px;background:var(--r-surface);padding:12px}
+.pair-row.worst{border-color:var(--r-danger)}
+.pair-names{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:800;margin-bottom:8px}
+.pair-names span:last-child{text-align:right}
+.pair-desc{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--r-muted);
+  margin-bottom:8px;line-height:1.4}
+.pair-desc span:last-child{text-align:right}
+.pair-suggest{font-size:11.5px;font-weight:700;color:var(--r-danger);
+  background:color-mix(in srgb,var(--r-danger) 10%,var(--r-surface));
+  border-radius:8px;padding:5px 8px;margin-bottom:8px}
+.pair-suggest b{font-size:13px}
+/* 눈금 양 끝 위 방향 안내 — 숫자가 한쪽에 치우쳐 보이는 문제 해소 */
+.pair-dir{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:700;
+  color:var(--r-muted);margin-bottom:5px}
+.pair-dir span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pair-dir span:last-child{text-align:right}
+/* 17칸이 모바일·데스크톱 모두 스크롤 없이 한 줄에 들어가도록 균등 축소 */
+.scale{display:flex;gap:1px}
+.scale-cell{flex:1 1 0;min-width:0;height:46px;padding:0;border-radius:6px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);
+  font-size:11px;font-weight:700;cursor:pointer;transition:background .08s,border-color .08s}
+.scale-cell.eq{background:var(--r-chip-bg);color:var(--r-muted)}
+.scale-cell:active{transform:scale(.9)}
+.scale-cell.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);
+  box-shadow:0 0 0 1px var(--r-accent)}
+@media (hover:hover){.scale-cell:hover{border-color:var(--r-accent)}}
+
+/* ── BWM 위젯 ── */
+.bwm-step{margin-bottom:18px}
+.bwm-q{font-size:13.5px;font-weight:800;color:var(--r-ink);margin-bottom:8px}
+.bwm-q b{color:var(--r-accent)}
+.bwm-note,.bwm-q .bwm-note{font-size:11px;font-weight:600;color:var(--r-muted)}
+.bwm-hint{font-size:12px;color:var(--r-muted);margin:6px 2px 0}
+.bwm-pick-row{display:flex;flex-wrap:wrap;gap:8px}
+.bwm-pick{min-height:46px;padding:0 14px;border-radius:12px;border:1.5px solid var(--r-border);
+  background:var(--r-surface);color:var(--r-ink);font-size:13px;font-weight:700;cursor:pointer;flex:1 1 auto}
+.bwm-pick:active{transform:scale(.96)}
+.bwm-pick.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);font-weight:800}
+@media (hover:hover){.bwm-pick:hover{border-color:var(--r-accent)}}
+.bwm-vecs{border-top:1px solid var(--r-border);padding-top:14px;margin-top:4px}
+.bwm-vrow{border:1.5px solid var(--r-border);border-radius:12px;background:var(--r-surface);
+  padding:10px;margin-bottom:10px}
+.bwm-vrow.worst{border-color:var(--r-danger);box-shadow:0 0 0 1px var(--r-danger)}
+.bwm-vlabel{display:block;font-size:12px;font-weight:700;color:var(--r-muted);margin-bottom:7px}
+.scale.bwm-scale{gap:2px}
+.bwm-scale-cell{flex:1 1 0;min-width:0;height:44px;padding:0;border-radius:6px;
+  border:1px solid var(--r-border);background:var(--r-bg);color:var(--r-ink);font-size:12px;font-weight:700;cursor:pointer}
+.bwm-scale-cell:active{transform:scale(.9)}
+.bwm-scale-cell.on{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-accent-ink);
+  box-shadow:0 0 0 1px var(--r-accent)}
+@media (hover:hover){.bwm-scale-cell:hover{border-color:var(--r-accent)}}
+
+#submitBtn.ready{border-color:var(--r-accent);color:var(--r-accent);font-weight:800}
+
+/* ── 수정 화면 가중치 차트 ── */
+.wchart-card{border:1px solid var(--r-border);border-radius:14px;background:var(--r-surface);
+  padding:12px;margin-bottom:14px}
+.wchart{display:flex;flex-direction:column;gap:7px}
+.wc-row{display:grid;grid-template-columns:34% 1fr auto;align-items:center;gap:8px;font-size:12px;
+  padding:3px 4px;border-radius:8px}
+.wc-row.focus{background:color-mix(in srgb,var(--r-accent) 12%,var(--r-surface));font-weight:800}
+.wc-row.near{background:var(--r-chip-bg)}
+.wc-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-bar{height:10px;background:var(--r-track);border-radius:999px;overflow:hidden}
+.wc-bar>span{display:block;height:100%;background:var(--r-accent);border-radius:999px}
+.wc-row.focus .wc-bar>span{background:var(--r-danger)}
+.wc-val{font-variant-numeric:tabular-nums;font-weight:700}
+.wchart-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}
+.wchart-arrow{min-width:40px;min-height:36px;border:1px solid var(--r-border);border-radius:10px;
+  background:var(--r-bg);color:var(--r-ink);font-size:14px;cursor:pointer}
+.wchart-focus{font-size:12px;font-weight:700;color:var(--r-accent);min-width:120px;text-align:center}
+
+/* ── 인구통계 화면 ── */
+.demo-form{display:flex;flex-direction:column;gap:18px;margin:16px 0 20px}
+.demo-field .demo-q{font-size:14px;font-weight:700;margin-bottom:8px}
+.demo-field .demo-req{color:var(--r-danger)}
+.demo-choice{display:flex;align-items:center;gap:10px;font-size:14px;padding:8px 2px}
+.demo-choice input{width:20px;height:20px;flex-shrink:0;accent-color:var(--r-accent)}
+.demo-input{width:100%;min-height:46px;padding:10px 12px;font-size:15px;border-radius:12px;
+  border:1.5px solid var(--r-border);background:var(--r-surface);color:var(--r-ink)}
+.demo-input:focus{outline:none;border-color:var(--r-accent)}
+.demo-input::placeholder{color:var(--r-muted)}

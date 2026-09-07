@@ -1,0 +1,539 @@
+"""오프라인(종이) 응답 입력 — 관리자가 직접 격자에 입력하거나 CSV로 반입한다."""
+
+import csv
+import io
+import uuid
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File
+
+from app.auth import current_user
+from app.db import (
+    collections_db,
+    surveys_db,
+    hierarchies_db,
+    respondents_db,
+    responses_db,
+    submissions_db,
+    imports_db,
+)
+from app.services.ahp_calc import to_stored_pair, pair_id
+from app.services.methods import KIND_VALIDATORS, get_method
+from app.services.csv_schema import parse_value, group_item_slots, group_import_slots
+from app.services.codes import dedupe_label as _dedupe_label
+from app.services.hub import hub
+from app.services.demographics import coerce_attributes, validate_required
+from app.routes.collection_routes import _get_collection_checked
+
+router = APIRouter()
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+async def _survey_and_nodes(collection: dict):
+    survey = await surveys_db.find_one({"_id": collection["survey_id"]})
+    hierarchy = await hierarchies_db.find_one(
+        {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
+    )
+    nodes_by_id = {n["uuid"]: n for n in hierarchy["nodes"]}
+    for a in hierarchy.get("alternatives", []):
+        nodes_by_id[a["uuid"]] = a
+    return survey, nodes_by_id
+
+
+@router.post("/api/entry/{collection_id}/respondent")
+async def add_manual_respondent(collection_id: str, request: Request):
+    collection = await _get_collection_checked(collection_id, request)
+    if collection["mode"] != "offline":
+        raise HTTPException(400, "오프라인 수집에서만 응답자를 직접 추가할 수 있습니다")
+
+    body = await request.json()
+    label = (body.get("label") or "").strip()
+    if not label:
+        n = await respondents_db.count_documents({"collection_id": collection_id})
+        label = f"응답자 {n + 1}"
+
+    existing_labels = {
+        r["label"]
+        async for r in respondents_db.find(
+            {"collection_id": collection_id}, {"label": 1}
+        )
+    }
+    label = _dedupe_label(label, existing_labels)
+
+    survey, _nodes = await _survey_and_nodes(collection)
+    attributes, _errs = coerce_attributes(
+        survey.get("demographics", []), body.get("attributes") or {}
+    )
+
+    rid = uuid.uuid4().hex
+    doc = {
+        "_id": rid,
+        "collection_id": collection_id,
+        "code_hash": None,
+        "label": label,
+        "source": "manual",
+        "status": "in_progress",
+        "attributes": attributes,
+        "consent_at": None,
+        "created_at": _now(),
+    }
+    await respondents_db.insert_one(doc)
+    await responses_db.insert_one(
+        {
+            "_id": uuid.uuid4().hex,
+            "collection_id": collection_id,
+            "respondent_id": rid,
+            "survey_version": collection["survey_version"],
+            "answers": {},
+            "client_seq": 0,
+            "progress": 0,
+            "updated_at": _now(),
+        }
+    )
+    return {"id": rid, "label": label}
+
+
+@router.put("/api/entry/{collection_id}/respondents/{respondent_id}/demographics")
+async def set_manual_demographics(
+    collection_id: str, respondent_id: str, request: Request
+):
+    collection = await _get_collection_checked(collection_id, request)
+    r = await respondents_db.find_one(
+        {"_id": respondent_id, "collection_id": collection_id}
+    )
+    if not r:
+        raise HTTPException(404, "응답자를 찾을 수 없습니다")
+
+    survey, _nodes = await _survey_and_nodes(collection)
+    body = await request.json()
+    attributes, errors = coerce_attributes(
+        survey.get("demographics", []), body.get("answers") or {}
+    )
+    if errors:
+        raise HTTPException(400, " / ".join(errors[:5]))
+
+    await respondents_db.update_one(
+        {"_id": respondent_id}, {"$set": {"attributes": attributes}}
+    )
+    return {"attributes": attributes}
+
+
+@router.delete("/api/entry/{collection_id}/respondents/{respondent_id}")
+async def delete_manual_respondent(
+    collection_id: str, respondent_id: str, request: Request
+):
+    await _get_collection_checked(collection_id, request)
+    r = await respondents_db.find_one(
+        {"_id": respondent_id, "collection_id": collection_id}
+    )
+    if not r:
+        raise HTTPException(404, "응답자를 찾을 수 없습니다")
+    if r.get("source") != "manual":
+        raise HTTPException(400, "직접 입력한 응답자만 여기서 삭제할 수 있습니다")
+    await responses_db.delete_many(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    await submissions_db.delete_many(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    await respondents_db.delete_one({"_id": respondent_id})
+    return {"status": "deleted"}
+
+
+@router.get("/api/entry/{collection_id}/grid")
+async def get_grid(collection_id: str, request: Request):
+    collection = await _get_collection_checked(collection_id, request)
+    survey, nodes_by_id = await _survey_and_nodes(collection)
+
+    respondents = [
+        r
+        async for r in respondents_db.find({"collection_id": collection_id}).sort(
+            "created_at", 1
+        )
+    ]
+    responses_by_rid = {}
+    async for resp in responses_db.find({"collection_id": collection_id}):
+        responses_by_rid[resp["respondent_id"]] = resp.get("answers", {})
+
+    matrices_out = []
+    for m in survey["groups"]:
+        is_pw = m.get("kind", "pairwise") == "pairwise"
+        matrices_out.append(
+            {
+                "group_id": m["group_id"],
+                "parent_name": nodes_by_id.get(m["parent_uuid"], {}).get("name", ""),
+                "is_alternative": m.get("is_alternative", False),
+                "kind": m.get("kind", "pairwise"),
+                "children": [
+                    {"uuid": cid, "name": nodes_by_id.get(cid, {}).get("name", cid)}
+                    for cid in m["child_uuids"]
+                ],
+                # 표시 순서 항목 — PUT 때 그대로 uuid_a/uuid_b로 되돌려보내면 된다.
+                # 비-pairwise(BWM 등)는 격자 입력을 지원하지 않는다 → CSV 반입 사용.
+                "pairs": (
+                    [{"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)]
+                    if is_pw
+                    else []
+                ),
+            }
+        )
+
+    def _answers_in_display_order(groups, raw_answers):
+        """저장 규약(사전순 min/max 방향)을 화면 표시 순서(child_uuids[i]/[j], i<j)
+        방향으로 되돌린다 — 프런트가 저장 규약을 몰라도 되게 한다."""
+        out = {}
+        for m in groups:
+            stored = raw_answers.get(m["group_id"], {})
+            resolved = {}
+            for p in m["pairs"]:
+                pid = pair_id(p["uuid_a"], p["uuid_b"])
+                if pid not in stored:
+                    continue
+                v = stored[pid]
+                lo, _hi = sorted([p["uuid_a"], p["uuid_b"]])
+                resolved[pid] = v if p["uuid_a"] == lo else (1.0 / v)
+            out[m["group_id"]] = resolved
+        return out
+
+    def _cr_by_group(raw_answers: dict) -> dict:
+        """응답자별 매트릭스별 CR을 서버가 매번 계산해 돌려준다. 프런트가
+        직전 PUT 응답을 DOM에 임시 캐시해 두는 방식은 그리드를 다시 그릴 때마다
+        (응답자 전환 등) 캐시가 통째로 사라져 "완료된 매트릭스인데도 CR이 안
+        보이는" 문제로 이어졌었다 — 그 캐시를 아예 없애고 매번 서버 계산값을 쓴다."""
+        out = {}
+        for m in survey["groups"]:
+            if len(m["child_uuids"]) < 2:
+                continue
+            cr_info = _compute_cr_for_matrix(m, raw_answers)
+            if cr_info["complete"]:
+                out[m["group_id"]] = cr_info[
+                    "cr"
+                ]  # n<=2면 cr=None(정의상 무의미) — 그대로 전달
+        return out
+
+    return {
+        "groups": matrices_out,
+        "demographics": survey.get("demographics", []),
+        "respondents": [
+            {
+                "id": r["_id"],
+                "label": r["label"],
+                "status": r.get("status", "in_progress"),
+                "attributes": r.get("attributes", {}),
+                "answers": _answers_in_display_order(
+                    matrices_out, responses_by_rid.get(r["_id"], {})
+                ),
+                "cr_by_group": _cr_by_group(responses_by_rid.get(r["_id"], {})),
+            }
+            for r in respondents
+        ],
+    }
+
+
+def _compute_cr_for_matrix(matrix: dict, answers: dict) -> dict:
+    node_ids = matrix["child_uuids"]
+    pairs = answers.get(matrix["group_id"], {})
+    lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
+    if not lr.complete:
+        n = len(node_ids)
+        return {"complete": False, "missing": max(n * (n - 1) // 2 - len(pairs), 0)}
+    _c = lr.consistency
+    return {
+        "complete": True,
+        "cr": _c.value if _c else None,
+        "weights": lr.weights,
+    }
+
+
+@router.put("/api/entry/{collection_id}/answers")
+async def put_answer(collection_id: str, request: Request):
+    collection = await _get_collection_checked(collection_id, request)
+    body = await request.json()
+    respondent_id = body["respondent_id"]
+    group_id = body["group_id"]
+    kind = body.get("kind", "pairwise")
+    validator = KIND_VALIDATORS.get(kind)
+    if validator is None:
+        raise HTTPException(400, "지원하지 않는 응답 종류입니다")
+
+    survey, _nodes = await _survey_and_nodes(collection)
+    matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
+    if not matrix:
+        raise HTTPException(404, "해당 비교 행렬을 찾을 수 없습니다")
+
+    try:
+        item_id, stored_value = validator(body)
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(400, "응답 형식이 올바르지 않습니다")
+    resp = await responses_db.find_one(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    if not resp:
+        raise HTTPException(404, "응답 문서를 찾을 수 없습니다")
+
+    answers = dict(resp.get("answers", {}))
+    matrix_answers = dict(answers.get(group_id, {}))
+    if kind in ("pick_best", "pick_worst"):
+        matrix_answers = {
+            k: v
+            for k, v in matrix_answers.items()
+            if not k.startswith("BO:") and not k.startswith("OW:")
+        }
+    matrix_answers[item_id] = stored_value
+    answers[group_id] = matrix_answers
+
+    await responses_db.update_one(
+        {"_id": resp["_id"]},
+        {"$set": {"answers": answers, "updated_at": _now()}},
+    )
+
+    # 이 응답자가 현재 라운드에 이미 제출까지 마쳤다면(오프라인은 CSV 반입 직후,
+    # 실시간/온라인은 섹션 콘솔에서 관리자가 직접 고치는 경우) 그 스냅샷도 같이
+    # 갱신한다 — 안 그러면 결과 화면은 submissions만 보므로 방금 고친 값이
+    # 반영되지 않는다(respond_routes.submit의 "같은 라운드는 덮어쓴다" 원칙과 동일).
+    current_round = collection.get("round", 1)
+    await submissions_db.update_one(
+        {
+            "collection_id": collection_id,
+            "respondent_id": respondent_id,
+            "round": current_round,
+        },
+        {"$set": {"answers": answers, "submitted_at": _now()}},
+    )
+
+    cr_info = _compute_cr_for_matrix(matrix, answers)
+
+    # 진행자가 콘솔에서 고친 값을 그 참여자 화면에도 즉시 반영한다 — 안 그러면
+    # 로컬 상태가 조정 전 값으로 남아 있다가 "재조정 요청" 시 원복돼 버린다.
+    # (BWM 오프라인 콘솔 반영은 1-5 — 지금은 쌍대비교만 즉시 push한다.)
+    if kind == "pairwise":
+        await hub.publish(
+            collection_id,
+            "answer.override",
+            {
+                "group_id": group_id,
+                "uuid_a": body["uuid_a"],
+                "uuid_b": body["uuid_b"],
+                "value_a_over_b": float(body["value"]),
+                "cr": cr_info.get("cr") if cr_info.get("complete") else None,
+                "complete": cr_info.get("complete", False),
+            },
+            only_role_prefix=f"respondent:{respondent_id}",
+        )
+
+    return cr_info
+
+
+@router.post("/api/entry/{collection_id}/respondents/{respondent_id}/submit")
+async def submit_manual_respondent(
+    collection_id: str, respondent_id: str, request: Request
+):
+    collection = await _get_collection_checked(collection_id, request)
+    resp = await responses_db.find_one(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    if not resp:
+        raise HTTPException(404, "응답을 찾을 수 없습니다")
+
+    await submissions_db.insert_one(
+        {
+            "_id": uuid.uuid4().hex,
+            "collection_id": collection_id,
+            "respondent_id": respondent_id,
+            "round": collection.get("round", 1),
+            "survey_version": resp["survey_version"],
+            "answers": resp.get("answers", {}),
+            "submitted_at": _now(),
+        }
+    )
+    await respondents_db.update_one(
+        {"_id": respondent_id}, {"$set": {"status": "submitted"}}
+    )
+    return {"status": "submitted"}
+
+
+@router.post("/api/entry/{collection_id}/import")
+async def import_csv(
+    collection_id: str, request: Request, file: UploadFile = File(...)
+):
+    collection = await _get_collection_checked(collection_id, request)
+    if collection["mode"] != "offline":
+        raise HTTPException(400, "CSV 반입은 오프라인 수집에서만 지원합니다")
+
+    survey, nodes_by_id = await _survey_and_nodes(collection)
+    demographics = survey.get("demographics", [])
+    n_demo = len(demographics)
+    # 반입 양식 열 순서와 1:1로 맞춘 슬롯. group_import_slots 가 kind별로 낸다
+    # (pairwise: 쌍 / bwm: best·worst·BO·OW). export 양식·print.js 와 같은 순서.
+    slots = []  # dict 지시 목록 (flat)
+    for m in survey["groups"]:
+        slots.extend(group_import_slots(m))
+
+    def _name(u):
+        return nodes_by_id.get(u, {}).get("name", u)
+
+    def _resolve_crit(cell, gid):
+        """Best/Worst 셀(기준 이름 또는 1-base 번호)을 uuid 로."""
+        grp = next((g for g in survey["groups"] if g["group_id"] == gid), None)
+        cu = grp["child_uuids"] if grp else []
+        s = cell.strip()
+        if s.isdigit() and 1 <= int(s) <= len(cu):
+            return cu[int(s) - 1]
+        low = s.lower()
+        for c in cu:
+            if (_name(c) or "").strip().lower() == low:
+                return c
+        return None
+
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("cp949", errors="replace")
+
+    rows = list(csv.reader(io.StringIO(text)))
+    if not rows:
+        raise HTTPException(400, "빈 CSV 파일입니다")
+    header = rows[0]
+    while header and not header[-1].strip():  # 엑셀이 붙이는 후행 빈 열 제거
+        header.pop()
+    # 열 배치: [respondent] + [인구통계 n_demo개] + [슬롯 len(slots)개]
+    data_cols = len(header) - 1
+    expected = n_demo + len(slots)
+    if data_cols != expected:
+        raise HTTPException(
+            400,
+            f"양식 열 개수가 설문지와 다릅니다 (설문지 {expected}개"
+            f"{f' = 인구통계 {n_demo} + 응답 {len(slots)}' if n_demo else ''} / 파일 "
+            f"{max(data_cols, 0)}개). 최신 양식을 다시 받아 주세요.",
+        )
+
+    errors, by_respondent, demo_by_respondent = [], {}, {}
+    for i, row in enumerate(rows[1:], start=2):  # 1행은 헤더
+        if not any(cell.strip() for cell in row):
+            continue  # 완전히 빈 행
+        label = row[0].strip() if row else ""
+        if not label:
+            errors.append(f"{i}행: 첫 열(응답자)이 비어 있습니다")
+            continue
+
+        # 인구통계 열(있으면) — respondent 다음 n_demo개
+        raw_attrs = {}
+        for d, field in enumerate(demographics):
+            cell = row[1 + d].strip() if 1 + d < len(row) else ""
+            if cell:
+                raw_attrs[field["id"]] = cell
+        attrs, attr_errs = coerce_attributes(demographics, raw_attrs)
+        for e in attr_errs:
+            errors.append(f"{i}행: {e}")
+        demo_by_respondent[label] = attrs
+
+        got = 0
+        base = 1 + n_demo  # 응답 첫 열 인덱스
+        for k, s in enumerate(slots):
+            cell = row[base + k].strip() if base + k < len(row) else ""
+            if not cell:
+                continue  # 미입력 — 부분 응답 허용
+            col = header[base + k] if base + k < len(header) else f"열{base + k + 1}"
+            gid = s["group_id"]
+            dst = by_respondent.setdefault(label, {}).setdefault(gid, {})
+            if s["kind"] == "pairwise":
+                try:
+                    value = parse_value(cell)
+                except ValueError as e:
+                    errors.append(f"{i}행 [{col}]: {e}")
+                    continue
+                pid, stored = to_stored_pair(s["a"], s["b"], value)
+                dst[pid] = stored
+                got += 1
+            elif s["kind"] in ("pick_best", "pick_worst"):
+                u = _resolve_crit(cell, gid)
+                if u is None:
+                    errors.append(f"{i}행 [{col}]: 기준 '{cell}' 을 찾을 수 없습니다")
+                    continue
+                dst["best" if s["kind"] == "pick_best" else "worst"] = u
+                got += 1
+            else:  # vector (BO:/OW:)
+                try:
+                    value = parse_value(cell)
+                except ValueError as e:
+                    errors.append(f"{i}행 [{col}]: {e}")
+                    continue
+                if not (1 <= value <= 9):
+                    errors.append(f"{i}행 [{col}]: BWM 비교값은 1~9 여야 합니다")
+                    continue
+                dst[s["item_id"]] = value
+                got += 1
+        if got == 0:
+            errors.append(f"{i}행: '{label}' 행에 응답값이 하나도 없습니다")
+
+    if errors:
+        return {"status": "error", "errors": errors[:50], "error_count": len(errors)}
+
+    existing_labels = {
+        r["label"]
+        async for r in respondents_db.find(
+            {"collection_id": collection_id}, {"label": 1}
+        )
+    }
+
+    created = []
+    for orig_label, answers in by_respondent.items():
+        label = _dedupe_label(orig_label, existing_labels)
+        existing_labels.add(label)
+        rid = uuid.uuid4().hex
+        await respondents_db.insert_one(
+            {
+                "_id": rid,
+                "collection_id": collection_id,
+                "code_hash": None,
+                "label": label,
+                "source": "manual",
+                "status": "submitted",
+                "attributes": demo_by_respondent.get(orig_label, {}),
+                "consent_at": None,
+                "created_at": _now(),
+            }
+        )
+        await responses_db.insert_one(
+            {
+                "_id": uuid.uuid4().hex,
+                "collection_id": collection_id,
+                "respondent_id": rid,
+                "survey_version": collection["survey_version"],
+                "answers": answers,
+                "client_seq": 0,
+                "progress": 100,
+                "updated_at": _now(),
+            }
+        )
+        await submissions_db.insert_one(
+            {
+                "_id": uuid.uuid4().hex,
+                "collection_id": collection_id,
+                "respondent_id": rid,
+                "round": collection.get("round", 1),
+                "survey_version": collection["survey_version"],
+                "answers": answers,
+                "submitted_at": _now(),
+            }
+        )
+        created.append({"respondent_id": rid, "label": label})
+
+    user = current_user(request)
+    await imports_db.insert_one(
+        {
+            "_id": uuid.uuid4().hex,
+            "collection_id": collection_id,
+            "filename": file.filename,
+            "uploaded_by": user["uid"],
+            "row_count": sum(len(a) for a in by_respondent.values()),
+            "validation": {"errors": [], "warnings": []},
+            "created_at": _now(),
+        }
+    )
+
+    return {"status": "ok", "created": created}

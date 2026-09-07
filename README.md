@@ -122,7 +122,7 @@ Research System for **FPEI** at **Korea National Police University**
 uv sync
 ```
 
-`homepage` / `admin` / `crawler` / `complaint` / `manager/app` / `system/bot`은 각자 `pyproject.toml`로 자신이 실제로 쓰는 의존성을 명시해둔 워크스페이스 멤버입니다(무엇이 무엇을 쓰는지 추적하기 위한 문서화 목적이며, 그 안에서 `uv sync`를 실행해도 결국 같은 루트 `.venv`를 갱신합니다). `network` / `kemkim` / `statistics` / `ahp` / `manager/server` / `manager/web`처럼 별도 `pyproject.toml`이 없는 서비스는 루트의 통합 의존성 목록을 그대로 씁니다.
+`homepage` / `admin` / `crawler` / `complaint` / `manager/app` / `system/bot`은 각자 `pyproject.toml`로 자신이 실제로 쓰는 의존성을 명시해둔 워크스페이스 멤버입니다(무엇이 무엇을 쓰는지 추적하기 위한 문서화 목적이며, 그 안에서 `uv sync`를 실행해도 결국 같은 루트 `.venv`를 갱신합니다). `network` / `kemkim` / `statistics` / `mcdm` / `manager/server` / `manager/web`처럼 별도 `pyproject.toml`이 없는 서비스는 루트의 통합 의존성 목록을 그대로 씁니다.
 
 > `manager/app`(PyInstaller로 빌드하는 데스크톱 클라이언트)만 예외입니다. 자체 `uv.lock`을 따로 갖고 있어 서버 워크스페이스와 분리해서 빌드합니다 — 자세한 내용은 `manager/app/compile/` 참고.
 
