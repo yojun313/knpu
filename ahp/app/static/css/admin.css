@@ -248,6 +248,7 @@ label.method-adv{display:flex;align-items:center;gap:8px;margin-top:10px;font-si
   font-weight:600;color:var(--text-strong);cursor:pointer}
 .field label.method-adv input{flex:0 0 auto;width:16px;height:16px;min-width:0;padding:0;margin:0}
 .per-node-list .pn-method,.field .per-node-list select{width:auto}
+.per-node-list .pn-empty{margin:0;font-size:11.5px;color:var(--sidebar-muted)}
 .per-node-list{margin:-4px 0 12px;padding:8px 10px;border:1px solid var(--sidebar-border);
   border-radius:8px;background:var(--sidebar-panel2)}
 .per-node-list[hidden]{display:none}
