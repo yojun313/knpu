@@ -19,7 +19,7 @@
 | 리포지터리 디렉터리 | `ahp/` | `mcdm/` | ✅ | ✅ (코드) |
 | pm2 앱 이름 | `ahp-dev` / `ahp` | `mcdm-dev` / `mcdm` | ✅ 적용 | ⬜ 미적용 |
 | MongoDB | `ahp_dev` / `ahp` | `mcdm_dev` / `mcdm` | ✅ 시드 완료 | ⬜ 미적용 |
-| 도메인 | `dev.ahp.knpu.re.kr` | `dev.mcdm.knpu.re.kr` | ⬜ nginx 미적용 | 변경 없음 (`ahp.knpu.re.kr`) |
+| 도메인 | `dev.mcdm.knpu.re.kr` | `dev.mcdm.knpu.re.kr` | ⬜ nginx 미적용 | 변경 없음 (`mcdm.knpu.re.kr`) |
 | 화면 문구 | "AHP" | "PolyDecision" | ✅ | ✅ (코드) |
 
 - **코드**(services.json·디렉터리·문구)는 머지되면 dev/prod 모두 자동 반영.
@@ -82,7 +82,7 @@ pm2 앱을 옛 이름으로 다시 띄우면 원복된다(§롤백 절 참조).
 5. [ ] `pm2 delete ahp 2>/dev/null; pm2 delete mcdm 2>/dev/null; pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
        (구 pm2 앱 이름은 `ahp` — 서비스·폴더 개명이 이번에 한꺼번에 적용된다.
         MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
-6. [ ] 도메인 `ahp.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
+6. [ ] 도메인 `mcdm.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
 
 - **멱등**: 재실행하면 대상 문서가 최신 변환으로 `_id` 기준 덮어써짐. 완전 재동기화는 대상 DB drop 후 재실행.
 - 스크립트 끝에 잔존 검증(대상에 `surveys.matrices` / `revision_matrix_id` / `groups.kind` 누락 0), 실패 시 non-zero.
@@ -92,12 +92,12 @@ pm2 앱을 옛 이름으로 다시 띄우면 원복된다(§롤백 절 참조).
 ## nginx — dev.mcdm 전용 블록 + 폴백 차단
 
 배경: `*.knpu.re.kr` DNS 와일드카드 + `dev.mcdm` server 블록 부재 + 443 `default_server` 부재
-→ `dev.mcdm`(및 아무 미정의 서브도메인)이 알파벳 첫 443 블록 = **운영 `ahp.knpu.re.kr:8007`** 로
+→ `dev.mcdm`(및 아무 미정의 서브도메인)이 알파벳 첫 443 블록 = **운영 `mcdm.knpu.re.kr:8007`** 로
 폴백되고 운영 인증서를 제시(브라우저 이름 경고). 아래로 정리:
 
 ```bash
 # 1) dev.mcdm 전용 블록 (dev.ahp 복사 → server_name 만 교체, proxy_pass localhost:18007 유지)
-sudo cp /etc/nginx/sites-available/dev.ahp.knpu.re.kr /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
+sudo cp /etc/nginx/sites-available/dev.mcdm.knpu.re.kr /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
 sudo sed -i 's/dev\.ahp\.knpu\.re\.kr/dev.mcdm.knpu.re.kr/g' /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
 sudo ln -sf /etc/nginx/sites-available/dev.mcdm.knpu.re.kr /etc/nginx/sites-enabled/
 sudo certbot --nginx -d dev.mcdm.knpu.re.kr        # 전용 인증서 → 이름 경고 해소
@@ -109,8 +109,8 @@ sudo certbot --nginx -d dev.mcdm.knpu.re.kr        # 전용 인증서 → 이름
 #    sites-available/00-default-ssl (알파벳 맨 앞) :
 #      server { listen 443 ssl default_server; listen [::]:443 ssl default_server;
 #        server_name _;
-#        ssl_certificate /etc/letsencrypt/live/ahp.knpu.re.kr/fullchain.pem;
-#        ssl_certificate_key /etc/letsencrypt/live/ahp.knpu.re.kr/privkey.pem;
+#        ssl_certificate /etc/letsencrypt/live/mcdm.knpu.re.kr/fullchain.pem;
+#        ssl_certificate_key /etc/letsencrypt/live/mcdm.knpu.re.kr/privkey.pem;
 #        return 444; }
 #    sudo ln -sf .../00-default-ssl /etc/nginx/sites-enabled/
 

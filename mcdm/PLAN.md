@@ -86,7 +86,7 @@ knpu/mcdm/
 | 항목 | 값 |
 |---|---|
 | 포트 | **8010** (8000~8009 점유, 8004·8005 포함) |
-| 도메인 | `ahp.knpu.re.kr` |
+| 도메인 | `mcdm.knpu.re.kr` |
 | 워커 | **`workers=1` 필수** — 인메모리 웹소켓 허브가 상태를 가짐 |
 | pm2 | `ecosystem.config.js`에 **반드시 등록**, `watch: false` |
 | nginx | `manager.knpu.re.kr`의 `/progress/` 블록 복제 (웹소켓 업그레이드 + `proxy_read_timeout 86400`) |
@@ -563,7 +563,7 @@ app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="share
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name ahp.knpu.re.kr;
+    server_name mcdm.knpu.re.kr;
     # ssl_certificate 등은 기존 network.knpu.re.kr 설정에서 그대로 복사
 
     location / {
@@ -579,13 +579,13 @@ server {
     }
 }
 ```
-DNS에 `ahp.knpu.re.kr` A 레코드 추가 + `certbot`으로 인증서 발급도 필요.
+DNS에 `mcdm.knpu.re.kr` A 레코드 추가 + `certbot`으로 인증서 발급도 필요.
 
 ### 확인
 ```bash
 pm2 list | grep ahp        # online, watch=disabled
 ss -lntp | grep :8010       # 리스닝 확인
-curl -I https://ahp.knpu.re.kr/   # 302(로그인 리다이렉트)면 정상
+curl -I https://mcdm.knpu.re.kr/   # 302(로그인 리다이렉트)면 정상
 ```
 
 ---
