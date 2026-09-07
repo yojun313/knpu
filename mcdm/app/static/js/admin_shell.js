@@ -101,6 +101,13 @@
   }
 
   function init() {
+    // 일부 테마가 #main 에 backdrop-filter 를 걸어 position:fixed 의 컨테이닝
+    // 블록이 #main 으로 바뀐다 → 모달이 뷰포트가 아니라 스크롤된 #main 상단에
+    // 뜬다. body 직속으로 옮겨 항상 화면 중앙에 뜨게 한다.
+    document.querySelectorAll('.modal-overlay').forEach(function (m) {
+      if (m.parentElement !== document.body) document.body.appendChild(m);
+    });
+
     refreshProjects();
     loadMe();
 
