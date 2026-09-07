@@ -40,6 +40,15 @@
 .gcr-row .gcr-val.cr-ok{color:var(--success)}
 .gcr-row .gcr-val .muted{color:var(--sidebar-muted);font-weight:400}
 
+/* 개인별 결과 (델파이) */
+.pr-toolbar{padding:10px 14px 0}
+.pr-body{padding:6px 14px 14px}
+.pr-sec{margin-top:12px}
+.pr-sec:first-child{margin-top:4px}
+.pr-sec h5{margin:0 0 6px;font-size:10.5px;font-weight:700;color:var(--sidebar-muted);
+  text-transform:uppercase;letter-spacing:.04em}
+.pr-sec .group-cr-list{border-bottom:none;padding:0}
+
 /* BWM Best/Worst 지목 분포 */
 .bwm-dist-group{padding:10px 0;border-bottom:1px solid var(--sidebar-border)}
 .bwm-dist-group:last-child{border-bottom:none}
