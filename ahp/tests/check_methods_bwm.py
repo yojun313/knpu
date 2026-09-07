@@ -220,6 +220,15 @@ def test_mixed_method_build_results():
     assert res["per_respondent_cr"]["r1"].get("c1") is not None
     assert approx(sum(v for k, v in gw.items() if k in ("c11", "c12", "c13", "c2", "c3")), 1.0, 1e-6)
 
+    # 결과 화면용 BWM 데이터 (1-6)
+    assert res["group_kinds"]["c1"] == "bwm" and res["group_kinds"]["root"] == "pairwise"
+    b = res["bwm"]["c1"]
+    assert b["bw_distribution"]["best"] == {"c11": 2}  # r1·r2 모두 c11 을 Best 로
+    assert b["bw_distribution"]["worst"] == {"c13": 2}
+    pr = b["per_respondent"]["r1"]
+    assert pr["cri"] is not None and pr["cri_threshold"] is not None and pr["or"] is not None
+    assert approx(pr["cri"], 0.0)  # 완전 일관 응답
+
 
 def test_import_slots_roundtrip():
     # 오프라인 반입 열 슬롯 → (파서가 만들) answers dict → BwmPlugin 이 읽는다.

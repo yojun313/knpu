@@ -72,24 +72,64 @@
 
   function renderCrTable() {
     const table = document.getElementById('crTable');
+    const kinds = results.group_kinds || {};
+    const bwm = results.bwm || {};
     const rows = [];
     Object.entries(results.per_respondent_cr || {}).forEach(function (entry) {
       const rid = entry[0], perMatrix = entry[1];
       Object.entries(perMatrix).forEach(function (mEntry) {
         const mid = mEntry[0], cr = mEntry[1];
-        rows.push({ rid: rid, parent: matrixParentName(mid), cr: cr });
+        const isBwm = kinds[mid] === 'bwm';
+        const meta = isBwm && bwm[mid] && bwm[mid].per_respondent && bwm[mid].per_respondent[rid];
+        rows.push({
+          rid: rid, parent: matrixParentName(mid), cr: cr, isBwm: isBwm,
+          thr: meta ? meta.cri_threshold : (results.cr_threshold || 0.1),
+          or: meta ? meta.or : null,
+        });
       });
     });
     if (!rows.length) {
-      table.innerHTML = '<tr><td style="padding:14px;color:var(--sidebar-muted);font-size:12px">아직 계산할 수 있는 CR이 없습니다.</td></tr>';
+      table.innerHTML = '<tr><td style="padding:14px;color:var(--sidebar-muted);font-size:12px">아직 계산할 수 있는 값이 없습니다.</td></tr>';
       return;
     }
-    table.innerHTML = '<thead><tr><th>응답자</th><th>기준</th><th>CR</th></tr></thead><tbody>' +
+    table.innerHTML = '<thead><tr><th>응답자</th><th>기준</th><th>방법</th><th>CR / CR<sup>I</sup></th><th>순서 일관성</th></tr></thead><tbody>' +
       rows.map(function (r) {
-        const cls = r.cr === null ? '' : (r.cr <= (results.cr_threshold || 0.1) ? 'cr-ok' : 'cr-bad');
+        const cls = r.cr === null ? '' : (r.cr <= r.thr ? 'cr-ok' : 'cr-bad');
+        const orCell = !r.isBwm ? '<span class="muted">–</span>'
+          : (r.or == null ? '–' : (r.or > 1e-9
+            ? '<span class="cr-bad">위반 ' + r.or.toFixed(2) + '</span>'
+            : '<span class="cr-ok">양호</span>'));
         return '<tr><td>' + ahpEsc(r.rid.slice(0, 8)) + '</td><td>' + ahpEsc(r.parent) + '</td>' +
-          '<td class="' + cls + '">' + (r.cr === null ? '미완료' : r.cr.toFixed(3)) + '</td></tr>';
+          '<td>' + (r.isBwm ? 'BWM' : 'AHP') + '</td>' +
+          '<td class="' + cls + '">' + (r.cr === null ? '미완료'
+            : r.cr.toFixed(3) + ' <span class="muted">/ ' + r.thr.toFixed(2) + '</span>') + '</td>' +
+          '<td>' + orCell + '</td></tr>';
       }).join('') + '</tbody>';
+  }
+
+  function renderBwmDistribution() {
+    const card = document.getElementById('bwmDistCard');
+    const box = document.getElementById('bwmDistList');
+    const bwm = results.bwm || {};
+    const names = results.node_names || {};
+    const gids = Object.keys(bwm);
+    if (!gids.length) { card.hidden = true; return; }
+    card.hidden = false;
+    box.innerHTML = gids.map(function (mid) {
+      const d = bwm[mid].bw_distribution || { best: {}, worst: {} };
+      function bars(obj) {
+        const ent = Object.entries(obj).sort(function (a, b) { return b[1] - a[1]; });
+        const max = ent.length ? ent[0][1] : 1;
+        return ent.length ? ent.map(function (e) {
+          return '<div class="bwm-dist-row"><span class="bdr-name">' + ahpEsc(names[e[0]] || e[0]) + '</span>' +
+            '<span class="bdr-bar"><span style="width:' + (100 * e[1] / max) + '%"></span></span>' +
+            '<span class="bdr-n">' + e[1] + '명</span></div>';
+        }).join('') : '<p class="muted" style="font-size:12px">지목 없음</p>';
+      }
+      return '<div class="bwm-dist-group"><div class="bdg-title">' + ahpEsc(matrixParentName(mid)) + '</div>' +
+        '<div class="bdg-cols"><div><h5>Best 지목</h5>' + bars(d.best) + '</div>' +
+        '<div><h5>Worst 지목</h5>' + bars(d.worst) + '</div></div></div>';
+    }).join('');
   }
 
   function renderStats() {
@@ -200,6 +240,7 @@
     renderStats();
     renderWeightChart(document.getElementById('globalWeightsChart'), results.global_weights, results.node_names);
     renderConsensus();
+    renderBwmDistribution();
     renderCrTable();
 
     const altScores = results.alternative_scores || {};

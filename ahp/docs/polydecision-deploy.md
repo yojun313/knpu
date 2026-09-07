@@ -142,3 +142,24 @@ DB 스키마 변화 없음.
   BWM 흐름이 나온다.
 - 검증: `check_methods_bwm.py` 10건(+혼합방법 `build_results` 파이프라인 — root=AHP·c1=BWM
   전역가중치 합성) + `check_methods_ahp.py` 9건 + 골든 동일 + `node --check` + 부팅.
+
+### 1-5. 오프라인 BWM — CSV 반입 + 인쇄/Word 양식  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `csv_schema.group_import_slots(group)`: 반입 열 슬롯을 kind별로 — pairwise `n(n-1)/2` 쌍 /
+  bwm `best·worst + BO×n + OW×n` (`2+2n`).
+- `entry_routes.import_csv`: 슬롯 kind별 파싱(pairwise / pick_best·worst(기준 이름 또는
+  1-base 번호 → uuid) / vector 1~9). `get_grid` 는 비-pairwise 를 `pairs:[]` 로.
+- `export-template.csv` BWM 열 헤더, `sheet_export` BWM tidy 행, `print.js`/`docx_export`
+  BWM 인쇄·Word 양식(Best/Worst 선택 줄 + 1~9 눈금표 2개, Q번호 = CSV 열 순서).
+- `entry.js`: 비-pairwise 그룹은 "CSV 반입으로 입력" 안내.
+
+### 1-6. 결과 화면 BWM 표시  *(코드: 완료 / DB·운영: 조치 없음)*
+
+- `build_results` 추가 키: `group_kinds`, `bwm`({gid:{bw_distribution, per_respondent:
+  {rid:{cri, cri_threshold, or}}}}). 기존 키 바이트 동일.
+- `result.js`: 개인별 일관성 표가 방법별 — BWM 은 응답자별 **CR^I 임계값**((n,척도) 표)로
+  판정 + **순서 일관성(OR)** 열. `renderBwmDistribution` — Best/Worst 지목 분포 막대.
+- `result.html`/`result.css`: `#bwmDistCard` + `.bwm-dist-*`.
+
+> **1단계(BWM) 완료.** 온라인·실시간·오프라인 3모드 + 결과 화면. 수집 계층 코드는
+> `KIND_VALIDATORS`/`group_item_count` 배선 외 무수정(설계 합격 기준 충족).

@@ -27,6 +27,20 @@
 .cr-table td{padding:7px 14px;border-bottom:1px solid var(--sidebar-border)}
 .cr-table .cr-bad{color:var(--danger);font-weight:700}
 .cr-table .cr-ok{color:var(--success);font-weight:700}
+.cr-table .muted{color:var(--sidebar-muted);font-weight:400}
+
+/* BWM Best/Worst 지목 분포 */
+.bwm-dist-group{padding:10px 0;border-bottom:1px solid var(--sidebar-border)}
+.bwm-dist-group:last-child{border-bottom:none}
+.bdg-title{font-size:12.5px;font-weight:700;margin-bottom:8px}
+.bdg-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bdg-cols h5{margin:0 0 6px;font-size:10.5px;color:var(--sidebar-muted);text-transform:uppercase;letter-spacing:.04em}
+.bwm-dist-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px}
+.bdr-name{flex:0 0 34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdr-bar{flex:1;height:10px;border-radius:999px;background:var(--sidebar-border);overflow:hidden}
+.bdr-bar>span{display:block;height:100%;background:var(--accent,#2F5EA8);border-radius:999px}
+.bdr-n{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--sidebar-muted)}
+@media (max-width:640px){.bdg-cols{grid-template-columns:1fr}}
 
 .sens-form{display:flex;gap:8px;padding:14px 16px 4px;flex-wrap:wrap;align-items:center}
 .sens-form select{flex:1;min-width:160px}
