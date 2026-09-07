@@ -56,23 +56,28 @@
       <div id="treeRoot" class="tree-root"></div>
     </div>
 
-    <div class="table-card">
-      <div class="tc-head"><span class="tc-title">브레인스토밍</span>
-        <span class="tc-meta">자유롭게 적고, 정리되면 트리로 승격하세요</span></div>
-      <div class="brainstorm-add">
-        <input type="text" id="brainInput" placeholder="아이디어를 입력하고 Enter">
+    <div class="table-card" id="nodeInspector">
+      <div class="tc-head"><span class="tc-title" id="niTitle">기준 정보</span>
+        <span class="tc-meta">트리에서 항목을 누르면 여기서 바로 수정</span></div>
+      <div class="ni-body">
+        <div class="field"><label>이름</label><input type="text" id="niName" placeholder="항목 이름"></div>
+        <div class="field"><label>설명 (응답자에게 표시, 선택)</label><textarea id="niDesc"></textarea></div>
+        <div class="ni-children">
+          <div class="ni-children-head"><span>하위 기준</span><span class="tc-meta" id="niChildCount"></span></div>
+          <div id="niChildList" class="ni-child-list"></div>
+          <input type="text" id="niAddChild" placeholder="하위 기준 이름 입력 후 Enter — 계속 추가됩니다">
+        </div>
       </div>
-      <div id="brainList" class="brainstorm-list"></div>
     </div>
   </div>
-</div>
 
-<div id="nodeEditModal" class="modal-overlay" hidden>
-  <div class="modal-card">
-    <div class="modal-head"><span id="nodeEditTitle">항목 편집</span><button class="modal-close" id="nodeEditClose">×</button></div>
-    <div class="field"><label>이름</label><input type="text" id="nodeEditName"></div>
-    <div class="field"><label>설명(응답자에게 표시됨)</label><textarea id="nodeEditDesc"></textarea></div>
-    <button class="btn primary" id="nodeEditSave" style="width:100%">적용</button>
+  <div class="table-card" style="margin-top:14px">
+    <div class="tc-head"><span class="tc-title">브레인스토밍</span>
+      <span class="tc-meta">자유롭게 적고, 정리되면 트리로 승격하세요</span></div>
+    <div class="brainstorm-add">
+      <input type="text" id="brainInput" placeholder="아이디어를 입력하고 Enter">
+    </div>
+    <div id="brainList" class="brainstorm-list"></div>
   </div>
 </div>
 
