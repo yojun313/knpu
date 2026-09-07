@@ -515,9 +515,16 @@
       parents.forEach(function (u) { criteria[u] = master; });
     }
     const altField = document.getElementById('altMethodField');
-    const alternatives = altField.hidden
-      ? ((methodsSurvey.methods || {}).alternatives || 'ahp')
-      : document.getElementById('altMethodSelect').value;
+    // 대안 계층을 안 쓰면 alternatives 는 실제로 안 쓰이지만, 저장된 값이 옛
+    // 방법(예: 'ahp')이면 normalize_methods 의 "배정된 방법은 항상 enabled 포함"
+    // 가드가 해제한 방법을 되살린다 → 계층 미사용 시 enabled 안의 값으로 맞춘다.
+    let alternatives;
+    if (!altField.hidden) {
+      alternatives = document.getElementById('altMethodSelect').value;
+    } else {
+      const stored = (methodsSurvey.methods || {}).alternatives || enabled[0];
+      alternatives = enabled.indexOf(stored) !== -1 ? stored : enabled[0];
+    }
 
     if (methodsSurvey.status === 'published' &&
       !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) return;
@@ -532,9 +539,16 @@
         },
       });
       const cleared = res.cleared_answers || 0;
-      ahpToast(cleared > 0
+      const savedEnabled = (res.methods && res.methods.enabled) || enabled;
+      const kept = savedEnabled.filter(function (m) { return enabled.indexOf(m) === -1; });
+      let msg = cleared > 0
         ? '방법을 저장했습니다. 형식이 바뀐 항목의 응답 ' + cleared + '건이 초기화됐습니다.'
-        : '방법을 저장했습니다.');
+        : '방법을 저장했습니다.';
+      if (kept.length) {
+        msg += ' (' + kept.map(function (m) { return METHOD_LABEL[m] || m; }).join(', ') +
+          ' 은(는) 대안 평가에 쓰이고 있어 해제되지 않았습니다)';
+      }
+      ahpToast(msg);
       document.getElementById('methodsModal').hidden = true;
     } catch (e) {
       ahpToast(e.message || '저장에 실패했습니다', true);
