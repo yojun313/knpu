@@ -170,6 +170,14 @@ async def update_survey(project_id: str, request: Request):
         # kind/method/question_text 만 바뀌므로 버전은 안 올린다 — 그 자리에서
         # 현재 계층으로 groups 를 다시 만든다.
         new_methods = normalize_methods(body["methods"])
+        # 발행된 설문은 분석방법을 바꿀 수 없다 — 이미 받은 응답과 계산 방식이
+        # 어긋난다(상세설정의 LOCKED_AFTER_OPEN 과 같은 취지).
+        if doc.get("status") == "published" and new_methods != normalize_methods(
+            doc.get("methods")
+        ):
+            raise HTTPException(
+                409, "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경하세요."
+            )
         patch["methods"] = new_methods
         hierarchy = await hierarchies_db.find_one(
             {"project_id": project_id, "version": doc["hierarchy_version"]}
