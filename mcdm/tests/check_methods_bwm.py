@@ -2,7 +2,7 @@
 
 pytest 미도입 프로젝트라 plain 실행 스크립트.
 
-    PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
+    PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
         /home/wcchoi/knpu/.venv/bin/python ahp/tests/check_methods_bwm.py
 """
 

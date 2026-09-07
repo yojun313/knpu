@@ -2,7 +2,7 @@
 
 pytest 미도입 프로젝트라 plain 실행 스크립트다. 실패 시 AssertionError로 죽는다.
 
-    PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
+    PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
         /home/wcchoi/knpu/.venv/bin/python ahp/tests/check_methods_ahp.py
 """
 
