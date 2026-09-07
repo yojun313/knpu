@@ -1,7 +1,7 @@
 # 웹 기반 AHP 시스템 — 구현 계획서
 
 > KNPU 연구 시스템(FastAPI · MongoDB) 위에 올리는 AHP 서비스.
-> 모든 구현은 `knpu/ahp/` 아래. 외부 서비스(Google Docs 등) 사용하지 않음.
+> 모든 구현은 `knpu/mcdm/` 아래. 외부 서비스(Google Docs 등) 사용하지 않음.
 
 > **상태: 1~5단계 전부 구현·자체 테스트 완료.** 계산 엔진(고유벡터·CR·AIJ/AIP·
 > Kendall's W·민감도), 계층 설계, 설문지 편집, 오프라인/온라인/실시간 수집,
@@ -41,7 +41,7 @@ project (연구)
 기존 앱(`network`, `kemkim`, `statistics`)의 규약을 그대로 따른다.
 
 ```
-knpu/ahp/
+knpu/mcdm/
 ├── run.py                     # uvicorn, port 8010, workers=1 (필수)
 ├── pyproject.toml             # openpyxl 추가 (아래 3절)
 ├── PLAN.md
@@ -540,7 +540,7 @@ app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="share
 
 ## 12.5 배포 체크리스트 (수동 적용 필요 — pm2/nginx는 사용자가 직접 관리)
 
-코드는 `knpu/ahp/`에 전부 구현·검증 완료됐다. 실제로 도메인에 뜨게 하려면 아래
+코드는 `knpu/mcdm/`에 전부 구현·검증 완료됐다. 실제로 도메인에 뜨게 하려면 아래
 두 가지를 수동으로 적용해야 한다(이 세션에서는 건드리지 않았다).
 
 ### `/home/lab/ecosystem.config.js`에 항목 추가
@@ -548,7 +548,7 @@ app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="share
 ```js
 {
   name: "ahp",
-  cwd: "/home/lab/knpu/ahp",
+  cwd: "/home/lab/knpu/mcdm",
   script: "run.py",
   interpreter: "/home/lab/knpu/.venv/bin/python",
   watch: false,   // 파일 변경 시 재시작되면 접속 중인 웹소켓이 전부 끊긴다

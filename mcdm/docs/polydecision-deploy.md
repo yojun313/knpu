@@ -33,8 +33,8 @@
 2. [ ] `mongosh --quiet --eval 'db.getMongo().getDBNames()'` — dev 데이터가 `ahp_dev` 인지 `ahp` 인지 확인
 3. [ ] **`ahp_dev` → `mcdm_dev` 변환 복사**
        ```bash
-       MODE=0 AHP_SRC_DB=ahp_dev PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/ahp \
-         /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_ahp_to_mcdm.py --dry-run
+       MODE=0 AHP_SRC_DB=ahp_dev PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
+         /home/wcchoi/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
        # 카운트 확인 후 --dry-run 제거하고 실행
        ```
 4. [ ] `pm2 restart mcdm-dev --update-env && pm2 save`
@@ -49,11 +49,11 @@
 3. [ ] `cd /home/lab/knpu && git pull`
 4. [ ] **`ahp` → `mcdm` 변환 복사**
        ```bash
-       PYTHONPATH=/home/lab/knpu:/home/lab/knpu/ahp \
-         /home/lab/knpu/.venv/bin/python ahp/scripts/migrate_ahp_to_mcdm.py --dry-run
+       PYTHONPATH=/home/lab/knpu:/home/lab/knpu/mcdm \
+         /home/lab/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
        # → 없이 실행
        ```
-5. [ ] `pm2 delete ahp && pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
+5. [ ] `pm2 delete mcdm && pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
        (MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
 6. [ ] 도메인 `ahp.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
 
