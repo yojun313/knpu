@@ -43,3 +43,7 @@
 .section-grid td.bad{color:var(--danger);font-weight:700}
 .section-grid td.section-outlier{background:rgba(231,76,60,.1)}
 .section-grid select{font-size:11px;padding:4px 6px;min-width:140px}
+/* BWM 섹션은 Best·Worst + BO/OW 벡터로 열이 많다 — 컨테이너 안에서 가로 스크롤 */
+#sectionTable{overflow-x:auto}
+.section-grid select[data-mv-role="vector"]{min-width:64px}
+.section-grid select:disabled{opacity:.35}

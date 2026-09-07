@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import math
+from collections import Counter
 
 from app.services.mcdm.bwm_consistency import (
     cri_threshold,
@@ -215,6 +216,48 @@ class BwmPlugin:
             ),
             skipped=skipped,
         )
+
+    # ── 표시 계층 보조 ─────────────────────────────────────────────────
+    def merge_responses(self, group: dict, responses: list[dict]) -> dict:
+        child = list(group["child_uuids"])
+        rs = [r for r in (responses or []) if r]
+        bests = [r.get("best") for r in rs if r.get("best") in child]
+        worsts = [r.get("worst") for r in rs if r.get("worst") in child]
+        if not bests or not worsts:
+            return {}
+        best = Counter(bests).most_common(1)[0][0]
+        worst = Counter(worsts).most_common(1)[0][0]
+        if best == worst:
+            return {}
+
+        def _geomean(key: str) -> float | None:
+            vs = []
+            for r in rs:
+                try:
+                    v = float(r[key])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if v > 0:
+                    vs.append(v)
+            return math.exp(sum(math.log(v) for v in vs) / len(vs)) if vs else None
+
+        merged: dict = {"best": best, "worst": worst}
+        for c in child:
+            if c != best:
+                v = _geomean(BO + c)
+                if v is not None:
+                    merged[BO + c] = v
+            if c != worst:
+                v = _geomean(OW + c)
+                if v is not None:
+                    merged[OW + c] = v
+        return merged
+
+    def response_outliers(
+        self, group: dict, responses_by_rid: dict[str, dict]
+    ) -> list[dict]:
+        # BWM 은 응답자 간 편차를 CR^I·OR 분포(결과 화면 1-6)로 본다.
+        return []
 
 
 PLUGIN = BwmPlugin()

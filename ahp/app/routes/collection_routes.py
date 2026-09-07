@@ -1,6 +1,4 @@
-import math
 import uuid
-from collections import defaultdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -23,7 +21,6 @@ from app.services.codes import (
     dedupe_label,
     seq_letters,
 )
-from app.services.aggregate import find_outliers
 from app.services.methods import get_method
 from app.services.csv_schema import group_item_count
 from app.services.hub import hub
@@ -411,7 +408,8 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
     if not matrix:
         raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
     node_ids = matrix["child_uuids"]
-    is_pairwise = matrix.get("kind", "pairwise") == "pairwise"
+    kind = matrix.get("kind", "pairwise")
+    plugin = get_method(matrix.get("method"))
     total_pairs = group_item_count(matrix)
 
     respondents = [
@@ -423,13 +421,13 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
     }
 
     rows = []
-    pair_values: dict[str, dict[str, float]] = {}
-    all_pairs_for_diagnosis: dict[str, list[float]] = {}
+    answers_by_rid: dict[str, dict] = {}
     for r in respondents:
         pairs = responses_by_rid.get(r["_id"], {}).get(group_id, {})
+        answers_by_rid[r["_id"]] = pairs
         cr = None
         if len(node_ids) >= 3 and pairs:
-            lr = get_method(matrix.get("method")).derive_local(matrix, pairs)
+            lr = plugin.derive_local(matrix, pairs)
             if lr.complete and lr.consistency:
                 cr = lr.consistency.value
         rows.append(
@@ -442,39 +440,22 @@ async def section_snapshot(collection_id: str, group_id: str, request: Request):
                 "answers": pairs,
             }
         )
-        if is_pairwise:
-            for pid, v in pairs.items():
-                pair_values.setdefault(pid, {})[r["_id"]] = v
-                all_pairs_for_diagnosis.setdefault(pid, []).append(v)
 
-    outliers = []
-    for pid, values_by_rid in pair_values.items():
-        if len(values_by_rid) < 4:
-            continue
-        idx_list = list(values_by_rid.keys())
-        values = {i: values_by_rid[idx_list[i]] for i in range(len(idx_list))}
-        out_idx = find_outliers(values)
-        if out_idx:
-            outliers.append(
-                {
-                    "pair_id": pid,
-                    "outlier_respondents": [idx_list[i] for i in out_idx],
-                }
-            )
-
-    # 그룹 전체가 어느 항목에서 가장 흔들리는지(재고 지점) — 쌍대비교는 기하평균으로
-    # 응답을 합친 뒤 plugin.validate 로 진단한다(방법별 공식은 플러그인 안).
+    # 응답자 간 편차가 큰 문항·그룹 전체의 재고 지점 — 방법이 책임진다
+    # (쌍대비교: 항목별 이상치 + 쌍별 기하평균 병합. 그 외 방법은 각자 정의).
+    outliers = plugin.response_outliers(matrix, answers_by_rid)
     worst = []
-    if len(node_ids) >= 3 and all_pairs_for_diagnosis:
-        merged = {
-            pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
-            for pid, vs in all_pairs_for_diagnosis.items()
-        }
-        c = get_method(matrix.get("method")).validate(matrix, merged)
-        worst = c.detail if c else []
+    if len(node_ids) >= 3:
+        merged = plugin.merge_responses(
+            matrix, [a for a in answers_by_rid.values() if a]
+        )
+        if merged:
+            c = plugin.validate(matrix, merged)
+            worst = c.detail if c else []
 
     return {
         "group_id": group_id,
+        "kind": kind,
         "round": (collection.get("section_rounds") or {}).get(group_id, 1),
         "respondents": rows,
         "outliers": outliers,
@@ -598,23 +579,21 @@ async def reveal_group_result(collection_id: str, group_id: str, request: Reques
     if not agg.complete:
         raise HTTPException(400, "완전한 응답이 아직 없어 집계할 수 없습니다")
     group_weights = agg.weights
-    avg_cr = agg.consistency.metrics.get("avg_cr") if agg.consistency else None
+    _m = agg.consistency.metrics if agg.consistency else {}
+    avg_cr = _m.get("avg_cr") or _m.get("avg_cri")  # BWM 은 avg_cri
 
+    # 그룹 재고 지점 — 방법이 raw 응답 병합·검증을 책임진다(쌍대비교는 쌍별
+    # 기하평균, BWM 은 best/worst 최빈 + BO/OW 기하평균).
     worst = []
     if len(node_ids) >= 3:
-        acc: dict[str, list[float]] = defaultdict(list)
-        for pairs in pairs_list:
-            for pid, v in pairs.items():
-                acc[pid].append(v)
-        merged_pairs = {
-            pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
-            for pid, vs in acc.items()
-        }
-        c = plugin.validate(matrix, merged_pairs)
-        worst = c.detail if c else []
+        merged = plugin.merge_responses(matrix, pairs_list)
+        if merged:
+            c = plugin.validate(matrix, merged)
+            worst = c.detail if c else []
 
     payload = {
         "group_id": group_id,
+        "kind": matrix.get("kind", "pairwise"),
         "weights": group_weights,
         "avg_cr": avg_cr,
         "worst_pairs": worst,
@@ -640,6 +619,7 @@ async def reveal_individual_result(
 
     payload = {
         "group_id": group_id,
+        "kind": matrix.get("kind", "pairwise"),
         "weights": lr.weights,
         "cr": lr.consistency.value if lr.consistency else None,
     }

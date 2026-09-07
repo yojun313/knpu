@@ -52,6 +52,31 @@ def test_registry():
     assert P.question_kinds() == ("pairwise",)
 
 
+def test_merge_responses_and_outliers():
+    g = {"child_uuids": ["x", "y", "z"], "kind": "pairwise", "method": "ahp"}
+    consistent = _pairs(("x", "y", 3), ("x", "z", 2), ("y", "z", 0.5))
+    panel = [consistent, consistent, consistent, consistent,
+             _pairs(("x", "y", 3), ("x", "z", 2), ("y", "z", 27))]  # r5 튐
+
+    merged = P.merge_responses(g, panel)
+    # 쌍별 기하평균 — x:y 는 전원 3 → 정확히 3
+    assert approx(merged["x:y"], 3.0)
+    # y:z: [.5,.5,.5,.5,27] 기하평균
+    import math as _m
+    assert approx(merged["y:z"], _m.exp(sum(_m.log(v) for v in [.5, .5, .5, .5, 27]) / 5))
+    # 빈 입력 → {}
+    assert P.merge_responses(g, []) == {}
+    # 병합 결과가 validate 로 흘러가도 안전
+    assert P.validate(g, merged) is not None
+
+    by_rid = {f"r{i}": panel[i] for i in range(5)}
+    out = P.response_outliers(g, by_rid)
+    yz = next((o for o in out if o["item_id"] == "y:z"), None)
+    assert yz and "r4" in yz["outlier_respondents"]  # 27 준 응답자(0-index 4)
+    # 응답자 4명 미만이면 이상치 판정 안 함
+    assert P.response_outliers(g, {"r0": panel[0], "r1": panel[1]}) == []
+
+
 def test_derive_local_n3():
     cu = ["c1", "c2", "c3"]
     pairs = _pairs(("c1", "c2", 3.0), ("c1", "c3", 5.0), ("c2", "c3", 2.0))

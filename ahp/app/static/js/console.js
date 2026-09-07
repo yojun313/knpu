@@ -213,25 +213,9 @@
     return surveyMatricesCache.find(function (m) { return m.group_id === mid; });
   }
 
-  function scaleOptionsHtml(nameA, nameB, currentAOverB) {
-    const opts = [];
-    for (let n = 9; n >= 2; n--) opts.push({ v: n, label: nameA + '가(이) ' + n + '배 더 중요' });
-    opts.push({ v: 1, label: '동일하게 중요' });
-    for (let n = 2; n <= 9; n++) opts.push({ v: 1 / n, label: nameB + '가(이) ' + n + '배 더 중요' });
-    return opts.map(function (o) {
-      const sel = currentAOverB != null && Math.abs(o.v - currentAOverB) < 1e-6 ? ' selected' : '';
-      return '<option value="' + o.v + '"' + sel + '>' + o.label + '</option>';
-    }).join('');
-  }
-
-  function resolveDisplayValue(a, b, answers) {
-    const sorted = [a, b].sort();
-    const pid = sorted.join(':');
-    if (!(pid in answers)) return null;
-    const v = answers[pid];
-    return a === sorted[0] ? v : 1 / v;
-  }
-
+  // 섹션 그리드는 방법(kind)마다 열·셀·저장 방식이 다르다 — window.MCDMViews
+  // (method_views.js) 레지스트리에 위임한다. 여기서는 공통 뼈대(참여자·CR·개별
+  // 진행 열)만 그린다.
   function renderSectionTable(snap) {
     const matrix = currentSectionMatrix();
     const box = document.getElementById('sectionTable');
@@ -240,29 +224,22 @@
       document.getElementById('sectionWorstPairs').innerHTML = '';
       return;
     }
-    const pairs = [];
-    for (let i = 0; i < matrix.child_uuids.length; i++) {
-      for (let j = i + 1; j < matrix.child_uuids.length; j++) pairs.push([matrix.child_uuids[i], matrix.child_uuids[j]]);
-    }
+    const view = window.MCDMViews.for(snap.kind || matrix.kind);
+    const cols = view.consoleColumns(matrix, nodeNameFromHierarchy);
     const outlierSet = {};
     (snap.outliers || []).forEach(function (o) {
-      o.outlier_respondents.forEach(function (rid) { outlierSet[o.pair_id + '|' + rid] = true; });
+      o.outlier_respondents.forEach(function (rid) { outlierSet[o.item_id + '|' + rid] = true; });
     });
 
-    const header = '<tr><th>참여자</th><th>CR</th>' + pairs.map(function (p) {
-      return '<th>' + ahpEsc(nodeNameFromHierarchy(p[0])) + ' vs ' + ahpEsc(nodeNameFromHierarchy(p[1])) + '</th>';
-    }).join('') + '<th>개별 진행</th></tr>';
+    const header = '<tr><th>참여자</th><th>CR</th>' +
+      cols.map(function (c) { return '<th>' + c.label + '</th>'; }).join('') +
+      '<th>개별 진행</th></tr>';
 
     const rows = (snap.respondents || []).map(function (r) {
       const crCls = r.cr === null || r.cr === undefined ? '' : (r.cr <= 0.1 ? 'ok' : 'bad');
-      const cells = pairs.map(function (p) {
-        const pid = [p[0], p[1]].sort().join(':');
-        const current = resolveDisplayValue(p[0], p[1], r.answers || {});
-        const cls = outlierSet[pid + '|' + r.respondent_id] ? 'section-outlier' : '';
-        return '<td class="' + cls + '"><select data-rid="' + r.respondent_id + '" data-a="' + p[0] + '" data-b="' + p[1] + '">' +
-          '<option value="">(미응답)</option>' +
-          scaleOptionsHtml(nodeNameFromHierarchy(p[0]), nodeNameFromHierarchy(p[1]), current) + '</select></td>';
-      }).join('');
+      const cells = view.consoleCells(matrix, r.answers || {}, nodeNameFromHierarchy, {
+        respondentId: r.respondent_id, outlierSet: outlierSet,
+      }).map(function (c) { return c.html; }).join('');
       const actions = '<td><div class="section-row-actions">' +
         '<button class="sr-act" data-act="reveal-individual" data-rid="' + r.respondent_id + '">개별 공개</button>' +
         '<button class="sr-act" data-act="request-revision" data-rid="' + r.respondent_id + '">재조정 요청</button>' +
@@ -275,14 +252,8 @@
       ? '<table class="section-grid"><thead>' + header + '</thead><tbody>' + rows + '</tbody></table>'
       : '<p class="muted" style="font-size:11.5px">아직 참여자가 없습니다.</p>';
 
-    document.getElementById('sectionWorstPairs').innerHTML = (snap.worst_pairs || []).length
-      ? snap.worst_pairs.map(function (w) {
-        var given = w.given_label || w.given_value.toFixed(2);
-        var sug = w.suggested_label || w.suggested_value.toFixed(2);
-        return '<div class="warn-item">⚠ ' + ahpEsc(nodeNameFromHierarchy(w.uuid_a)) + ' vs ' + ahpEsc(nodeNameFromHierarchy(w.uuid_b)) +
-          ' — 응답값 ' + ahpEsc(given) + ', 그룹 관점 권장값 ' + ahpEsc(sug) + '</div>';
-      }).join('')
-      : '';
+    document.getElementById('sectionWorstPairs').innerHTML =
+      view.worstHtml(snap.worst_pairs || [], nodeNameFromHierarchy);
   }
 
   async function loadSectionSnapshot() {
@@ -297,12 +268,11 @@
     }
   }
 
-  async function saveSectionCell(rid, a, b, value) {
-    const matrix = currentSectionMatrix();
+  async function saveSectionCellBody(rid, body) {
     try {
       await ahpApi('/api/entry/' + collectionId + '/answers', {
         method: 'PUT',
-        body: { respondent_id: rid, group_id: matrix.group_id, uuid_a: a, uuid_b: b, value: value },
+        body: Object.assign({ respondent_id: rid }, body),
       });
       ahpToast('저장했습니다');
       await loadSectionSnapshot();
@@ -375,9 +345,12 @@
     document.getElementById('sectionTable').addEventListener('change', function (e) {
       if (e.target.tagName !== 'SELECT') return;
       const el = e.target;
-      if (el.value === '') return;
+      const matrix = currentSectionMatrix();
+      if (!matrix) return;
+      const body = window.MCDMViews.for(matrix.kind).consoleSave(matrix, el);
+      if (!body) { loadSectionSnapshot(); return; }
       if (!confirm('응답자와 확인한 값입니까?')) { loadSectionSnapshot(); return; }
-      saveSectionCell(el.dataset.rid, el.dataset.a, el.dataset.b, Number(el.value));
+      saveSectionCellBody(el.dataset.rid, body);
     });
     document.getElementById('sectionTable').addEventListener('click', async function (e) {
       const btn = e.target.closest('.sr-act');

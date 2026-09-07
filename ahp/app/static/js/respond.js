@@ -534,12 +534,27 @@
     connectRealtimeIfNeeded();
   }
 
+  // 모든 질문 그룹의 children(uuid→name) 병합 맵. 쌍대비교는 questions 로 이름을
+  // 얻지만 BWM 등은 pairs 가 없어 questions 에 안 들어온다 — 방법 무관 폴백.
+  function groupChildNameMap() {
+    const m = {};
+    ((landing && landing.survey && landing.survey.groups) || []).forEach(function (g) {
+      (g.children || []).forEach(function (c) { if (c && c.uuid) m[c.uuid] = c.name; });
+    });
+    return m;
+  }
   function nodeNameByUuid(uuid) {
     for (let i = 0; i < questions.length; i++) {
       if (questions[i].uuid_a === uuid) return questions[i].name_a;
       if (questions[i].uuid_b === uuid) return questions[i].name_b;
     }
-    return uuid;
+    return groupChildNameMap()[uuid] || uuid;
+  }
+
+  function groupKind(groupId) {
+    const g = ((landing && landing.survey && landing.survey.groups) || [])
+      .find(function (x) { return x.group_id === groupId; });
+    return (g && g.kind) || 'pairwise';
   }
 
   function renderSectionWaitResults(msg, isIndividual) {
@@ -548,11 +563,11 @@
     const box = document.getElementById('sectionWaitResults');
     const cr = isIndividual ? msg.cr : msg.avg_cr;
     const crLine = (cr == null) ? '' : '<div class="swr-cr">CR ' + cr.toFixed(3) + '</div>';
-    const rows = Object.keys(msg.weights || {})
-      .sort(function (a, b) { return msg.weights[b] - msg.weights[a]; })
-      .map(function (uuid) {
-        return '<div class="swr-row"><span>' + esc(nodeNameByUuid(uuid)) + '</span>' +
-          '<span>' + (msg.weights[uuid] * 100).toFixed(1) + '%</span></div>';
+    const view = window.MCDMViews.for(msg.kind || groupKind(msg.group_id));
+    const rows = view.revealRows(msg.weights || {}, nodeNameByUuid)
+      .map(function (r) {
+        return '<div class="swr-row"><span>' + esc(r.name) + '</span>' +
+          '<span>' + r.pct + '%</span></div>';
       }).join('');
     box.innerHTML = '<h3>' + (isIndividual ? '나의 결과' : '그룹 결과') + '</h3>' + crLine + rows;
     box.hidden = false;
