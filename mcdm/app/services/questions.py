@@ -40,10 +40,10 @@ def normalize_methods(raw: dict | None) -> dict:
     known = set(METHODS)
     criteria = {}
     for k, v in (raw.get("criteria") or {}).items():
-        if isinstance(k, str) and isinstance(v, str) and v:
+        if isinstance(k, str) and isinstance(v, str) and v in known:
             criteria[k] = v
     alternatives = raw.get("alternatives")
-    if not isinstance(alternatives, str) or not alternatives:
+    if not isinstance(alternatives, str) or alternatives not in known:
         alternatives = "ahp"
 
     enabled_raw = raw.get("enabled")
