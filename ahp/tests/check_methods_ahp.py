@@ -194,6 +194,7 @@ def test_generate_questions_parity():
         "criteria": {"root": "bwm"},
         "alternatives": "topsis",
         "enabled": ["bwm"],  # 선언 없으면 실제 쓰임(등록된 것만)에서 도출
+        "criteria_per_node": False,  # 배정이 한 종류뿐이면 고급 모드 아님
     }
     fb = generate_questions(nodes, alts, methods=m, settings=settings)
     assert [g["group_id"] for g in fb] == [g["group_id"] for g in legacy]

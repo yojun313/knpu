@@ -50,123 +50,16 @@
     document.getElementById('publishBtn').textContent = survey.status === 'published' ? '발행됨' : '발행';
   }
 
-  const WEIGHT_METHODS = [
-    { v: 'ahp', label: 'AHP — 모든 쌍을 1:1 비교' },
-    { v: 'bwm', label: 'BWM — 가장/가장 덜 중요한 것 기준 비교' },
-  ];
   const METHOD_LABEL = { ahp: 'AHP', bwm: 'BWM' };
-  const METHOD_DOCS = {
-    ahp: 'AHP(Analytic Hierarchy Process) — 항목을 두 개씩 모두 짝지어 상대 중요도를 ' +
-      '1~9로 매기고, 고유벡터로 가중치를 얻습니다. 판단의 논리적 일관성을 CR로 점검합니다. ' +
-      '문항 수는 n(n-1)/2 로 늘어납니다.',
-    bwm: 'BWM(Best-Worst Method) — 먼저 가장 중요한 항목과 가장 덜 중요한 항목을 고른 뒤, ' +
-      '그 둘을 기준으로만 나머지를 비교합니다(문항 2n-3개). 선형계획으로 가중치를 얻고 ' +
-      '입력 일관성(CR^I)과 순서 일관성(OR)으로 점검합니다.',
-  };
 
-  function enabledMethods() {
-    const en = survey.methods && survey.methods.enabled;
-    return Array.isArray(en) && en.length ? en.slice() : ['ahp'];
-  }
-  function methodOf(nodeUuid) {
-    return (survey.methods && survey.methods.criteria && survey.methods.criteria[nodeUuid]) ||
-      'ahp';
-  }
-  // 모든 기준 노드에 배정된 방법이 하나로 통일돼 있으면 그 값, 아니면 null(=혼합).
-  function commonCriteriaMethod() {
-    const parents = survey.groups.filter(function (m) { return !m.is_alternative; })
-      .map(function (m) { return m.parent_uuid; });
-    if (!parents.length) return enabledMethods()[0];
-    const vals = parents.map(methodOf);
-    return vals.every(function (v) { return v === vals[0]; }) ? vals[0] : null;
-  }
-
-  let perNodeMode = false;
-
-  function renderMethodsCard() {
-    const en = enabledMethods();
-    // 활용 분석 체크박스
-    document.getElementById('enabledMethods').innerHTML = WEIGHT_METHODS.map(function (o) {
-      const on = en.indexOf(o.v) !== -1;
-      return '<label class="em-chip' + (on ? ' on' : '') + '" data-m="' + o.v + '">' +
-        '<input type="checkbox" class="em-check" value="' + o.v + '"' + (on ? ' checked' : '') + '> ' +
-        ahpEsc(o.label) + '</label>';
-    }).join('');
-    updateMethodDoc(en[0]);
-
-    // 기준 가중치 방법(전체) + 고급 토글
-    const common = commonCriteriaMethod();
-    perNodeMode = common === null;
-    const master = document.getElementById('criteriaMethodMaster');
-    master.innerHTML = en.map(function (m) {
-      return '<option value="' + m + '"' + (m === (common || en[0]) ? ' selected' : '') + '>' +
-        (METHOD_LABEL[m] || m) + '</option>';
-    }).join('');
-    master.disabled = perNodeMode;
-    document.getElementById('criteriaPerNodeToggle').checked = perNodeMode;
-
-    // 대안 평가 방법 (대안 계층을 쓸 때만)
-    const altField = document.getElementById('altMethodField');
-    altField.hidden = projectSettings.alt_layer !== 'on';
-    if (!altField.hidden) {
-      const cur = (survey.methods && survey.methods.alternatives) || 'ahp';
-      document.getElementById('altMethodSelect').innerHTML = en.map(function (m) {
-        return '<option value="' + m + '"' + (m === cur ? ' selected' : '') + '>' +
-          (METHOD_LABEL[m] || m) + '</option>';
-      }).join('');
+  // 방법 배정·선언은 계층 설계 페이지의 "분석방법" 모달에서 한다(designer.js).
+  // 여기서는 각 그룹에 배정된 방법을 읽기 전용 배지로만 보여준다.
+  function methodOf(m) {
+    if (m.is_alternative) {
+      return (survey.methods && survey.methods.alternatives) || 'ahp';
     }
-    applyPerNodeVisibility();
-  }
-
-  function updateMethodDoc(m) {
-    document.getElementById('methodDoc').textContent = METHOD_DOCS[m] || '';
-  }
-  function applyPerNodeVisibility() {
-    document.querySelectorAll('#matricesList .method-field').forEach(function (el) {
-      el.hidden = !perNodeMode;
-    });
-  }
-  // 체크박스에서 방법을 빼면 master/alt 셀렉트 선택지도 즉시 반영.
-  function checkedMethods() {
-    return Array.prototype.map.call(
-      document.querySelectorAll('.em-check:checked'), function (el) { return el.value; }
-    );
-  }
-  function refreshMethodSelects() {
-    const en = checkedMethods().length ? checkedMethods() : ['ahp'];
-    [['criteriaMethodMaster'], ['altMethodSelect']].forEach(function (p) {
-      const sel = document.getElementById(p[0]);
-      if (!sel) return;
-      const keep = en.indexOf(sel.value) !== -1 ? sel.value : en[0];
-      sel.innerHTML = en.map(function (m) {
-        return '<option value="' + m + '"' + (m === keep ? ' selected' : '') + '>' +
-          (METHOD_LABEL[m] || m) + '</option>';
-      }).join('');
-    });
-  }
-
-  let methodsWired = false;
-  function wireMethodsCard() {
-    if (methodsWired) return;
-    methodsWired = true;
-    const card = document.getElementById('methodsCard');
-    card.addEventListener('change', function (e) {
-      if (e.target.classList.contains('em-check')) {
-        const chip = e.target.closest('.em-chip');
-        if (chip) chip.classList.toggle('on', e.target.checked);
-        if (e.target.checked) updateMethodDoc(e.target.value);
-        refreshMethodSelects();
-      } else if (e.target.id === 'criteriaPerNodeToggle') {
-        perNodeMode = e.target.checked;
-        document.getElementById('criteriaMethodMaster').disabled = perNodeMode;
-        applyPerNodeVisibility();
-      }
-    });
-    card.addEventListener('mouseover', function (e) {
-      const chip = e.target.closest('.em-chip');
-      if (chip) updateMethodDoc(chip.dataset.m);
-    });
-    document.getElementById('saveMethodsBtn').addEventListener('click', saveMethods);
+    return (survey.methods && survey.methods.criteria && survey.methods.criteria[m.parent_uuid]) ||
+      'ahp';
   }
 
   function renderMatrices(nodesByUuid) {
@@ -185,26 +78,16 @@
           '<textarea class="node-desc-input" data-node="' + cid + '" placeholder="응답자에게 보여줄 설명(선택)">' +
           ahpEsc(desc) + '</textarea></div>';
       }).join('');
-      // 노드별 방법 — "고급: 기준마다 다른 방법" 토글일 때만 보인다. 선택지는
-      // "활용 분석"에서 선언한 방법으로 제한.
-      const cur = m.is_alternative ? ((survey.methods && survey.methods.alternatives) || 'ahp')
-        : methodOf(m.parent_uuid);
-      const opts = enabledMethods();
-      const methodHtml = m.is_alternative ? '' : (
-        '<div class="field method-field" style="margin-top:10px" hidden><label>이 기준의 가중치 산출 방법</label>' +
-        '<select class="method-input" data-node="' + m.parent_uuid + '">' +
-        opts.map(function (v) {
-          const o = WEIGHT_METHODS.find(function (w) { return w.v === v; }) || { v: v, label: v };
-          return '<option value="' + o.v + '"' + (o.v === cur ? ' selected' : '') + '>' +
-            o.label + '</option>';
-        }).join('') + '</select></div>'
-      );
+      // 배정된 방법은 읽기 전용 배지(편집은 "분석방법" 모달).
+      const cur = methodOf(m);
+      const methodBadge = m.is_alternative
+        ? '<span class="badge ok" style="margin-right:6px">대안 비교 · ' + (METHOD_LABEL[cur] || cur) + '</span>'
+        : '<span class="badge' + (cur === 'bwm' ? '' : ' muted') + '" style="margin-right:6px">' +
+          (METHOD_LABEL[cur] || cur) + '</span>';
       return '<div class="table-card matrix-block">' +
         '<div class="matrix-parent">' +
-        '<div class="mp-name">' + (m.is_alternative ? '<span class="badge ok" style="margin-right:6px">대안 비교</span>' :
-          (cur === 'bwm' ? '<span class="badge" style="margin-right:6px">BWM</span>' : '')) +
+        '<div class="mp-name">' + methodBadge +
         ahpEsc(nodeName(m.parent_uuid, nodesByUuid)) + '</div>' +
-        methodHtml +
         '<div class="field" style="margin-top:10px"><label>이 기준 자체에 대한 설명(선택)</label>' +
         '<textarea class="node-desc-input" data-node="' + m.parent_uuid + '">' + ahpEsc(parentDesc) + '</textarea></div>' +
         '<div class="field" style="margin-top:10px"><label>비교 질문 문구</label>' +
@@ -213,55 +96,6 @@
         '<div class="matrix-children">' + childrenHtml + '</div>' +
         '</div>';
     }).join('');
-  }
-
-  async function saveMethods() {
-    const enabled = Array.prototype.map.call(
-      document.querySelectorAll('.em-check:checked'), function (el) { return el.value; }
-    );
-    if (!enabled.length) { ahpToast('활용할 분석을 최소 하나 선택해 주세요', true); return; }
-
-    const parents = survey.groups.filter(function (m) { return !m.is_alternative; })
-      .map(function (m) { return m.parent_uuid; });
-    const criteria = {};
-    if (perNodeMode) {
-      document.querySelectorAll('.method-input').forEach(function (el) {
-        criteria[el.dataset.node] = enabled.indexOf(el.value) !== -1 ? el.value : enabled[0];
-      });
-    } else {
-      const master = document.getElementById('criteriaMethodMaster').value || enabled[0];
-      parents.forEach(function (uuid) { criteria[uuid] = master; });
-    }
-    const altField = document.getElementById('altMethodField');
-    const alternatives = altField.hidden
-      ? ((survey.methods && survey.methods.alternatives) || 'ahp')
-      : document.getElementById('altMethodSelect').value;
-
-    if (survey.status === 'published' &&
-      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) {
-      await init();
-      return;
-    }
-    try {
-      const res = await ahpApi('/api/projects/' + projectId + '/survey', {
-        method: 'PUT',
-        body: { methods: { criteria: criteria, alternatives: alternatives, enabled: enabled } },
-      });
-      const cleared = res.cleared_answers || 0;
-      const savedEnabled = (res.methods && res.methods.enabled) || enabled;
-      const kept = savedEnabled.filter(function (m) { return enabled.indexOf(m) === -1; });
-      let msg = cleared > 0
-        ? '방법을 저장했습니다. 형식이 바뀐 항목의 응답 ' + cleared + '건이 초기화됐습니다.'
-        : '방법을 저장했습니다.';
-      if (kept.length) {
-        msg += ' (' + kept.map(function (m) { return METHOD_LABEL[m] || m; }).join(', ') +
-          '은(는) 사용 중이라 해제되지 않았습니다)';
-      }
-      ahpToast(msg);
-      await init();
-    } catch (e) {
-      ahpToast(e.message || '저장에 실패했습니다', true);
-    }
   }
 
   async function saveMatrixEdits() {
@@ -343,8 +177,6 @@
     document.getElementById('surveyConsent').value = survey.consent_text;
     renderStatus();
     renderMatrices(nodesByUuid);
-    renderMethodsCard();
-    wireMethodsCard();
 
     document.querySelectorAll('#stageTabs .stage-tab').forEach(function (tab) {
       tab.addEventListener('click', function (e) {

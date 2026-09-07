@@ -243,6 +243,12 @@ html[data-ui-theme="mesh"] select option{background:var(--mesh-base);color:var(-
 .method-adv{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;
   font-weight:400;color:var(--sidebar-muted);cursor:pointer}
 .method-adv input{margin:0}
+.per-node-list{margin:-4px 0 12px;padding:8px 10px;border:1px solid var(--sidebar-border);
+  border-radius:8px;background:var(--sidebar-panel2)}
+.per-node-list[hidden]{display:none}
+.pn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
+.pn-row .pn-name{font-size:12px;color:var(--text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-row .pn-method{width:auto;flex:0 0 auto}
 
 /* 상세설정 모달 — 공통 · 방법별 탭 */
 .settings-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--sidebar-border)}
