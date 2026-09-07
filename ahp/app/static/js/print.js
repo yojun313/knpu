@@ -5,6 +5,21 @@
   // 알아서 분수로 환산한다(요청사항). 표가 [A] …17칸… [B] 배치라 방향은 그대로 읽힌다.
   const SAATY_LEVELS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   function levelLabel(n) { return String(n); }
+  const BWM_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  function bwmScaleTable(crit, nextQ) {
+    let h = '<table class="pair-table bwm-print-table"><thead><tr><th>기준</th>' +
+      BWM_LEVELS.map(function (n) { return '<th>' + n + '</th>'; }).join('') +
+      '</tr></thead><tbody>';
+    crit.forEach(function (c) {
+      const q = nextQ();
+      h += '<tr><td class="bwm-print-rowlabel"><span class="pair-q">Q' + q + '.</span> ' +
+        esc(c.name) + '</td>' +
+        BWM_LEVELS.map(function () { return '<td class="mark-cell"></td>'; }).join('') +
+        '</tr>';
+    });
+    return h + '</tbody></table>';
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -38,6 +53,29 @@
       block += '<div class="mb-q">' + esc(m.question_text) + '</div>';
 
       const children = m.child_uuids;
+
+      if (m.kind === 'bwm') {
+        const crit = children.map(function (u) {
+          return { u: u, name: (nodes[u] || {}).name || u };
+        });
+        const opts = crit.map(function (c) {
+          return '<span class="bwm-print-opt">◯ ' + esc(c.name) + '</span>';
+        }).join('');
+        qNum += 1;
+        block += '<div class="pair-q">Q' + qNum + '. 가장 <b>중요한</b> 기준 하나에 표시 (Best)</div>' +
+          '<div class="bwm-print-pick">' + opts + '</div>';
+        qNum += 1;
+        block += '<div class="pair-q">Q' + qNum + '. 가장 <b>덜 중요한</b> 기준 하나에 표시 (Worst)</div>' +
+          '<div class="bwm-print-pick">' + opts + '</div>';
+        block += '<div class="mb-q" style="margin-top:8px">위에서 고른 <b>Best</b>가 각 기준보다 얼마나 더 중요합니까? (1=비슷 … 9=압도적)</div>';
+        block += bwmScaleTable(crit, function () { qNum += 1; return qNum; });
+        block += '<div class="mb-q" style="margin-top:8px">각 기준이 <b>Worst</b>보다 얼마나 더 중요합니까? (1=비슷 … 9=압도적)</div>';
+        block += bwmScaleTable(crit, function () { qNum += 1; return qNum; });
+        block += '</div>';
+        parts.push(block);
+        return;
+      }
+
       for (let i = 0; i < children.length; i++) {
         for (let j = i + 1; j < children.length; j++) {
           qNum += 1;

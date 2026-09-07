@@ -41,6 +41,34 @@ def group_item_slots(group: dict) -> list[tuple[str, str]]:
     raise ValueError(f"미지원 그룹 kind: {kind!r}")
 
 
+def group_import_slots(group: dict) -> list[dict]:
+    """반입 CSV 에서 이 그룹이 차지하는 열들. 각 원소는 파서가 그대로 쓰는 지시.
+
+    pairwise : {kind:"pairwise", group_id, a, b}  — n(n-1)/2 개
+    bwm      : {kind:"pick_best", group_id} {kind:"pick_worst", group_id}
+               다음 각 기준마다 {kind:"vector", group_id, item_id:"BO:<c>", crit}
+               다음 각 기준마다 {kind:"vector", group_id, item_id:"OW:<c>", crit}
+               → 2 + 2n 개 (Best의 BO·Worst의 OW 칸은 잉여지만 양식 규칙성 위해 둔다;
+               파서가 채워도 BwmPlugin 이 무시).
+    """
+    gid = group["group_id"]
+    cu = group["child_uuids"]
+    kind = group.get("kind", "pairwise")
+    if kind == "bwm":
+        out = [
+            {"kind": "pick_best", "group_id": gid},
+            {"kind": "pick_worst", "group_id": gid},
+        ]
+        out += [{"kind": "vector", "group_id": gid, "item_id": "BO:" + c, "crit": c} for c in cu]
+        out += [{"kind": "vector", "group_id": gid, "item_id": "OW:" + c, "crit": c} for c in cu]
+        return out
+    return [
+        {"kind": "pairwise", "group_id": gid, "a": cu[i], "b": cu[j]}
+        for i in range(len(cu))
+        for j in range(i + 1, len(cu))
+    ]
+
+
 def group_item_count(group: dict) -> int:
     """이 그룹의 완전 응답에 필요한 항목 수(진행률 분모).
 

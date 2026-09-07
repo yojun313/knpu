@@ -30,21 +30,37 @@ def build_response_rows(
     for respondent_id, answers in submissions_by_respondent.items():
         label = respondent_id
         for m in groups:
-            pairs = answers.get(m["group_id"], {})
+            ans = answers.get(m["group_id"], {})
             parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
+
+            def nm(u):
+                return nodes_by_uuid.get(u, {}).get("name", u)
+
+            if m.get("kind", "pairwise") == "bwm":
+                if ans.get("best"):
+                    rows.append([label, parent_name, "Best", "", nm(ans["best"])])
+                if ans.get("worst"):
+                    rows.append([label, parent_name, "Worst", "", nm(ans["worst"])])
+                for c in m["child_uuids"]:
+                    if ("BO:" + c) in ans:
+                        rows.append([label, parent_name, "BO", nm(c), str(ans["BO:" + c])])
+                    if ("OW:" + c) in ans:
+                        rows.append([label, parent_name, "OW", nm(c), str(ans["OW:" + c])])
+                continue
+
             for a, b in group_item_slots(m):
                 pid = pair_id(a, b)
-                if pid not in pairs:
+                if pid not in ans:
                     continue
-                stored = pairs[pid]
+                stored = ans[pid]
                 lo, _hi = sorted([a, b])
                 a_over_b = stored if a == lo else (1.0 / stored)
                 rows.append(
                     [
                         label,
                         parent_name,
-                        nodes_by_uuid.get(a, {}).get("name", a),
-                        nodes_by_uuid.get(b, {}).get("name", b),
+                        nm(a),
+                        nm(b),
                         format_value(a_over_b),
                     ]
                 )

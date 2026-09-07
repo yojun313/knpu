@@ -18,6 +18,7 @@ from app.services.sheet_export import build_workbook, build_response_rows
 from app.services.csv_schema import (
     CSV_COLUMNS,
     RESPONDENT_COL,
+    group_import_slots,
     group_item_slots,
     pair_column_label,
 )
@@ -103,19 +104,27 @@ async def export_import_template_csv(project_id: str, request: Request):
     nodes_by_uuid = _nodes_by_uuid(hierarchy)
 
     header = [RESPONDENT_COL] + demo_column_labels(survey.get("demographics", []))
+
+    def _nm(u):
+        return nodes_by_uuid.get(u, {}).get("name", u)
+
     n = 0
     for m in survey["groups"]:
         parent_name = nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
-        for a, b in group_item_slots(m):
+        for s in group_import_slots(m):
             n += 1
-            header.append(
-                pair_column_label(
-                    n,
-                    parent_name,
-                    nodes_by_uuid.get(a, {}).get("name", a),
-                    nodes_by_uuid.get(b, {}).get("name", b),
+            if s["kind"] == "pairwise":
+                header.append(
+                    pair_column_label(n, parent_name, _nm(s["a"]), _nm(s["b"]))
                 )
-            )
+            elif s["kind"] == "pick_best":
+                header.append(f"Q{n}. [BWM] {parent_name}: 가장 중요(Best)")
+            elif s["kind"] == "pick_worst":
+                header.append(f"Q{n}. [BWM] {parent_name}: 가장 덜 중요(Worst)")
+            elif s["item_id"].startswith("BO:"):
+                header.append(f"Q{n}. [BWM] {parent_name}: Best가 '{_nm(s['crit'])}'보다 (1-9)")
+            else:  # OW:
+                header.append(f"Q{n}. [BWM] {parent_name}: '{_nm(s['crit'])}'가 Worst보다 (1-9)")
 
     buf = io.StringIO()
     writer = csv.writer(buf)

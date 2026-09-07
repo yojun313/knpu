@@ -24,7 +24,7 @@ from app.services.mcdm.bwm_consistency import (  # noqa: E402
     ordinal_consistency,
 )
 from app.services.mcdm.lp import bwm_linear_weights  # noqa: E402
-from app.services.csv_schema import group_item_count  # noqa: E402
+from app.services.csv_schema import group_item_count, group_import_slots  # noqa: E402
 from app.services.methods import KIND_VALIDATORS, METHODS, get_method  # noqa: E402
 from app.services.methods.bwm import BwmPlugin  # noqa: E402
 from app.services.questions import generate_questions  # noqa: E402
@@ -219,6 +219,38 @@ def test_mixed_method_build_results():
     # 크래시 없이 per-respondent CR(= BWM은 CR^I) 이 채워짐
     assert res["per_respondent_cr"]["r1"].get("c1") is not None
     assert approx(sum(v for k, v in gw.items() if k in ("c11", "c12", "c13", "c2", "c3")), 1.0, 1e-6)
+
+
+def test_import_slots_roundtrip():
+    # 오프라인 반입 열 슬롯 → (파서가 만들) answers dict → BwmPlugin 이 읽는다.
+    group = {"group_id": "g", "child_uuids": ["c1", "c2", "c3"]}
+    group["kind"] = "bwm"
+    slots = group_import_slots(group)
+    assert [s["kind"] for s in slots] == [
+        "pick_best", "pick_worst", "vector", "vector", "vector", "vector", "vector", "vector",
+    ]
+    assert len(slots) == 2 + 2 * 3  # 2 + 2n
+
+    # 종이 양식 한 행을 파서가 채웠다고 치자 (Best=c1, Worst=c3)
+    cells = ["c1", "c3", "1", "2", "4", "4", "2", "1"]  # best,worst, BO:c1..c3, OW:c1..c3
+    ans = {}
+    for s, cell in zip(slots, cells):
+        if s["kind"] == "pick_best":
+            ans["best"] = cell
+        elif s["kind"] == "pick_worst":
+            ans["worst"] = cell
+        else:
+            ans[s["item_id"]] = float(cell)
+    lr = P.derive_local(group, ans)
+    assert lr.complete
+    assert approx(lr.weights["c1"], 4 / 7, 1e-4)
+    # BO:c1(=Best 자신)·OW:c3(=Worst 자신) 잉여 칸은 무시돼도 결과 동일
+    assert approx(lr.consistency.metrics["cri"], 0.0)
+
+    # pairwise 그룹은 기존 쌍 슬롯 그대로
+    pw = group_import_slots({"group_id": "p", "child_uuids": ["a", "b", "c"], "kind": "pairwise"})
+    assert [s["kind"] for s in pw] == ["pairwise", "pairwise", "pairwise"]
+    assert (pw[0]["a"], pw[0]["b"]) == ("a", "b")
 
 
 def main() -> None:

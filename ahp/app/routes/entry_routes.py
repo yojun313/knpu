@@ -19,7 +19,7 @@ from app.db import (
 )
 from app.services.ahp_calc import to_stored_pair, pair_id
 from app.services.methods import KIND_VALIDATORS, get_method
-from app.services.csv_schema import parse_value, group_item_slots
+from app.services.csv_schema import parse_value, group_item_slots, group_import_slots
 from app.services.codes import dedupe_label as _dedupe_label
 from app.services.hub import hub
 from app.services.demographics import coerce_attributes, validate_required
@@ -160,19 +160,24 @@ async def get_grid(collection_id: str, request: Request):
 
     matrices_out = []
     for m in survey["groups"]:
+        is_pw = m.get("kind", "pairwise") == "pairwise"
         matrices_out.append(
             {
                 "group_id": m["group_id"],
                 "parent_name": nodes_by_id.get(m["parent_uuid"], {}).get("name", ""),
                 "is_alternative": m.get("is_alternative", False),
+                "kind": m.get("kind", "pairwise"),
                 "children": [
                     {"uuid": cid, "name": nodes_by_id.get(cid, {}).get("name", cid)}
                     for cid in m["child_uuids"]
                 ],
                 # 표시 순서 항목 — PUT 때 그대로 uuid_a/uuid_b로 되돌려보내면 된다.
-                "pairs": [
-                    {"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)
-                ],
+                # 비-pairwise(BWM 등)는 격자 입력을 지원하지 않는다 → CSV 반입 사용.
+                "pairs": (
+                    [{"uuid_a": a, "uuid_b": b} for a, b in group_item_slots(m)]
+                    if is_pw
+                    else []
+                ),
             }
         )
 
@@ -361,12 +366,27 @@ async def import_csv(
     survey, nodes_by_id = await _survey_and_nodes(collection)
     demographics = survey.get("demographics", [])
     n_demo = len(demographics)
-    # 반입 양식 열 순서와 1:1로 맞춘 비교쌍 슬롯(부모별 i<j 전역 순서).
-    # export_routes.export_import_template_csv·print.js와 같은 순서여야 한다.
-    slots = []  # (group_id, uuid_a, uuid_b)
+    # 반입 양식 열 순서와 1:1로 맞춘 슬롯. group_import_slots 가 kind별로 낸다
+    # (pairwise: 쌍 / bwm: best·worst·BO·OW). export 양식·print.js 와 같은 순서.
+    slots = []  # dict 지시 목록 (flat)
     for m in survey["groups"]:
-        for a, b in group_item_slots(m):
-            slots.append((m["group_id"], a, b))
+        slots.extend(group_import_slots(m))
+
+    def _name(u):
+        return nodes_by_id.get(u, {}).get("name", u)
+
+    def _resolve_crit(cell, gid):
+        """Best/Worst 셀(기준 이름 또는 1-base 번호)을 uuid 로."""
+        grp = next((g for g in survey["groups"] if g["group_id"] == gid), None)
+        cu = grp["child_uuids"] if grp else []
+        s = cell.strip()
+        if s.isdigit() and 1 <= int(s) <= len(cu):
+            return cu[int(s) - 1]
+        low = s.lower()
+        for c in cu:
+            if (_name(c) or "").strip().lower() == low:
+                return c
+        return None
 
     raw = await file.read()
     try:
@@ -380,14 +400,14 @@ async def import_csv(
     header = rows[0]
     while header and not header[-1].strip():  # 엑셀이 붙이는 후행 빈 열 제거
         header.pop()
-    # 열 배치: [respondent] + [인구통계 n_demo개] + [비교쌍 len(slots)개]
+    # 열 배치: [respondent] + [인구통계 n_demo개] + [슬롯 len(slots)개]
     data_cols = len(header) - 1
     expected = n_demo + len(slots)
     if data_cols != expected:
         raise HTTPException(
             400,
             f"양식 열 개수가 설문지와 다릅니다 (설문지 {expected}개"
-            f"{f' = 인구통계 {n_demo} + 비교 {len(slots)}' if n_demo else ''} / 파일 "
+            f"{f' = 인구통계 {n_demo} + 응답 {len(slots)}' if n_demo else ''} / 파일 "
             f"{max(data_cols, 0)}개). 최신 양식을 다시 받아 주세요.",
         )
 
@@ -412,22 +432,43 @@ async def import_csv(
         demo_by_respondent[label] = attrs
 
         got = 0
-        base = 1 + n_demo  # 비교쌍 첫 열 인덱스
-        for k, (group_id, uuid_a, uuid_b) in enumerate(slots):
+        base = 1 + n_demo  # 응답 첫 열 인덱스
+        for k, s in enumerate(slots):
             cell = row[base + k].strip() if base + k < len(row) else ""
             if not cell:
-                continue  # 그 쌍은 미입력 — 부분 응답 허용
-            try:
-                value = parse_value(cell)
-            except ValueError as e:
-                col = header[base + k] if base + k < len(header) else f"열{base + k + 1}"
-                errors.append(f"{i}행 [{col}]: {e}")
-                continue
-            pid, stored = to_stored_pair(uuid_a, uuid_b, value)
-            by_respondent.setdefault(label, {}).setdefault(group_id, {})[pid] = stored
-            got += 1
+                continue  # 미입력 — 부분 응답 허용
+            col = header[base + k] if base + k < len(header) else f"열{base + k + 1}"
+            gid = s["group_id"]
+            dst = by_respondent.setdefault(label, {}).setdefault(gid, {})
+            if s["kind"] == "pairwise":
+                try:
+                    value = parse_value(cell)
+                except ValueError as e:
+                    errors.append(f"{i}행 [{col}]: {e}")
+                    continue
+                pid, stored = to_stored_pair(s["a"], s["b"], value)
+                dst[pid] = stored
+                got += 1
+            elif s["kind"] in ("pick_best", "pick_worst"):
+                u = _resolve_crit(cell, gid)
+                if u is None:
+                    errors.append(f"{i}행 [{col}]: 기준 '{cell}' 을 찾을 수 없습니다")
+                    continue
+                dst["best" if s["kind"] == "pick_best" else "worst"] = u
+                got += 1
+            else:  # vector (BO:/OW:)
+                try:
+                    value = parse_value(cell)
+                except ValueError as e:
+                    errors.append(f"{i}행 [{col}]: {e}")
+                    continue
+                if not (1 <= value <= 9):
+                    errors.append(f"{i}행 [{col}]: BWM 비교값은 1~9 여야 합니다")
+                    continue
+                dst[s["item_id"]] = value
+                got += 1
         if got == 0:
-            errors.append(f"{i}행: '{label}' 행에 비교값이 하나도 없습니다")
+            errors.append(f"{i}행: '{label}' 행에 응답값이 하나도 없습니다")
 
     if errors:
         return {"status": "error", "errors": errors[:50], "error_count": len(errors)}

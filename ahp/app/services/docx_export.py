@@ -90,6 +90,30 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
         q.paragraph_format.keep_with_next = True
 
         child_uuids = m["child_uuids"]
+
+        if m.get("kind", "pairwise") == "bwm":
+            names = [nodes_by_uuid.get(c, {}).get("name", c) for c in child_uuids]
+            joined = " / ".join(names)
+            doc.add_paragraph(f"1. 가장 중요한 기준(Best)에 표시:   {joined}")
+            doc.add_paragraph(f"2. 가장 덜 중요한 기준(Worst)에 표시:   {joined}")
+            for title_txt in (
+                "3. 위에서 고른 Best가 각 기준보다 얼마나 더 중요합니까? (1=비슷 … 9=압도적)",
+                "4. 각 기준이 Worst보다 얼마나 더 중요합니까? (1=비슷 … 9=압도적)",
+            ):
+                tp = doc.add_paragraph()
+                tp.add_run(title_txt).bold = True
+                tp.paragraph_format.keep_with_next = True
+                t = doc.add_table(rows=1 + len(child_uuids), cols=10)
+                t.style = "Table Grid"
+                hdr = t.rows[0]
+                _set_cell_text(hdr.cells[0], "기준", bold=True, size=8)
+                for k in range(9):
+                    _set_cell_text(hdr.cells[1 + k], str(k + 1), align_center=True, size=8)
+                for r, nm in enumerate(names, start=1):
+                    _set_cell_text(t.rows[r].cells[0], nm, size=8)
+                doc.add_paragraph().paragraph_format.space_after = Pt(4)
+            continue
+
         for i in range(len(child_uuids)):
             for j in range(i + 1, len(child_uuids)):
                 name_a = nodes_by_uuid.get(child_uuids[i], {}).get(
