@@ -47,6 +47,7 @@
     // 계층도는 별도 버튼 없이 트리를 편집할 때마다(추가/삭제/이동/이름변경)
     // 항상 최신 상태로 갱신된다 — 팝업을 열어야만 보이던 이전 UX를 인라인으로 바꿈.
     window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
+    renderInspector();
   }
 
   function renderNode(node) {
@@ -75,6 +76,7 @@
     main.addEventListener('click', function () {
       selectedParentId = node.uuid;
       renderTree();
+      renderInspector();
     });
 
     const count = document.createElement('span');
@@ -85,8 +87,7 @@
     const actions = document.createElement('div');
     actions.className = 'tn-actions';
     actions.innerHTML =
-      '<button data-act="add" title="하위 항목 추가">＋</button>' +
-      '<button data-act="edit" title="편집">✎</button>' +
+      '<button data-act="add" title="하위 기준 추가">＋</button>' +
       (node.parent_id !== null ? '<button data-act="up" title="위로">↑</button>' +
         '<button data-act="down" title="아래로">↓</button>' +
         '<button data-act="move" title="다른 항목의 하위로 이동">⇥</button>' +
@@ -96,8 +97,7 @@
       if (!btn) return;
       e.stopPropagation();
       const act = btn.dataset.act;
-      if (act === 'add') openAddChild(node.uuid);
-      else if (act === 'edit') openEditNode(node.uuid);
+      if (act === 'add') focusAddChild(node.uuid);
       else if (act === 'up') moveSibling(node.uuid, -1);
       else if (act === 'down') moveSibling(node.uuid, 1);
       else if (act === 'move') openMoveTarget(node.uuid);
@@ -126,29 +126,54 @@
     tree.nodes.forEach(function (n) { if (childrenOf(n.uuid).length) expanded.add(n.uuid); });
   }
 
-  // ── 노드 편집 ────────────────────────────────────────────────────────────
-  let editingNodeId = null;
-  function openEditNode(id) {
-    const node = byId(id);
-    editingNodeId = id;
-    document.getElementById('nodeEditTitle').textContent = node.parent_id === null ? '최상위 목표 편집' : '항목 편집';
-    document.getElementById('nodeEditName').value = node.name;
-    document.getElementById('nodeEditDesc').value = node.description || '';
-    document.getElementById('nodeEditModal').hidden = false;
-    document.getElementById('nodeEditName').focus();
+  // ── 노드 인스펙터(오른쪽 패널) ──────────────────────────────────────────
+  function renderInspector() {
+    const node = byId(selectedParentId) || root();
+    const nameEl = document.getElementById('niName');
+    const descEl = document.getElementById('niDesc');
+    if (!node) { nameEl.value = ''; descEl.value = ''; document.getElementById('niChildList').innerHTML = ''; return; }
+    selectedParentId = node.uuid;
+    document.getElementById('niTitle').textContent = node.parent_id === null ? '목표' : '기준 정보';
+    if (document.activeElement !== nameEl) nameEl.value = node.name;
+    if (document.activeElement !== descEl) descEl.value = node.description || '';
+
+    const kids = childrenOf(node.uuid);
+    document.getElementById('niChildCount').textContent = kids.length ? kids.length + '개' : '';
+    document.getElementById('niChildList').innerHTML = kids.length
+      ? kids.map(function (k, i) {
+        return '<div class="ni-child-row" data-id="' + k.uuid + '">' +
+          '<button class="nicr-name" data-act="select" data-id="' + k.uuid + '">' + ahpEsc(k.name || '(이름 없음)') + '</button>' +
+          '<span class="nicr-actions">' +
+          '<button data-act="up" data-id="' + k.uuid + '" title="위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button data-act="down" data-id="' + k.uuid + '" title="아래로"' + (i === kids.length - 1 ? ' disabled' : '') + '>↓</button>' +
+          '<button data-act="del" data-id="' + k.uuid + '" class="danger" title="삭제">🗑</button>' +
+          '</span></div>';
+      }).join('')
+      : '<p class="ni-empty">아직 하위 기준이 없습니다. 아래에 입력해 추가하세요.</p>';
   }
 
-  function openAddChild(parentId) {
+  function focusAddChild(parentId) {
+    selectedParentId = parentId;
+    expanded.add(parentId);
+    renderTree();
+    renderInspector();
+    const inp = document.getElementById('niAddChild');
+    inp.focus();
+    inp.scrollIntoView({ block: 'nearest' });
+  }
+
+  function addChildNode(parentId, name) {
     const kids = childrenOf(parentId);
-    const newNode = {
+    tree.nodes.push({
       uuid: crypto.randomUUID(),
       parent_id: parentId,
-      name: '', description: '',
+      name: name, description: '',
       order: kids.length ? Math.max.apply(null, kids.map(function (k) { return k.order; })) + 1 : 0,
-    };
-    tree.nodes.push(newNode);
+    });
     expanded.add(parentId);
-    openEditNode(newNode.uuid);
+    setDirty(true);
+    renderTree();
+    renderInspector();
   }
 
   function deleteNode(id) {
@@ -580,9 +605,44 @@
     });
 
     document.getElementById('addRootChildBtn').addEventListener('click', function () {
-      openAddChild(selectedParentId || (root() ? root().uuid : null));
+      focusAddChild(root() ? root().uuid : null);
     });
     document.getElementById('saveHierarchyBtn').addEventListener('click', saveHierarchy);
+
+    // ── 노드 인스펙터 배선 ──
+    document.getElementById('niName').addEventListener('input', function (e) {
+      const node = byId(selectedParentId);
+      if (!node) return;
+      node.name = e.target.value;
+      setDirty(true);
+      // 트리·계층도만 갱신(패널은 안 다시 그려 커서 유지)
+      window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
+      const row = document.querySelector('.tree-node-row[data-id="' + node.uuid + '"] .tn-name');
+      if (row) row.textContent = node.name || '(이름 없음)';
+    });
+    document.getElementById('niDesc').addEventListener('input', function (e) {
+      const node = byId(selectedParentId);
+      if (!node) return;
+      node.description = e.target.value;
+      setDirty(true);
+    });
+    document.getElementById('niAddChild').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      const name = e.target.value.trim();
+      if (!name || !selectedParentId) return;
+      addChildNode(selectedParentId, name);
+      e.target.value = '';
+      e.target.focus();
+    });
+    document.getElementById('niChildList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if (act === 'select') { selectedParentId = id; renderTree(); renderInspector(); }
+      else if (act === 'up') moveSibling(id, -1);
+      else if (act === 'down') moveSibling(id, 1);
+      else if (act === 'del') deleteNode(id);
+    });
     document.addEventListener('keydown', function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveHierarchy(); }
     });
@@ -595,19 +655,6 @@
     document.getElementById('dlDiagramSvg').addEventListener('click', function () { downloadDiagram('svg'); });
     document.getElementById('dlDiagramPng').addEventListener('click', function () { downloadDiagram('png'); });
 
-    document.getElementById('nodeEditClose').addEventListener('click', function () {
-      document.getElementById('nodeEditModal').hidden = true;
-    });
-    document.getElementById('nodeEditSave').addEventListener('click', function () {
-      const node = byId(editingNodeId);
-      const name = document.getElementById('nodeEditName').value.trim();
-      if (!name) { ahpToast('이름을 입력해 주세요', true); return; }
-      node.name = name;
-      node.description = document.getElementById('nodeEditDesc').value.trim();
-      document.getElementById('nodeEditModal').hidden = true;
-      setDirty(true);
-      renderTree();
-    });
 
     document.getElementById('altInput').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
