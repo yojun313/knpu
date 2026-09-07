@@ -7,6 +7,9 @@
   --r-accent:#2F5EA8; --r-accent-ink:#FFFFFF; --r-border:#DFE3EA; --r-danger:#C0342A;
   --r-good:#1B7A4C; --r-chip-bg:#EEF1F6; --r-track:#E4E8EF;
   --r-safe-t:env(safe-area-inset-top,0px); --r-safe-b:env(safe-area-inset-bottom,0px);
+  /* 본문은 넓은 화면에서 좌우 공간을 더 쓰고, 상·하단 바 내용과 버튼은
+     화면 양끝이 아니라 중앙 컬럼으로 모은다(4K 대응). */
+  --r-col:min(880px,92vw); --r-col-narrow:min(560px,92vw);
 }
 @media (prefers-color-scheme:dark){
   :root{
@@ -52,7 +55,7 @@ button{font-family:inherit}
 .conn-bar.reconnecting{background:#B8860B}
 
 /* ── 동의 / 코드 입력 카드 ── */
-.card{width:100%;max-width:480px;margin:0 auto;padding:max(24px,var(--r-safe-t)) 20px 32px;
+.card{width:100%;max-width:var(--r-col-narrow);margin:0 auto;padding:max(24px,var(--r-safe-t)) 20px 32px;
   display:flex;flex-direction:column;gap:14px}
 .intro{white-space:pre-wrap}
 .consent-box{background:var(--r-surface);border:1px solid var(--r-border);border-radius:14px;
@@ -78,6 +81,7 @@ button{font-family:inherit}
 /* ── 설문 화면 ── */
 .survey-top{position:sticky;top:0;z-index:40;background:var(--r-bg);
   padding:calc(10px + var(--r-safe-t)) 18px 8px}
+.survey-top-inner{max-width:var(--r-col);margin:0 auto;width:100%}
 .progress-track{height:6px;border-radius:999px;background:var(--r-track);overflow:hidden}
 .progress-fill{height:100%;background:var(--r-accent);border-radius:999px;
   transition:width .25s ease}
@@ -85,7 +89,7 @@ button{font-family:inherit}
 .progress-label{text-align:right;margin-top:5px;font-size:11.5px;color:var(--r-muted);
   font-variant-numeric:tabular-nums}
 
-.survey-body{flex:1;padding:8px 20px 24px;max-width:560px;margin:0 auto;width:100%}
+.survey-body{flex:1;padding:8px 20px 24px;max-width:var(--r-col);margin:0 auto;width:100%}
 .q-parent{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
   color:var(--r-accent);margin-bottom:6px}
 .q-desc{font-size:13px;color:var(--r-muted);margin-bottom:14px;line-height:1.6}
@@ -120,15 +124,16 @@ button{font-family:inherit}
   flex:1 1 44px;max-width:56px}
 .intensity-chip.selected{border-color:var(--r-accent);background:var(--r-accent);color:var(--r-accent-ink)}
 
-.survey-nav{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;
-  gap:10px;padding:12px 18px calc(14px + var(--r-safe-b));background:var(--r-bg);
-  border-top:1px solid var(--r-border)}
+.survey-nav{position:sticky;bottom:0;padding:12px 18px calc(14px + var(--r-safe-b));
+  background:var(--r-bg);border-top:1px solid var(--r-border)}
+.survey-nav-inner{max-width:var(--r-col-narrow);margin:0 auto;width:100%;
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
 .q-counter{font-size:12.5px;color:var(--r-muted);font-variant-numeric:tabular-nums}
 
 :focus-visible{outline:2.5px solid var(--r-accent);outline-offset:2px}
 
 /* ── 제출 완료 화면 — 기준별 CR 요약(섹션별로 눌러서 바로 이동) ── */
-.cr-summary-list{width:100%;max-width:420px;margin:14px 0;display:flex;flex-direction:column;
+.cr-summary-list{width:100%;max-width:var(--r-col-narrow);margin:14px 0;display:flex;flex-direction:column;
   gap:8px;text-align:left}
 .cr-summary-row{display:flex;justify-content:space-between;align-items:center;width:100%;
   padding:10px 14px;border-radius:12px;background:var(--r-surface);border:1px solid var(--r-border);
@@ -158,7 +163,7 @@ button{font-family:inherit}
 .my-result p.small{font-size:11px;margin:4px 0 0}
 
 /* ── 제출 후: CR이 높게 나온 이유 설명 + 모순 예시 시각화 ── */
-.cr-explain{width:100%;max-width:440px;margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
+.cr-explain{width:100%;max-width:var(--r-col-narrow);margin:8px 0 4px;padding:14px 16px;border-radius:14px;text-align:left;
   background:color-mix(in srgb,var(--r-danger) 8%,var(--r-surface));
   border:1px solid color-mix(in srgb,var(--r-danger) 32%,var(--r-border))}
 .cr-explain[hidden]{display:none}
@@ -189,7 +194,7 @@ button{font-family:inherit}
   border-radius:10px;background:var(--r-bg);color:var(--r-ink);font-size:13px;padding:0 10px}
 
 /* ── 대기 화면(실시간) — 세션 시작 전 / 섹션 완료 후 공개된 결과 ── */
-.section-wait-results{width:100%;max-width:380px;margin:16px 0 0;padding:14px 16px;
+.section-wait-results{width:100%;max-width:min(480px,92vw);margin:16px 0 0;padding:14px 16px;
   border-radius:14px;background:var(--r-surface);border:1px solid var(--r-border);
   text-align:left}
 .section-wait-results[hidden]{display:none}
