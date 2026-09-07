@@ -325,22 +325,50 @@
     document.getElementById('promoteModal').hidden = false;
   }
 
-  // ── 방법론 설정 모달 ──────────────────────────────────────────────────────
+  // ── 상세설정 모달 (공통 · 방법별 탭) ─────────────────────────────────────
+  function showSettingsTab(name) {
+    document.querySelectorAll('#settingsTabs .settings-tab').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tab === name);
+    });
+    document.querySelectorAll('.settings-tab-panel').forEach(function (p) {
+      p.hidden = p.dataset.tab !== name;
+    });
+  }
+
   async function openSettings() {
     const data = await ahpApi('/api/projects/' + projectId + '/settings');
-    document.getElementById('setAggregation').value = data.settings.aggregation;
-    document.getElementById('setWeightMethod').value = data.settings.weight_method;
-    document.getElementById('setAltLayer').value = data.settings.alt_layer;
-    document.getElementById('setIncomplete').value = data.settings.incomplete_policy;
-    document.getElementById('setScale').value = String(data.settings.scale);
-    document.getElementById('setCrThreshold').value = data.settings.cr_threshold;
-    document.getElementById('setCrAction').value = data.settings.cr_action;
-    document.getElementById('setCollectDemographics').value = data.settings.collect_demographics || 'off';
+    let enabled = ['ahp'];
+    try {
+      const survey = await ahpApi('/api/projects/' + projectId + '/survey');
+      if (survey.methods && Array.isArray(survey.methods.enabled) && survey.methods.enabled.length) {
+        enabled = survey.methods.enabled;
+      }
+    } catch (e) { /* 설문 없으면 AHP 기본 */ }
+
+    const s = data.settings;
+    document.getElementById('setAggregation').value = s.aggregation;
+    document.getElementById('setWeightMethod').value = s.weight_method;
+    document.getElementById('setAltLayer').value = s.alt_layer;
+    document.getElementById('setIncomplete').value = s.incomplete_policy;
+    document.getElementById('setScale').value = String(s.scale);
+    document.getElementById('setCrThreshold').value = s.cr_threshold;
+    document.getElementById('setCrAction').value = s.cr_action;
+    document.getElementById('setCollectDemographics').value = s.collect_demographics || 'off';
+    document.getElementById('setBwmCriThreshold').value = s.bwm_cri_threshold != null ? s.bwm_cri_threshold : 0;
+    document.getElementById('setBwmOrGate').value = s.bwm_or_gate || 'on';
+    document.getElementById('setBwmConsistencyAction').value = s.bwm_consistency_action || 'warn';
+    document.getElementById('setBwmAggregation').value = s.bwm_aggregation || 'geomean';
+
+    // 활용 분석에서 선언한 방법만 탭으로 보인다.
+    document.querySelectorAll('#settingsTabs .settings-tab').forEach(function (b) {
+      if (b.dataset.tab === 'common') return;
+      b.hidden = enabled.indexOf(b.dataset.tab) === -1;
+    });
+    showSettingsTab('common');
 
     document.getElementById('settingsLockNotice').hidden = !data.locked;
-    ['setAggregation', 'setWeightMethod', 'setAltLayer', 'setScale'].forEach(function (id) {
-      document.getElementById(id).disabled = !!data.locked;
-    });
+    ['setAggregation', 'setWeightMethod', 'setAltLayer', 'setScale', 'setBwmAggregation']
+      .forEach(function (id) { document.getElementById(id).disabled = !!data.locked; });
     document.getElementById('settingsModal').hidden = false;
   }
 
@@ -354,6 +382,10 @@
       cr_threshold: Number(document.getElementById('setCrThreshold').value),
       cr_action: document.getElementById('setCrAction').value,
       collect_demographics: document.getElementById('setCollectDemographics').value,
+      bwm_cri_threshold: Number(document.getElementById('setBwmCriThreshold').value) || 0,
+      bwm_or_gate: document.getElementById('setBwmOrGate').value,
+      bwm_consistency_action: document.getElementById('setBwmConsistencyAction').value,
+      bwm_aggregation: document.getElementById('setBwmAggregation').value,
     };
     try {
       await ahpApi('/api/projects/' + projectId + '/settings', { method: 'PUT', body: body });
@@ -495,6 +527,10 @@
       document.getElementById('settingsModal').hidden = true;
     });
     document.getElementById('settingsSave').addEventListener('click', saveSettings);
+    document.getElementById('settingsTabs').addEventListener('click', function (e) {
+      const btn = e.target.closest('.settings-tab');
+      if (btn) showSettingsTab(btn.dataset.tab);
+    });
 
     document.getElementById('renameProjectBtn').addEventListener('click', async function () {
       const current = document.getElementById('projTitle').textContent;

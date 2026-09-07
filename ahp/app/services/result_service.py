@@ -48,7 +48,7 @@ def build_results(
 
             if len(node_ids) >= 3:
                 c = plugin.derive_local(
-                    m, pairs, cr_threshold=cr_threshold
+                    m, pairs, cr_threshold=cr_threshold, settings=settings
                 ).consistency
                 per_respondent_cr[rid][group_id] = c.value if c else None
                 if is_bwm and c:
@@ -143,7 +143,7 @@ def build_results(
 
     per_respondent_result = {
         rid: _one_respondent_result(
-            node_parent, matrix_of_parent, groups, answers, cr_threshold
+            node_parent, matrix_of_parent, groups, answers, cr_threshold, settings
         )
         for rid, answers in submissions_by_respondent.items()
     }
@@ -230,6 +230,7 @@ def _one_respondent_result(
     groups: list[dict],
     answers: dict,
     cr_threshold: float,
+    settings: dict | None = None,
 ) -> dict:
     """한 응답자의 답만으로 전역 가중치·대안 점수·그룹별 CR을 낸다.
     개인 종료 화면(3.1)과 결과 화면 개인별 카드(4.1)가 공유한다."""
@@ -242,7 +243,7 @@ def _one_respondent_result(
             local[gid] = {node_ids[0]: 1.0}
             continue
         lr = get_method(m.get("method")).derive_local(
-            m, answers.get(gid, {}), cr_threshold=cr_threshold
+            m, answers.get(gid, {}), cr_threshold=cr_threshold, settings=settings
         )
         if lr.complete:
             local[gid] = lr.weights

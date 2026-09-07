@@ -93,6 +93,7 @@ class AhpPlugin:
         *,
         cr_threshold: float = 0.1,
         overrides: list[dict] | None = None,
+        settings: dict | None = None,
     ) -> Consistency | None:
         return self.derive_local(
             group, responses, overrides=overrides, cr_threshold=cr_threshold
@@ -106,6 +107,7 @@ class AhpPlugin:
         *,
         overrides: list[dict] | None = None,
         cr_threshold: float = 0.1,
+        settings: dict | None = None,  # noqa: ARG002  (BWM만 사용 — 시그니처 통일)
     ) -> LocalResult:
         child_uuids = list(group["child_uuids"])
         pairs = _apply_overrides(responses, overrides)

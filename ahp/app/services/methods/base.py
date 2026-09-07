@@ -84,6 +84,7 @@ class MethodPlugin(Protocol):
         *,
         cr_threshold: float = 0.1,
         overrides: list[dict] | None = None,
+        settings: dict | None = None,
     ) -> Consistency | None:
         ...
 
@@ -94,6 +95,7 @@ class MethodPlugin(Protocol):
         *,
         overrides: list[dict] | None = None,
         cr_threshold: float = 0.1,
+        settings: dict | None = None,  # 방법별 세부 설정(2.2) — 예: BWM CR^I 임계
     ) -> LocalResult:
         ...
 
