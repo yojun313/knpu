@@ -20,9 +20,9 @@ from app.db import (
     projects_db,
 )
 from app.services.codes import hash_code
-from app.services.ahp_calc import to_stored_pair, pair_id
-from app.services.csv_schema import group_item_slots
-from app.services.methods import get_method
+from app.services.ahp_calc import pair_id, to_stored_pair
+from app.services.csv_schema import group_item_count, group_item_slots
+from app.services.methods import KIND_VALIDATORS, get_method
 from app.services.hub import hub
 from app.routes.survey_routes import DEFAULT_INTRO_TEXT, DEFAULT_CONSENT_TEXT
 from app.services.demographics import coerce_attributes, validate_required
@@ -248,9 +248,11 @@ async def put_answer(token: str, request: Request):
 
     body = await request.json()
     group_id = body["group_id"]
-    uuid_a, uuid_b = body["uuid_a"], body["uuid_b"]
-    value = float(body["value"])
+    kind = body.get("kind", "pairwise")
     client_seq = int(body.get("client_seq", 0))
+    validator = KIND_VALIDATORS.get(kind)
+    if validator is None:
+        raise HTTPException(400, "지원하지 않는 응답 종류입니다")
 
     survey, _nodes = await _survey_and_nodes(collection)
     matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
@@ -284,18 +286,18 @@ async def put_answer(token: str, request: Request):
     if client_seq and client_seq <= resp.get("client_seq", 0):
         return {"ack": client_seq, "stale": True}
 
-    pid, stored_value = to_stored_pair(uuid_a, uuid_b, value)
+    try:
+        item_id, stored_value = validator(body)
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(400, "응답 형식이 올바르지 않습니다")
     answers = dict(resp.get("answers", {}))
     matrix_answers = dict(answers.get(group_id, {}))
-    matrix_answers[pid] = stored_value
+    matrix_answers[item_id] = stored_value
     answers[group_id] = matrix_answers
 
-    total_pairs = sum(
-        len(m["child_uuids"]) * (len(m["child_uuids"]) - 1) // 2
-        for m in survey["groups"]
-    )
-    answered_pairs = sum(len(v) for v in answers.values())
-    progress = round(100 * answered_pairs / total_pairs) if total_pairs else 100
+    total_items = sum(group_item_count(m) for m in survey["groups"])
+    answered_items = sum(len(v) for v in answers.values())
+    progress = round(100 * answered_items / total_items) if total_items else 100
 
     await responses_db.update_one(
         {"_id": resp["_id"]},

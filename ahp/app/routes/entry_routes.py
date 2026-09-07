@@ -18,7 +18,7 @@ from app.db import (
     imports_db,
 )
 from app.services.ahp_calc import to_stored_pair, pair_id
-from app.services.methods import get_method
+from app.services.methods import KIND_VALIDATORS, get_method
 from app.services.csv_schema import parse_value, group_item_slots
 from app.services.codes import dedupe_label as _dedupe_label
 from app.services.hub import hub
@@ -248,16 +248,20 @@ async def put_answer(collection_id: str, request: Request):
     body = await request.json()
     respondent_id = body["respondent_id"]
     group_id = body["group_id"]
-    uuid_a = body["uuid_a"]
-    uuid_b = body["uuid_b"]
-    value_a_over_b = float(body["value"])
+    kind = body.get("kind", "pairwise")
+    validator = KIND_VALIDATORS.get(kind)
+    if validator is None:
+        raise HTTPException(400, "지원하지 않는 응답 종류입니다")
 
     survey, _nodes = await _survey_and_nodes(collection)
     matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
     if not matrix:
         raise HTTPException(404, "해당 비교 행렬을 찾을 수 없습니다")
 
-    pid, stored_value = to_stored_pair(uuid_a, uuid_b, value_a_over_b)
+    try:
+        item_id, stored_value = validator(body)
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(400, "응답 형식이 올바르지 않습니다")
     resp = await responses_db.find_one(
         {"collection_id": collection_id, "respondent_id": respondent_id}
     )
@@ -266,7 +270,7 @@ async def put_answer(collection_id: str, request: Request):
 
     answers = dict(resp.get("answers", {}))
     matrix_answers = dict(answers.get(group_id, {}))
-    matrix_answers[pid] = stored_value
+    matrix_answers[item_id] = stored_value
     answers[group_id] = matrix_answers
 
     await responses_db.update_one(
@@ -292,19 +296,21 @@ async def put_answer(collection_id: str, request: Request):
 
     # 진행자가 콘솔에서 고친 값을 그 참여자 화면에도 즉시 반영한다 — 안 그러면
     # 로컬 상태가 조정 전 값으로 남아 있다가 "재조정 요청" 시 원복돼 버린다.
-    await hub.publish(
-        collection_id,
-        "answer.override",
-        {
-            "group_id": group_id,
-            "uuid_a": uuid_a,
-            "uuid_b": uuid_b,
-            "value_a_over_b": value_a_over_b,
-            "cr": cr_info.get("cr") if cr_info.get("complete") else None,
-            "complete": cr_info.get("complete", False),
-        },
-        only_role_prefix=f"respondent:{respondent_id}",
-    )
+    # (BWM 오프라인 콘솔 반영은 1-5 — 지금은 쌍대비교만 즉시 push한다.)
+    if kind == "pairwise":
+        await hub.publish(
+            collection_id,
+            "answer.override",
+            {
+                "group_id": group_id,
+                "uuid_a": body["uuid_a"],
+                "uuid_b": body["uuid_b"],
+                "value_a_over_b": float(body["value"]),
+                "cr": cr_info.get("cr") if cr_info.get("complete") else None,
+                "complete": cr_info.get("complete", False),
+            },
+            only_role_prefix=f"respondent:{respondent_id}",
+        )
 
     return cr_info
 
