@@ -64,7 +64,11 @@
         <div class="ni-children">
           <div class="ni-children-head"><span>하위 기준</span><span class="tc-meta" id="niChildCount"></span></div>
           <div id="niChildList" class="ni-child-list"></div>
-          <input type="text" id="niAddChild" placeholder="하위 기준 이름 입력 후 Enter — 계속 추가됩니다">
+          <div class="ni-add-row">
+            <input type="text" id="niAddChild" enterkeyhint="done" autocomplete="off"
+              placeholder="하위 기준 이름 입력 후 Enter 또는 ＋">
+            <button type="button" id="niAddChildBtn" class="ni-add-btn" aria-label="하위 기준 추가">＋</button>
+          </div>
         </div>
       </div>
     </div>

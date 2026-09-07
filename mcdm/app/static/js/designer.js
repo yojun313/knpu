@@ -669,14 +669,19 @@
       node.description = e.target.value;
       setDirty(true);
     });
-    document.getElementById('niAddChild').addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      const name = e.target.value.trim();
+    const addChildInput = document.getElementById('niAddChild');
+    function commitAddChild() {
+      const name = addChildInput.value.trim();
       if (!name || !selectedParentId) return;
       addChildNode(selectedParentId, name);
-      e.target.value = '';
-      e.target.focus();
+      addChildInput.value = '';
+      addChildInput.focus();
+    }
+    addChildInput.addEventListener('keydown', function (e) {
+      // 모바일 IME 는 Enter 를 keyCode 229 로 보내거나 "다음"으로 포커스 이동시킨다.
+      if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); commitAddChild(); }
     });
+    document.getElementById('niAddChildBtn').addEventListener('click', commitAddChild);
     document.getElementById('niChildList').addEventListener('click', function (e) {
       const btn = e.target.closest('button');
       if (!btn) return;

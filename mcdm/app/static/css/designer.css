@@ -32,8 +32,12 @@
 .ni-child-row .nicr-actions button:hover:not(:disabled){background:var(--sidebar-bg);color:var(--text-strong)}
 .ni-child-row .nicr-actions button:disabled{opacity:.3;cursor:default}
 .ni-child-row .nicr-actions button.danger:hover{background:var(--danger);color:#fff}
-#niAddChild{width:100%;padding:9px 12px;border-radius:8px;border:1px dashed var(--sidebar-border);
+.ni-add-row{display:flex;gap:6px}
+#niAddChild{flex:1;min-width:0;padding:9px 12px;border-radius:8px;border:1px dashed var(--sidebar-border);
   background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px;font-family:inherit}
+.ni-add-btn{flex:0 0 auto;width:38px;border-radius:8px;border:1px solid var(--accent);
+  background:var(--accent);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.ni-add-btn:hover{filter:brightness(1.08)}
 
 #warningsBox:empty{display:none}
 .warn-item{background:rgba(224,138,46,.1);border:1px solid rgba(224,138,46,.3);
