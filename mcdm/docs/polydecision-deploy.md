@@ -53,8 +53,9 @@
          /home/lab/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
        # → 없이 실행
        ```
-5. [ ] `pm2 delete mcdm && pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
-       (MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
+5. [ ] `pm2 delete ahp 2>/dev/null; pm2 delete mcdm 2>/dev/null; pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
+       (구 pm2 앱 이름은 `ahp` — 서비스·폴더 개명이 이번에 한꺼번에 적용된다.
+        MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
 6. [ ] 도메인 `ahp.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
 
 - **멱등**: 재실행하면 대상 문서가 최신 변환으로 `_id` 기준 덮어써짐. 완전 재동기화는 대상 DB drop 후 재실행.
