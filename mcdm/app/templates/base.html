@@ -8,6 +8,7 @@
   {% block extra_head %}{% endblock %}
 </head><body>
   <div class="top-header">
+    <button id="railMenuBtn" class="rail-menu-btn" type="button" aria-label="프로젝트 메뉴">☰</button>
     <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
     <nav class="top-nav">
       <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
@@ -23,6 +24,7 @@
     </button>
   </div>
   <div id="app">
+    <div id="railBackdrop" class="rail-backdrop" hidden></div>
     <div id="rail" class="rail">
       <div class="rail-head">
         <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>

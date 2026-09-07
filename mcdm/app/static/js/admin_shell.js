@@ -106,9 +106,40 @@
 
     const toggle = document.getElementById('railToggle');
     const rail = document.getElementById('rail');
-    if (toggle && rail) {
-      toggle.addEventListener('click', function () { rail.classList.toggle('collapsed'); });
+    const backdrop = document.getElementById('railBackdrop');
+    const menuBtn = document.getElementById('railMenuBtn');
+    const mq = window.matchMedia('(max-width: 860px)');
+
+    function closeRail() {
+      if (rail) rail.classList.remove('rail-open');
+      if (backdrop) backdrop.hidden = true;
     }
+    function openRail() {
+      if (rail) rail.classList.add('rail-open');
+      if (backdrop) backdrop.hidden = false;
+    }
+
+    if (toggle && rail) {
+      toggle.addEventListener('click', function () {
+        // 모바일: 서랍 닫기. 데스크톱: 접기/펼치기.
+        if (mq.matches) closeRail();
+        else rail.classList.toggle('collapsed');
+      });
+    }
+    if (menuBtn) menuBtn.addEventListener('click', openRail);
+    if (backdrop) backdrop.addEventListener('click', closeRail);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeRail();
+    });
+    if (rail) {
+      rail.addEventListener('click', function (e) {
+        if (mq.matches && e.target.closest('.rail-item')) closeRail();
+      });
+    }
+    // 데스크톱으로 넓어지면 서랍 상태 정리
+    (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(
+      function () { if (!mq.matches) closeRail(); }
+    );
 
     const logoutBtn = document.getElementById('railLogout');
     if (logoutBtn) {
