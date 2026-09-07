@@ -12,7 +12,14 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 
 from app.auth import current_uid, is_admin
-from app.db import surveys_db, hierarchies_db, collections_db, responses_db, projects_db
+from app.db import (
+    surveys_db,
+    hierarchies_db,
+    collections_db,
+    responses_db,
+    submissions_db,
+    projects_db,
+)
 from app.services.questions import (
     generate_questions,
     normalize_methods,
@@ -153,26 +160,74 @@ async def update_survey(project_id: str, request: Request):
         patch["consent_text"] = body["consent_text"] or DEFAULT_CONSENT_TEXT
     if "node_descriptions" in body and isinstance(body["node_descriptions"], dict):
         patch["node_descriptions"] = body["node_descriptions"]
+    if "demographics" in body:
+        # 인구통계 스키마는 계층/groups 구조와 무관 — node_descriptions처럼 버전 안 올린다.
+        patch["demographics"] = normalize_demographics(body["demographics"])
+
+    methods_kind_changed: list[str] = []
+    if "methods" in body:
+        # 노드별 가중치 방법·대안 랭킹 방법. group_id/child_uuids 는 그대로이고
+        # kind/method/question_text 만 바뀌므로 버전은 안 올린다 — 그 자리에서
+        # 현재 계층으로 groups 를 다시 만든다.
+        new_methods = normalize_methods(body["methods"])
+        patch["methods"] = new_methods
+        hierarchy = await hierarchies_db.find_one(
+            {"project_id": project_id, "version": doc["hierarchy_version"]}
+        )
+        if hierarchy:
+            regen = generate_questions(
+                hierarchy["nodes"],
+                hierarchy.get("alternatives", []),
+                methods=new_methods,
+                settings=project.get("settings", {}),
+            )
+            old_by_id = {g["group_id"]: g for g in doc["groups"]}
+            for g in regen:
+                old = old_by_id.get(g["group_id"])
+                if old and old.get("kind", "pairwise") == g["kind"]:
+                    # 종류가 그대로면 연구자가 다듬은 질문 문구를 유지
+                    g["question_text"] = old.get("question_text", g["question_text"])
+                elif old:
+                    methods_kind_changed.append(g["group_id"])
+            patch["groups"] = regen
+
     if "group_questions" in body and isinstance(body["group_questions"], dict):
-        groups = list(doc["groups"])
+        groups = list(patch.get("groups", doc["groups"]))
         by_id = {m["group_id"]: m for m in groups}
         for mid, text in body["group_questions"].items():
             if mid in by_id and text:
                 by_id[mid]["question_text"] = text
         patch["groups"] = groups
-    if "demographics" in body:
-        # 인구통계 스키마는 계층/groups 구조와 무관 — node_descriptions처럼 버전 안 올린다.
-        patch["demographics"] = normalize_demographics(body["demographics"])
-    if "methods" in body:
-        # 노드별 가중치 방법·대안 랭킹 방법 — 구조 아닌 편집물이라 버전 안 올린다.
-        # 다음 resync 때 generate_questions 가 이 값으로 그룹을 다시 만든다.
-        patch["methods"] = normalize_methods(body["methods"])
 
     if not patch:
         raise HTTPException(400, "변경할 내용이 없습니다")
     patch["updated_at"] = _now()
     await surveys_db.update_one({"_id": doc["_id"]}, {"$set": patch})
     updated = await surveys_db.find_one({"_id": doc["_id"]})
+
+    # 방법(kind)이 바뀐 그룹은 기존 응답이 무의미(pairwise 답 ↔ BWM 답 형식이 다름)
+    # → 이 프로젝트의 모든 응답·스냅샷에서 그 그룹만 비운다.
+    cleared_answers = 0
+    if methods_kind_changed:
+        survey_ids = [
+            s["_id"]
+            async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
+        ]
+        cids = [
+            c["_id"]
+            async for c in collections_db.find(
+                {"survey_id": {"$in": survey_ids}}, {"_id": 1}
+            )
+        ]
+        if cids:
+            unset = {f"answers.{gid}": "" for gid in methods_kind_changed}
+            r1 = await responses_db.update_many(
+                {"collection_id": {"$in": cids}}, {"$unset": unset}
+            )
+            await submissions_db.update_many(
+                {"collection_id": {"$in": cids}}, {"$unset": unset}
+            )
+            cleared_answers = r1.modified_count
 
     # 문구·설명만 바뀐 경우도 실시간 collection이 열려 있으면 그 자리에서
     # 응답자 화면에 반영한다(PLAN.md 7.3) — 전체 스냅샷을 그대로 보내는 게
@@ -201,7 +256,11 @@ async def update_survey(project_id: str, request: Request):
             },
         )
 
-    return _serialize_survey(updated)
+    out = _serialize_survey(updated)
+    if methods_kind_changed:
+        out["methods_kind_changed"] = methods_kind_changed
+        out["cleared_answers"] = cleared_answers
+    return out
 
 
 @router.post("/api/projects/{project_id}/survey/resync")
