@@ -5,7 +5,7 @@
 재실행하면 `mcdm` 문서가 최신 변환으로 덮어써진다(안전).
 
     PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
-        /home/wcchoi/knpu/.venv/bin/python ahp/scripts/migrate_ahp_to_mcdm.py [--dry-run]
+        /home/wcchoi/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py [--dry-run]
 
 변환 내용
 --------
