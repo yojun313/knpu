@@ -38,7 +38,7 @@ app.add_middleware(
 )
 app.add_middleware(
     AuditLogMiddleware,
-    service="ahp",
+    service="mcdm",
     collection=user_logs_db,
     identity_extractor=lambda request: (request.scope.get("state") or {}).get("user"),
 )
