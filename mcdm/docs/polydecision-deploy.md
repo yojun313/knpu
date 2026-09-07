@@ -8,6 +8,32 @@
 
 ---
 
+## 개명 대조표 · 적용 현황
+
+`ahp` → `mcdm`(PolyDecision) 개명이 5개 층에 걸쳐 있다. **dev 는 적용 완료,
+운영은 미적용** — 아래 체크리스트의 "운영(prod)" 절을 배포 창구에서 수행한다.
+
+| 층 | 구 | 신 | dev | prod |
+|---|---|---|---|---|
+| `services.json` 서비스 키 | `ahp` | `mcdm` | ✅ | ✅ (코드) |
+| 리포지터리 디렉터리 | `ahp/` | `mcdm/` | ✅ | ✅ (코드) |
+| pm2 앱 이름 | `ahp-dev` / `ahp` | `mcdm-dev` / `mcdm` | ✅ 적용 | ⬜ 미적용 |
+| MongoDB | `ahp_dev` / `ahp` | `mcdm_dev` / `mcdm` | ✅ 시드 완료 | ⬜ 미적용 |
+| 도메인 | `dev.ahp.knpu.re.kr` | `dev.mcdm.knpu.re.kr` | ⬜ nginx 미적용 | 변경 없음 (`ahp.knpu.re.kr`) |
+| 화면 문구 | "AHP" | "PolyDecision" | ✅ | ✅ (코드) |
+
+- **코드**(services.json·디렉터리·문구)는 머지되면 dev/prod 모두 자동 반영.
+- **런타임**(pm2 앱 이름·DB)은 각 스택에서 수동 전환이 필요하다.
+- 도메인·포트(8007)는 운영 기준 그대로라 **운영 nginx 는 손대지 않는다**.
+- 내부 식별자(`localStorage ahp_*`, JS 전역 `ahpApi`/`AHPHierarchyDiagram`,
+  `"ahp"` 방법명)는 의도적으로 유지 — 기능적이고, localStorage 키를 바꾸면
+  응답자의 저장된 임시 답이 버려진다.
+
+**롤백**: 구 DB(`ahp`/`ahp_dev`)를 그대로 남기므로, 코드를 이전 커밋으로 되돌리고
+pm2 앱을 옛 이름으로 다시 띄우면 원복된다(§롤백 절 참조).
+
+---
+
 ## 핵심: 새 DB 로 이전 (구 DB는 그대로 보존)
 
 0단계부터 앱은 새 DB 이름을 쓴다(`app/db.py`). **MODE 로 dev/prod 를 가른다**
