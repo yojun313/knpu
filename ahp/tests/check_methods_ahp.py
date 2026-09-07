@@ -190,7 +190,11 @@ def test_generate_questions_parity():
         assert gn["scale"] == 5
     # 노드별 방법 배정: root=bwm(등록됨) → kind="bwm", 미등록 topsis → AHP 폴백.
     m = normalize_methods({"criteria": {"root": "bwm"}, "alternatives": "topsis"})
-    assert m == {"criteria": {"root": "bwm"}, "alternatives": "topsis"}
+    assert m == {
+        "criteria": {"root": "bwm"},
+        "alternatives": "topsis",
+        "enabled": ["bwm"],  # 선언 없으면 실제 쓰임(등록된 것만)에서 도출
+    }
     fb = generate_questions(nodes, alts, methods=m, settings=settings)
     assert [g["group_id"] for g in fb] == [g["group_id"] for g in legacy]
     by_id = {g["group_id"]: g for g in fb}

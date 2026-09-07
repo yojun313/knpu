@@ -21,7 +21,7 @@ kind별로 일반화한다.
 
 from __future__ import annotations
 
-from app.services.methods import get_method
+from app.services.methods import METHODS, get_method
 from app.services.survey_service import (  # noqa: F401  (재수출 — 단일 import 지점)
     diff_has_impact,
     diff_matrices as diff_groups,
@@ -30,8 +30,14 @@ from app.services.survey_service import (  # noqa: F401  (재수출 — 단일 i
 
 
 def normalize_methods(raw: dict | None) -> dict:
-    """`surveys.methods` 정규화. 잘못된 모양은 조용히 기본값으로 되돌린다."""
+    """`surveys.methods` 정규화. 잘못된 모양은 조용히 기본값으로 되돌린다.
+
+    `enabled` 는 "이 모델에서 활용할 분석"의 선언 목록(2.1) — 설계 페이지의
+    상세설정 탭·방법 피커 선택지를 이 목록으로 제한한다. 없으면 실제 쓰임
+    (criteria 값 + alternatives)에서 하위호환으로 도출한다.
+    """
     raw = raw or {}
+    known = set(METHODS)
     criteria = {}
     for k, v in (raw.get("criteria") or {}).items():
         if isinstance(k, str) and isinstance(v, str) and v:
@@ -39,7 +45,21 @@ def normalize_methods(raw: dict | None) -> dict:
     alternatives = raw.get("alternatives")
     if not isinstance(alternatives, str) or not alternatives:
         alternatives = "ahp"
-    return {"criteria": criteria, "alternatives": alternatives}
+
+    enabled_raw = raw.get("enabled")
+    if isinstance(enabled_raw, list):
+        enabled = [m for m in enabled_raw if isinstance(m, str) and m in known]
+    else:
+        enabled = []
+    if not enabled:
+        enabled = sorted((set(criteria.values()) | {alternatives}) & known)
+    # 실제 배정된 방법은 항상 enabled 에 포함(선언과 사용의 정합성).
+    for m in list(criteria.values()) + [alternatives]:
+        if m in known and m not in enabled:
+            enabled.append(m)
+    if not enabled:
+        enabled = ["ahp"]
+    return {"criteria": criteria, "alternatives": alternatives, "enabled": enabled}
 
 
 def generate_questions(
