@@ -16,6 +16,9 @@
             --deep:    #2D4473;
             --sky:     #05AFF2;
             --mist:    #9AC7D9;
+            /* /shared-ui/theme.css의 테마 설정 모달이 "선택됨" 표시 등에 쓰는
+               --accent(정의 안 하면 회색 기본값으로 대체됨) — 크롤러의 브랜드 블루로 맞춘다. */
+            --accent:  var(--blue);
 
             --bg:      #f0f4f8;
             --surface: #ffffff;
@@ -78,7 +81,12 @@
         }
 
         /* ── Header ──────────────────────────────────── */
-        .header {
+        /* 상단 브랜드 바 — 클래스 이름(.top-header/.top-header-logo)을 다른 KNPU
+           서비스와 똑같이 맞춰서 /shared-ui/theme.css의 테마별 규칙(글래스/애플 등)이
+           크롤러에도 그대로 적용되게 한다. 예전에는 .header라는 이 페이지만의 이름을
+           썼는데, 그래서 다른 서비스로 갔다가 돌아올 때마다 상단바 디자인·폰트가
+           미묘하게 달라 보였다(테마 규칙이 아예 안 걸렸으므로). */
+        .top-header {
             background: linear-gradient(110deg, var(--navy) 0%, var(--deep) 60%, var(--blue) 100%);
             padding: 0 24px;
             height: 58px;
@@ -91,13 +99,13 @@
             z-index: 100;
         }
 
-        .header-logo {
+        .top-header-logo {
             height: 34px;
             object-fit: contain;
             display: block;
             flex-shrink: 0;
         }
-        .header > a:first-child { display: flex; align-items: center; flex-shrink: 0; }
+        .top-header > a:first-child { display: flex; align-items: center; flex-shrink: 0; }
 
         /* 상단 서비스 네비게이션 — 크롤러/kemkim/network/statistics/manager 어디서든
            똑같이 보여서 서비스 간 이동이 쉽게 만든다. */
@@ -124,14 +132,6 @@
         }
         .top-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
         .top-nav-link.active { background: rgba(255,255,255,0.18); color: #fff; }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-left: auto;
-            flex-shrink: 0;
-        }
 
         .conn-badge {
             display: flex;
@@ -845,114 +845,14 @@
 
         @media (max-width: 420px) {
             .f-crawler, .f-option { flex-basis: 100%; }
-            .header-right { gap: 8px; }
             .panel-title { font-size: 13px; }
         }
 
-        /* ══════════════════════════════════════════════════════════════════
-           테마 설정 — statistics/kemkim/network와 같은 4가지 테마(기본/글래스모피즘/
-           뉴모피즘/그라디언트 메시)를 크롤러 자체 클래스(.panel/.card/.modal-box)에
-           맞게 이식한 것. 색·질감 값은 세 앱의 공용 shared_ui/theme.css와 동일하게
-           맞춰 다섯 사이트가 같은 팔레트를 쓴다(브랜드 상단 바는 테마와 무관하게 고정).
-           ══════════════════════════════════════════════════════════════════ */
-        .theme-settings-btn {
-            width: 34px; height: 34px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; border: 1px solid rgba(255,255,255,0.22);
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
-            cursor: pointer; transition: background 150ms, transform 300ms ease;
-        }
-        .theme-settings-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
-        .theme-settings-btn:hover svg { transform: rotate(45deg); }
-        .theme-settings-btn svg { transition: transform 300ms ease; display: block; }
-
-        .theme-modal-overlay {
-            position: fixed; inset: 0; z-index: 300; background: rgba(8,12,20,0.55);
-            display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .theme-modal-overlay:not(.open) { display: none; }
-        .theme-modal {
-            width: min(460px, 100%); background: var(--surface); color: var(--ink);
-            border: 1px solid var(--line); border-radius: 16px;
-            box-shadow: 0 24px 60px rgba(15,23,42,0.35); overflow: hidden;
-        }
-        .theme-modal-head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 18px; border-bottom: 1px solid var(--line);
-        }
-        .theme-modal-head h3 { font-size: 15px; margin: 0; }
-        .theme-modal-sub { font-size: 11.5px; color: var(--muted); margin: 2px 0 0; font-weight: 400; }
-        .theme-modal-close {
-            background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer;
-            color: var(--muted); width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-        }
-        .theme-modal-close:hover { background: var(--bg); }
-        .theme-modal-body { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .theme-option {
-            display: flex; flex-direction: column; background: transparent; border: 2px solid transparent;
-            border-radius: 12px; padding: 6px; cursor: pointer; font-family: inherit; color: inherit;
-            transition: border-color 150ms, background 150ms;
-        }
-        .theme-option:hover { background: var(--bg); }
-        .theme-option.selected { border-color: var(--blue); }
-        .theme-option-label {
-            font-size: 12px; font-weight: 700; text-align: center; padding: 2px 0 0;
-            display: flex; align-items: center; justify-content: center; gap: 5px;
-        }
-        .theme-option-check {
-            display: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blue);
-            color: #fff; font-size: 9px; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .theme-option.selected .theme-option-check { display: inline-flex; }
-        .theme-swatch {
-            height: 62px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            gap: 6px; overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.08);
-        }
-        .theme-swatch > span { width: 15px; height: 15px; border-radius: 5px; flex-shrink: 0; }
-        .theme-swatch-default { background: #eef2f8; }
-        .theme-swatch-default > span { background: #fff; border: 1px solid #c8d6e5; }
-        .theme-swatch-glass { background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%); }
-        .theme-swatch-glass > span { background: rgba(255,255,255,0.6); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.65); }
-        .theme-swatch-apple {
-            background:
-                radial-gradient(60% 60% at 18% 12%, rgba(120,170,255,.55) 0, transparent 62%),
-                radial-gradient(55% 55% at 86% 20%, rgba(255,170,195,.5) 0, transparent 62%),
-                radial-gradient(60% 60% at 72% 92%, rgba(150,205,255,.5) 0, transparent 62%),
-                #eef0f5;
-        }
-        .theme-swatch-apple > span {
-            background: rgba(255,255,255,0.5); backdrop-filter: blur(6px) saturate(180%);
-            -webkit-backdrop-filter: blur(6px) saturate(180%); border: none; border-radius: 6px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 2px 6px rgba(0,0,0,.1);
-        }
-        .theme-swatch-neu { background: #e7e9ee; }
-        .theme-swatch-neu > span { background: #e7e9ee; box-shadow: 3px 3px 6px #d1d4da, -3px -3px 6px #ffffff; }
-        .theme-swatch-mesh {
-            background: radial-gradient(at 30% 30%, hsl(190 70% 55% / .5) 0, transparent 60%),
-                        radial-gradient(at 80% 70%, hsl(310 60% 60% / .45) 0, transparent 60%),
-                        radial-gradient(at 20% 85%, hsl(45 70% 55% / .4) 0, transparent 55%), #14151f;
-        }
-        .theme-swatch-mesh > span { background: rgba(255,255,255,0.14); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.22); }
-        @media (max-width: 480px) { .theme-modal-body { grid-template-columns: 1fr; } }
-
-        /* ── 다크 모드 토글 스위치 ─────────────────────────── */
-        .theme-mode-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 4px 18px 18px; border-top: 1px solid var(--line); margin-top: 2px;
-        }
-        .theme-mode-row span { font-size: 12.5px; font-weight: 600; color: var(--ink); }
-        .theme-mode-switch {
-            position: relative; width: 40px; height: 22px; border-radius: 999px;
-            background: rgba(127,127,127,0.32); border: none; cursor: pointer; flex-shrink: 0;
-            transition: background 150ms;
-        }
-        .theme-mode-switch::before {
-            content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
-            border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
-            transition: transform 150ms;
-        }
-        .theme-mode-switch.on { background: var(--blue); }
-        .theme-mode-switch.on::before { transform: translateX(18px); }
+        /* 상단바(.top-header)의 톤 버튼(.theme-settings-btn)·설정 모달
+           (.theme-modal-overlay 등)은 이제 /shared-ui/theme.css + theme.js가
+           그린다. 여기 있던 로컬 사본(테마 버튼 스타일, 모달 마크업/CSS, 5개
+           스와치, 다크모드 스위치)은 지웠다 — theme.js가 #themeSettingsBtn만
+           보고 나머지를 전부 알아서 만들어 붙인다(system/ui/theme.js 참고). */
 
         /* ── 글래스모피즘 (라이트/다크) ────────────────────── */
         :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
@@ -999,13 +899,14 @@
             --ap-specular: inset 0 1px 0 rgba(255,255,255,0.16);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
         }
-        :root[data-ui-theme="apple"] body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-                'Helvetica Neue', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            letter-spacing: -0.003em;
-        }
+        /* body(및 그 상속값)의 애플 폰트/자간은 /shared-ui/theme.css가 이미 맡고 있어서
+           여기서 다시 선언하지 않는다 — 예전엔 여기 그대로 복사해뒀었는데, theme.css
+           쪽 폰트 스택이 나중에 업데이트되면서(Windows/Android 폴백 추가) 이 복사본만
+           구버전으로 뒤처져 있었다. 상단 네비(.top-nav-link)는 기본 테마에서 이
+           페이지만의 폰트(Nanum Gothic이 아니라 별도 지정한 값)를 쓰려고 font-family를
+           직접 지정해서 body 상속을 막아뒀는데, 애플 테마에서는 그 지정을 걷어내
+           body가 상속해준다 — theme.css 값이 바뀌어도 다시는 안 벌어지게. */
+        :root[data-ui-theme="apple"] .top-nav-link { font-family: inherit; }
         :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
             background:
                 radial-gradient(62% 55% at 14% 2%, rgba(118,170,255,.38) 0, transparent 62%),
@@ -1106,7 +1007,7 @@
             animation: themeMeshHue 30s linear infinite;
         }
         @keyframes themeMeshHue { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-        :root[data-ui-theme="mesh"] .header,
+        :root[data-ui-theme="mesh"] .top-header,
         :root[data-ui-theme="mesh"] .container { position: relative; z-index: 1; }
         :root[data-ui-theme="mesh"] .panel,
         :root[data-ui-theme="mesh"] .card,
@@ -1135,13 +1036,14 @@
             color: var(--ink);
         }
     </style>
+  <link rel="stylesheet" href="/shared-ui/theme.css">
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
 </head>
 <body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
 
-<div class="header">
-    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="header-logo"></a>
+<div class="top-header">
+    <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
     <nav class="top-nav">
         <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
         <a href="https://manager.knpu.re.kr" class="top-nav-link" onclick="return openManagerApp(event)">MANAGER</a>
@@ -1149,51 +1051,11 @@
         <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
         <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
         <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
-        <a href="https://mcdm.knpu.re.kr" class="top-nav-link">AHP</a>
+        <a href="https://mcdm.knpu.re.kr" class="top-nav-link">POLYDECISION</a>
     </nav>
-    <div class="header-right">
-        <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정" onclick="openThemeModal()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
-    </div>
-</div>
-
-<div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target===this) closeThemeModal()">
-    <div class="theme-modal" role="dialog" aria-modal="true" aria-label="테마 설정">
-        <div class="theme-modal-head">
-            <div>
-                <h3>테마 설정</h3>
-                <p class="theme-modal-sub">원하는 테마를 골라보세요. 모든 KNPU 사이트에 동일하게 적용됩니다.</p>
-            </div>
-            <button type="button" class="theme-modal-close" onclick="closeThemeModal()" aria-label="닫기">&times;</button>
-        </div>
-        <div class="theme-modal-body">
-            <button type="button" class="theme-option" data-theme="default" onclick="selectTheme('default')">
-                <span class="theme-swatch theme-swatch-default"><span></span><span></span><span></span></span>
-                <span class="theme-option-label"><span class="theme-option-check">✓</span>기본</span>
-            </button>
-            <button type="button" class="theme-option" data-theme="glass" onclick="selectTheme('glass')">
-                <span class="theme-swatch theme-swatch-glass"><span></span><span></span><span></span></span>
-                <span class="theme-option-label"><span class="theme-option-check">✓</span>글래스모피즘</span>
-            </button>
-            <button type="button" class="theme-option" data-theme="apple" onclick="selectTheme('apple')">
-                <span class="theme-swatch theme-swatch-apple"><span></span><span></span><span></span></span>
-                <span class="theme-option-label"><span class="theme-option-check">✓</span>애플 글래스</span>
-            </button>
-            <button type="button" class="theme-option" data-theme="neu" onclick="selectTheme('neu')">
-                <span class="theme-swatch theme-swatch-neu"><span></span><span></span><span></span></span>
-                <span class="theme-option-label"><span class="theme-option-check">✓</span>뉴모피즘</span>
-            </button>
-            <button type="button" class="theme-option" data-theme="mesh" onclick="selectTheme('mesh')">
-                <span class="theme-swatch theme-swatch-mesh"><span></span><span></span><span></span></span>
-                <span class="theme-option-label"><span class="theme-option-check">✓</span>그라디언트 메시</span>
-            </button>
-        </div>
-        <div class="theme-mode-row">
-            <span>다크 모드</span>
-            <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleThemeMode()" aria-label="다크 모드 전환"></button>
-        </div>
-    </div>
+    <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
 </div>
 
 <div class="container">
@@ -1632,78 +1494,9 @@
         fillToday();
     }
 
-    // ── 테마 설정 (기본/글래스모피즘/뉴모피즘/그라디언트 메시) ──────────
-    // statistics/kemkim/network와 같은 domain=.knpu.re.kr 쿠키를 써서, 로그인 세션
-    // 쿠키처럼 모든 KNPU 서브도메인이 같은 값을 공유한다(localStorage는 서브도메인마다
-    // 격리되어 사이트 간 공유가 안 됨). <head>의 인라인 스니펫이 첫 렌더 전에 이미 적용해둔다.
-    const THEME_COOKIE_KEY = 'ui_theme_style';
-
-    function themeCookieDomainAttr() {
-        return /(^|\.)knpu\.re\.kr$/.test(location.hostname) ? '; domain=.knpu.re.kr' : '';
-    }
-
-    function currentUiTheme() {
-        try {
-            const m = document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);
-            return m ? decodeURIComponent(m[1]) : 'default';
-        } catch (e) { return 'default'; }
-    }
-
-    function applyUiTheme(id) {
-        if (id === 'default') document.documentElement.removeAttribute('data-ui-theme');
-        else document.documentElement.setAttribute('data-ui-theme', id);
-        try {
-            const maxAge = 60 * 60 * 24 * 365;
-            document.cookie = THEME_COOKIE_KEY + '=' + encodeURIComponent(id) +
-                '; path=/; max-age=' + maxAge + '; samesite=lax' +
-                themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
-        } catch (e) { /* noop */ }
-    }
-
-    const THEME_MODE_COOKIE_KEY = 'ui_theme_mode';
-
-    function currentUiThemeMode() {
-        try {
-            const m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
-            return m ? decodeURIComponent(m[1]) : 'light';
-        } catch (e) { return 'light'; }
-    }
-
-    function applyUiThemeMode(mode) {
-        if (mode === 'dark') document.documentElement.setAttribute('data-ui-theme-mode', 'dark');
-        else document.documentElement.removeAttribute('data-ui-theme-mode');
-        try {
-            const maxAge = 60 * 60 * 24 * 365;
-            document.cookie = THEME_MODE_COOKIE_KEY + '=' + encodeURIComponent(mode) +
-                '; path=/; max-age=' + maxAge + '; samesite=lax' +
-                themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
-        } catch (e) { /* noop */ }
-    }
-
-    function markSelectedTheme() {
-        const active = currentUiTheme();
-        document.querySelectorAll('.theme-option').forEach(function (btn) {
-            btn.classList.toggle('selected', btn.getAttribute('data-theme') === active);
-        });
-        document.getElementById('themeModeSwitch').classList.toggle('on', currentUiThemeMode() === 'dark');
-    }
-
-    function openThemeModal() {
-        markSelectedTheme();
-        document.getElementById('themeModalOverlay').classList.add('open');
-    }
-    function closeThemeModal() {
-        document.getElementById('themeModalOverlay').classList.remove('open');
-    }
-    function selectTheme(id) {
-        applyUiTheme(id);
-        markSelectedTheme();
-        closeThemeModal();
-    }
-    function toggleThemeMode() {
-        applyUiThemeMode(currentUiThemeMode() === 'dark' ? 'light' : 'dark');
-        markSelectedTheme();
-    }
+    // 테마 설정(모달·다크모드·쿠키 저장)은 /shared-ui/theme.js가 맡는다 — 여기 있던
+    // 로컬 사본(openThemeModal/selectTheme 등)은 지웠다. theme.js는 페이지에
+    // #themeSettingsBtn만 있으면 알아서 초기화된다.
 
     // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
     // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
@@ -2346,5 +2139,6 @@
         }
     }, 3000);
 </script>
+<script src="/shared-ui/theme.js"></script>
 </body>
 </html>

@@ -7,18 +7,21 @@
   <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
   <title>Systems | FPEI</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
   <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     :root {
-      --primary-color: #007bff;
-      --secondary-color: #6c757d;
-      --dark-color: #1a1d20;
-      --light-bg: #f8f9fa;
-      --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-      --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: rgba(15, 23, 42, 0.09);
+      --accent: #2563eb;
+      --page-bg: #f4f6fa;
+      --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
     }
 
     * {
@@ -29,170 +32,260 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--light-bg);
-      color: #333;
+      background-color: var(--page-bg);
+      color: var(--ink);
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
+    /* ── Hero ─────────────────────────────────────────────────────────────
+       카드 그리드가 아래에서 살짝 겹쳐 올라오도록 아래 여백을 넉넉히 둔다. */
     header {
-      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
-      color: white;
-      padding: 100px 20px; 
+      position: relative;
+      overflow: hidden;
       text-align: center;
+      padding: 148px 24px 150px;
+      color: #fff;
+      background:
+        radial-gradient(58% 62% at 16% 0%, rgba(37, 99, 235, .30) 0, transparent 62%),
+        radial-gradient(46% 55% at 86% 12%, rgba(56, 189, 248, .16) 0, transparent 62%),
+        linear-gradient(160deg, #0b1220 0%, #16233b 55%, #1d3a5c 100%);
+    }
+
+    /* 은은한 도트 그리드 — 가운데만 보이도록 마스크로 가장자리를 지운다. */
+    header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, .14) 1px, transparent 1px);
+      background-size: 22px 22px;
+      -webkit-mask-image: radial-gradient(72% 62% at 50% 38%, #000 0%, transparent 76%);
+      mask-image: radial-gradient(72% 62% at 50% 38%, #000 0%, transparent 76%);
+      opacity: .55;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
     }
 
     header h1 {
-      font-size: 3.5rem;
+      font-size: clamp(2.5rem, 4.4vw, 3.9rem);
       font-weight: 800;
-      margin-bottom: 1rem;
-      letter-spacing: -1.5px;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      margin-bottom: 1.1rem;
     }
 
     header p {
-      font-size: 1.25rem;
-      opacity: 0.85;
+      font-size: 1.12rem;
+      color: rgba(255, 255, 255, .72);
       max-width: 700px;
       margin: 0 auto;
     }
 
+    /* ── Grid ─────────────────────────────────────────────────────────────
+       카드 8개 = 4열 × 2행. 열 수를 8의 약수(4·2·1)로만 바꿔서 어느 화면에서도
+       마지막 줄이 비지 않고, 모든 카드가 정확히 같은 크기로 유지된다. */
     .systems-container {
-      max-width: 900px;
-      margin: 40px auto 120px;
-      padding: 0 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 40px;
+      max-width: 1680px;
+      margin: -104px auto 110px;
+      padding: 0 40px;
       position: relative;
       z-index: 10;
     }
 
+    .systems-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 24px;
+    }
+
     .card {
-      background: white;
-      border-radius: 24px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: var(--card-shadow);
-      transition: var(--transition);
       display: flex;
-      flex-direction: row;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      min-height: 320px;
+      flex-direction: column;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+      transition: transform .35s var(--ease), box-shadow .35s var(--ease), border-color .35s var(--ease);
     }
 
     .card:hover {
-      transform: translateY(-8px) scale(1.01);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      transform: translateY(-5px);
+      border-color: rgba(37, 99, 235, .32);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .13);
     }
 
-    .card-image {
-      flex: 0 0 45%;
-      background-color: #eee;
+    /* 스크린샷을 카드에 꽉 채우지 않고 옅은 판 위에 살짝 띄워, 아래쪽이 잘려
+       이어지는 것처럼 보이게 한다(화면 일부를 들여다보는 느낌). */
+    .card-media {
+      padding: 15px 15px 0;
+      background: linear-gradient(180deg, #eaeff7 0%, #f6f8fc 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-shot {
+      aspect-ratio: 16 / 10;
       overflow: hidden;
-      position: relative;
+      border: 1px solid rgba(15, 23, 42, .10);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, .10);
     }
 
-    .card-image img {
+    .card-shot img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: var(--transition);
+      object-position: top center;
+      display: block;
+      transition: transform .5s var(--ease);
     }
 
-    .card:hover .card-image img {
-      transform: scale(1.08);
+    .card:hover .card-shot img {
+      transform: scale(1.045);
     }
 
-    .card-content {
+    .card-body {
       flex: 1;
-      padding: 45px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: flex-start;
+      padding: 20px 22px 22px;
     }
 
     .card h3 {
-      font-size: 1.8rem;
-      font-weight: 800;
-      margin-bottom: 15px;
-      color: var(--dark-color);
-      letter-spacing: -0.5px;
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: -0.012em;
+      color: var(--ink);
+      margin-bottom: 7px;
     }
 
     .card p {
-      color: var(--secondary-color);
-      font-size: 1.05rem;
-      margin-bottom: 30px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 18px;
       text-align: left;
     }
 
+    /* 설명 길이가 달라도 버튼 높이가 가지런하도록 바닥으로 밀어둔다. */
     .button-link {
-      background-color: var(--dark-color);
-      color: white;
-      padding: 14px 28px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: var(--transition);
+      margin-top: auto;
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      padding: 9px 17px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
     }
 
     .button-link:hover {
-      background-color: var(--primary-color);
-      transform: translateX(5px);
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #fff;
     }
 
     .button-link i {
-      font-size: 0.9rem;
-      transition: var(--transition);
+      font-size: 0.7rem;
+      transition: transform .25s var(--ease);
     }
 
     .button-link:hover i {
-      transform: translateX(4px);
+      transform: translateX(3px);
+    }
+
+    /* 첫 화면에서 카드가 순서대로 떠오른다. 애니메이션이 끝난 상태가 곧 정상
+       상태라, 모션 최소화 설정에서도 항상 보이는 것이 보장된다. */
+    @media (prefers-reduced-motion: no-preference) {
+      .card {
+        opacity: 0;
+        animation: cardIn .5s var(--ease) forwards;
+      }
+      .card:nth-child(1) { animation-delay: .02s; }
+      .card:nth-child(2) { animation-delay: .07s; }
+      .card:nth-child(3) { animation-delay: .12s; }
+      .card:nth-child(4) { animation-delay: .17s; }
+      .card:nth-child(5) { animation-delay: .22s; }
+      .card:nth-child(6) { animation-delay: .27s; }
+      .card:nth-child(7) { animation-delay: .32s; }
+      .card:nth-child(8) { animation-delay: .37s; }
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     footer {
-      background-color: var(--dark-color);
-      color: #777;
-      padding: 80px 20px;
+      background-color: #0b1220;
+      color: rgba(255, 255, 255, .55);
+      padding: 72px 24px;
       text-align: center;
+      font-size: 0.92rem;
     }
 
     footer p {
-      margin-bottom: 12px;
-      font-size: 0.95rem;
+      margin-bottom: 10px;
     }
 
     footer a {
-      color: #eee;
+      color: #e2e8f0;
       text-decoration: none;
       font-weight: 600;
-      transition: var(--transition);
       border-bottom: 1px solid transparent;
+      transition: color .25s var(--ease), border-color .25s var(--ease);
     }
 
     footer a:hover {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
+      color: #60a5fa;
+      border-bottom-color: #60a5fa;
     }
 
-    @media (max-width: 850px) {
-      header h1 {
-        font-size: 2.5rem;
+    /* 태블릿 — 2열(8 = 2×4행). 카드 크기는 그대로 균일하다. */
+    @media (max-width: 1199px) {
+      .systems-container {
+        padding: 0 28px;
       }
-      
-      .card {
-        flex-direction: column;
+      .systems-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
+    }
 
-      .card-image {
-        flex: 0 0 250px;
+    @media (max-width: 860px) {
+      header {
+        padding: 128px 20px 132px;
       }
+      header p {
+        font-size: 1.02rem;
+      }
+    }
 
-      .card-content {
-        padding: 35px;
+    /* 모바일 — 1열. */
+    @media (max-width: 700px) {
+      .systems-container {
+        margin: -86px auto 84px;
+        padding: 0 18px;
+      }
+      .systems-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
       }
     }
   </style>
@@ -202,96 +295,116 @@
   <div id="nav-placeholder"></div>
   <script src="js/nav.js"></script>
   <header>
-    <h1>Research Systems</h1>
-    <p>효율적인 연구 환경을 위한 핵심 서비스 대시보드입니다.</p>
+    <div class="hero-inner">
+      <h1>Research Systems</h1>
+      <p>효율적인 연구 환경을 위한 핵심 서비스 대시보드입니다.</p>
+    </div>
   </header>
 
   <div class="systems-container">
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/manager.png" alt="Manager Service">
+    <div class="systems-grid">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/manager.png" alt="Manager Service" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>MANAGER</h3>
+          <p>연구 리소스 관리, 빅데이터 분석을 지원하는 통합 플랫폼입니다.</p>
+          <a href="https://manager.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>MANAGER</h3>
-        <p>연구 리소스 관리, 빅데이터 분석을 지원하는 통합 플랫폼입니다.</p>
-        <a href="https://manager.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/crawler.png" alt="Crawler Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/crawler.png" alt="Crawler Service" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>CRAWLER</h3>
+          <p>대규모 데이터 수집을 통해 데이터셋을 구축합니다.</p>
+          <a href="https://crawler.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>CRAWLER</h3>
-        <p>대규모 데이터 수집을 통해 데이터셋을 구축합니다.</p>
-        <a href="https://crawler.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/network.png" alt="Network Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/network.png" alt="Network Service" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>NETWORK</h3>
+          <p>자연어 속 소셜 네트워크를 분석, 시각화합니다.</p>
+          <a href="https://network.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>NETWORK</h3>
-        <p>자연어 속 소셜 네트워크를 분석, 시각화합니다.</p>
-        <a href="https://network.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/statistics.png" alt="Statistics Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/statistics.png" alt="Statistics Service" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>STATISTICS</h3>
+          <p>빅데이터를 통계 분석, 시각화합니다.</p>
+          <a href="https://statistics.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>STATISTICS</h3>
-        <p>빅데이터를 통계 분석, 시각화합니다.</p>
-        <a href="https://statistics.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/kemkim.png" alt="Kemkim Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/kemkim.png" alt="Kemkim Service" loading="lazy" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>KEMKIM</h3>
+          <p>미래신호 예측(KEMKIM)을 통해 시각화합니다.</p>
+          <a href="https://kemkim.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>KEMKIM</h3>
-        <p>미래신호 예측(KEMKIM)을 통해 시각화합니다.</p>
-        <a href="https://kemkim.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/labllm.png" alt="Lab LLM Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/labllm.png" alt="Lab LLM Service" loading="lazy" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>Lab LLM</h3>
+          <p>연구실 내부 GPU 자원을 활용한 대규모 언어 모델을 제공합니다.</p>
+          <a href="https://llm.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>Lab LLM</h3>
-        <p>연구실 내부 GPU 자원을 활용한 대규모 언어 모델을 제공합니다.</p>
-        <a href="https://llm.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/complaint.png" alt="Legal Service">
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/complaint.png" alt="Legal Service" loading="lazy" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>AI 고소장 생성 서비스</h3>
+          <p>LLM을 활용한 법률적 요건에 맞는 고소장 초안 생성을 돕는 서비스입니다.</p>
+          <a href="https://complaint.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
-      <div class="card-content">
-        <h3>AI 고소장 생성 서비스</h3>
-        <p>LLM을 활용한 법률적 요건에 맞는 고소장 초안 생성을 돕는 서비스입니다.</p>
-        <a href="https://complaint.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-image">
-        <img src="assets/imgs/systems/lecai.png" alt="LecAI Service">
-      </div>
-      <div class="card-content">
-        <h3>LecAI</h3>
-        <p>강의 자료를 AI로 분석하고 학습 효율을 극대화하는 서비스입니다.</p>
-        <a href="https://lec.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+      <div class="card">
+        <div class="card-media">
+          <div class="card-shot">
+            <img src="assets/imgs/systems/lecai.png" alt="LecAI Service" loading="lazy" decoding="async">
+          </div>
+        </div>
+        <div class="card-body">
+          <h3>LecAI</h3>
+          <p>강의 자료를 AI로 분석하고 학습 효율을 극대화하는 서비스입니다.</p>
+          <a href="https://lec.knpu.re.kr" class="button-link">Launch <i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
     </div>
   </div>
