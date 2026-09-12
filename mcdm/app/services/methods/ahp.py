@@ -114,9 +114,7 @@ class AhpPlugin:
         try:
             wr = derive_weights(child_uuids, pairs)
         except IncompleteMatrixError:
-            return LocalResult(
-                weights={}, ranking=[], complete=False, consistency=None
-            )
+            return LocalResult(weights={}, ranking=[], complete=False, consistency=None)
         return LocalResult(
             weights=wr.weights,
             ranking=_ranking(child_uuids, wr.weights),

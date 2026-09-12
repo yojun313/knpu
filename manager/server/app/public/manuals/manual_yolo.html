@@ -14,12 +14,27 @@
   --sidebar-bg:#ffffff; --sidebar-panel:#f7f8f9; --sidebar-panel2:#ecf0f1;
   --sidebar-border:#bdc3c7; --sidebar-text:#33414f; --sidebar-muted:#7c8896;
   --text-strong:#16212c; --danger:#E74C3C; --success:#27ae60;
+
+  /* 글자로 쓰는 색은 면(surface)으로 쓰는 --accent 와 분리해서 관리한다.
+     --accent 는 버튼 배경처럼 면에 깔리는 색이라 어느 테마에서든 짙은데, 그걸
+     어두운 배경 위의 글자색으로 그대로 쓰면 읽히지 않는다(다크 기본 테마에서
+     링크 1.52:1, 인라인 코드 1.19:1까지 떨어져 사실상 안 보였다). */
+  --link:#2c3e50; --link-hover:#34495e; --code-fg:#2c3e50;
+  --badge-yolo-fg:#a64b00; --badge-dino-fg:#0b6b43; --default-fg:#1e7e4a;
 }
 html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
   --accent:#34495e; --accent-hover:#3a539b; --accent-text:#eaeaea;
   --sidebar-bg:#2b2b2b; --sidebar-panel:#323232; --sidebar-panel2:#3c3c3c;
   --sidebar-border:#5a5a5a; --sidebar-text:#eaeaea; --sidebar-muted:#9a9a9a;
   --text-strong:#ffffff;
+}
+/* 위 블록은 기본 테마의 다크 팔레트라 :not([data-ui-theme]) 로 제한되어 있다.
+   글자색 교정은 glass/apple/neu/mesh 를 켠 상태의 다크모드에도 똑같이 필요하므로
+   (그 테마들의 --accent 도 코드 글자로 쓰면 3.8~4.4:1 로 AA 미달) 테마와 무관하게
+   다크모드 전체에 적용한다. 아래 값은 다섯 테마의 배경·패널 전부에서 4.5:1 이상이다. */
+html[data-ui-theme-mode="dark"] body{
+  --link:#8ab4f8; --link-hover:#adc8fb; --code-fg:#9ec5fe;
+  --badge-yolo-fg:#ffbe7a; --badge-dino-fg:#86efac; --default-fg:#86efac;
 }
 
 
@@ -55,9 +70,9 @@ p,ul,ol,li{font-size:16.5px;color:var(--sidebar-text);line-height:1.75}
 p,ul,ol{margin-bottom:18px}
 ul{padding-left:22px;list-style-type:disc}
 ul ul{list-style-type:circle;margin:8px 0}
-a{color:var(--accent);text-decoration:none;transition:color .2s ease}
-a:hover{color:var(--accent-hover);text-decoration:underline}
-code{background:var(--sidebar-panel2);color:var(--accent);padding:2px 7px;border-radius:5px;font-size:90%}
+a{color:var(--link);text-decoration:none;transition:color .2s ease}
+a:hover{color:var(--link-hover);text-decoration:underline}
+code{background:var(--sidebar-panel2);color:var(--code-fg);padding:2px 7px;border-radius:5px;font-size:90%}
 .important{background:color-mix(in srgb, var(--danger) 10%, var(--sidebar-bg));
   border-left:6px solid var(--danger);padding:20px;margin:32px 0;border-radius:8px;
   box-shadow:0 4px 12px rgba(0,0,0,.08)}
@@ -65,7 +80,7 @@ code{background:var(--sidebar-panel2);color:var(--accent);padding:2px 7px;border
   border-left:6px solid var(--success);padding:20px;margin:32px 0;border-radius:8px;
   box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .note{background:color-mix(in srgb, var(--accent) 10%, var(--sidebar-bg));
-  border-left:6px solid var(--accent);padding:20px;margin:32px 0;border-radius:8px;
+  border-left:6px solid var(--link);padding:20px;margin:32px 0;border-radius:8px;
   box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .toc{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:10px;
   padding:20px 30px;margin-bottom:36px}
@@ -78,18 +93,23 @@ code{background:var(--sidebar-panel2);color:var(--accent);padding:2px 7px;border
 .opt-card h4{margin-top:0;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .opt-card p{font-size:16px;margin-bottom:10px}
 .opt-card .default{display:inline-block;font-size:13px;
-  background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));color:#1e7e4a;
+  background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));color:var(--default-fg);
   border-radius:20px;padding:3px 12px;margin-left:6px;font-weight:bold}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;
   margin-left:8px;border:1px solid var(--sidebar-border)}
-.badge-yolo{background:color-mix(in srgb, #ff9800 18%, var(--sidebar-bg));border-color:#ffd8b3;color:#a64b00}
-.badge-dino{background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));border-color:#bfe9d6;color:#0b6b43}
+.badge-yolo{background:color-mix(in srgb, #ff9800 18%, var(--sidebar-bg));
+  border-color:color-mix(in srgb, var(--badge-yolo-fg) 42%, transparent);color:var(--badge-yolo-fg)}
+.badge-dino{background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));
+  border-color:color-mix(in srgb, var(--badge-dino-fg) 42%, transparent);color:var(--badge-dino-fg)}
 table{width:100%;border-collapse:collapse;margin:20px 0}
 th,td{border:1px solid var(--sidebar-border);padding:10px 12px;font-size:15.5px;text-align:left}
 th{background:var(--sidebar-panel2);color:var(--text-strong)}
-button{background:var(--accent);color:var(--accent-text);padding:12px 26px;border:none;
+/* 본문 버튼용 규칙 — 반드시 .container 로 한정한다. 예전에는 그냥 button{}이라
+   상단바의 테마 설정(톱니) 버튼까지 잡았고, padding:12px 26px 이 34x34 짜리 그
+   버튼의 내용 영역을 0 으로 눌러 아이콘이 아예 안 보였다. */
+.container button{background:var(--accent);color:var(--accent-text);padding:12px 26px;border:none;
   border-radius:6px;cursor:pointer;font-size:16px;transition:background .2s ease}
-button:hover{background:var(--accent-hover)}
+.container button:hover{background:var(--accent-hover)}
 @media (max-width:768px){
   .container{padding:20px;margin:16px}
   h1{font-size:28px} h2{font-size:23px} h3{font-size:19px}
@@ -384,5 +404,6 @@ button:hover{background:var(--accent-hover)}
     </div>
     <script src="/shared-ui/services.js"></script>
     <script src="/shared-ui/knpu.js"></script>
+<script src="/shared-ui/theme.js"></script>
 </body>
 </html>

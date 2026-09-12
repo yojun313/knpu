@@ -28,9 +28,7 @@ def get_all_users():
 
 
 def get_registered_uids() -> set:
-    return {
-        u["uid"] for u in homepage_users_col.find({}, {"uid": 1}) if u.get("uid")
-    }
+    return {u["uid"] for u in homepage_users_col.find({}, {"uid": 1}) if u.get("uid")}
 
 
 def get_pending_users():
@@ -271,7 +269,11 @@ def get_users_with_audit_counts():
     # 탈퇴한 계정/옛 매니저 계정/익명(uid 없음)은 탭에서 뺀다 — get_users_with_log_counts와
     # 동일한 이유(Users 탭 기준으로만 사용자 탐색 UI를 보여준다).
     users = [
-        {"uid": r["_id"], "name": user_map.get(r["_id"], r["_id"][:8]), "count": r["count"]}
+        {
+            "uid": r["_id"],
+            "name": user_map.get(r["_id"], r["_id"][:8]),
+            "count": r["count"],
+        }
         for r in user_logs_col.aggregate(pipeline)
         if r["_id"] and r["_id"] in registered
     ]

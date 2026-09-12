@@ -140,7 +140,9 @@ FAQ_ITEMS = [
 def seed_categories(dry_run: bool):
     existing = admission_faq_categories_db.count_documents({})
     if existing:
-        print(f"admission-faq-categories 에 이미 {existing}건이 있어 카테고리 시딩을 건너뜁니다.")
+        print(
+            f"admission-faq-categories 에 이미 {existing}건이 있어 카테고리 시딩을 건너뜁니다."
+        )
         return
 
     # FAQ_ITEMS 에 등장하는 순서대로 카테고리 순번(10, 20, …)을 매긴다.

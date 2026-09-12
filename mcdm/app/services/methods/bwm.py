@@ -213,7 +213,9 @@ class BwmPlugin:
                 agg[c] = sum(vals) / len(vals)
             else:  # 기하평균 후 재정규화 (비율척도 정합, 기본)
                 pos = [v for v in vals if v > 0]
-                agg[c] = math.exp(sum(math.log(v) for v in pos) / len(pos)) if pos else 0.0
+                agg[c] = (
+                    math.exp(sum(math.log(v) for v in pos) / len(pos)) if pos else 0.0
+                )
         total = sum(agg.values()) or 1.0
         agg = {c: v / total for c, v in agg.items()}
 

@@ -46,7 +46,9 @@ def upsert_faq_category(category: FaqCategory, admin=Depends(require_admin)):
     # 이름 중복 방지 (자기 자신 제외)
     dup = admission_faq_categories_db.find_one({"name": data["name"]})
     if dup and (not existing or dup.get("uid") != existing.get("uid")):
-        raise HTTPException(status_code=400, detail="이미 같은 이름의 카테고리가 있습니다.")
+        raise HTTPException(
+            status_code=400, detail="이미 같은 이름의 카테고리가 있습니다."
+        )
 
     if not data.get("uid"):
         data["uid"] = str(uuid.uuid4())

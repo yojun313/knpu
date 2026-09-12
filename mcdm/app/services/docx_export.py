@@ -108,7 +108,9 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
                 hdr = t.rows[0]
                 _set_cell_text(hdr.cells[0], "기준", bold=True, size=8)
                 for k in range(9):
-                    _set_cell_text(hdr.cells[1 + k], str(k + 1), align_center=True, size=8)
+                    _set_cell_text(
+                        hdr.cells[1 + k], str(k + 1), align_center=True, size=8
+                    )
                 for r, nm in enumerate(names, start=1):
                     _set_cell_text(t.rows[r].cells[0], nm, size=8)
                 doc.add_paragraph().paragraph_format.space_after = Pt(4)

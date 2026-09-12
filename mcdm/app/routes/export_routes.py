@@ -22,7 +22,10 @@ from app.services.csv_schema import (
     group_item_slots,
     pair_column_label,
 )
-from app.services.demographics import column_labels as demo_column_labels, resolve_for_export
+from app.services.demographics import (
+    column_labels as demo_column_labels,
+    resolve_for_export,
+)
 from app.services.result_service import build_results
 
 router = APIRouter()
@@ -83,7 +86,12 @@ async def export_package_xlsx(
     )
 
     buf = build_workbook(
-        project, hierarchy, survey, nodes_by_uuid, response_rows, results,
+        project,
+        hierarchy,
+        survey,
+        nodes_by_uuid,
+        response_rows,
+        results,
         respondents_by_id=respondents_by_id,
     )
     return Response(
@@ -122,9 +130,13 @@ async def export_import_template_csv(project_id: str, request: Request):
             elif s["kind"] == "pick_worst":
                 header.append(f"Q{n}. [BWM] {parent_name}: 가장 덜 중요(Worst)")
             elif s["item_id"].startswith("BO:"):
-                header.append(f"Q{n}. [BWM] {parent_name}: Best가 '{_nm(s['crit'])}'보다 (1-9)")
+                header.append(
+                    f"Q{n}. [BWM] {parent_name}: Best가 '{_nm(s['crit'])}'보다 (1-9)"
+                )
             else:  # OW:
-                header.append(f"Q{n}. [BWM] {parent_name}: '{_nm(s['crit'])}'가 Worst보다 (1-9)")
+                header.append(
+                    f"Q{n}. [BWM] {parent_name}: '{_nm(s['crit'])}'가 Worst보다 (1-9)"
+                )
 
     buf = io.StringIO()
     writer = csv.writer(buf)
