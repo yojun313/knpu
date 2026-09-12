@@ -137,7 +137,9 @@ def coerce_answer(field: dict, raw) -> tuple[object, str | None]:
     return (s or None), None
 
 
-def coerce_attributes(demographics: list[dict], answers: dict) -> tuple[dict, list[str]]:
+def coerce_attributes(
+    demographics: list[dict], answers: dict
+) -> tuple[dict, list[str]]:
     """{field_id: raw} → ({field_id: stored}, errors[]). 빈 값은 결과에서 제외."""
     by_id = {f["id"]: f for f in demographics}
     out: dict = {}
@@ -191,7 +193,10 @@ def resolve_for_export(field: dict, stored) -> dict:
         for c in codes:
             o = _option_by(field, "code", str(c))
             labels.append(o["label"] if o else str(c))
-        return {"code": MULTI_SEP.join(str(c) for c in codes), "label": MULTI_SEP.join(labels)}
+        return {
+            "code": MULTI_SEP.join(str(c) for c in codes),
+            "label": MULTI_SEP.join(labels),
+        }
     if ftype == "single":
         o = _option_by(field, "code", str(stored))
         return {"code": str(stored), "label": o["label"] if o else str(stored)}

@@ -40,12 +40,21 @@ DEFAULT_SETTINGS = {
 # 배포(수집 시작) 이후에는 방법론이 바뀌면 이미 받은 응답과 이후 응답의 계산
 # 방식이 어긋나 결과가 오염된다(PLAN.md 11). 첫 collection이 열리는 순간부터 잠긴다.
 LOCKED_AFTER_OPEN = {
-    "aggregation", "weight_method", "alt_layer", "scale", "bwm_aggregation"
+    "aggregation",
+    "weight_method",
+    "alt_layer",
+    "scale",
+    "bwm_aggregation",
 }
 
 STATUS_LABELS = {"draft": "설계 중", "active": "진행 중", "closed": "종료됨"}
 # 데이터에서 파생하는 완료 단계(1.2) — status(closed)와 published/collection/submission 유무로 결정.
-STAGE_LABELS = {"design": "설계", "collect": "수집", "analysis": "분석", "closed": "종료"}
+STAGE_LABELS = {
+    "design": "설계",
+    "collect": "수집",
+    "analysis": "분석",
+    "closed": "종료",
+}
 STAGE_ORDER = ["design", "collect", "analysis", "closed"]
 
 
@@ -75,8 +84,13 @@ def _serialize_project(doc: dict) -> dict:
 async def _lifecycle_by_project(project_ids: list[str]) -> dict:
     """프로젝트별 완료 단계 판정 근거 + 진행 인원(전 collection 합)."""
     out = {
-        pid: {"published": False, "has_collection": False, "has_submissions": False,
-              "respondents": 0, "submitted": 0}
+        pid: {
+            "published": False,
+            "has_collection": False,
+            "has_submissions": False,
+            "respondents": 0,
+            "submitted": 0,
+        }
         for pid in project_ids
     }
     if not project_ids:
@@ -143,9 +157,11 @@ async def list_projects(request: Request, all: bool = Query(False)):
     lifecycle = await _lifecycle_by_project([p["id"] for p in out])
     for p in out:
         lc = lifecycle.get(p["id"], {})
-        stage = _stage_of(p["status"], lc or {
-            "has_submissions": False, "has_collection": False, "published": False
-        })
+        stage = _stage_of(
+            p["status"],
+            lc
+            or {"has_submissions": False, "has_collection": False, "published": False},
+        )
         p["stage"] = stage
         p["stage_label"] = STAGE_LABELS[stage]
         p["stage_index"] = STAGE_ORDER.index(stage)
@@ -155,7 +171,7 @@ async def list_projects(request: Request, all: bool = Query(False)):
         }
 
     # 중요(pinned) 우선, 그다음 기존 정렬(updated_at desc) 유지.
-    out.sort(key=lambda p: (0 if p["pinned"] else 1))
+    out.sort(key=lambda p: 0 if p["pinned"] else 1)
     return out
 
 

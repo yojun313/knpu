@@ -46,9 +46,7 @@ def test_registry():
 def test_lp_perfectly_consistent():
     # C1=Best, C3=Worst. BO=(1,2,4), OW=(4,2,1). a_Bj·a_jW = 4 = a_BW ∀j → 완전 일관.
     crit = ["c1", "c2", "c3"]
-    out = bwm_linear_weights(
-        crit, "c1", "c3", {"c2": 2, "c3": 4}, {"c1": 4, "c2": 2}
-    )
+    out = bwm_linear_weights(crit, "c1", "c3", {"c2": 2, "c3": 4}, {"c1": 4, "c2": 2})
     w = out["weights"]
     assert approx(w["c1"], 4 / 7, 1e-4), w
     assert approx(w["c2"], 2 / 7, 1e-4)
@@ -141,7 +139,10 @@ def test_merge_responses_and_outliers():
 def test_kind_validators_bwm():
     assert KIND_VALIDATORS["pick_best"]({"value": "u1"}) == ("best", "u1")
     assert KIND_VALIDATORS["pick_worst"]({"value": "u9"}) == ("worst", "u9")
-    assert KIND_VALIDATORS["vector"]({"item_id": "BO:u2", "value": "3"}) == ("BO:u2", 3.0)
+    assert KIND_VALIDATORS["vector"]({"item_id": "BO:u2", "value": "3"}) == (
+        "BO:u2",
+        3.0,
+    )
     for bad in (
         {"item_id": "XX:u2", "value": "3"},
         {"item_id": "BO:u2", "value": "0"},
@@ -183,8 +184,12 @@ def test_storage_path():
         answers.setdefault(b["group_id"], {})[iid] = val
 
     assert answers["root"] == {
-        "best": "c1", "worst": "c3", "BO:c2": 2.0, "BO:c3": 4.0,
-        "OW:c1": 4.0, "OW:c2": 2.0,
+        "best": "c1",
+        "worst": "c3",
+        "BO:c2": 2.0,
+        "BO:c3": 4.0,
+        "OW:c1": 4.0,
+        "OW:c2": 2.0,
     }
     assert len(answers["root"]) == group_item_count(group)  # 진행률 100%
 
@@ -197,7 +202,13 @@ def test_storage_path():
 def test_pairwise_storage_unchanged():
     # pairwise 항목도 같은 (item_id, value) 계약을 지나며 방향 보정이 그대로 유지.
     iid, v = KIND_VALIDATORS["pairwise"](
-        {"group_id": "g", "kind": "pairwise", "uuid_a": "z", "uuid_b": "a", "value": "3"}
+        {
+            "group_id": "g",
+            "kind": "pairwise",
+            "uuid_a": "z",
+            "uuid_b": "a",
+            "value": "3",
+        }
     )
     assert iid == "a:z" and approx(v, 1 / 3)
 
@@ -213,9 +224,7 @@ def test_mixed_method_build_results():
         {"uuid": "c12", "parent_id": "c1", "name": "운영", "order": 1, "level": 2},
         {"uuid": "c13", "parent_id": "c1", "name": "폐기", "order": 2, "level": 2},
     ]
-    groups = generate_questions(
-        nodes, methods={"criteria": {"c1": "bwm"}}, settings={}
-    )
+    groups = generate_questions(nodes, methods={"criteria": {"c1": "bwm"}}, settings={})
     by_id = {g["group_id"]: g for g in groups}
     assert by_id["root"]["kind"] == "pairwise" and by_id["c1"]["kind"] == "bwm"
 
@@ -226,12 +235,27 @@ def test_mixed_method_build_results():
             d[pid] = sv
         return d
 
-    bwm_c1 = {"best": "c11", "worst": "c13", "BO:c12": 2, "BO:c13": 4, "OW:c11": 4, "OW:c12": 2}
-    subs = {
-        "r1": {"root": PW(("c1", "c2", 3), ("c1", "c3", 5), ("c2", "c3", 2)), "c1": dict(bwm_c1)},
-        "r2": {"root": PW(("c1", "c2", 2), ("c1", "c3", 4), ("c2", "c3", 2)), "c1": dict(bwm_c1)},
+    bwm_c1 = {
+        "best": "c11",
+        "worst": "c13",
+        "BO:c12": 2,
+        "BO:c13": 4,
+        "OW:c11": 4,
+        "OW:c12": 2,
     }
-    res = build_results(nodes, groups, subs, {"aggregation": "AIP", "cr_threshold": 0.1})
+    subs = {
+        "r1": {
+            "root": PW(("c1", "c2", 3), ("c1", "c3", 5), ("c2", "c3", 2)),
+            "c1": dict(bwm_c1),
+        },
+        "r2": {
+            "root": PW(("c1", "c2", 2), ("c1", "c3", 4), ("c2", "c3", 2)),
+            "c1": dict(bwm_c1),
+        },
+    }
+    res = build_results(
+        nodes, groups, subs, {"aggregation": "AIP", "cr_threshold": 0.1}
+    )
     gw = res["global_weights"]
     # c1 하위(BWM)의 지역 가중치는 4/7·2/7·1/7 → 전역 = c1전역 × 그 값
     lw = res["local_weights"]["c1"]
@@ -239,15 +263,25 @@ def test_mixed_method_build_results():
     assert approx(gw["c11"], gw["c1"] * lw["c11"], 1e-6)
     # 크래시 없이 per-respondent CR(= BWM은 CR^I) 이 채워짐
     assert res["per_respondent_cr"]["r1"].get("c1") is not None
-    assert approx(sum(v for k, v in gw.items() if k in ("c11", "c12", "c13", "c2", "c3")), 1.0, 1e-6)
+    assert approx(
+        sum(v for k, v in gw.items() if k in ("c11", "c12", "c13", "c2", "c3")),
+        1.0,
+        1e-6,
+    )
 
     # 결과 화면용 BWM 데이터 (1-6)
-    assert res["group_kinds"]["c1"] == "bwm" and res["group_kinds"]["root"] == "pairwise"
+    assert (
+        res["group_kinds"]["c1"] == "bwm" and res["group_kinds"]["root"] == "pairwise"
+    )
     b = res["bwm"]["c1"]
     assert b["bw_distribution"]["best"] == {"c11": 2}  # r1·r2 모두 c11 을 Best 로
     assert b["bw_distribution"]["worst"] == {"c13": 2}
     pr = b["per_respondent"]["r1"]
-    assert pr["cri"] is not None and pr["cri_threshold"] is not None and pr["or"] is not None
+    assert (
+        pr["cri"] is not None
+        and pr["cri_threshold"] is not None
+        and pr["or"] is not None
+    )
     assert approx(pr["cri"], 0.0)  # 완전 일관 응답
 
 
@@ -257,12 +291,28 @@ def test_import_slots_roundtrip():
     group["kind"] = "bwm"
     slots = group_import_slots(group)
     assert [s["kind"] for s in slots] == [
-        "pick_best", "pick_worst", "vector", "vector", "vector", "vector", "vector", "vector",
+        "pick_best",
+        "pick_worst",
+        "vector",
+        "vector",
+        "vector",
+        "vector",
+        "vector",
+        "vector",
     ]
     assert len(slots) == 2 + 2 * 3  # 2 + 2n
 
     # 종이 양식 한 행을 파서가 채웠다고 치자 (Best=c1, Worst=c3)
-    cells = ["c1", "c3", "1", "2", "4", "4", "2", "1"]  # best,worst, BO:c1..c3, OW:c1..c3
+    cells = [
+        "c1",
+        "c3",
+        "1",
+        "2",
+        "4",
+        "4",
+        "2",
+        "1",
+    ]  # best,worst, BO:c1..c3, OW:c1..c3
     ans = {}
     for s, cell in zip(slots, cells):
         if s["kind"] == "pick_best":
@@ -278,7 +328,9 @@ def test_import_slots_roundtrip():
     assert approx(lr.consistency.metrics["cri"], 0.0)
 
     # pairwise 그룹은 기존 쌍 슬롯 그대로
-    pw = group_import_slots({"group_id": "p", "child_uuids": ["a", "b", "c"], "kind": "pairwise"})
+    pw = group_import_slots(
+        {"group_id": "p", "child_uuids": ["a", "b", "c"], "kind": "pairwise"}
+    )
     assert [s["kind"] for s in pw] == ["pairwise", "pairwise", "pairwise"]
     assert (pw[0]["a"], pw[0]["b"]) == ("a", "b")
 

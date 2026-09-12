@@ -80,8 +80,7 @@ async def _gather_respondents(
     if not cids:
         return {}
     return {
-        r["_id"]: r
-        async for r in respondents_db.find({"collection_id": {"$in": cids}})
+        r["_id"]: r async for r in respondents_db.find({"collection_id": {"$in": cids}})
     }
 
 
@@ -105,7 +104,9 @@ def _respondent_matches(attributes: dict, filters: dict[str, set[str]]) -> bool:
     return True
 
 
-def _demographics_summary(demographics: list[dict], respondents: list[dict]) -> list[dict]:
+def _demographics_summary(
+    demographics: list[dict], respondents: list[dict]
+) -> list[dict]:
     out = []
     for f in demographics:
         entry = {"id": f["id"], "label": f["label"], "type": f["type"]}
@@ -120,7 +121,11 @@ def _demographics_summary(demographics: list[dict], respondents: list[dict]) -> 
                 for code in v if isinstance(v, (list, tuple)) else [v]:
                     counts[str(code)] = counts.get(str(code), 0) + 1
             entry["distribution"] = [
-                {"code": o["code"], "label": o["label"], "count": counts.get(o["code"], 0)}
+                {
+                    "code": o["code"],
+                    "label": o["label"],
+                    "count": counts.get(o["code"], 0),
+                }
                 for o in f.get("options", [])
             ]
         elif f["type"] == "number":

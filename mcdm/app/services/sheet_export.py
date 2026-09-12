@@ -43,9 +43,13 @@ def build_response_rows(
                     rows.append([label, parent_name, "Worst", "", nm(ans["worst"])])
                 for c in m["child_uuids"]:
                     if ("BO:" + c) in ans:
-                        rows.append([label, parent_name, "BO", nm(c), str(ans["BO:" + c])])
+                        rows.append(
+                            [label, parent_name, "BO", nm(c), str(ans["BO:" + c])]
+                        )
                     if ("OW:" + c) in ans:
-                        rows.append([label, parent_name, "OW", nm(c), str(ans["OW:" + c])])
+                        rows.append(
+                            [label, parent_name, "OW", nm(c), str(ans["OW:" + c])]
+                        )
                 continue
 
             for a, b in group_item_slots(m):

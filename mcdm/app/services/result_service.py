@@ -53,7 +53,11 @@ def build_results(
                 per_respondent_cr[rid][group_id] = c.value if c else None
                 if is_bwm and c:
                     bg = bwm_by_group.setdefault(
-                        group_id, {"bw_distribution": {"best": {}, "worst": {}}, "per_respondent": {}}
+                        group_id,
+                        {
+                            "bw_distribution": {"best": {}, "worst": {}},
+                            "per_respondent": {},
+                        },
                     )
                     bg["per_respondent"][rid] = {
                         "cri": c.metrics.get("cri"),
@@ -62,7 +66,11 @@ def build_results(
                     }
             if is_bwm:
                 bg = bwm_by_group.setdefault(
-                    group_id, {"bw_distribution": {"best": {}, "worst": {}}, "per_respondent": {}}
+                    group_id,
+                    {
+                        "bw_distribution": {"best": {}, "worst": {}},
+                        "per_respondent": {},
+                    },
                 )
                 for role in ("best", "worst"):
                     v = pairs.get(role)
@@ -93,11 +101,15 @@ def build_results(
             gm = agg_lr.consistency.metrics
             if gm.get("avg_cr") is not None:
                 group_cr_by_matrix[group_id] = {
-                    "value": gm["avg_cr"], "metric": "cr", "threshold": cr_threshold
+                    "value": gm["avg_cr"],
+                    "metric": "cr",
+                    "threshold": cr_threshold,
                 }
             elif gm.get("avg_cri") is not None:
                 group_cr_by_matrix[group_id] = {
-                    "value": gm["avg_cri"], "metric": "cri", "threshold": None
+                    "value": gm["avg_cri"],
+                    "metric": "cri",
+                    "threshold": None,
                 }
 
         # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다.

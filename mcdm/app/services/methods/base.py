@@ -33,9 +33,9 @@ class Consistency:
     """
 
     passed: bool | None
-    metrics: dict[str, float]              # AHP: {"cr": v} / BWM: {"or":, "cri":, "cro":}
+    metrics: dict[str, float]  # AHP: {"cr": v} / BWM: {"or":, "cri":, "cro":}
     threshold: float | None
-    locus: list[str] = field(default_factory=list)   # 문제 item_id (재응답 유도)
+    locus: list[str] = field(default_factory=list)  # 문제 item_id (재응답 유도)
     detail: list[dict] = field(default_factory=list)  # worst pair 등 표시용 상세
 
     @property
@@ -48,9 +48,9 @@ class Consistency:
 class LocalResult:
     """한 질문 그룹의 국소 결과."""
 
-    weights: dict[str, float]              # operand_id -> 정규화 국소 가중치 (합=1)
-    ranking: list[str]                     # 가중치 내림차순 operand_id
-    complete: bool                         # 계산 가능할 만큼 응답이 채워졌는가
+    weights: dict[str, float]  # operand_id -> 정규화 국소 가중치 (합=1)
+    ranking: list[str]  # 가중치 내림차순 operand_id
+    complete: bool  # 계산 가능할 만큼 응답이 채워졌는가
     consistency: Consistency | None = None
     skipped: list = field(default_factory=list)  # 집계에서 제외된 응답자 인덱스 등
 
@@ -85,8 +85,7 @@ class MethodPlugin(Protocol):
         cr_threshold: float = 0.1,
         overrides: list[dict] | None = None,
         settings: dict | None = None,
-    ) -> Consistency | None:
-        ...
+    ) -> Consistency | None: ...
 
     def derive_local(
         self,
@@ -96,16 +95,14 @@ class MethodPlugin(Protocol):
         overrides: list[dict] | None = None,
         cr_threshold: float = 0.1,
         settings: dict | None = None,  # 방법별 세부 설정(2.2) — 예: BWM CR^I 임계
-    ) -> LocalResult:
-        ...
+    ) -> LocalResult: ...
 
     def aggregate_group(
         self,
         group: dict,
         responses_by_respondent: list[dict],
         settings: dict,
-    ) -> LocalResult:
-        ...
+    ) -> LocalResult: ...
 
     # ── 표시 계층 보조 (실시간 콘솔 / 결과 공개) ──────────────────────────
     # 라우트가 쌍대비교 전용 수식(쌍별 기하평균 병합, 항목별 이상치)을 직접

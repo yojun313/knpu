@@ -176,7 +176,8 @@ async def update_survey(project_id: str, request: Request):
             doc.get("methods")
         ):
             raise HTTPException(
-                409, "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경하세요."
+                409,
+                "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경하세요.",
             )
         patch["methods"] = new_methods
         hierarchy = await hierarchies_db.find_one(

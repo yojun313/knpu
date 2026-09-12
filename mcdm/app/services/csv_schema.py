@@ -33,11 +33,7 @@ def group_item_slots(group: dict) -> list[tuple[str, str]]:
     kind = group.get("kind", "pairwise")
     cu = group["child_uuids"]
     if kind == "pairwise":
-        return [
-            (cu[i], cu[j])
-            for i in range(len(cu))
-            for j in range(i + 1, len(cu))
-        ]
+        return [(cu[i], cu[j]) for i in range(len(cu)) for j in range(i + 1, len(cu))]
     raise ValueError(f"미지원 그룹 kind: {kind!r}")
 
 
@@ -59,8 +55,14 @@ def group_import_slots(group: dict) -> list[dict]:
             {"kind": "pick_best", "group_id": gid},
             {"kind": "pick_worst", "group_id": gid},
         ]
-        out += [{"kind": "vector", "group_id": gid, "item_id": "BO:" + c, "crit": c} for c in cu]
-        out += [{"kind": "vector", "group_id": gid, "item_id": "OW:" + c, "crit": c} for c in cu]
+        out += [
+            {"kind": "vector", "group_id": gid, "item_id": "BO:" + c, "crit": c}
+            for c in cu
+        ]
+        out += [
+            {"kind": "vector", "group_id": gid, "item_id": "OW:" + c, "crit": c}
+            for c in cu
+        ]
         return out
     return [
         {"kind": "pairwise", "group_id": gid, "a": cu[i], "b": cu[j]}

@@ -55,15 +55,23 @@ def test_registry():
 def test_merge_responses_and_outliers():
     g = {"child_uuids": ["x", "y", "z"], "kind": "pairwise", "method": "ahp"}
     consistent = _pairs(("x", "y", 3), ("x", "z", 2), ("y", "z", 0.5))
-    panel = [consistent, consistent, consistent, consistent,
-             _pairs(("x", "y", 3), ("x", "z", 2), ("y", "z", 27))]  # r5 튐
+    panel = [
+        consistent,
+        consistent,
+        consistent,
+        consistent,
+        _pairs(("x", "y", 3), ("x", "z", 2), ("y", "z", 27)),
+    ]  # r5 튐
 
     merged = P.merge_responses(g, panel)
     # 쌍별 기하평균 — x:y 는 전원 3 → 정확히 3
     assert approx(merged["x:y"], 3.0)
     # y:z: [.5,.5,.5,.5,27] 기하평균
     import math as _m
-    assert approx(merged["y:z"], _m.exp(sum(_m.log(v) for v in [.5, .5, .5, .5, 27]) / 5))
+
+    assert approx(
+        merged["y:z"], _m.exp(sum(_m.log(v) for v in [0.5, 0.5, 0.5, 0.5, 27]) / 5)
+    )
     # 빈 입력 → {}
     assert P.merge_responses(g, []) == {}
     # 병합 결과가 validate 로 흘러가도 안전
@@ -98,10 +106,16 @@ def test_derive_local_edge():
     # n=2 → CR 미정의
     p2 = _pairs(("a", "b", 4.0))
     lr2 = P.derive_local({"group_id": "x", "child_uuids": ["a", "b"]}, p2)
-    assert lr2.complete and lr2.consistency.passed is None and lr2.consistency.metrics == {}
+    assert (
+        lr2.complete
+        and lr2.consistency.passed is None
+        and lr2.consistency.metrics == {}
+    )
     # n=1
     lr1 = P.derive_local({"group_id": "y", "child_uuids": ["only"]}, {})
-    assert lr1.complete and lr1.weights == {"only": 1.0} and lr1.consistency.passed is None
+    assert (
+        lr1.complete and lr1.weights == {"only": 1.0} and lr1.consistency.passed is None
+    )
     # 불완전
     cu = ["c1", "c2", "c3"]
     part = _pairs(("c1", "c2", 3.0))

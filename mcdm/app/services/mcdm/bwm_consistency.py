@@ -75,8 +75,12 @@ def ordinal_consistency(
     OR>0 이면 bo(Best 기준 순위)와 ow(Worst 기준 순위)가 어긋나는 쌍이 있다.
     """
     n = len(criteria)
-    ab = {c: (1.0 if c == best else float(best_to_others.get(c, 0.0))) for c in criteria}
-    aw = {c: (1.0 if c == worst else float(others_to_worst.get(c, 0.0))) for c in criteria}
+    ab = {
+        c: (1.0 if c == best else float(best_to_others.get(c, 0.0))) for c in criteria
+    }
+    aw = {
+        c: (1.0 if c == worst else float(others_to_worst.get(c, 0.0))) for c in criteria
+    }
     by_c: dict[str, float] = {}
     for j in criteria:
         s = 0.0

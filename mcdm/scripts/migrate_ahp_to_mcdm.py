@@ -141,7 +141,9 @@ async def main() -> None:
         return
 
     # 잔존 검증 — mcdm 에 옛 필드가 남아 있으면 안 된다
-    left_matrices = await dst["surveys"].count_documents({"matrices": {"$exists": True}})
+    left_matrices = await dst["surveys"].count_documents(
+        {"matrices": {"$exists": True}}
+    )
     left_rev = await dst["respondents"].count_documents(
         {"revision_matrix_id": {"$exists": True}}
     )

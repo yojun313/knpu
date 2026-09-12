@@ -270,9 +270,7 @@ async def put_answer(token: str, request: Request):
     if collection["mode"] == "realtime" and collection.get("session_started"):
         idx = collection.get("active_section_index", 0)
         groups = survey["groups"]
-        active_group_id = (
-            groups[idx]["group_id"] if 0 <= idx < len(groups) else None
-        )
+        active_group_id = groups[idx]["group_id"] if 0 <= idx < len(groups) else None
         is_revision = (respondent or {}).get("revision_group_id") == group_id
         if group_id != active_group_id and not is_revision:
             # 예외를 던지면 클라이언트 큐(flushQueue)가 이걸 "일시적 네트워크
@@ -409,9 +407,7 @@ async def group_eval(token: str, request: Request):
     body = await request.json()
     group_id = body.get("group_id")
     survey, nodes_by_id = await _survey_and_nodes(collection)
-    matrix = next(
-        (m for m in survey["groups"] if m["group_id"] == group_id), None
-    )
+    matrix = next((m for m in survey["groups"] if m["group_id"] == group_id), None)
     if not matrix:
         raise HTTPException(404, "해당 비교 항목을 찾을 수 없습니다")
     node_ids = matrix["child_uuids"]
@@ -429,8 +425,11 @@ async def group_eval(token: str, request: Request):
     # overrides 적용은 플러그인 몫 — pairwise: [{uuid_a,uuid_b,value_a_over_b}],
     # bwm: [{item_id, value}]. group_eval 은 저장하지 않는다.
     lr = plugin.derive_local(
-        matrix, stored, overrides=body.get("overrides"),
-        cr_threshold=cr_threshold, settings=settings,
+        matrix,
+        stored,
+        overrides=body.get("overrides"),
+        cr_threshold=cr_threshold,
+        settings=settings,
     )
     if not lr.complete:
         return {
@@ -447,7 +446,9 @@ async def group_eval(token: str, request: Request):
         "weights": lr.weights,
         "ranking": lr.ranking,
         "cr": (cons.value if cons else None),
-        "cr_threshold": (cons.threshold if cons and cons.threshold is not None else cr_threshold),
+        "cr_threshold": (
+            cons.threshold if cons and cons.threshold is not None else cr_threshold
+        ),
         "worst_pairs": cons.detail if cons else [],
         "locus": cons.locus if cons else [],
     }
@@ -532,7 +533,11 @@ async def respond_summary(token: str, request: Request):
     items = []
     for m in matrices_view:
         node_ids = [c["uuid"] for c in m["children"]]
-        grp = {"group_id": m["group_id"], "child_uuids": node_ids, "method": m["method"]}
+        grp = {
+            "group_id": m["group_id"],
+            "child_uuids": node_ids,
+            "method": m["method"],
+        }
         pairs = sub["answers"].get(m["group_id"], {})
         lr = get_method(m["method"]).derive_local(
             grp, pairs, cr_threshold=cr_threshold, settings=settings
@@ -567,9 +572,7 @@ async def respond_summary(token: str, request: Request):
             hierarchy["nodes"], survey["groups"], {rid: sub["answers"]}, settings
         )
         mine = (res.get("per_respondent") or {}).get(rid, {})
-        root_ids = {
-            n["uuid"] for n in hierarchy["nodes"] if n.get("parent_id") is None
-        }
+        root_ids = {n["uuid"] for n in hierarchy["nodes"] if n.get("parent_id") is None}
         gw = {
             k: v
             for k, v in (mine.get("global") or {}).items()
