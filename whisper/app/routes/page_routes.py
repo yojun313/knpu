@@ -1,0 +1,48 @@
+import os
+
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+from system.auth.jwt import decode_token as verify_token
+from system.endpoints import LOGIN_URL
+
+router = APIRouter()
+
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
+
+COOKIE_SECURE = True
+COOKIE_MAX_AGE = 30 * 24 * 60 * 60
+
+
+@router.get("/")
+async def index_page(request: Request):
+    user = getattr(request.state, "user", None)
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "request": request,
+            "username": user.get("name", "") if user else "",
+            "my_uid": user.get("uid") if user else None,
+        },
+    )
+
+
+@router.get("/auth/token-login")
+async def token_login(token: str):
+    payload = verify_token(token)
+    if not payload:
+        return RedirectResponse(url=LOGIN_URL)
+
+    response = RedirectResponse(url="/")
+    response.set_cookie(
+        key="session",
+        value=token,
+        max_age=COOKIE_MAX_AGE,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+    )
+    return response

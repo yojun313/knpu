@@ -231,3 +231,5 @@ logs/
 files/
 
 setup_temp.iss
+# whisper 서비스 업로드 음성 저장소
+whisper/data/

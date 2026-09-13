@@ -44,6 +44,7 @@ module.exports = {
     app("mcdm", "mcdm", "mcdm"),
     app("complaint", "complaint/server", "complaint", { watch: true }),
     app("dashboard", "admin", "dashboard", { watch: true }),
+    app("whisper", "whisper", "whisper"),
     app("bot", "system/bot", null, { watch: true }),
     {
       name: "gpu-tunnel",

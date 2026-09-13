@@ -44,5 +44,6 @@ module.exports = {
     app("mcdm-dev", "mcdm", "mcdm"),
     app("complaint-dev", "complaint/server", "complaint"),
     app("dashboard-dev", "admin", "dashboard"),
+    app("whisper-dev", "whisper", "whisper"),
   ],
 };

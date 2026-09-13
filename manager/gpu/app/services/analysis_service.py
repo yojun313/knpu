@@ -306,6 +306,57 @@ def transcribe_audio(
     }
 
 
+def transcribe_audio_stream(
+    audio_path: str,
+    language: str = "ko",
+    model_level: int = 2,
+):
+    """진행 이벤트(dict)를 순서대로 내는 제너레이터.
+
+    faster-whisper의 transcribe()는 디코딩이 끝난 세그먼트부터 하나씩 내놓는
+    제너레이터라서, 이걸 그대로 흘려보내면 별도 진행률 계산 없이도
+    "지금까지 인식된 위치(seg.end) / 전체 길이(info.duration)"로 정확한
+    진행률과 부분 전사를 실시간으로 제공할 수 있다.
+    /analysis/whisper/stream 라우트가 NDJSON으로 변환해 내보내고,
+    whisper 웹사이트(STT 노트)가 이를 소비한다.
+    기존 transcribe_audio()(매니저 앱용, 일괄 응답)는 그대로 둔다."""
+    cfg = WHISPER_MODEL_MAP.get(model_level, WHISPER_MODEL_MAP[2])
+    yield {
+        "type": "status",
+        "stage": "model_loading",
+        "message": f"{cfg['name']} 모델 로드 중",
+    }
+    model = get_whisper_model(model_level)
+
+    yield {"type": "status", "stage": "decoding", "message": "음성 분석 시작"}
+    segments, info = model.transcribe(
+        audio_path,
+        language=language,
+        beam_size=1 if model_level < 3 else 5,
+        vad_filter=True,
+    )
+
+    duration = float(info.duration or 0)
+    yield {
+        "type": "info",
+        "language": info.language,
+        "duration": duration,
+    }
+
+    for seg in segments:
+        text = seg.text.strip()
+        if not text:
+            continue
+        yield {
+            "type": "segment",
+            "start": round(float(seg.start), 3),
+            "end": round(float(seg.end), 3),
+            "text": text,
+        }
+
+    yield {"type": "done"}
+
+
 # -------- YOLO --------
 _yolo_models_cache = {}
 
