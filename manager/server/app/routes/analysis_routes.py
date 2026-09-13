@@ -121,6 +121,32 @@ async def whisper_stream_proxy(option: str = Form("{}"), file: UploadFile = File
     return StreamingResponse(relay(), media_type="application/x-ndjson")
 
 
+@router.get("/gpu/stats")
+async def gpu_stats_proxy():
+    """GPU 서버의 nvidia-smi 실시간 사용량을 그대로 중계한다."""
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        response = await client.get(f"{GPU_SERVER_URL}/analysis/gpu/stats")
+    try:
+        body = response.json()
+    except Exception:
+        body = {"error": "invalid response", "gpus": []}
+    return JSONResponse(status_code=response.status_code, content=body)
+
+
+@router.post("/whisper/cancel/{job_id}")
+async def whisper_cancel_proxy(job_id: str):
+    """진행 중인 스트림 전사(job_id = 스트림 요청 option.job_id) 중단을 GPU 서버로 전달한다."""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(
+            f"{GPU_SERVER_URL}/analysis/whisper/cancel/{job_id}"
+        )
+    try:
+        body = response.json()
+    except Exception:
+        body = {"cancelled": False, "job_id": job_id}
+    return JSONResponse(status_code=response.status_code, content=body)
+
+
 @router.post("/youtube")
 async def youtube_download(
     option: str = Form(...), authorization: str | None = Header(None)

@@ -4,6 +4,7 @@ from app.services.analysis_service import (
     measure_hate,
     transcribe_audio,
     transcribe_audio_stream,
+    cancel_whisper_job,
     get_yolo_model_list,
     yolo_detect_videos,
     yolo_detect_images,
@@ -116,6 +117,7 @@ def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...))
     if not language or str(language).strip().lower() == "auto":
         language = None  # None = faster-whisper 자동 감지
     model_level = int(option_dict.get("model", 2))
+    job_id = option_dict.get("job_id")  # 있으면 /whisper/cancel/{job_id}로 중단 가능
 
     suffix = os.path.splitext(file.filename or "")[1] or ".wav"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -128,6 +130,7 @@ def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...))
                 audio_path=audio_path,
                 language=language,
                 model_level=model_level,
+                job_id=job_id,
             ):
                 yield json.dumps(event, ensure_ascii=False) + "\n"
         except Exception as e:
@@ -145,6 +148,75 @@ def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...))
                 pass
 
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+
+@router.get("/gpu/stats")
+def gpu_stats_route():
+    """nvidia-smi 기반 실시간 GPU 사용량. whisper 웹사이트들의 모니터 위젯이 폴링한다."""
+    import subprocess
+
+    fields = [
+        "index", "name", "utilization.gpu", "utilization.memory",
+        "memory.total", "memory.used", "memory.free",
+        "temperature.gpu", "power.draw", "power.limit",
+        "fan.speed", "clocks.sm", "pstate",
+    ]
+    try:
+        out = subprocess.run(
+            [
+                "nvidia-smi",
+                f"--query-gpu={','.join(fields)}",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if out.returncode != 0:
+            raise RuntimeError(out.stderr.strip() or "nvidia-smi failed")
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"error": str(e), "gpus": []})
+
+    def num(v):
+        v = v.strip()
+        if not v or v.startswith("[") or v.lower() in ("n/a", "na"):
+            return None
+        try:
+            return float(v) if "." in v else int(v)
+        except ValueError:
+            return v
+
+    gpus = []
+    for line in out.stdout.strip().splitlines():
+        parts = [p.strip() for p in line.split(", ")]
+        if len(parts) < len(fields):
+            continue
+        gpus.append(
+            {
+                "index": num(parts[0]),
+                "name": parts[1],
+                "util": num(parts[2]),          # GPU 사용률 %
+                "mem_util": num(parts[3]),      # 메모리 컨트롤러 사용률 %
+                "mem_total": num(parts[4]),     # MiB
+                "mem_used": num(parts[5]),      # MiB
+                "mem_free": num(parts[6]),      # MiB
+                "temp": num(parts[7]),          # °C
+                "power": num(parts[8]),         # W
+                "power_limit": num(parts[9]),   # W
+                "fan": num(parts[10]),          # %
+                "clock_sm": num(parts[11]),     # MHz
+                "pstate": parts[12],
+            }
+        )
+    return JSONResponse({"gpus": gpus})
+
+
+@router.post("/whisper/cancel/{job_id}")
+def whisper_cancel_route(job_id: str):
+    """진행 중인 스트림 전사를 중단한다. 세그먼트 루프가 다음 반복에서 빠져나가며
+    faster-whisper 디코딩(GPU 연산)이 즉시 멈춘다. 해당 job이 없으면 cancelled=false."""
+    cancelled = cancel_whisper_job(job_id)
+    return JSONResponse({"cancelled": cancelled, "job_id": job_id})
 
 
 @router.get("/yolo/models")
