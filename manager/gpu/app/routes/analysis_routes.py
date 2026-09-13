@@ -156,10 +156,19 @@ def gpu_stats_route():
     import subprocess
 
     fields = [
-        "index", "name", "utilization.gpu", "utilization.memory",
-        "memory.total", "memory.used", "memory.free",
-        "temperature.gpu", "power.draw", "power.limit",
-        "fan.speed", "clocks.sm", "pstate",
+        "index",
+        "name",
+        "utilization.gpu",
+        "utilization.memory",
+        "memory.total",
+        "memory.used",
+        "memory.free",
+        "temperature.gpu",
+        "power.draw",
+        "power.limit",
+        "fan.speed",
+        "clocks.sm",
+        "pstate",
     ]
     try:
         out = subprocess.run(
@@ -195,16 +204,16 @@ def gpu_stats_route():
             {
                 "index": num(parts[0]),
                 "name": parts[1],
-                "util": num(parts[2]),          # GPU 사용률 %
-                "mem_util": num(parts[3]),      # 메모리 컨트롤러 사용률 %
-                "mem_total": num(parts[4]),     # MiB
-                "mem_used": num(parts[5]),      # MiB
-                "mem_free": num(parts[6]),      # MiB
-                "temp": num(parts[7]),          # °C
-                "power": num(parts[8]),         # W
-                "power_limit": num(parts[9]),   # W
-                "fan": num(parts[10]),          # %
-                "clock_sm": num(parts[11]),     # MHz
+                "util": num(parts[2]),  # GPU 사용률 %
+                "mem_util": num(parts[3]),  # 메모리 컨트롤러 사용률 %
+                "mem_total": num(parts[4]),  # MiB
+                "mem_used": num(parts[5]),  # MiB
+                "mem_free": num(parts[6]),  # MiB
+                "temp": num(parts[7]),  # °C
+                "power": num(parts[8]),  # W
+                "power_limit": num(parts[9]),  # W
+                "fan": num(parts[10]),  # %
+                "clock_sm": num(parts[11]),  # MHz
                 "pstate": parts[12],
             }
         )

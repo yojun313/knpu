@@ -477,23 +477,12 @@
         .upload-progress-item { font-size: 12px; color: var(--muted); }
         .upload-progress-item .processing-bar { margin-top: 4px; }
 
-        /* ── GPU 모니터 위젯 (우하단) ── */
+        /* ── GPU 모니터 (사이드바 하단 고정 영역) ── */
         .gpu-widget {
-            position: fixed; right: 18px; bottom: 18px; z-index: 90;
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
+            border-top: 1px solid var(--line);
             padding: 9px 12px;
-            min-width: 220px;
             font-size: 11px;
-            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-        }
-        .gpu-widget-title {
-            font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
-            color: var(--muted); text-transform: uppercase;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 6px; cursor: pointer; user-select: none;
+            flex-shrink: 0;
         }
         .gpu-row { margin-top: 6px; }
         .gpu-row:first-of-type { margin-top: 0; }
@@ -506,9 +495,6 @@
         .gpu-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--tone-neutral-bg); overflow: hidden; }
         .gpu-bar .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--sky)); transition: width 0.6s; }
         .gpu-sub { color: var(--muted); font-size: 10px; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
-        .gpu-widget.collapsed .gpu-body { display: none; }
-        .gpu-widget.collapsed { min-width: 0; }
-        @media (max-width: 860px) { .gpu-widget { display: none; } }
 
         /* 전체 화면 드래그 안내 */
         .drop-overlay {
@@ -745,6 +731,9 @@
         <div class="note-list" id="note-list">
             <div class="transcript-empty">불러오는 중...</div>
         </div>
+        <div class="gpu-widget" id="gpu-widget" style="display:none;">
+            <div class="gpu-body" id="gpu-body"></div>
+        </div>
     </aside>
 
     <!-- 본문 -->
@@ -884,13 +873,6 @@
 </div>
 
 <div class="drop-overlay" id="drop-overlay">파일을 놓으면 새 노트가 만들어집니다</div>
-
-<div class="gpu-widget" id="gpu-widget" style="display:none;">
-    <div class="gpu-widget-title" onclick="toggleGpuWidget()">
-        <span>GPU 서버</span><span id="gpu-widget-arrow">▾</span>
-    </div>
-    <div class="gpu-body" id="gpu-body"></div>
-</div>
 
 <script>
     const ALLOWED_EXTS = ['.mp3','.wav','.m4a','.aac','.ogg','.opus','.flac','.wma','.amr','.webm','.mp4','.mov','.avi','.mkv'];
@@ -1517,12 +1499,6 @@
     });
 
     /* ══════════ GPU 모니터 위젯 ══════════ */
-    function toggleGpuWidget() {
-        const w = document.getElementById('gpu-widget');
-        w.classList.toggle('collapsed');
-        document.getElementById('gpu-widget-arrow').textContent = w.classList.contains('collapsed') ? '▸' : '▾';
-        try { localStorage.setItem('whisper_gpu_widget_collapsed', w.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
-    }
     function fmtGB(mib) { return (mib / 1024).toFixed(1); }
 
     async function pollGpuStats() {
@@ -1558,12 +1534,6 @@
             }).join('');
         } catch (e) { /* 다음 폴링에서 회복 */ }
     }
-    try {
-        if (localStorage.getItem('whisper_gpu_widget_collapsed') === '1') {
-            document.getElementById('gpu-widget').classList.add('collapsed');
-            document.getElementById('gpu-widget-arrow').textContent = '▸';
-        }
-    } catch (e) {}
     pollGpuStats();
     setInterval(pollGpuStats, 3000);
 
