@@ -584,6 +584,21 @@ def load_base(uid: str, project_id: str, is_admin: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def graph_path(uid: str, project_id: str, name: str, is_admin: bool = False) -> str:
+    """결과물 graphs/ 폴더 안의 PNG(예: 워드클라우드) 파일 경로를 돌려준다."""
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    safe = os.path.basename(name)
+    if safe != name or not safe.lower().endswith(".png"):
+        raise NotFound("그래프 파일을 찾을 수 없습니다.")
+    raw_dir = _raw_dir(doc["uid"], project_id)
+    if not os.path.isdir(raw_dir):
+        raise NotFound("분석 결과를 찾을 수 없습니다.")
+    path = os.path.join(_find_result_root(raw_dir), "graphs", safe)
+    if not os.path.isfile(path):
+        raise NotFound("그래프 파일을 찾을 수 없습니다.")
+    return path
+
+
 def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
     doc = _get_owned_doc(uid, project_id, is_admin)
     owner_uid = doc["uid"]

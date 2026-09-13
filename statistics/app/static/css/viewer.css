@@ -458,3 +458,23 @@ select{width:100%;appearance:none;
   .crawl-table td:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;
     letter-spacing:.3px;color:var(--sidebar-muted);margin-bottom:1px}
 }
+
+/* ── GPU 모니터 (사이드바 하단 고정 영역, whisper와 동일 위치) ── */
+.gpu-widget{border-top:1px solid var(--sidebar-border);padding:9px 12px;font-size:11px;flex-shrink:0}
+.gpu-row{margin-top:6px}
+.gpu-row:first-child{margin-top:0}
+.gpu-row-head{display:flex;justify-content:space-between;gap:8px;color:var(--sidebar-text);font-weight:700;white-space:nowrap}
+.gpu-row-head .gpu-name{color:var(--sidebar-muted);overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.gpu-bar{height:4px;border-radius:999px;background:var(--sidebar-panel2);overflow:hidden;margin-top:3px}
+.gpu-bar .fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));transition:width .6s}
+.gpu-sub{color:var(--sidebar-muted);font-size:10px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.rail.collapsed .gpu-widget{display:none}
+
+/* ── 워드클라우드 분석 옵션/힌트 ── */
+.wc-hint{font-size:11px;color:var(--sidebar-muted);line-height:1.5;margin:-2px 0 10px}
+
+/* ── 결과 그래프(워드클라우드 PNG) 카드 ── */
+.graph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:14px}
+.graph-card{background:var(--sidebar-panel);border:1px solid var(--sidebar-border);border-radius:12px;overflow:hidden}
+.graph-card .gc-title{padding:9px 12px;font-size:12px;font-weight:700;color:var(--sidebar-text);border-bottom:1px solid var(--sidebar-border)}
+.graph-card img{display:block;width:100%;height:auto;background:#fff}
