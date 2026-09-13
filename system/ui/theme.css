@@ -153,6 +153,20 @@
   border: 1px solid rgba(255, 255, 255, 0.65);
 }
 
+/* 오로라 — 짙은 남색 바탕에 파랑/보라/청록 빛무리 + 유리 패널 (LecAI 기본 룩) */
+.theme-swatch-aurora {
+  background:
+    radial-gradient(circle at 12% 15%, rgba(59, 130, 246, .55) 0, transparent 55%),
+    radial-gradient(circle at 88% 10%, rgba(168, 85, 247, .5) 0, transparent 55%),
+    radial-gradient(circle at 50% 95%, rgba(16, 185, 129, .35) 0, transparent 55%),
+    #05070f;
+}
+.theme-swatch-aurora > span {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 /* 애플 글래스 — 은은한 컬러 월페이퍼 위에 흰 서리 유리 칩이 떠 있는 모습 */
 .theme-swatch-apple {
   background:
@@ -302,6 +316,73 @@ html[data-ui-theme="glass"] #plotWrap { border-radius: 18px; }
 html[data-ui-theme="glass"] .modal-card,
 html[data-ui-theme="glass"] .theme-modal { border-radius: 18px; }
 html[data-ui-theme="glass"] .rail-item.active { background: var(--overlay-hover) !important; }
+
+/* ============================================================================
+   오로라 — 짙은 남색 바탕에 파랑/보라/청록 빛무리 + 반투명 유리 패널
+   (LecAI의 기본 룩을 KNPU 전 사이트 공용 테마로 이식. 다크가 본연의 모습이고,
+   라이트는 같은 빛무리를 밝은 바탕에 옅게 깐 변형이다)
+   ============================================================================ */
+html[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) body {
+  --brand: #3f4a63;
+  --accent: #3b82f6; --accent-soft: #60a5fa;
+  --sidebar-bg: rgba(255, 255, 255, 0.66);
+  --sidebar-panel: rgba(255, 255, 255, 0.52);
+  --sidebar-panel2: rgba(255, 255, 255, 0.74);
+  --sidebar-border: rgba(15, 23, 42, 0.10);
+  --sidebar-text: #1e2233; --sidebar-muted: #6b7189;
+  --text-strong: #131a28;
+  --overlay-hover: rgba(59, 130, 246, 0.08);
+  --scrollbar-thumb: rgba(40, 45, 60, 0.22); --scrollbar-thumb-hover: rgba(40, 45, 60, 0.35);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.14), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(236, 72, 153, 0.10), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.10), transparent 45%),
+    #eef0f9;
+  background-attachment: fixed;
+}
+html[data-ui-theme="aurora"][data-ui-theme-mode="dark"] body {
+  --brand: #cdd6ea;
+  --accent: #60a5fa; --accent-soft: #93c5fd;
+  --sidebar-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-panel: rgba(255, 255, 255, 0.04);
+  --sidebar-panel2: rgba(255, 255, 255, 0.09);
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --sidebar-text: #e8e9ee; --sidebar-muted: #8f93a8;
+  --text-strong: #f5f6fa;
+  --overlay-hover: rgba(96, 165, 250, 0.12);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2); --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.20), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(168, 85, 247, 0.18), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.10), transparent 45%),
+    #05070f;
+  background-attachment: fixed;
+}
+
+/* 유리 패널 구성은 글래스모피즘과 동일한 원리 — 배경 빛무리가 비쳐 보이도록
+   패널을 반투명+블러 카드로 띄운다. */
+html[data-ui-theme="aurora"] #app { padding: 14px; gap: 14px; box-sizing: border-box; }
+html[data-ui-theme="aurora"] .rail,
+html[data-ui-theme="aurora"] #top,
+html[data-ui-theme="aurora"] #side,
+html[data-ui-theme="aurora"] .modal-card,
+html[data-ui-theme="aurora"] .theme-modal,
+html[data-ui-theme="aurora"] .ctx-menu,
+html[data-ui-theme="aurora"] .table-card,
+html[data-ui-theme="aurora"] #main,
+html[data-ui-theme="aurora"] #plotWrap {
+  background: var(--sidebar-bg) !important;
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border-color: var(--sidebar-border) !important;
+  box-shadow: 0 8px 28px rgba(5, 10, 25, 0.18);
+}
+html[data-ui-theme="aurora"] .rail,
+html[data-ui-theme="aurora"] #main,
+html[data-ui-theme="aurora"] #plotWrap { border-radius: 18px; }
+html[data-ui-theme="aurora"] .modal-card,
+html[data-ui-theme="aurora"] .theme-modal { border-radius: 18px; }
+html[data-ui-theme="aurora"] .rail-item.active { background: var(--overlay-hover) !important; }
 
 /* ============================================================================
    뉴모피즘 — 균일한 그레이 캔버스 + 눌린/돌출된 소프트 셰이프 (라이트/다크)

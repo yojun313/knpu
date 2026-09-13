@@ -16,6 +16,7 @@
   var NAV_COOKIE_KEY = 'ui_nav_visibility';
   var THEMES = [
     { id: 'default', label: '기본' },
+    { id: 'aurora', label: '오로라' },
     { id: 'glass', label: '글래스모피즘' },
     { id: 'apple', label: '애플 글래스' },
     { id: 'neu', label: '뉴모피즘' },
