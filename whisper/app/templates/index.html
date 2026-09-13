@@ -529,6 +529,38 @@
             .player-time { font-size: 11px; }
         }
 
+        /* ── 오로라 (라이트/다크) — 남색 바탕 빛무리 + 유리 패널 (LecAI 기본 룩) ── */
+        :root[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) {
+            --bg: rgba(255,255,255,0.66); --surface: rgba(255,255,255,0.55); --ink: #1e2233; --muted: #6b7189;
+            --line: rgba(15,23,42,0.10); --blue: #3b82f6; --deep: #3f4a63;
+        }
+        :root[data-ui-theme="aurora"][data-ui-theme-mode="dark"] {
+            --bg: rgba(255,255,255,0.09); --surface: rgba(255,255,255,0.05); --ink: #e8e9ee; --muted: #8f93a8;
+            --line: rgba(255,255,255,0.10); --blue: #60a5fa; --deep: #dfe4f0;
+        }
+        :root[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) body {
+            background: radial-gradient(circle at 10% 10%, rgba(99,102,241,0.14), transparent 35%),
+                        radial-gradient(circle at 90% 0%, rgba(236,72,153,0.10), transparent 40%),
+                        radial-gradient(circle at 50% 100%, rgba(16,185,129,0.10), transparent 45%),
+                        #eef0f9;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="aurora"][data-ui-theme-mode="dark"] body {
+            background: radial-gradient(circle at 10% 10%, rgba(59,130,246,0.20), transparent 35%),
+                        radial-gradient(circle at 90% 0%, rgba(168,85,247,0.18), transparent 40%),
+                        radial-gradient(circle at 50% 100%, rgba(16,185,129,0.10), transparent 45%),
+                        #05070f;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="aurora"] .panel,
+        :root[data-ui-theme="aurora"] .modal-box {
+            background: var(--surface) !important; backdrop-filter: blur(20px) saturate(130%);
+            -webkit-backdrop-filter: blur(20px) saturate(130%); border-color: var(--line) !important;
+            box-shadow: 0 8px 28px rgba(5,10,25,0.18) !important;
+        }
+        :root[data-ui-theme="aurora"] .panel-head { background: var(--bg) !important; }
+        :root[data-ui-theme="aurora"] .player-bar { background: transparent; }
+
         /* ── 글래스모피즘 (라이트/다크) ── */
         :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
             --bg: rgba(255,255,255,0.68); --surface: rgba(255,255,255,0.62); --ink: #2a3240; --muted: #626c7b;
@@ -690,6 +722,7 @@
 
         /* 유리 계열 테마의 빈 상태 원형 배경 */
         :root[data-ui-theme="glass"] .empty-illust,
+        :root[data-ui-theme="aurora"] .empty-illust,
         :root[data-ui-theme="apple"] .empty-illust,
         :root[data-ui-theme="mesh"] .empty-illust,
         :root[data-ui-theme="neu"] .empty-illust { background: var(--bg); }
