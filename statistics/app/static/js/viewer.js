@@ -475,6 +475,28 @@
     document.getElementById('dashRows').textContent = meta.row_count != null ? ('원본 ' + meta.row_count + '행') : '';
 
     destroyCharts();
+
+    // 워드클라우드 PNG (graphs/wordcloud_*.png) — 표보다 위에 이미지 카드로 보여준다
+    var graphGrid = document.getElementById('graphGrid');
+    graphGrid.innerHTML = '';
+    var wcGraphs = (base.graphs || []).filter(function (g) { return /^wordcloud_/i.test(g); });
+    graphGrid.hidden = !wcGraphs.length;
+    wcGraphs.forEach(function (g) {
+      var card = document.createElement('div');
+      card.className = 'graph-card';
+      var title = g.replace(/^wordcloud_/i, '').replace(/\.png$/i, '').replace(/_/g, ' ');
+      var head = document.createElement('div');
+      head.className = 'gc-title';
+      head.textContent = '워드클라우드 — ' + title;
+      var img = document.createElement('img');
+      img.loading = 'lazy';
+      img.alt = title;
+      img.src = '/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/graphs/' + encodeURIComponent(g);
+      card.appendChild(head);
+      card.appendChild(img);
+      graphGrid.appendChild(card);
+    });
+
     var grid = document.getElementById('tableGrid');
     grid.innerHTML = '';
 
@@ -971,10 +993,36 @@
     });
   }
 
+  function commonCategories() {
+    if (!analyzeOptions) return [];
+    return analyzeOptions.common_categories || [analyzeOptions.common_category];
+  }
+
+  function isWcCategory(c) {
+    return !!c && c.indexOf('워드클라우드') !== -1;
+  }
+
+  function updateWcVisibility() {
+    document.getElementById('wcOptions').hidden = !isWcCategory(document.getElementById('optCategory').value);
+  }
+
+  function updateCrawlWcVisibility() {
+    document.getElementById('crawlWcOptions').hidden = !isWcCategory(document.getElementById('crawlOptCategory').value);
+  }
+
+  function collectWcOptions(periodId, maxId, exclId) {
+    return {
+      wc_period: document.getElementById(periodId).value || 'total',
+      wc_max_words: parseInt(document.getElementById(maxId).value, 10) || 100,
+      wc_exclude: (document.getElementById(exclId).value || '')
+        .split(',').map(function (w) { return w.trim(); }).filter(Boolean),
+    };
+  }
+
   function updateCategoryOptions() {
     if (!analyzeOptions) return;
     var platform = document.getElementById('optPlatform').value;
-    var categories = (analyzeOptions.platforms[platform] || []).concat([analyzeOptions.common_category]);
+    var categories = (analyzeOptions.platforms[platform] || []).concat(commonCategories());
     var categorySel = document.getElementById('optCategory');
     categorySel.innerHTML = '';
     categories.forEach(function (c) {
@@ -982,12 +1030,13 @@
       opt.value = c; opt.textContent = c;
       categorySel.appendChild(opt);
     });
+    updateWcVisibility();
   }
 
   function updateCrawlCategoryOptions() {
     if (!analyzeOptions) return;
     var platform = document.getElementById('crawlOptPlatform').value;
-    var categories = (analyzeOptions.platforms[platform] || []).concat([analyzeOptions.common_category]);
+    var categories = (analyzeOptions.platforms[platform] || []).concat(commonCategories());
     var categorySel = document.getElementById('crawlOptCategory');
     categorySel.innerHTML = '';
     categories.forEach(function (c) {
@@ -995,6 +1044,7 @@
       opt.value = c; opt.textContent = c;
       categorySel.appendChild(opt);
     });
+    updateCrawlWcVisibility();
   }
 
   function populateCrawlPlatformSelect(guessedPlatform, guessedCategory) {
@@ -1014,6 +1064,7 @@
           categorySel.value = guessedCategory;
         }
       }
+      updateCrawlWcVisibility();
     });
   }
 
@@ -1028,6 +1079,8 @@
   }
   function guessCategoryFromFilename(filename) {
     var base = (filename || '').replace(/\.(csv|parquet)$/i, '');
+    // 토큰화 파일(token_*)은 워드클라우드 분석용
+    if (base.indexOf('token_') === 0) return '워드클라우드 분석';
     var suffixes = Object.keys(CRAWL_FILE_SUFFIX_TO_CATEGORY);
     for (var i = 0; i < suffixes.length; i++) {
       if (base.endsWith('_' + suffixes[i])) return CRAWL_FILE_SUFFIX_TO_CATEGORY[suffixes[i]];
@@ -1132,7 +1185,9 @@
     var category = document.getElementById('optCategory').value;
     var btn = document.getElementById('btnStartAnalyze');
     statusEl.textContent = ''; btn.disabled = true;
-    postJson('/api/projects/analyze/start', { stage_id: analyzeStage, name: name, platform: platform, category: category }).then(function (res) {
+    var payload = { stage_id: analyzeStage, name: name, platform: platform, category: category };
+    if (isWcCategory(category)) payload.options = collectWcOptions('wcPeriod', 'wcMaxWords', 'wcExclude');
+    postJson('/api/projects/analyze/start', payload).then(function (res) {
       btn.disabled = false;
       analyzeStage = null;
       closeUploadModal();
@@ -1256,7 +1311,9 @@
     var category = document.getElementById('crawlOptCategory').value;
     var btn = document.getElementById('btnCrawlStartAnalyze');
     statusEl.textContent = ''; btn.disabled = true;
-    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, platform: platform, category: category }).then(function (res) {
+    var payload = { stage_id: crawlAnalyzeStage, name: name, platform: platform, category: category };
+    if (isWcCategory(category)) payload.options = collectWcOptions('crawlWcPeriod', 'crawlWcMaxWords', 'crawlWcExclude');
+    postJson('/api/projects/analyze/start', payload).then(function (res) {
       btn.disabled = false;
       crawlAnalyzeStage = null;
       closeUploadModal();
@@ -1505,6 +1562,7 @@
     analyzeDropzone.addEventListener('drop', function (e) { onAnalyzeFileSelected(e.dataTransfer.files && e.dataTransfer.files[0]); });
     document.getElementById('btnStartAnalyze').addEventListener('click', startAnalyze);
     document.getElementById('optPlatform').addEventListener('change', updateCategoryOptions);
+    document.getElementById('optCategory').addEventListener('change', updateWcVisibility);
 
     document.getElementById('crawlDbSearch').addEventListener('input', function () {
       var q = this.value;
@@ -1519,6 +1577,36 @@
     });
     document.getElementById('btnCrawlStartAnalyze').addEventListener('click', startCrawlAnalyze);
     document.getElementById('crawlOptPlatform').addEventListener('change', updateCrawlCategoryOptions);
+    document.getElementById('crawlOptCategory').addEventListener('change', updateCrawlWcVisibility);
+
+    // GPU 모니터 (사이드바 하단) — 3초 폴링, 데이터가 없으면 영역 자체를 숨긴다
+    function fmtGpuGB(mib) { return (mib / 1024).toFixed(1); }
+    function gpuRowHtml(g) {
+      var memPct = g.mem_total ? Math.round(g.mem_used / g.mem_total * 100) : 0;
+      var util = g.util != null ? g.util : 0;
+      return '<div class="gpu-row">'
+        + '<div class="gpu-row-head"><span>GPU' + g.index
+        + ' <span class="gpu-name" title="' + esc(g.name) + '">' + esc(g.name) + '</span></span>'
+        + '<span>' + util + '%</span></div>'
+        + '<div class="gpu-bar" title="GPU 사용률 ' + util + '%"><div class="fill" style="width:' + util + '%"></div></div>'
+        + '<div class="gpu-bar" title="VRAM ' + fmtGpuGB(g.mem_used || 0) + ' / ' + fmtGpuGB(g.mem_total || 0) + ' GB"><div class="fill" style="width:' + memPct + '%"></div></div>'
+        + '<div class="gpu-sub"><span>VRAM ' + fmtGpuGB(g.mem_used || 0) + '/' + fmtGpuGB(g.mem_total || 0) + 'GB</span>'
+        + '<span>' + (g.temp != null ? g.temp : '-') + '°C</span>'
+        + '<span>' + (g.power != null ? Math.round(g.power) : '-') + 'W' + (g.power_limit ? '/' + Math.round(g.power_limit) + 'W' : '') + '</span>'
+        + (g.fan != null ? '<span>팬 ' + g.fan + '%</span>' : '')
+        + '</div></div>';
+    }
+    function pollGpuStats() {
+      fetch('/api/gpu/stats').then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+        var w = document.getElementById('gpuWidget');
+        var gpus = (data && data.gpus) || [];
+        if (!gpus.length) { w.hidden = true; return; }
+        w.hidden = false;
+        document.getElementById('gpuBody').innerHTML = gpus.map(gpuRowHtml).join('');
+      }).catch(function () { /* 다음 폴링에서 회복 */ });
+    }
+    pollGpuStats();
+    setInterval(pollGpuStats, 3000);
 
     document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);
 

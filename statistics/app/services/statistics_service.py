@@ -11,6 +11,7 @@ from app.libs import spss_analysis
 from app.libs.auto_chart import fill_missing_graphs
 from system.progress import send_message
 from app.libs.statistics_analysis import StatisticsAnalysis
+from app.libs.wordcloud_analysis import run_wordcloud
 from app.models.analysis_model import StatisticsOption
 from app.services import project_store
 from app.utils.zip import fast_zip
@@ -134,7 +135,8 @@ def _add_hour_dow_heatmap(data, csv_dir: str) -> None:
 
 
 # StatisticsOption.category / .platform 조합 -> StatisticsAnalysis 메서드
-def _dispatch(category: str, platform: str, data, output_dir: str) -> None:
+def _dispatch(option: StatisticsOption, data, output_dir: str) -> None:
+    category, platform = option.category, option.platform
     match (category, platform):
         case ("article 분석", "Naver News"):
             statistics_analysis.NaverNewsArticleAnalysis(data, output_dir)
@@ -156,6 +158,15 @@ def _dispatch(category: str, platform: str, data, output_dir: str) -> None:
             statistics_analysis.YouTubeRereplyAnalysis(data, output_dir)
         case (o, _) if o.lower().startswith("hate") or "혐오" in o:
             statistics_analysis.HateAnalysis(data, output_dir)
+        case (o, _) if "워드클라우드" in o or "wordcloud" in o.lower():
+            run_wordcloud(
+                data,
+                output_dir,
+                period=option.wc_period,
+                max_words=option.wc_max_words,
+                exclude_words=option.wc_exclude,
+                pid=option.pid,
+            )
         case _:
             raise ValueError(f"지원되지 않는 옵션입니다: {category} / {platform}")
 
@@ -179,7 +190,7 @@ def run_statistics_analysis(
     os.makedirs(output_dir, exist_ok=True)
 
     row_count = len(data)
-    _dispatch(option.category, option.platform, data, output_dir)
+    _dispatch(option, data, output_dir)
 
     csv_dir = os.path.join(output_dir, "csv_files")
     _add_hour_dow_heatmap(data, csv_dir)

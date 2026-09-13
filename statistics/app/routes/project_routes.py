@@ -305,6 +305,15 @@ async def project_download(project_id: str, request: Request):
 # ---------------------------------------------------------------------------
 
 
+@router.get("/api/projects/{project_id}/graphs/{name}")
+async def project_graph(project_id: str, name: str, request: Request):
+    """결과물 graphs/ 폴더의 PNG(워드클라우드 등)를 서빙한다."""
+    path = _handle_store_error(
+        project_store.graph_path, _uid(request), project_id, name, _is_admin(request)
+    )
+    return FileResponse(path, media_type="image/png")
+
+
 @router.get("/api/projects/{project_id}/base")
 async def project_base(project_id: str, request: Request):
     base = _handle_store_error(
@@ -323,9 +332,26 @@ async def analyze_options():
     return JSONResponse(
         {
             "platforms": analyze_service.PLATFORM_CATEGORIES,
-            "common_category": analyze_service.COMMON_CATEGORY,
+            "common_category": analyze_service.COMMON_CATEGORY,  # 하위 호환
+            "common_categories": analyze_service.COMMON_CATEGORIES,
+            "wordcloud_category": analyze_service.WORDCLOUD_CATEGORY,
         }
     )
+
+
+@router.get("/api/gpu/stats")
+async def api_gpu_stats(request: Request):
+    """GPU 서버의 nvidia-smi 실시간 사용량 (사이드바 하단 모니터 위젯용)."""
+    _uid(request)
+    if not analyze_service.GPU_SERVER_URL:
+        return JSONResponse({"gpus": [], "error": "GPU_SERVER_URL 미설정"})
+    try:
+        resp = requests.get(
+            f"{analyze_service.GPU_SERVER_URL}/analysis/gpu/stats", timeout=8
+        )
+        return JSONResponse(resp.json())
+    except Exception as e:
+        return JSONResponse({"gpus": [], "error": str(e)})
 
 
 @router.get("/api/progress-config")
@@ -373,7 +399,11 @@ async def api_crawl_db_files(uid: str, request: Request):
     if resp.status_code != 200:
         raise HTTPException(resp.status_code, resp.text)
     data = resp.json()
-    data["files"] = [f for f in data.get("files", []) if f.get("type") == "raw"]
+    # raw(원본)는 일반 통계, token(토큰화)은 워드클라우드 분석용 — 둘 다 보여주고
+    # 프론트가 종류 배지로 구분한다.
+    data["files"] = [
+        f for f in data.get("files", []) if f.get("type") in ("raw", "token")
+    ]
     return JSONResponse(data)
 
 
@@ -440,6 +470,7 @@ async def api_analyze_start(request: Request):
         raise HTTPException(400, "분석 종류와 플랫폼을 선택해주세요.")
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
+    extra_options = body.get("options") if isinstance(body.get("options"), dict) else None
     try:
         pid = analyze_service.start_job(
             content,
@@ -448,6 +479,7 @@ async def api_analyze_start(request: Request):
             platform,
             uid,
             project_name=project_name,
+            extra_options=extra_options,
         )
     except ValueError as e:
         raise HTTPException(400, str(e))

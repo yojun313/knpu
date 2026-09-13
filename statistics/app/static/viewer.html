@@ -43,6 +43,7 @@
       <div id="railList" class="rail-list"></div>
       <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
       <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절"></div>
+      <div id="gpuWidget" class="gpu-widget" hidden><div id="gpuBody"></div></div>
       <div class="rail-foot">
         <span id="railUserName" class="rail-user"></span>
         <div class="rail-foot-actions">
@@ -87,6 +88,7 @@
             </div>
           </div>
 
+          <div id="graphGrid" class="graph-grid" hidden></div>
           <div id="tableGrid" class="table-grid"></div>
         </div>
       </div>
@@ -163,6 +165,22 @@
           <div class="field"><label>분석 종류</label>
             <select id="optCategory"></select>
           </div>
+          <div id="wcOptions" hidden>
+            <div class="field"><label>워드클라우드 기간 분할</label>
+              <select id="wcPeriod">
+                <option value="total">전체 (1장)</option>
+                <option value="1d">일별</option>
+                <option value="1w">주별</option>
+                <option value="1m">월별</option>
+                <option value="3m">분기별</option>
+                <option value="6m">반기별</option>
+                <option value="1y">연도별</option>
+              </select>
+            </div>
+            <div class="field"><label>최대 단어 수</label><input type="number" id="wcMaxWords" value="100" min="10" max="500"></div>
+            <div class="field"><label>제외 단어 (쉼표로 구분)</label><input type="text" id="wcExclude" placeholder="예: 기자, 무단전재"></div>
+            <div class="wc-hint">토큰화된 CSV가 필요합니다 — Text 열이 쉼표로 구분된 단어 목록 (크롤링 DB의 "토큰화" 파일)</div>
+          </div>
           <button class="btn primary" id="btnStartAnalyze">분석 시작</button>
         </div>
         <div id="analyzeStatus" class="modal-status"></div>
@@ -195,6 +213,22 @@
           </div>
           <div class="field"><label>분석 종류</label>
             <select id="crawlOptCategory"></select>
+          </div>
+          <div id="crawlWcOptions" hidden>
+            <div class="field"><label>워드클라우드 기간 분할</label>
+              <select id="crawlWcPeriod">
+                <option value="total">전체 (1장)</option>
+                <option value="1d">일별</option>
+                <option value="1w">주별</option>
+                <option value="1m">월별</option>
+                <option value="3m">분기별</option>
+                <option value="6m">반기별</option>
+                <option value="1y">연도별</option>
+              </select>
+            </div>
+            <div class="field"><label>최대 단어 수</label><input type="number" id="crawlWcMaxWords" value="100" min="10" max="500"></div>
+            <div class="field"><label>제외 단어 (쉼표로 구분)</label><input type="text" id="crawlWcExclude" placeholder="예: 기자, 무단전재"></div>
+            <div class="wc-hint">토큰화된 CSV가 필요합니다 — 파일 목록에서 "토큰화" 종류를 선택하세요</div>
           </div>
           <button class="btn primary" id="btnCrawlStartAnalyze">분석 시작</button>
         </div>
