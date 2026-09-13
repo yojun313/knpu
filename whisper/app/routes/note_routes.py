@@ -4,13 +4,19 @@ import uuid
 from datetime import datetime
 from urllib.parse import quote
 
+import httpx
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 
-from app.config import ALLOWED_EXTS, DATA_PATH, MAX_UPLOAD_BYTES
+from app.config import ALLOWED_EXTS, DATA_PATH, GPU_SERVER_URL, MAX_UPLOAD_BYTES
 from app.db import notes_db, user_logs_db
 from app.routes.dependencies import get_current_user
-from app.services.transcribe_service import audio_path, start_transcription
+from app.services.transcribe_service import (
+    audio_path,
+    cancel_transcription,
+    start_transcription,
+)
 from system.logging.user_log import insert_log
 
 router = APIRouter()
@@ -43,6 +49,18 @@ def _get_owned_note(uid: str, user: dict, projection=None):
     if doc.get("userUid") != user["uid"] and user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="본인의 노트만 접근할 수 있습니다")
     return doc
+
+
+@router.get("/api/gpu-stats")
+def gpu_stats(user=Depends(get_current_user)):
+    """GPU 서버의 nvidia-smi 실시간 사용량 (화면 우하단 모니터 위젯용)."""
+    if not GPU_SERVER_URL:
+        return {"gpus": [], "error": "GPU_SERVER_URL 미설정"}
+    try:
+        res = httpx.get(f"{GPU_SERVER_URL}/analysis/gpu/stats", timeout=8.0)
+        return res.json()
+    except Exception as e:
+        return {"gpus": [], "error": str(e)}
 
 
 @router.get("/api/notes")
@@ -166,9 +184,21 @@ def retry_note(uid: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 
+@router.post("/api/notes/{uid}/cancel")
+def cancel_note(uid: str, user=Depends(get_current_user)):
+    doc = _get_owned_note(uid, user, {"_id": 0, "uid": 1, "userUid": 1, "status": 1})
+    if doc.get("status") not in ("queued", "processing"):
+        raise HTTPException(status_code=409, detail="진행 중인 변환이 아닙니다")
+    cancel_transcription(uid)
+    return {"ok": True}
+
+
 @router.delete("/api/notes/{uid}")
 def delete_note(uid: str, user=Depends(get_current_user)):
     doc = _get_owned_note(uid, user, {"_id": 0})
+    # 변환이 돌고 있으면 GPU 작업까지 먼저 중단시킨다 (삭제 = 즉시 종료)
+    if doc.get("status") in ("queued", "processing"):
+        cancel_transcription(uid)
     notes_db.delete_one({"uid": uid})
     path = audio_path(doc)
     if os.path.isfile(path):
@@ -252,9 +282,9 @@ def _ts_srt(t: float) -> str:
 @router.get("/api/notes/{uid}/export")
 def export_note(uid: str, fmt: str = "txt", user=Depends(get_current_user)):
     doc = _get_owned_note(uid, user, {"_id": 0})
-    if doc.get("status") != "done":
+    if doc.get("status") not in ("done", "stopped"):
         raise HTTPException(
-            status_code=409, detail="변환이 완료된 노트만 내보낼 수 있습니다"
+            status_code=409, detail="변환이 완료(또는 중단)된 노트만 내보낼 수 있습니다"
         )
 
     segments = doc.get("segments") or []

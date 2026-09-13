@@ -1,6 +1,10 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# 예전에는 "1"로 물리 GPU 1만 보이게 했다. 이제 두 장을 다 쓰되 순서를 "1,0"으로
+# 지정해 cuda:0 = 물리 GPU1(기존과 동일)로 유지한다 — whisper 외 모델(hate/yolo/
+# dino/embed)은 코드 변경 없이 이전과 같은 GPU에서 돌고, whisper만 cuda:0/1
+# 두 장을 작업 상황(덜 바쁜 쪽)에 따라 나눠 쓴다.
+os.environ["CUDA_VISIBLE_DEVICES"] = os.getenv("GPU_DEVICES", "1,0")
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -209,21 +213,62 @@ def unload_whisper_models():
         gc.collect()
 
 
-def get_whisper_model(level: int):
+# ── Whisper 다중 GPU 스케줄링 ─────────────────────────────────────────────
+# 동시에 여러 전사 요청이 오면 덜 바쁜 GPU를 골라 배정한다 (각 GPU별 모델 캐시).
+# WHISPER_GPU_INDICES는 CUDA_VISIBLE_DEVICES("1,0") 기준의 논리 인덱스다.
+_whisper_gpu_busy_lock = threading.Lock()
+_whisper_gpu_busy = {}
+_whisper_load_lock = threading.Lock()
+
+
+def _whisper_gpu_indices():
+    global _whisper_gpu_busy
+    with _whisper_gpu_busy_lock:
+        if not _whisper_gpu_busy:
+            wanted = [
+                int(x)
+                for x in os.getenv("WHISPER_GPU_INDICES", "0,1").split(",")
+                if x.strip() != ""
+            ]
+            n = torch.cuda.device_count() if torch.cuda.is_available() else 1
+            usable = [i for i in wanted if i < n] or [0]
+            _whisper_gpu_busy = {i: 0 for i in usable}
+        return list(_whisper_gpu_busy.keys())
+
+
+def acquire_whisper_gpu() -> int:
+    """진행 중 작업 수가 가장 적은 GPU를 골라 점유 수를 올린다."""
+    _whisper_gpu_indices()
+    with _whisper_gpu_busy_lock:
+        idx = min(_whisper_gpu_busy, key=lambda i: _whisper_gpu_busy[i])
+        _whisper_gpu_busy[idx] += 1
+        return idx
+
+
+def release_whisper_gpu(idx: int):
+    with _whisper_gpu_busy_lock:
+        if idx in _whisper_gpu_busy and _whisper_gpu_busy[idx] > 0:
+            _whisper_gpu_busy[idx] -= 1
+
+
+def get_whisper_model(level: int, device_index: int = 0):
     if level not in WHISPER_MODEL_MAP:
         level = 2  # 기본값 medium
 
     cfg = WHISPER_MODEL_MAP[level]
 
-    key = f"{cfg['name']}::{cfg['compute']}"
+    key = f"{cfg['name']}::{cfg['compute']}::gpu{device_index}"
 
     if key not in _whisper_models:
-        _whisper_models[key] = WhisperModel(
-            os.path.join(MODEL_DIR, "whisper", cfg["name"]),
-            device="cuda",
-            compute_type=cfg["compute"],
-            local_files_only=True,
-        )
+        with _whisper_load_lock:
+            if key not in _whisper_models:
+                _whisper_models[key] = WhisperModel(
+                    os.path.join(MODEL_DIR, "whisper", cfg["name"]),
+                    device="cuda",
+                    device_index=device_index,
+                    compute_type=cfg["compute"],
+                    local_files_only=True,
+                )
 
     manager.reset_timer("whisper", unload_whisper_models)
     return _whisper_models[key]
@@ -273,18 +318,22 @@ def transcribe_audio(
     send_message(
         pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']} 모델 로드 중"
     )
-    model = get_whisper_model(model_level)
+    gpu_index = acquire_whisper_gpu()
+    try:
+        model = get_whisper_model(model_level, device_index=gpu_index)
 
-    send_message(pid, "[음성 인식] Audio -> Text 변환 중")
-    segments, info = model.transcribe(
-        audio_path,
-        # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
-        language=None if language in (None, "", "auto") else language,
-        beam_size=1 if model_level < 3 else 5,
-        vad_filter=True,
-    )
+        send_message(pid, f"[음성 인식] Audio -> Text 변환 중 (GPU{gpu_index})")
+        segments, info = model.transcribe(
+            audio_path,
+            # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
+            language=None if language in (None, "", "auto") else language,
+            beam_size=1 if model_level < 3 else 5,
+            vad_filter=True,
+        )
 
-    segments = list(segments)
+        segments = list(segments)
+    finally:
+        release_whisper_gpu(gpu_index)
 
     text_paragraph = format_paragraphs(segments)
     text_with_time = format_with_timestamps(segments)
@@ -307,10 +356,28 @@ def transcribe_audio(
     }
 
 
+# 진행 중인 스트림 전사 작업의 취소 이벤트 레지스트리 (job_id → Event).
+# faster-whisper의 transcribe()는 세그먼트를 뽑아갈 때만 디코딩하는 지연 제너레이터라,
+# 루프를 빠져나가는 것만으로 GPU 연산이 즉시 멈춘다 (모델 언로드는 기존 15분 타이머가 담당).
+_whisper_cancel_events = {}
+_whisper_cancel_lock = threading.Lock()
+
+
+def cancel_whisper_job(job_id: str) -> bool:
+    """진행 중인 스트림 전사에 중단을 요청한다. 해당 작업이 있으면 True."""
+    with _whisper_cancel_lock:
+        ev = _whisper_cancel_events.get(job_id)
+    if ev is None:
+        return False
+    ev.set()
+    return True
+
+
 def transcribe_audio_stream(
     audio_path: str,
     language: "str | None" = None,  # None = 자동 감지
     model_level: int = 2,
+    job_id: "str | None" = None,
 ):
     """진행 이벤트(dict)를 순서대로 내는 제너레이터.
 
@@ -320,43 +387,69 @@ def transcribe_audio_stream(
     진행률과 부분 전사를 실시간으로 제공할 수 있다.
     /analysis/whisper/stream 라우트가 NDJSON으로 변환해 내보내고,
     whisper 웹사이트(STT 노트)가 이를 소비한다.
-    기존 transcribe_audio()(매니저 앱용, 일괄 응답)는 그대로 둔다."""
-    cfg = WHISPER_MODEL_MAP.get(model_level, WHISPER_MODEL_MAP[2])
-    yield {
-        "type": "status",
-        "stage": "model_loading",
-        "message": f"{cfg['name']} 모델 로드 중",
-    }
-    model = get_whisper_model(model_level)
+    기존 transcribe_audio()(매니저 앱용, 일괄 응답)는 그대로 둔다.
 
-    yield {"type": "status", "stage": "decoding", "message": "음성 분석 시작"}
-    segments, info = model.transcribe(
-        audio_path,
-        # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
-        language=None if language in (None, "", "auto") else language,
-        beam_size=1 if model_level < 3 else 5,
-        vad_filter=True,
-    )
+    job_id가 있으면 /whisper/cancel/{job_id}로 도중 중단할 수 있고,
+    클라이언트가 연결을 끊어도 다음 yield에서 제너레이터가 닫히며 디코딩이 멈춘다."""
+    cancel_event = threading.Event()
+    if job_id:
+        with _whisper_cancel_lock:
+            _whisper_cancel_events[job_id] = cancel_event
 
-    duration = float(info.duration or 0)
-    yield {
-        "type": "info",
-        "language": info.language,
-        "duration": duration,
-    }
-
-    for seg in segments:
-        text = seg.text.strip()
-        if not text:
-            continue
+    gpu_index = acquire_whisper_gpu()
+    try:
+        cfg = WHISPER_MODEL_MAP.get(model_level, WHISPER_MODEL_MAP[2])
         yield {
-            "type": "segment",
-            "start": round(float(seg.start), 3),
-            "end": round(float(seg.end), 3),
-            "text": text,
+            "type": "status",
+            "stage": "model_loading",
+            "message": f"{cfg['name']} 모델 로드 중",
+        }
+        model = get_whisper_model(model_level, device_index=gpu_index)
+
+        if cancel_event.is_set():
+            yield {"type": "cancelled"}
+            return
+
+        yield {
+            "type": "status",
+            "stage": "decoding",
+            "message": f"음성 분석 시작 (GPU{gpu_index})",
+        }
+        segments, info = model.transcribe(
+            audio_path,
+            # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
+            language=None if language in (None, "", "auto") else language,
+            beam_size=1 if model_level < 3 else 5,
+            vad_filter=True,
+        )
+
+        duration = float(info.duration or 0)
+        yield {
+            "type": "info",
+            "language": info.language,
+            "duration": duration,
         }
 
-    yield {"type": "done"}
+        for seg in segments:
+            if cancel_event.is_set():
+                yield {"type": "cancelled"}
+                return
+            text = seg.text.strip()
+            if not text:
+                continue
+            yield {
+                "type": "segment",
+                "start": round(float(seg.start), 3),
+                "end": round(float(seg.end), 3),
+                "text": text,
+            }
+
+        yield {"type": "done"}
+    finally:
+        release_whisper_gpu(gpu_index)
+        if job_id:
+            with _whisper_cancel_lock:
+                _whisper_cancel_events.pop(job_id, None)
 
 
 # -------- YOLO --------

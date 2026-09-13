@@ -10,13 +10,22 @@ import httpx
 from app.config import DATA_PATH, GPU_SERVER_URL
 from app.db import notes_db
 
-# GPU는 한 번에 하나의 전사만 처리하게 직렬화한다 (여러 개를 동시에 밀어넣으면
-# VRAM을 나눠 쓰며 서로 느려질 뿐이다). 초과분은 이 락 앞에서 "대기 중"으로 줄을 선다.
-_gpu_lock = threading.Semaphore(1)
+# GPU 서버에 GPU가 2장이라 동시에 2개까지 전사를 허용한다 (GPU 서버가 덜 바쁜
+# 쪽으로 배정). 초과분은 이 세마포어 앞에서 "대기 중"으로 줄을 선다.
+_gpu_sem = threading.Semaphore(int(os.getenv("WHISPER_CONCURRENCY", "2")))
 
 # GPU 연결은 SSH 터널(pm2 gpu-tunnel)을 거치는데 터널이 잠깐 끊기는 순단이 있을 수
 # 있으므로, 전송 계층 오류(연결 실패/스트림 끊김)는 이 간격으로 처음부터 재시도한다.
 _RETRY_DELAYS = [5, 15, 30]  # 초
+
+# 진행 중 작업 레지스트리 (uid → {"event": Event, "resp": httpx.Response|None}).
+# 삭제/중단 시 event를 세우고 응답을 닫아 스트림 소비를 즉시 끊는다.
+_active_jobs = {}
+_active_lock = threading.Lock()
+
+
+class _Cancelled(Exception):
+    pass
 
 
 def audio_path(doc: dict) -> str:
@@ -45,13 +54,41 @@ def _format_paragraphs(segments, max_len=120):
     return "\n\n".join(paragraphs)
 
 
-def _transcribe_once(uid: str, doc: dict, path: str):
+def cancel_transcription(uid: str) -> bool:
+    """진행 중(대기 포함)인 전사를 중단한다.
+
+    1) 로컬 이벤트를 세우고 진행 중인 스트림 응답을 닫는다 (즉시 소비 중단)
+    2) GPU 서버에도 명시적으로 중단을 요청한다 — 연결 종료가 터널/프록시에서
+       늦게 전파되더라도 GPU 디코딩이 다음 세그먼트에서 바로 멈추도록.
+    """
+    with _active_lock:
+        entry = _active_jobs.get(uid)
+    if entry:
+        entry["event"].set()
+        resp = entry.get("resp")
+        if resp is not None:
+            try:
+                resp.close()
+            except Exception:
+                pass
+    if GPU_SERVER_URL:
+        try:
+            httpx.post(
+                f"{GPU_SERVER_URL}/analysis/whisper/cancel/{uid}", timeout=5.0
+            )
+        except Exception:
+            pass
+    return entry is not None
+
+
+def _transcribe_once(uid: str, doc: dict, path: str, entry: dict):
     """GPU 스트림에 한 번 연결해 끝까지 소비한다.
     전송 계층 오류(httpx.TransportError)는 호출부에서 재시도할 수 있게 그대로 올린다."""
     option = {
         # "auto"면 GPU가 faster-whisper 언어 자동 감지를 쓴다 (감지 결과는 info 이벤트로 옴)
         "language": doc.get("language") or "auto",
         "model": doc.get("model", 2),
+        "job_id": uid,  # GPU 쪽 /whisper/cancel/{job_id} 중단용
     }
     duration = 0.0
     seg_count = 0
@@ -64,8 +101,11 @@ def _transcribe_once(uid: str, doc: dict, path: str):
             files={"file": (doc.get("origFilename") or f"audio{doc['ext']}", f)},
             timeout=httpx.Timeout(None, connect=30),
         ) as res:
+            entry["resp"] = res
             res.raise_for_status()
             for line in res.iter_lines():
+                if entry["event"].is_set():
+                    raise _Cancelled()
                 if not line.strip():
                     continue
                 event = json.loads(line)
@@ -107,11 +147,35 @@ def _transcribe_once(uid: str, doc: dict, path: str):
                         },
                     )
 
+                elif etype == "cancelled":
+                    raise _Cancelled()
+
                 elif etype == "error":
                     raise RuntimeError(event.get("message") or "GPU 서버 오류")
 
                 elif etype == "done":
-                    return  # 정상 종료
+                    return
+    # 스트림이 done 없이 끝났고 취소 요청이 있었다면 취소로 처리
+    if entry["event"].is_set():
+        raise _Cancelled()
+
+
+def _finish_cancelled(uid: str):
+    """중단 처리: 노트가 아직 있으면(=중단 버튼) 부분 결과를 남기고 'stopped'로,
+    이미 삭제됐으면(=삭제로 인한 중단) 아무것도 하지 않는다."""
+    doc = notes_db.find_one({"uid": uid}, {"segments": 1})
+    if not doc:
+        return
+    segments = doc.get("segments", [])
+    _update(
+        uid,
+        {
+            "status": "stopped",
+            "stage": "중단됨",
+            "text": _format_paragraphs(segments),
+            "finishedAt": datetime.now(),
+        },
+    )
 
 
 def _run(uid: str):
@@ -131,90 +195,117 @@ def _run(uid: str):
         )
         return
 
-    _update(uid, {"status": "queued", "stage": "변환 대기 중", "progress": 0})
+    entry = {"event": threading.Event(), "resp": None}
+    with _active_lock:
+        _active_jobs[uid] = entry
 
-    with _gpu_lock:
-        if not GPU_SERVER_URL:
-            _update(
-                uid,
-                {
-                    "status": "error",
-                    "stage": "오류",
-                    "error": "서버 설정 오류: GPU_SERVER_URL이 비어 있습니다 (.env 확인)",
-                },
-            )
-            return
+    try:
+        _update(uid, {"status": "queued", "stage": "변환 대기 중", "progress": 0})
 
-        max_attempts = len(_RETRY_DELAYS) + 1
-        for attempt in range(1, max_attempts + 1):
-            try:
-                _update(
-                    uid, {"status": "processing", "stage": "음성 인식 서버에 연결 중"}
-                )
-                # 재시도 시 직전 시도의 부분 결과가 섞이지 않게 비우고 시작한다
-                notes_db.update_one(
-                    {"uid": uid},
-                    {"$set": {"segments": [], "segCount": 0, "progress": 0}},
-                )
-
-                _transcribe_once(uid, doc, path)
-
-                final = notes_db.find_one({"uid": uid}, {"segments": 1}) or {}
-                segments = final.get("segments", [])
-                _update(
-                    uid,
-                    {
-                        "status": "done",
-                        "progress": 100,
-                        "stage": "완료",
-                        "text": _format_paragraphs(segments),
-                        "finishedAt": datetime.now(),
-                    },
-                )
+        with _gpu_sem:
+            if entry["event"].is_set():
+                _finish_cancelled(uid)
                 return
-
-            except httpx.TransportError as e:
-                # 터널 순단/재시작 — 잠시 기다렸다가 처음부터 다시 시도한다
-                if attempt < max_attempts:
-                    delay = _RETRY_DELAYS[attempt - 1]
-                    print(
-                        f"[WHISPER] GPU 연결 끊김 ({type(e).__name__}), "
-                        f"{delay}초 후 재시도 {attempt}/{len(_RETRY_DELAYS)} — {uid}"
-                    )
-                    _update(
-                        uid,
-                        {
-                            "stage": f"연결이 끊겨 {delay}초 후 재시도합니다 "
-                            f"({attempt}/{len(_RETRY_DELAYS)})",
-                            "progress": 0,
-                        },
-                    )
-                    time.sleep(delay)
-                    continue
-                print(
-                    f"[WHISPER] transcription failed for {uid}:\n"
-                    f"{traceback.format_exc()}"
-                )
+            if not GPU_SERVER_URL:
                 _update(
                     uid,
                     {
                         "status": "error",
                         "stage": "오류",
-                        "error": "음성 인식 서버(GPU)에 연결할 수 없습니다. "
-                        "잠시 후 '다시 시도'를 눌러 주세요.",
+                        "error": "서버 설정 오류: GPU_SERVER_URL이 비어 있습니다 (.env 확인)",
                     },
                 )
                 return
 
-            except Exception as e:
-                # 전사 자체의 실패(GPU가 error 이벤트를 보냄 등) — 재시도하지 않는다
-                print(
-                    f"[WHISPER] transcription failed for {uid}:\n"
-                    f"{traceback.format_exc()}"
-                )
-                msg = str(e) or type(e).__name__
-                _update(uid, {"status": "error", "stage": "오류", "error": msg[:500]})
-                return
+            max_attempts = len(_RETRY_DELAYS) + 1
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    _update(
+                        uid,
+                        {"status": "processing", "stage": "음성 인식 서버에 연결 중"},
+                    )
+                    # 재시도 시 직전 시도의 부분 결과가 섞이지 않게 비우고 시작한다
+                    notes_db.update_one(
+                        {"uid": uid},
+                        {"$set": {"segments": [], "segCount": 0, "progress": 0}},
+                    )
+
+                    _transcribe_once(uid, doc, path, entry)
+
+                    final = (
+                        notes_db.find_one({"uid": uid}, {"segments": 1}) or {}
+                    )
+                    segments = final.get("segments", [])
+                    _update(
+                        uid,
+                        {
+                            "status": "done",
+                            "progress": 100,
+                            "stage": "완료",
+                            "text": _format_paragraphs(segments),
+                            "finishedAt": datetime.now(),
+                        },
+                    )
+                    return
+
+                except _Cancelled:
+                    _finish_cancelled(uid)
+                    return
+
+                except httpx.TransportError as e:
+                    # 중단으로 인해 응답이 닫혀도 전송 오류로 나타난다 — 재시도 금지
+                    if entry["event"].is_set():
+                        _finish_cancelled(uid)
+                        return
+                    # 터널 순단/재시작 — 잠시 기다렸다가 처음부터 다시 시도한다
+                    if attempt < max_attempts:
+                        delay = _RETRY_DELAYS[attempt - 1]
+                        print(
+                            f"[WHISPER] GPU 연결 끊김 ({type(e).__name__}), "
+                            f"{delay}초 후 재시도 {attempt}/{len(_RETRY_DELAYS)} — {uid}"
+                        )
+                        _update(
+                            uid,
+                            {
+                                "stage": f"연결이 끊겨 {delay}초 후 재시도합니다 "
+                                f"({attempt}/{len(_RETRY_DELAYS)})",
+                                "progress": 0,
+                            },
+                        )
+                        time.sleep(delay)
+                        continue
+                    print(
+                        f"[WHISPER] transcription failed for {uid}:\n"
+                        f"{traceback.format_exc()}"
+                    )
+                    _update(
+                        uid,
+                        {
+                            "status": "error",
+                            "stage": "오류",
+                            "error": "음성 인식 서버(GPU)에 연결할 수 없습니다. "
+                            "잠시 후 '다시 시도'를 눌러 주세요.",
+                        },
+                    )
+                    return
+
+                except Exception as e:
+                    if entry["event"].is_set():
+                        _finish_cancelled(uid)
+                        return
+                    # 전사 자체의 실패(GPU가 error 이벤트를 보냄 등) — 재시도하지 않는다
+                    print(
+                        f"[WHISPER] transcription failed for {uid}:\n"
+                        f"{traceback.format_exc()}"
+                    )
+                    msg = str(e) or type(e).__name__
+                    _update(
+                        uid, {"status": "error", "stage": "오류", "error": msg[:500]}
+                    )
+                    return
+    finally:
+        with _active_lock:
+            _active_jobs.pop(uid, None)
 
 
 def start_transcription(uid: str):

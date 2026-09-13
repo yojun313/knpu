@@ -188,6 +188,7 @@
         .state-queued     { background: var(--queued-soft);  color: var(--deep); }
         .state-processing { background: var(--queued-soft);  color: var(--deep); }
         .state-uploading  { background: var(--warning-soft); color: var(--warning); }
+        .state-stopped    { background: var(--warning-soft); color: var(--warning); }
 
         /* ── 본문 ── */
         .note-main { flex: 1; min-width: 0; }
@@ -475,6 +476,39 @@
         .upload-progress-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
         .upload-progress-item { font-size: 12px; color: var(--muted); }
         .upload-progress-item .processing-bar { margin-top: 4px; }
+
+        /* ── GPU 모니터 위젯 (우하단) ── */
+        .gpu-widget {
+            position: fixed; right: 18px; bottom: 18px; z-index: 90;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 9px 12px;
+            min-width: 220px;
+            font-size: 11px;
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .gpu-widget-title {
+            font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+            color: var(--muted); text-transform: uppercase;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 6px; cursor: pointer; user-select: none;
+        }
+        .gpu-row { margin-top: 6px; }
+        .gpu-row:first-of-type { margin-top: 0; }
+        .gpu-row-head {
+            display: flex; justify-content: space-between; gap: 8px;
+            color: var(--ink); font-weight: 700; white-space: nowrap;
+        }
+        .gpu-row-head .gpu-name { color: var(--muted); font-weight: 700; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+        .gpu-bars { display: flex; gap: 6px; margin-top: 3px; align-items: center; }
+        .gpu-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--tone-neutral-bg); overflow: hidden; }
+        .gpu-bar .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--sky)); transition: width 0.6s; }
+        .gpu-sub { color: var(--muted); font-size: 10px; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .gpu-widget.collapsed .gpu-body { display: none; }
+        .gpu-widget.collapsed { min-width: 0; }
+        @media (max-width: 860px) { .gpu-widget { display: none; } }
 
         /* 전체 화면 드래그 안내 */
         .drop-overlay {
@@ -851,6 +885,13 @@
 
 <div class="drop-overlay" id="drop-overlay">파일을 놓으면 새 노트가 만들어집니다</div>
 
+<div class="gpu-widget" id="gpu-widget" style="display:none;">
+    <div class="gpu-widget-title" onclick="toggleGpuWidget()">
+        <span>GPU 서버</span><span id="gpu-widget-arrow">▾</span>
+    </div>
+    <div class="gpu-body" id="gpu-body"></div>
+</div>
+
 <script>
     const ALLOWED_EXTS = ['.mp3','.wav','.m4a','.aac','.ogg','.opus','.flac','.wma','.amr','.webm','.mp4','.mov','.avi','.mkv'];
     const MODEL_LABEL = {1:'빠름', 2:'중간', 3:'정확'};
@@ -864,7 +905,7 @@
         }
         return base;
     }
-    const STATE_TEXT = {queued:'대기', processing:'변환중', done:'완료', error:'오류'};
+    const STATE_TEXT = {queued:'대기', processing:'변환중', done:'완료', error:'오류', stopped:'중단됨'};
 
     let notes = [];
     let activeUid = null;
@@ -989,8 +1030,11 @@
             actions.push(`<button class="btn btn-neutral btn-sm" onclick="exportNote('srt')">SRT 자막</button>`);
             actions.push(`<button class="btn btn-neutral btn-sm" onclick="copyTranscript(this)">본문 복사</button>`);
         }
-        if (n.status === 'error') {
+        if (n.status === 'error' || n.status === 'stopped') {
             actions.push(`<button class="btn btn-warn btn-sm" onclick="retryNote()">다시 시도</button>`);
+        }
+        if (n.status === 'queued' || n.status === 'processing') {
+            actions.push(`<button class="btn btn-warn btn-sm" onclick="cancelNote()">중단</button>`);
         }
         actions.push(`<button class="btn btn-danger btn-sm" onclick="deleteNote()">삭제</button>`);
         document.getElementById('note-actions').innerHTML = actions.join('');
@@ -1008,9 +1052,9 @@
             errBox.style.display = 'none';
         }
 
-        // 플레이어 (완료된 노트만 — 변환 중에는 서버 부하와 혼동을 줄이기 위해 숨김)
+        // 플레이어 (완료/중단된 노트 — 중단 노트도 부분 전사 구간을 들을 수 있다)
         const playerBar = document.getElementById('player-bar');
-        if (n.status === 'done') {
+        if (n.status === 'done' || (n.status === 'stopped' && (n.segments || []).length)) {
             playerBar.style.display = 'flex';
             player.src = `/api/notes/${n.uid}/audio`;
             document.getElementById('time-total').textContent = fmtTime(n.duration);
@@ -1143,7 +1187,7 @@
             if (row) Object.assign(row, {status: data.status, progress: data.progress, duration: data.duration});
             renderNoteList();
 
-            if (data.status === 'done' || data.status === 'error') {
+            if (data.status === 'done' || data.status === 'error' || data.status === 'stopped') {
                 stopNotePoll();
                 if (statusChanged) openNote(uid);  // 완료 뷰(플레이어 포함)로 전환
             }
@@ -1160,7 +1204,7 @@
         player.currentTime = Math.max(0, Math.min((player.duration || 0), player.currentTime + sec));
     }
     function seekTo(sec) {
-        if (!activeNote || activeNote.status !== 'done') return;
+        if (!activeNote || !['done','stopped'].includes(activeNote.status)) return;
         player.currentTime = sec;
         player.play();
     }
@@ -1267,6 +1311,15 @@
         document.getElementById('note-view').style.display = 'none';
         document.getElementById('empty-state').style.display = 'flex';
         loadNotes();
+    }
+
+    async function cancelNote() {
+        if (!activeNote) return;
+        if (!confirm('진행 중인 변환을 중단하시겠습니까?\n지금까지 인식된 내용은 남습니다.')) return;
+        const res = await fetch(`/api/notes/${activeNote.uid}/cancel`, {method: 'POST'});
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(d.detail || '중단에 실패했습니다'); return; }
+        // 서비스가 stopped로 마무리하면 폴링이 감지해 뷰를 전환한다
     }
 
     async function retryNote() {
@@ -1462,6 +1515,57 @@
             togglePlay();
         }
     });
+
+    /* ══════════ GPU 모니터 위젯 ══════════ */
+    function toggleGpuWidget() {
+        const w = document.getElementById('gpu-widget');
+        w.classList.toggle('collapsed');
+        document.getElementById('gpu-widget-arrow').textContent = w.classList.contains('collapsed') ? '▸' : '▾';
+        try { localStorage.setItem('whisper_gpu_widget_collapsed', w.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
+    }
+    function fmtGB(mib) { return (mib / 1024).toFixed(1); }
+
+    async function pollGpuStats() {
+        try {
+            const res = await fetch('/api/gpu-stats');
+            if (!res.ok) return;
+            const data = await res.json();
+            const gpus = data.gpus || [];
+            const w = document.getElementById('gpu-widget');
+            if (!gpus.length) { w.style.display = 'none'; return; }
+            w.style.display = 'block';
+            document.getElementById('gpu-body').innerHTML = gpus.map(g => {
+                const memPct = g.mem_total ? Math.round(g.mem_used / g.mem_total * 100) : 0;
+                return `
+                <div class="gpu-row">
+                    <div class="gpu-row-head">
+                        <span>GPU${g.index} <span class="gpu-name" title="${esc(g.name)}">${esc(g.name)}</span></span>
+                        <span>${g.util ?? 0}%</span>
+                    </div>
+                    <div class="gpu-bars" title="GPU 사용률 ${g.util ?? 0}%">
+                        <div class="gpu-bar"><div class="fill" style="width:${g.util ?? 0}%"></div></div>
+                    </div>
+                    <div class="gpu-bars" title="VRAM ${fmtGB(g.mem_used ?? 0)} / ${fmtGB(g.mem_total ?? 0)} GB">
+                        <div class="gpu-bar"><div class="fill" style="width:${memPct}%"></div></div>
+                    </div>
+                    <div class="gpu-sub">
+                        <span>VRAM ${fmtGB(g.mem_used ?? 0)}/${fmtGB(g.mem_total ?? 0)}GB</span>
+                        <span>${g.temp ?? '-'}°C</span>
+                        <span>${g.power != null ? Math.round(g.power) : '-'}W${g.power_limit ? '/' + Math.round(g.power_limit) + 'W' : ''}</span>
+                        ${g.fan != null ? `<span>팬 ${g.fan}%</span>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        } catch (e) { /* 다음 폴링에서 회복 */ }
+    }
+    try {
+        if (localStorage.getItem('whisper_gpu_widget_collapsed') === '1') {
+            document.getElementById('gpu-widget').classList.add('collapsed');
+            document.getElementById('gpu-widget-arrow').textContent = '▸';
+        }
+    } catch (e) {}
+    pollGpuStats();
+    setInterval(pollGpuStats, 3000);
 
     /* ══════════ 초기화 ══════════ */
     loadNotes();
