@@ -45,6 +45,10 @@
     "complaint": {
       "prod_port": 8010, "dev_port": 18010,
       "prod_domain": "complaint.knpu.re.kr", "dev_domain": "dev.complaint.knpu.re.kr"
+    },
+    "whisper": {
+      "prod_port": 8011, "dev_port": 18011,
+      "prod_domain": "whisper.knpu.re.kr", "dev_domain": "dev.whisper.knpu.re.kr"
     }
   }
 }

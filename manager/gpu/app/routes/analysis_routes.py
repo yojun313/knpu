@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from app.services.analysis_service import (
     measure_hate,
     transcribe_audio,
+    transcribe_audio_stream,
     get_yolo_model_list,
     yolo_detect_videos,
     yolo_detect_images,
@@ -101,6 +102,45 @@ async def whisper_route(option: str = Form("{}"), file: UploadFile = File(...)):
         return JSONResponse(result)
     finally:
         os.remove(audio_path)
+
+
+@router.post("/whisper/stream")
+def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...)):
+    """whisper 웹사이트용 실시간 전사. 진행 이벤트를 NDJSON 한 줄씩 스트리밍한다:
+    {"type":"status",...} → {"type":"info","duration":..} → {"type":"segment",..}* → {"type":"done"}
+    (동기 라우트 + 동기 제너레이터라서 FastAPI가 threadpool에서 돌린다)"""
+    option_dict = json.loads(option)
+    language = option_dict.get("language", "ko")
+    model_level = int(option_dict.get("model", 2))
+
+    suffix = os.path.splitext(file.filename or "")[1] or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(file.file.read())
+        audio_path = tmp.name
+
+    def event_stream():
+        try:
+            for event in transcribe_audio_stream(
+                audio_path=audio_path,
+                language=language,
+                model_level=model_level,
+            ):
+                yield json.dumps(event, ensure_ascii=False) + "\n"
+        except Exception as e:
+            yield (
+                json.dumps(
+                    {"type": "error", "message": f"{type(e).__name__}: {e}"},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+        finally:
+            try:
+                os.remove(audio_path)
+            except OSError:
+                pass
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
 @router.get("/yolo/models")

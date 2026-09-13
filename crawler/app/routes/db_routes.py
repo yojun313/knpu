@@ -164,7 +164,8 @@ def preview_db(uid: str, user=Depends(get_current_user)):
     folder_path = os.path.join(CRAWL_DATA_PATH, doc["name"])
     if not os.path.isdir(folder_path):
         raise HTTPException(
-            status_code=404, detail="데이터 폴더를 찾을 수 없습니다 (아직 수집된 데이터가 없을 수 있습니다)"
+            status_code=404,
+            detail="데이터 폴더를 찾을 수 없습니다 (아직 수집된 데이터가 없을 수 있습니다)",
         )
 
     tables = []
@@ -186,7 +187,9 @@ def preview_db(uid: str, user=Depends(get_current_user)):
 
             # to_json을 거치면 numpy 타입/NaN/Timestamp가 전부 JSON 호환 값으로 정리된다
             rows = json.loads(
-                df_preview.to_json(orient="values", force_ascii=False, date_format="iso")
+                df_preview.to_json(
+                    orient="values", force_ascii=False, date_format="iso"
+                )
             )
             tables.append(
                 {
@@ -201,7 +204,9 @@ def preview_db(uid: str, user=Depends(get_current_user)):
             continue
 
     if not tables:
-        raise HTTPException(status_code=404, detail="조회할 수 있는 데이터 파일이 없습니다")
+        raise HTTPException(
+            status_code=404, detail="조회할 수 있는 데이터 파일이 없습니다"
+        )
 
     return {"uid": uid, "db_name": doc["name"], "tables": tables}
 
