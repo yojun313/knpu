@@ -62,7 +62,7 @@ def list_notes(q: str = None, user=Depends(get_current_user)):
 @router.post("/api/notes")
 async def create_note(
     file: UploadFile = File(...),
-    language: str = Form("ko"),
+    language: str = Form("auto"),
     model: int = Form(2),
     user=Depends(get_current_user),
 ):
