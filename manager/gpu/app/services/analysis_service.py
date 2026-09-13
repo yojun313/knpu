@@ -309,7 +309,7 @@ def transcribe_audio(
 
 def transcribe_audio_stream(
     audio_path: str,
-    language: str = "ko",
+    language: "str | None" = None,  # None = 자동 감지
     model_level: int = 2,
 ):
     """진행 이벤트(dict)를 순서대로 내는 제너레이터.

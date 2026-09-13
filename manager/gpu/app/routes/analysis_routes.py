@@ -108,9 +108,13 @@ async def whisper_route(option: str = Form("{}"), file: UploadFile = File(...)):
 def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...)):
     """whisper 웹사이트용 실시간 전사. 진행 이벤트를 NDJSON 한 줄씩 스트리밍한다:
     {"type":"status",...} → {"type":"info","duration":..} → {"type":"segment",..}* → {"type":"done"}
-    (동기 라우트 + 동기 제너레이터라서 FastAPI가 threadpool에서 돌린다)"""
+    (동기 라우트 + 동기 제너레이터라서 FastAPI가 threadpool에서 돌린다)
+
+    option.language: 생략 / null / "auto" 이면 언어 자동 감지(기본값), 그 외는 ISO-639-1 코드(ko/en/ja/...)로 고정."""
     option_dict = json.loads(option)
-    language = option_dict.get("language", "ko")
+    language = option_dict.get("language")
+    if not language or str(language).strip().lower() == "auto":
+        language = None  # None = faster-whisper 자동 감지
     model_level = int(option_dict.get("model", 2))
 
     suffix = os.path.splitext(file.filename or "")[1] or ".wav"
