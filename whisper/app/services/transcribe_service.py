@@ -73,9 +73,7 @@ def cancel_transcription(uid: str) -> bool:
                 pass
     if GPU_SERVER_URL:
         try:
-            httpx.post(
-                f"{GPU_SERVER_URL}/analysis/whisper/cancel/{uid}", timeout=5.0
-            )
+            httpx.post(f"{GPU_SERVER_URL}/analysis/whisper/cancel/{uid}", timeout=5.0)
         except Exception:
             pass
     return entry is not None
@@ -232,9 +230,7 @@ def _run(uid: str):
 
                     _transcribe_once(uid, doc, path, entry)
 
-                    final = (
-                        notes_db.find_one({"uid": uid}, {"segments": 1}) or {}
-                    )
+                    final = notes_db.find_one({"uid": uid}, {"segments": 1}) or {}
                     segments = final.get("segments", [])
                     _update(
                         uid,
