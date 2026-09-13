@@ -153,6 +153,59 @@ def get_db_file(uid: str, name: str, user=Depends(get_current_user)):
     )
 
 
+@router.get("/db-list/{uid}/preview")
+def preview_db(uid: str, user=Depends(get_current_user)):
+    """매니저 앱의 'DB 조회'와 동일하게, 각 테이블의 처음/마지막 50행만 JSON으로 돌려준다.
+    (crawls_service.previewCrawlDb는 매니저 데스크톱 앱용 parquet zip 응답이라 웹에서 못 쓴다)"""
+    doc = crawlList_db.find_one({"uid": uid}, {"name": 1})
+    if not doc:
+        raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")
+
+    folder_path = os.path.join(CRAWL_DATA_PATH, doc["name"])
+    if not os.path.isdir(folder_path):
+        raise HTTPException(
+            status_code=404, detail="데이터 폴더를 찾을 수 없습니다 (아직 수집된 데이터가 없을 수 있습니다)"
+        )
+
+    tables = []
+    for f in sorted(os.listdir(folder_path)):
+        if "token" in f:
+            continue
+        file_path = os.path.join(folder_path, f)
+        try:
+            if f.endswith(".parquet"):
+                df = pd.read_parquet(file_path)
+            elif f.endswith(".csv"):
+                df = pd.read_csv(file_path, encoding="utf-8-sig")
+            else:
+                continue
+
+            df_preview = pd.concat([df.head(50), df.tail(50)]).drop_duplicates()
+            if "id" in df_preview.columns:
+                df_preview = df_preview.drop(columns=["id"])
+
+            # to_json을 거치면 numpy 타입/NaN/Timestamp가 전부 JSON 호환 값으로 정리된다
+            rows = json.loads(
+                df_preview.to_json(orient="values", force_ascii=False, date_format="iso")
+            )
+            tables.append(
+                {
+                    "name": f.rsplit(".", 1)[0],
+                    "columns": list(df_preview.columns),
+                    "rows": rows,
+                    "total_rows": int(len(df)),
+                }
+            )
+        except Exception:
+            # 크롤링 진행 중 쓰다 만 파일 등은 건너뛴다 (previewCrawlDb와 동일한 태도)
+            continue
+
+    if not tables:
+        raise HTTPException(status_code=404, detail="조회할 수 있는 데이터 파일이 없습니다")
+
+    return {"uid": uid, "db_name": doc["name"], "tables": tables}
+
+
 @router.delete("/db-list/{uid}")
 def delete_db(uid: str, user=Depends(get_current_user)):
     doc = crawlList_db.find_one({"uid": uid}, {"userUid": 1, "status": 1})

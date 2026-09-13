@@ -53,13 +53,16 @@
 
         /* ── 다크모드 색 보정 (모든 테마 공통) ────────────────────────────────
            data-ui-theme-mode="dark"는 data-ui-theme(기본/glass/apple/neu/mesh)와
-           독립적으로 <html>에 붙으므로, 이 블록 하나면 다섯 테마의 다크모드를 전부
+           독립적으로 <html>에 붙으므로, 이 블록 하나면 기본+네 테마의 다크모드를 전부
            덮는다. 예전에는 --*-soft가 :root에만 밝은 파스텔로 정의되고 어떤 다크
            블록에서도 재정의되지 않아서, 전경색(--deep/--muted)만 밝은 색으로 뒤집히며
            "밝은 글자 + 밝은 배경"이 되어 버튼 글씨가 사라졌다.
            배경을 불투명 색이 아니라 rgba 틴트로 두는 게 핵심이다. 그래야 유리(glass/
-           apple/mesh)든 불투명(neu/기본)이든 어떤 다크 표면 위에서도 같은 대비가 난다. */
-        :root[data-ui-theme][data-ui-theme-mode="dark"] {
+           apple/mesh)든 불투명(neu/기본)이든 어떤 다크 표면 위에서도 같은 대비가 난다.
+           (예전 선택자는 :root[data-ui-theme][…]라서 "기본" 테마 다크모드에는 아예
+           안 걸렸다 — 기본 테마는 data-ui-theme 속성 자체가 없기 때문. 아래에 기본
+           테마 다크 팔레트를 추가하면서 [data-ui-theme] 조건을 걷어냈다.) */
+        :root[data-ui-theme-mode="dark"] {
             --ok: #4ade80;            --ok-soft:      rgba(74, 222, 128, 0.18);
             --danger: #ff9d96;        --danger-soft:  rgba(255, 123, 114, 0.18);
             --warning: #fcd34d;       --warning-soft: rgba(251, 191, 36, 0.18);
@@ -68,6 +71,39 @@
             --tone-neutral-bg: rgba(255, 255, 255, 0.12); --tone-neutral-fg: #e8edf5;
             --tone-warn-bg:    rgba(251, 191, 36, 0.20);  --tone-warn-fg:    #fcd34d;
             --tone-danger-bg:  rgba(255, 123, 114, 0.20); --tone-danger-fg:  #ff9d96;
+        }
+
+        /* ── 기본 테마 다크 팔레트 ──────────────────────────────────────────
+           글래스/애플/뉴모피즘/메시는 각자 다크 배리언트가 있지만 "기본" 테마는
+           지금까지 다크 팔레트가 없어서, 다크모드를 켜도 이 페이지만 라이트로
+           남았다 (statistics/kemkim/network 뷰어들은 이미 같은 방식으로 갖고 있다).
+           data-ui-theme 속성이 없을 때만 적용해 테마별 다크와 겹치지 않게 한다. */
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) {
+            color-scheme: dark;
+            --bg:      #10141d;
+            --surface: #181d29;
+            --ink:     #e8ebf3;
+            --muted:   #9aa5b8;
+            --line:    #2d3648;
+            --blue:    #7da2e8;
+            --deep:    #d5dcea;
+        }
+        /* 기본 테마의 라이트 전용 하드코딩 배경들(패널 헤더 그라디언트, 빈 상태 박스,
+           요청자 바, 연한 행 구분선)을 다크에서 되돌린다. */
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) .panel-head {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) .empty {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) .requester-bar {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--line);
+        }
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) tbody td,
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) .job-log-row,
+        :root[data-ui-theme-mode="dark"]:not([data-ui-theme]) .log-row {
+            border-bottom-color: var(--line);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -87,7 +123,9 @@
            썼는데, 그래서 다른 서비스로 갔다가 돌아올 때마다 상단바 디자인·폰트가
            미묘하게 달라 보였다(테마 규칙이 아예 안 걸렸으므로). */
         .top-header {
-            background: linear-gradient(110deg, var(--navy) 0%, var(--deep) 60%, var(--blue) 100%);
+            /* 브랜드 바는 다크모드 팔레트(--deep/--blue가 밝은 색으로 뒤집힘)와 무관하게
+               항상 같은 남색 그라디언트로 고정한다 — statistics/kemkim/network와 동일. */
+            background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
             padding: 0 24px;
             height: 58px;
             display: flex;
@@ -445,7 +483,7 @@
         .cards { display: grid; gap: 10px; }
 
         .card {
-            background: #fff;
+            background: var(--surface);
             border-radius: 12px;
             padding: 14px 16px;
             border: 1px solid var(--line);
@@ -642,7 +680,7 @@
         /* 밝게/어둡게는 모드에 따라 방향이 반대다. 라이트에서 쓰던 brightness(0.93)을
            다크에서 그대로 쓰면 어두워져서 더 안 보이므로 다크에서는 밝히는 쪽으로 뒤집는다. */
         .btn:hover { filter: brightness(0.93); transform: translateY(-1px); }
-        :root[data-ui-theme][data-ui-theme-mode="dark"] .btn:hover { filter: brightness(1.25); }
+        :root[data-ui-theme-mode="dark"] .btn:hover { filter: brightness(1.25); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-primary {
@@ -655,14 +693,24 @@
            --blue는 어두운 배경 위에 얹으라고 만든 밝은 accent라서(mesh는 시안 #22d3ee)
            흰 글자와는 대비가 1.8:1까지 떨어진다. 밝은 accent 위에는 어두운 글자를
            얹는 게 맞고, 이러면 테마별 accent 색을 유지하면서도 5:1 이상이 나온다. */
-        :root[data-ui-theme][data-ui-theme-mode="dark"] .btn-primary {
+        :root[data-ui-theme-mode="dark"] .btn-primary {
             background: var(--blue);
             color: #0b1226;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
         }
+        /* /shared-ui/theme.css가 apple/neu 테마에서 .btn 배경을 !important로 회색
+           컨트롤 색(--ap-control/--sidebar-bg)으로 덮는다. 그러면 위의 primary 배경
+           (액센트)은 지고 글자색 규칙만 살아남아 — 라이트: 회색 위 흰 글자, 다크:
+           회색 위 남색 글자 — "작업 추가" 버튼이 안 읽혔다. primary만은 어떤
+           테마에서도 액센트 배경을 유지하도록 여기서 더 구체적인 선택자 + !important로
+           복원한다 (글자색은 위의 라이트 #fff / 다크 #0b1226 규칙이 그대로 담당). */
+        :root[data-ui-theme="apple"] .btn-primary,
+        :root[data-ui-theme="neu"] .btn-primary {
+            background: var(--blue) !important;
+        }
         /* 빈 상태 안내문은 --muted가 너무 어두워 다크에서 4.1:1까지 떨어진다.
            보조 텍스트 느낌은 유지하되(opacity) 본문 색을 기준으로 올린다. */
-        :root[data-ui-theme][data-ui-theme-mode="dark"] .empty {
+        :root[data-ui-theme-mode="dark"] .empty {
             color: var(--tone-neutral-fg);
             opacity: 0.82;
         }
@@ -671,6 +719,7 @@
         .btn-ghost,
         .btn-delete,
         .btn-resume,
+        .btn-view,
         .btn-download {
             background: var(--tone-neutral-bg);
             color: var(--tone-neutral-fg);
@@ -750,7 +799,7 @@
         }
         .modal-overlay.open { display: flex; }
         .modal-box {
-            background: #fff; border-radius: 14px; max-width: 640px; width: 100%;
+            background: var(--surface); border-radius: 14px; max-width: 640px; width: 100%;
             max-height: 84vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(11,18,38,0.35);
         }
         .modal-head {
@@ -772,6 +821,53 @@
         .log-error .log-type { background: var(--danger-soft); color: var(--danger); }
         .log-error .log-msg { color: var(--danger); }
         .log-msg { word-break: break-word; min-width: 0; flex: 1; }
+
+        /* ── 데이터 조회(미리보기) 모달 ── */
+        .preview-note { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+        .preview-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .preview-tab {
+            padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px;
+            background: var(--surface); color: var(--deep); font-family: inherit;
+            font-size: 12px; font-weight: 700; cursor: pointer;
+            transition: background 150ms, border-color 150ms;
+        }
+        .preview-tab:hover { border-color: var(--blue); }
+        .preview-tab.active {
+            background: var(--tone-neutral-bg); color: var(--tone-neutral-fg);
+            border-color: var(--blue);
+        }
+        .preview-table-wrap {
+            overflow: auto; max-height: 62vh;
+            border: 1px solid var(--line); border-radius: 8px;
+        }
+        .preview-table-wrap table { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+        .preview-table-wrap th {
+            position: sticky; top: 0; z-index: 1;
+            /* 스크롤 시 헤더가 데이터 위에 떠야 하므로 반투명 토큰 대신 항상 불투명해야
+               한다 — 유리 테마에서도 var(--surface)가 아니라 틴트를 얹은 불투명 색을 쓴다. */
+            background: var(--surface);
+            box-shadow: 0 1px 0 var(--line);
+            text-align: left; padding: 7px 10px; color: var(--muted);
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px;
+            white-space: nowrap;
+        }
+        .preview-table-wrap td {
+            padding: 6px 10px; border-bottom: 1px solid var(--line);
+            color: var(--ink); white-space: nowrap;
+            max-width: 340px; overflow: hidden; text-overflow: ellipsis;
+            vertical-align: top;
+        }
+        .preview-table-wrap tr:last-child td { border-bottom: none; }
+        .preview-table-wrap tbody tr:hover { background: var(--bg); }
+        /* 셀을 클릭하면 말줄임을 풀어 전체 내용을 볼 수 있다 */
+        .preview-table-wrap td.expanded { white-space: normal; word-break: break-word; }
+        /* 유리 계열 테마에서 sticky 헤더가 반투명이면 스크롤된 글자가 비쳐 보이므로 불투명하게 */
+        :root[data-ui-theme="glass"] .preview-table-wrap th,
+        :root[data-ui-theme="apple"] .preview-table-wrap th,
+        :root[data-ui-theme="mesh"] .preview-table-wrap th { background: #f3f5f9; }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] .preview-table-wrap th,
+        :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] .preview-table-wrap th,
+        :root[data-ui-theme="mesh"][data-ui-theme-mode="dark"] .preview-table-wrap th { background: #232733; }
 
         .form-field { margin-bottom: 14px; }
         .form-field label { display: block; font-size: 12px; font-weight: 700; color: var(--deep); margin-bottom: 5px; }
@@ -826,12 +922,15 @@
            도드라져 보이는 문제가 있어, 일반 모바일 레이아웃(640px)보다 넓은 범위까지
            카드 형태를 적용한다. */
         @media (max-width: 900px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            thead { display: none; }
-            tbody tr { border-bottom: 1px solid var(--line); padding: 10px 6px; }
-            tbody tr:hover { background: none; }
-            tbody td { border: none; padding: 4px 6px; word-break: break-word; }
-            tbody td:before { content: attr(data-label); font-size: 9px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 1px; }
+            /* .db-table-wrap으로 스코프를 좁힌 이유: 미리보기 모달(.preview-table-wrap)의
+               데이터 테이블은 카드로 풀면 안 되고 가로 스크롤 테이블로 남아야 한다. */
+            .db-table-wrap table, .db-table-wrap thead, .db-table-wrap tbody,
+            .db-table-wrap th, .db-table-wrap td, .db-table-wrap tr { display: block; }
+            .db-table-wrap thead { display: none; }
+            .db-table-wrap tbody tr { border-bottom: 1px solid var(--line); padding: 10px 6px; }
+            .db-table-wrap tbody tr:hover { background: none; }
+            .db-table-wrap tbody td { border: none; padding: 4px 6px; word-break: break-word; }
+            .db-table-wrap tbody td:before { content: attr(data-label); font-size: 9px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 1px; }
             .actions-cell {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -1230,6 +1329,22 @@
             <button class="modal-close" onclick="closeDbDetail()">&times;</button>
         </div>
         <div class="modal-body" id="db-detail-body">불러오는 중...</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="preview-modal" onclick="if(event.target===this) closePreviewModal()">
+    <div class="modal-box" style="max-width:1200px;">
+        <div class="modal-head">
+            <h3>데이터 조회 — <span id="preview-modal-keyword"></span></h3>
+            <button class="modal-close" onclick="closePreviewModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="preview-note">각 테이블의 처음/마지막 50개 행만 표시됩니다. 전체 데이터는 다운로드를 이용해 주세요. (셀 클릭 시 전체 내용 표시)</div>
+            <div class="preview-tabs" id="preview-tabs"></div>
+            <div class="preview-table-wrap" id="preview-table-wrap">
+                <div class="empty" style="border:none;">불러오는 중...</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1796,6 +1911,7 @@
                 <td data-label="시작" class="muted-cell">${esc(row.startTime)}</td>
                 <td data-label="액션">
                     <div class="actions-cell" onclick="event.stopPropagation()">
+                        <button class="btn btn-view" onclick="openDbPreview('${row.uid}')">조회</button>
                         <button class="btn btn-download" onclick="openSaveOptions('${row.uid}')">다운로드</button>
                         ${canResume ? `<button class="btn btn-resume" onclick="resumeDb('${row.uid}',this)">이어받기</button>` : ''}
                         ${canRecrawl ? `<button class="btn btn-recrawl" onclick="openRecrawl('${row.uid}')">재크롤링</button>` : ''}
@@ -1869,6 +1985,76 @@
 
     function closeDbDetail() {
         document.getElementById('detail-modal').classList.remove('open');
+    }
+
+    /* ══════════════ 데이터 조회 (미리보기) ══════════════ */
+
+    let previewTables = [];
+    let previewRequestSeq = 0; // 이전 요청의 늦은 응답이 새 모달 내용을 덮지 않게 하는 토큰
+
+    async function openDbPreview(uid) {
+        const row = dbRowsByUid.get(uid) || {};
+        const seq = ++previewRequestSeq;
+        previewTables = [];
+        document.getElementById('preview-modal-keyword').textContent = row.keyword || '';
+        document.getElementById('preview-tabs').innerHTML = '';
+        document.getElementById('preview-table-wrap').innerHTML =
+            '<div class="empty" style="border:none;">데이터를 불러오는 중... (DB 크기에 따라 수십 초 걸릴 수 있습니다)</div>';
+        document.getElementById('preview-modal').classList.add('open');
+
+        try {
+            const res = await fetch(`/api/db-list/${uid}/preview`);
+            if (seq !== previewRequestSeq) return;
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.detail || '데이터를 불러오지 못했습니다.');
+            }
+            const data = await res.json();
+            if (seq !== previewRequestSeq) return;
+            previewTables = data.tables || [];
+            if (!previewTables.length) throw new Error('조회할 수 있는 데이터가 없습니다.');
+            renderPreviewTabs();
+            selectPreviewTab(0);
+        } catch (e) {
+            if (seq !== previewRequestSeq) return;
+            document.getElementById('preview-table-wrap').innerHTML =
+                `<div class="empty" style="border:none;">${esc(e.message)}</div>`;
+        }
+    }
+
+    function renderPreviewTabs() {
+        // 매니저 앱의 탭 이름 규칙과 동일하게 파일명 마지막 조각(article/comment 등)만 쓴다
+        document.getElementById('preview-tabs').innerHTML = previewTables.map((t, i) => {
+            const label = t.name.split('_').pop() || t.name;
+            return `<button type="button" class="preview-tab" id="preview-tab-${i}"
+                onclick="selectPreviewTab(${i})">${esc(label)} <span style="opacity:.65;">(${t.total_rows.toLocaleString()}행)</span></button>`;
+        }).join('');
+    }
+
+    function selectPreviewTab(idx) {
+        const t = previewTables[idx];
+        if (!t) return;
+        previewTables.forEach((_, i) => {
+            const btn = document.getElementById('preview-tab-' + i);
+            if (btn) btn.classList.toggle('active', i === idx);
+        });
+
+        const wrap = document.getElementById('preview-table-wrap');
+        const thead = '<thead><tr>' + t.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead>';
+        const tbody = '<tbody>' + t.rows.map(r =>
+            '<tr>' + r.map(v => `<td onclick="this.classList.toggle('expanded')">${esc(v ?? '')}</td>`).join('') + '</tr>'
+        ).join('') + '</tbody>';
+        wrap.innerHTML = `<table>${thead}${tbody}</table>`;
+        wrap.scrollTop = 0;
+        wrap.scrollLeft = 0;
+    }
+
+    function closePreviewModal() {
+        previewRequestSeq++;
+        document.getElementById('preview-modal').classList.remove('open');
+        // 큰 DOM을 계속 들고 있지 않도록 비워둔다
+        document.getElementById('preview-table-wrap').innerHTML = '';
+        previewTables = [];
     }
 
     const PROGRESS_BASE = 'https://manager.knpu.re.kr/progress';
