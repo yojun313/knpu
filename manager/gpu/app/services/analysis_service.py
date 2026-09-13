@@ -278,7 +278,8 @@ def transcribe_audio(
     send_message(pid, "[음성 인식] Audio -> Text 변환 중")
     segments, info = model.transcribe(
         audio_path,
-        language=language,
+        # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
+        language=None if language in (None, "", "auto") else language,
         beam_size=1 if model_level < 3 else 5,
         vad_filter=True,
     )
@@ -331,7 +332,8 @@ def transcribe_audio_stream(
     yield {"type": "status", "stage": "decoding", "message": "음성 분석 시작"}
     segments, info = model.transcribe(
         audio_path,
-        language=language,
+        # "auto"/빈 값이면 None을 넘겨 faster-whisper의 언어 자동 감지를 쓴다
+        language=None if language in (None, "", "auto") else language,
         beam_size=1 if model_level < 3 else 5,
         vad_filter=True,
     )

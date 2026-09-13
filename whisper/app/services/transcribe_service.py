@@ -49,7 +49,8 @@ def _transcribe_once(uid: str, doc: dict, path: str):
     """GPU 스트림에 한 번 연결해 끝까지 소비한다.
     전송 계층 오류(httpx.TransportError)는 호출부에서 재시도할 수 있게 그대로 올린다."""
     option = {
-        "language": doc.get("language", "ko"),
+        # "auto"면 GPU가 faster-whisper 언어 자동 감지를 쓴다 (감지 결과는 info 이벤트로 옴)
+        "language": doc.get("language") or "auto",
         "model": doc.get("model", 2),
     }
     duration = 0.0
