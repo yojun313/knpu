@@ -49,7 +49,7 @@ module.exports = {
     {
       name: "gpu-tunnel",
       script: "/home/lab/bash/gpu_tunnel.sh",
-      watch: true,
+      watch: false,
       time: true,
     },
   ],

@@ -96,6 +96,31 @@ async def whisper_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
     )
 
 
+@router.post("/whisper/stream")
+async def whisper_stream_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
+    """GPU의 /analysis/whisper/stream(NDJSON 진행 이벤트)을 실시간으로 중계한다.
+    위의 whisper_proxy는 client.post()가 응답을 전부 받은 뒤에야 흘려보내는 구조라
+    실시간 스트리밍이 되지 않는다 — 여기서는 client.stream()으로 열어 청크가
+    도착하는 즉시 그대로 내보낸다 (외부 API 사용자용; whisper 웹사이트는
+    GPU_SERVER_URL로 직접 붙으므로 이 프록시를 거치지 않는다)."""
+    content = await file.read()
+    filename = file.filename
+    content_type = file.content_type
+
+    async def relay():
+        async with httpx.AsyncClient(timeout=None) as client:
+            async with client.stream(
+                "POST",
+                f"{GPU_SERVER_URL}/analysis/whisper/stream",
+                data={"option": option},
+                files={"file": (filename, content, content_type)},
+            ) as response:
+                async for chunk in response.aiter_raw():
+                    yield chunk
+
+    return StreamingResponse(relay(), media_type="application/x-ndjson")
+
+
 @router.post("/youtube")
 async def youtube_download(
     option: str = Form(...), authorization: str | None = Header(None)
