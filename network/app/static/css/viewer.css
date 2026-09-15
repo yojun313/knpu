@@ -199,7 +199,7 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
 
 /* ===== 업로드 모달 ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);
-  display:flex;align-items:center;justify-content:center;z-index:80}
+  display:flex;align-items:center;justify-content:center;z-index:200}
 .modal-overlay[hidden]{display:none}
 .modal-card{width:min(440px,90vw);background:var(--sidebar-bg);border:1px solid var(--sidebar-border);
   border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden;animation:modalIn .16s ease}

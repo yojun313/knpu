@@ -1035,3 +1035,33 @@ html[data-ui-theme="apple"] ::selection { background: color-mix(in srgb, var(--a
     --pill-bg: rgba(32, 32, 36, .92);
   }
 }
+
+/* ============================================================================
+   공통 모바일 레이어 — 이 파일을 로드하는 모든 KNPU 페이지(뷰어 3종, 크롤러,
+   whisper, mcdm, 매니저 웹, 매뉴얼)의 모달·폼이 작은 화면을 벗어나지 않게 하는
+   최소 공통 규칙. 페이지별 세부 대응은 각 페이지 CSS가 담당한다.
+   ============================================================================ */
+@media (max-width: 640px) {
+  /* 모달 공통: 화면 안에 가두고 내용이 길면 모달 내부에서 스크롤 */
+  .modal-card, .modal-box, .theme-modal {
+    max-width: calc(100vw - 24px) !important;
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  .modal-overlay, .theme-modal-overlay { padding: 12px; }
+
+  /* iOS 사파리는 16px 미만 입력을 탭하면 화면을 자동 확대한다 — 모달 안 폼 컨트롤은
+     16px을 보장해 확대 점프를 막는다 */
+  .modal-card input, .modal-card select, .modal-card textarea,
+  .modal-box input, .modal-box select, .modal-box textarea {
+    font-size: 16px;
+  }
+
+  /* 모달 탭 줄: 좁으면 가로 스크롤 (뷰어 3종 업로드 모달 등) */
+  .modal-tabs { overflow-x: auto; scrollbar-width: none; }
+  .modal-tabs::-webkit-scrollbar { display: none; }
+  .modal-tabs .modal-tab { white-space: nowrap; flex-shrink: 0; }
+
+  /* 상단 브랜드 바: 좁은 화면 여백 축소 (내부 네비는 이미 가로 스크롤) */
+  .top-header { padding-left: 12px; padding-right: 12px; gap: 10px; }
+}
