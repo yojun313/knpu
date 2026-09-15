@@ -276,3 +276,12 @@ input[type="email"]::placeholder {
   }
 }
 
+
+/* 좁은 화면에서 제목이 화면 밖으로 밀리지 않게 */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.35rem;
+    padding: 0 12px;
+    word-break: keep-all;
+  }
+}
