@@ -10,7 +10,7 @@ from app.routes import api_router
 from app.routes.frontend_routes import router as frontend_router
 from app.libs.discord_notify import notify_discord
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(api_router, prefix="/api", tags=["api"])
 app.include_router(frontend_router, tags=["frontend"])
 app.add_middleware(

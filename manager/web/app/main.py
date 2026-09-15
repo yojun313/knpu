@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.libs.discord_notify import notify_discord
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 app.add_middleware(
     CORSMiddleware,
