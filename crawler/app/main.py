@@ -43,7 +43,7 @@ async def periodic_gc(interval_seconds: int = 60):
         gc.collect()
 
 
-fastapi_app = FastAPI(title="CRAWLER")
+fastapi_app = FastAPI(title="CRAWLER", docs_url=None, redoc_url=None, openapi_url=None)
 
 # prod/dev 오리진을 둘 다 허용한다 (주소는 services.json).
 cors_origins = ["http://localhost:3001"] + all_origins("crawler")

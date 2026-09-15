@@ -12,11 +12,10 @@ from system.endpoints import LOGIN_URL
 
 logger = logging.getLogger(__name__)
 
+# /docs·/redoc·/openapi.json은 모든 앱에서 비활성화되어(main.py의 docs_url=None 등)
+# 더 이상 존재하지 않는다 — 공개 경로에서도 제외해 이중으로 막는다.
 PUBLIC_PATHS = [
     "/api/health",
-    "/openapi.json",
-    "/docs",
-    "/redoc",
 ]
 
 

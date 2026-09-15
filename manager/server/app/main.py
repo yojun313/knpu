@@ -62,7 +62,7 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @app.exception_handler(Exception)
