@@ -113,7 +113,61 @@
     overlay.querySelector('#themeNavSwitch').classList.toggle('on', currentNav() === 'autohide');
   }
 
+  // ── 리퀴드 글래스(애플 테마) 가장자리 굴절 필터 ──────────────────────────
+  // 패널 뒷배경을 가장자리에서만 렌즈처럼 휘게 하는 SVG displacement 필터.
+  // 변위 맵: R채널=가로 변위, G채널=세로 변위. 중앙은 0.5(변위 없음)로 평평하고
+  // 바깥 14% 구간에서만 0→1로 굴절이 걸려 "두꺼운 유리의 모서리 굴절"이 된다.
+  // backdrop-filter: url(#...)은 Chromium 계열에서만 동작하므로 lg-refract
+  // 클래스로 표시해 두고, 그 외 브라우저는 CSS 림/블러만으로 표현한다.
+  function initLiquidGlass() {
+    if (document.getElementById('knpuLGDefs')) return;
+
+    var MAP =
+      "data:image/svg+xml;utf8," + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">'
+        + '<linearGradient id="gx" x1="0" y1="0" x2="1" y2="0">'
+        + '<stop offset="0" stop-color="#000000"/><stop offset="0.14" stop-color="#800000"/>'
+        + '<stop offset="0.86" stop-color="#800000"/><stop offset="1" stop-color="#ff0000"/>'
+        + '</linearGradient>'
+        + '<linearGradient id="gy" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0" stop-color="#000000"/><stop offset="0.14" stop-color="#008000"/>'
+        + '<stop offset="0.86" stop-color="#008000"/><stop offset="1" stop-color="#00ff00"/>'
+        + '</linearGradient>'
+        + '<rect width="64" height="64" fill="url(#gx)"/>'
+        + '<rect width="64" height="64" fill="url(#gy)" style="mix-blend-mode:screen"/>'
+        + '</svg>');
+
+    var holder = document.createElement('div');
+    holder.id = 'knpuLGDefs';
+    holder.setAttribute('aria-hidden', 'true');
+    holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    holder.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0">'
+      + '<filter id="knpuLG" x="0" y="0" width="100%" height="100%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">'
+      + '<feImage href="' + MAP + '" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="map" scale="0.5" xChannelSelector="R" yChannelSelector="G"/>'
+      + '</filter>'
+      + '</svg>';
+    document.body.appendChild(holder);
+
+    // Chromium 계열에서만 굴절 활성화 (Safari/Firefox는 backdrop-filter: url() 미지원)
+    var isChromium = false;
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.brands) {
+        isChromium = navigator.userAgentData.brands.some(function (b) {
+          return /Chromium/i.test(b.brand);
+        });
+      } else {
+        // Chrome/Edge/Opera/Whale 등 Chromium 파생은 모두 "Chrome/"을 포함하고,
+        // Safari·Firefox UA에는 없다.
+        isChromium = /Chrome\//.test(navigator.userAgent);
+      }
+    } catch (e) { /* noop */ }
+    if (isChromium) document.documentElement.classList.add('lg-refract');
+  }
+
   function init() {
+    initLiquidGlass();
     var btn = document.getElementById('themeSettingsBtn');
     if (!btn) return;
 

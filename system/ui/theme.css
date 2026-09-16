@@ -603,7 +603,13 @@ html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
   --ap-tint-thin: rgba(255, 255, 255, 0.4);
   --ap-tint: rgba(255, 255, 255, 0.55);
   --ap-tint-thick: rgba(255, 255, 255, 0.72);
-  --ap-specular: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  /* 리퀴드 글래스 림 — 위·좌측은 밝게(빛 받는 모서리), 우·하단은 옅게, 안쪽으로
+     은은한 유리 광택. 1px 테두리 대신 이 스택이 "두꺼운 유리의 단면"을 만든다. */
+  --ap-specular:
+    inset 0 1px 1px rgba(255, 255, 255, 0.72),
+    inset 1.2px 1.2px 0 -0.6px rgba(255, 255, 255, 0.6),
+    inset -1.2px -1.2px 0 -0.6px rgba(255, 255, 255, 0.25),
+    inset 0 0 26px -10px rgba(255, 255, 255, 0.45);
   --ap-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .07), 0 24px 60px rgba(0, 0, 0, .06);
   --ap-shadow-thick: 0 2px 6px rgba(0, 0, 0, .07), 0 20px 50px rgba(0, 0, 0, .16), 0 40px 90px rgba(0, 0, 0, .1);
   --ap-scrim: rgba(0, 0, 0, 0.26);
@@ -648,7 +654,11 @@ html[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
   --ap-tint-thin: rgba(255, 255, 255, 0.055);
   --ap-tint: rgba(255, 255, 255, 0.08);
   --ap-tint-thick: rgba(255, 255, 255, 0.12);
-  --ap-specular: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --ap-specular:
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset 1.2px 1.2px 0 -0.6px rgba(255, 255, 255, 0.18),
+    inset -1.2px -1.2px 0 -0.6px rgba(255, 255, 255, 0.07),
+    inset 0 0 26px -10px rgba(255, 255, 255, 0.12);
   --ap-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .45);
   --ap-shadow-thick: 0 2px 8px rgba(0, 0, 0, .4), 0 24px 60px rgba(0, 0, 0, .6);
   --ap-scrim: rgba(0, 0, 0, 0.5);
@@ -818,6 +828,34 @@ html[data-ui-theme="apple"] #zoombox { border-radius: var(--ap-r-md); }
 html[data-ui-theme="apple"] .search input:focus {
   /* 애플 포커스 링 — 굵은 테두리 대신 accent 색 링 하나 */
   box-shadow: var(--ap-specular), var(--ap-shadow), 0 0 0 3.5px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* ── 리퀴드 글래스: 가장자리 굴절 ─────────────────────────────────────────────
+   theme.js가 주입하는 SVG displacement 필터(#knpuLG)로 패널 뒷배경을 가장자리
+   14% 구간에서만 렌즈처럼 휘게 한다 — 블러 뒤에 적용해 "두꺼운 유리 모서리로
+   빛이 꺾이는" 리퀴드 글래스 특유의 굴절이 된다. backdrop-filter: url()은
+   Chromium 전용이라 theme.js가 붙여 주는 html.lg-refract 안에서만 켠다
+   (Safari/Firefox는 위의 림+블러 표현을 그대로 쓴다). */
+html.lg-refract[data-ui-theme="apple"] .rail,
+html.lg-refract[data-ui-theme="apple"] #side,
+html.lg-refract[data-ui-theme="apple"] .ctx-menu,
+html.lg-refract[data-ui-theme="apple"] #main #top {
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat)) url(#knpuLG);
+}
+html.lg-refract[data-ui-theme="apple"] .table-card {
+  backdrop-filter: blur(var(--ap-blur-thin)) saturate(var(--ap-sat)) url(#knpuLG);
+}
+html.lg-refract[data-ui-theme="apple"] .modal-card,
+html.lg-refract[data-ui-theme="apple"] .theme-modal,
+html.lg-refract[data-ui-theme="apple"] .article-modal-card {
+  backdrop-filter: blur(var(--ap-blur-thick)) saturate(var(--ap-sat)) url(#knpuLG);
+}
+html.lg-refract[data-ui-theme="apple"] .brandmark,
+html.lg-refract[data-ui-theme="apple"] .badge,
+html.lg-refract[data-ui-theme="apple"] .netsel,
+html.lg-refract[data-ui-theme="apple"] .search input,
+html.lg-refract[data-ui-theme="apple"] #zoombox {
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat)) url(#knpuLG);
 }
 
 /* ── 컨트롤 — 유리 *위*에 얹히므로 자체 backdrop-filter를 주지 않는다 ────────
