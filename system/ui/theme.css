@@ -167,7 +167,7 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-/* 애플 글래스 — 은은한 컬러 월페이퍼 위에 흰 서리 유리 칩이 떠 있는 모습 */
+/* 애플 리퀴드 글래스 — 은은한 컬러 월페이퍼 위에 흰 서리 유리 칩이 떠 있는 모습 */
 .theme-swatch-apple {
   background:
     radial-gradient(60% 60% at 18% 12%, rgba(120, 170, 255, .55) 0, transparent 62%),
@@ -530,7 +530,7 @@ html[data-ui-theme="mesh"] .rail-item.active { background: var(--overlay-hover) 
 html[data-ui-theme="mesh"] ::selection { background: var(--overlay-hover); }
 
 /* ============================================================================
-   애플 글래스 (Liquid Glass) — 애플 디자인 철학을 그대로 옮긴 전면 투명 테마
+   애플 리퀴드 글래스 (Liquid Glass) — 애플 디자인 철학을 그대로 옮긴 전면 투명 테마
    ----------------------------------------------------------------------------
    기존 glass 테마와 무엇이 다른가:
    - glass는 "반투명 패널"이지만, apple은 화면 전체가 하나의 월페이퍼 위에 떠 있는
