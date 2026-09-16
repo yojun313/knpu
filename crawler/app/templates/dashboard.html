@@ -1022,14 +1022,22 @@
             --bg: rgba(255,255,255,0.72); --surface: rgba(255,255,255,0.55);
             --ink: rgba(0,0,0,0.86); --muted: rgba(60,60,67,0.62);
             --line: rgba(60,60,67,0.14); --blue: #007aff; --deep: #1d1d1f;
-            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.75);
+            --ap-specular:
+                inset 0 1px 1px rgba(255,255,255,0.72),
+                inset 1.2px 1.2px 0 -0.6px rgba(255,255,255,0.6),
+                inset -1.2px -1.2px 0 -0.6px rgba(255,255,255,0.25),
+                inset 0 0 26px -10px rgba(255,255,255,0.45);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.07);
         }
         :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] {
             --bg: rgba(255,255,255,0.14); --surface: rgba(255,255,255,0.08);
             --ink: rgba(255,255,255,0.92); --muted: rgba(235,235,245,0.6);
             --line: rgba(255,255,255,0.12); --blue: #0a84ff; --deep: #f5f5f7;
-            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.16);
+            --ap-specular:
+                inset 0 1px 1px rgba(255,255,255,0.22),
+                inset 1.2px 1.2px 0 -0.6px rgba(255,255,255,0.18),
+                inset -1.2px -1.2px 0 -0.6px rgba(255,255,255,0.07),
+                inset 0 0 26px -10px rgba(255,255,255,0.12);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
         }
         /* body(및 그 상속값)의 애플 폰트/자간은 /shared-ui/theme.css가 이미 맡고 있어서
@@ -1072,6 +1080,13 @@
         :root[data-ui-theme="apple"] .panel-head {
             background: var(--bg) !important;
             border-color: var(--line) !important;
+        }
+        
+        /* 리퀴드 글래스 굴절 — theme.js가 주입하는 #knpuLG displacement 필터 (Chromium) */
+        :root.lg-refract[data-ui-theme="apple"] .panel,
+        :root.lg-refract[data-ui-theme="apple"] .card,
+        :root.lg-refract[data-ui-theme="apple"] .modal-box {
+            backdrop-filter: blur(30px) saturate(180%) url(#knpuLG);
         }
         :root[data-ui-theme="apple"] .btn {
             border-radius: 10px;
