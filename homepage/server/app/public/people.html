@@ -518,6 +518,14 @@
           grouped[section].forEach((m, idx) => {
             const safeId = `${slug}-${idx}`;
             const emailHtml = m.email ? `<p>Email: ${m.email}</p>` : "";
+            // 개인 홈페이지 — 관리자에서 입력한 URL (프로토콜이 없으면 https로 보정)
+            let homepageHtml = "";
+            if (m.homepage && m.homepage.trim()) {
+              const rawUrl = m.homepage.trim();
+              const href = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+              const display = rawUrl.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+              homepageHtml = `<p>Homepage: <a href="${href}" target="_blank" rel="noopener"><i class="fas fa-globe me-1"></i>${display}</a></p>`;
+            }
             const eduHtml =
               m.학력 && m.학력.length
                 ? `<h5>학력</h5><p>${m.학력.join("<br>")}</p><p>&nbsp;</p>`
@@ -549,6 +557,7 @@
                                     <h4>${m.name}</h4>
                                     <p class="text-muted">${m.position}</p>
                                     ${emailHtml}
+                                    ${homepageHtml}
                                     ${toggleButton}
                                 </div>
                                 ${additionalInfo}
