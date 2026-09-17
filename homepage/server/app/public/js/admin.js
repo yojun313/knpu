@@ -251,7 +251,7 @@
         + '<td class="cell-truncate">' + esc(m.email || '') + '</td>'
         + '<td class="col-actions">' + actionButtons(
           "openMemberModal('" + m.uid + "')",
-          "deleteMember('" + m.uid + "', " + JSON.stringify(m.name) + ")"
+          escAttr("deleteMember('" + m.uid + "', " + JSON.stringify(m.name) + ")")
         ) + '</td></tr>';
     }).join('');
   }
