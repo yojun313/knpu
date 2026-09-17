@@ -270,6 +270,7 @@
     document.getElementById('member-name').value = data ? (data.name || '') : '';
     document.getElementById('member-affiliation').value = data ? (data.affiliation || '') : '';
     document.getElementById('member-email').value = data ? (data.email || '') : '';
+    document.getElementById('member-homepage').value = data ? (data.homepage || '') : '';
     document.getElementById('member-school').value = data ? listToText(data['학력']) : '';
     document.getElementById('member-career').value = data ? listToText(data['경력']) : '';
     document.getElementById('member-research').value = data ? listToText(data['연구']) : '';
@@ -306,6 +307,7 @@
       affiliation: document.getElementById('member-affiliation').value.trim(),
       section: document.getElementById('member-section').value,
       email: document.getElementById('member-email').value.trim(),
+      homepage: document.getElementById('member-homepage').value.trim(),
       '학력': document.getElementById('member-school').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
       '경력': document.getElementById('member-career').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
       '연구': document.getElementById('member-research').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean),

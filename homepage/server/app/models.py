@@ -9,6 +9,7 @@ class Member(BaseModel):
     affiliation: str
     section: str
     email: str
+    homepage: Optional[str] = ""  # 개인 홈페이지/포트폴리오 URL (PEOPLE 페이지에 표시)
     학력: List[str] = []
     경력: List[str] = []
     수상: List[str] = []
