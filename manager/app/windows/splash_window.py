@@ -215,7 +215,8 @@ class AboutDialog(BaseDialog):
         text_layout.addWidget(desc_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         dev_label = QLabel(
-            '제작자: <a href="https://github.com/yojun313">github.com/yojun313</a>'
+            '제작자: <a href="https://yojun313.github.io">Yojun Moon</a> · '
+            '<a href="https://github.com/WCChoi0930">Woochul Choi</a>'
         )
         dev_label.setOpenExternalLinks(True)
         dev_label.setStyleSheet(

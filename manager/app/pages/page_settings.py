@@ -597,7 +597,8 @@ class Manager_Setting(BaseDialog):
         manager_info_section.addWidget(self.manager_time_label)
 
         dev_info_label = QLabel(
-            '<a href="https://github.com/yojun313" style="color: #3498db;">Developed by Yojun Moon</a>'
+            'Developed by <a href="https://yojun313.github.io" style="color: #3498db;">Yojun Moon</a>, '
+            '<a href="https://github.com/WCChoi0930" style="color: #3498db;">Woochul Choi</a>'
         )
         dev_info_label.setOpenExternalLinks(True)
         dev_info_label.setStyleSheet("font-size: 12px; color: gray;")
