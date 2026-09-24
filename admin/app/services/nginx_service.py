@@ -273,6 +273,75 @@ class NginxService:
         ok, msg = cls._write_config(domain, new_content)
         return ok, msg, False
 
+    # ---------- domain rename (포트/경로 유지) ----------
+
+    @classmethod
+    def build_renamed_config(cls, old_domain: str, new_domain: str):
+        """기존 도메인의 location 블록(경로·포트)을 그대로 두고 도메인 이름만 바꾼
+        HTTP 전용 설정을 만들어 돌려준다.
+
+        certbot이 붙여둔 ssl_certificate / listen 443 / $host 리다이렉트 줄은
+        전부 옛 도메인 인증서를 가리키므로 여기서 걷어낸다. 새 인증서는 이 설정을
+        올린 뒤 rename_nginx.sh가 certbot을 다시 돌려 붙인다.
+        """
+        if not cls.is_valid_domain(old_domain):
+            return False, "유효하지 않은 기존 도메인입니다."
+        if not cls.is_valid_domain(new_domain):
+            return False, "유효하지 않은 새 도메인입니다."
+        if old_domain == new_domain:
+            return False, "기존 도메인과 새 도메인이 같습니다."
+
+        old_path = os.path.join(cls.SITES_AVAILABLE, old_domain)
+        if not os.path.exists(old_path):
+            return False, "해당 도메인이 존재하지 않습니다."
+
+        new_path = os.path.join(cls.SITES_AVAILABLE, new_domain)
+        if os.path.exists(new_path):
+            return False, "이미 존재하는 도메인입니다."
+
+        with open(old_path, "r") as f:
+            content = f.read()
+
+        locations = cls._extract_locations(content)
+        # certbot이 만든 리다이렉트 전용 server 블록에는 location이 없다.
+        # 포트를 못 읽은 블록은 되살릴 수 없으므로 제외한다.
+        blocks = [
+            cls._build_location_block(loc["path"], loc["port"])
+            for loc in locations
+            if loc["port"] != "N/A"
+        ]
+        if not blocks:
+            return False, "옮길 수 있는 경로(proxy_pass)를 찾지 못했습니다."
+
+        body = "\n".join(blocks)
+        config = (
+            "server {\n"
+            "    listen 80;\n"
+            f"    server_name {new_domain};\n"
+            "\n"
+            f"{body}"
+            "}\n"
+        )
+        return True, config
+
+    @classmethod
+    def rename_domain_files(cls, old_domain: str, new_domain: str, email: str):
+        """certbot 없이 파일만 옮긴다(웹소켓을 쓰지 않는 호출부용)."""
+        ok, result = cls.build_renamed_config(old_domain, new_domain)
+        if not ok:
+            return False, result
+
+        script_path = os.path.join(cls.SCRIPT_DIR, "rename_nginx.sh")
+        process = subprocess.Popen(
+            ["sudo", "bash", script_path, old_domain, new_domain, email],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        stdout, stderr = process.communicate(input=result)
+        return process.returncode == 0, stdout + stderr
+
     # ---------- new domain creation (certbot) ----------
 
     @classmethod

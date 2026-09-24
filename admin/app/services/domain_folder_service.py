@@ -100,6 +100,30 @@ def assign_domain(domain: str, folder_id: str | None) -> tuple[bool, str]:
     return True, "미분류로 옮겼습니다."
 
 
+def rename_domain(old_domain: str, new_domain: str) -> None:
+    """도메인 이름이 바뀌었을 때 폴더 소속을 새 이름으로 따라가게 한다.
+    폴더는 표시용이라 실패해도 nginx 동작에는 영향이 없다."""
+    old_domain = (old_domain or "").strip()
+    new_domain = (new_domain or "").strip()
+    if not old_domain or not new_domain:
+        return
+
+    folders = _load()
+    changed = False
+    for f in folders:
+        if old_domain not in f["domains"]:
+            continue
+        renamed = []
+        for d in f["domains"]:
+            d = new_domain if d == old_domain else d
+            if d not in renamed:
+                renamed.append(d)
+        f["domains"] = renamed
+        changed = True
+    if changed:
+        _save(folders)
+
+
 def group_domains(domains: list[dict]) -> list[dict]:
     by_domain = {d["domain"]: d for d in domains}
     grouped = []
