@@ -9,9 +9,9 @@ Research System for **FPEI** at **Korea National Police University**
 [![Network](https://img.shields.io/badge/NETWORK-Open-2563eb?style=for-the-badge)](https://network.knpu.re.kr)
 [![Statistics](https://img.shields.io/badge/STATISTICS-Open-2563eb?style=for-the-badge)](https://statistics.knpu.re.kr)
 [![KemKim](https://img.shields.io/badge/KEMKIM-Open-2563eb?style=for-the-badge)](https://kemkim.knpu.re.kr)
-[![Lab LLM](https://img.shields.io/badge/LAB_LLM-Open-2563eb?style=for-the-badge)](https://llm.knpu.re.kr)
+[![PolyDecision](https://img.shields.io/badge/POLYDECISION-Open-2563eb?style=for-the-badge)](https://mcdm.knpu.re.kr)
+[![Whisper](https://img.shields.io/badge/WHISPER-Open-2563eb?style=for-the-badge)](https://whisper.knpu.re.kr)
 [![Legal AI](https://img.shields.io/badge/LEGAL_AI-Open-2563eb?style=for-the-badge)](https://complaint.knpu.re.kr)
-[![LecAI](https://img.shields.io/badge/LECAI-Open-2563eb?style=for-the-badge)](https://lec.knpu.re.kr)
 
 </div>
 
@@ -79,11 +79,27 @@ Research System for **FPEI** at **Korea National Police University**
 
 <div align="center">
 
-## Lab LLM
+## POLYDECISION
 
-<img src="homepage/server/app/public/assets/imgs/systems/labllm.png" alt="Lab LLM Service" width="700">
+AHP 기반 다기준 의사결정 플랫폼 — 계층 설계부터 설문 배포·응답 수집·가중치 분석까지 지원합니다.
 
-[![Open Lab LLM](https://img.shields.io/badge/Open-llm.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://llm.knpu.re.kr)
+<img src="homepage/server/app/public/assets/imgs/systems/polydecision.png" alt="PolyDecision Service" width="700">
+
+[![Open POLYDECISION](https://img.shields.io/badge/Open-mcdm.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://mcdm.knpu.re.kr)
+
+</div>
+
+<br>
+
+<div align="center">
+
+## WHISPER
+
+AI 음성 인식(STT) 노트 — 음성·영상을 실시간 진행률과 함께 전사하고, 구간별 재생·검색·내보내기를 지원합니다.
+
+<img src="homepage/server/app/public/assets/imgs/systems/whisper.png" alt="Whisper Service" width="700">
+
+[![Open WHISPER](https://img.shields.io/badge/Open-whisper.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://whisper.knpu.re.kr)
 
 </div>
 
@@ -96,18 +112,6 @@ Research System for **FPEI** at **Korea National Police University**
 <img src="homepage/server/app/public/assets/imgs/systems/complaint.png" alt="Legal Service" width="700">
 
 [![Open Legal Service](https://img.shields.io/badge/Open-complaint.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://complaint.knpu.re.kr)
-
-</div>
-
-<br>
-
-<div align="center">
-
-## LecAI
-
-<img src="homepage/server/app/public/assets/imgs/systems/lecai.png" alt="LecAI Service" width="700">
-
-[![Open LecAI](https://img.shields.io/badge/Open-lec.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lec.knpu.re.kr)
 
 </div>
 
