@@ -45,7 +45,46 @@ def _services_js() -> str:
     )
 
 
-def mount_shared_ui(app) -> None:
+def _manifest_json(app_name: str, theme_color: str) -> str:
+    # 홈 화면 앱(PWA) 매니페스트. 아이콘은 /shared-ui 정적 자산을 그대로 쓰고
+    # 이름만 사이트별로 다르다. iOS는 apple-* 메타를, 안드로이드는 이 파일을 읽는다.
+    payload = {
+        "name": app_name,
+        "short_name": app_name,
+        "id": "/",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": theme_color,
+        "theme_color": theme_color,
+        "lang": "ko",
+        "icons": [
+            {
+                "src": "/shared-ui/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": "/shared-ui/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": "/shared-ui/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+        ],
+    }
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def mount_shared_ui(
+    app, *, app_name: str | None = None, theme_color: str = "#0B1226"
+) -> None:
     @app.get("/shared-ui/services.js", include_in_schema=False)
     def shared_services_js():
         return Response(
@@ -53,6 +92,17 @@ def mount_shared_ui(app) -> None:
             media_type="application/javascript",
             headers={"cache-control": "no-store, must-revalidate"},
         )
+
+    if app_name:
+        manifest = _manifest_json(app_name, theme_color)
+
+        @app.get("/shared-ui/manifest.webmanifest", include_in_schema=False)
+        def shared_manifest():
+            return Response(
+                content=manifest,
+                media_type="application/manifest+json",
+                headers={"cache-control": "no-store, must-revalidate"},
+            )
 
     app.mount(
         "/shared-ui",

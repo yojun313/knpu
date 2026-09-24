@@ -137,4 +137,4 @@ app.mount(
 )
 
 # kemkim/network/statistics와 같은 테마 시스템(설정 모달 + glass/neu/mesh 스킨) — GPU 기능
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="MANAGER", theme_color="#0B1226")

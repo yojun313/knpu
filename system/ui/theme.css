@@ -1103,3 +1103,51 @@ html[data-ui-theme="apple"] ::selection { background: color-mix(in srgb, var(--a
   /* 상단 브랜드 바: 좁은 화면 여백 축소 (내부 네비는 이미 가로 스크롤) */
   .top-header { padding-left: 12px; padding-right: 12px; gap: 10px; }
 }
+
+/* ============================================================================
+   홈 화면 웹앱 레이어 — viewport-fit=cover 를 쓰는 모든 KNPU 페이지 공통.
+   iOS 홈 화면 앱(상태바 black)에서 top inset 은 0 이지만, 홈 인디케이터(bottom)
+   와 가로 모드 노치(left/right)는 env(safe-area-inset-*) 로 직접 비켜야 한다.
+   ============================================================================ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 767.98px) {
+    body {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    /* 화면 아래 붙는 오버레이·모달은 홈 인디케이터를 침범하지 않게 */
+    .modal-overlay, .theme-modal-overlay {
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+@media (pointer: coarse) {
+  html { touch-action: manipulation; }
+  /* 두 번 탭 확대 방지 + 누르는 즉각 반응(앱 느낌) */
+  button:active, .top-nav-link:active, [role="button"]:active { opacity: .7; }
+  /* 스크롤 영역이 문서 전체를 끌고 다니지 않게 (iOS 고무줄 연쇄 방지) */
+  .modal-card, .modal-box, .theme-modal, .modal-tabs {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* iOS 확대 방지 — 모바일에서 모든 폼 컨트롤 16px 보장 (가이드 01-2) */
+@media (pointer: coarse), (max-width: 767.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="color"]),
+  textarea, select {
+    font-size: 16px !important;
+  }
+}

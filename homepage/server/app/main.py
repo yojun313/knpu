@@ -111,6 +111,6 @@ app.include_router(frontend_router, tags=["frontend"])
 # 위의 명시적 라우트(/, /login, /api/* 등)가 우선 매치된다.
 # 다른 서비스와 공유하는 프론트 자산(+ /shared-ui/services.js). catch-all "/"
 # 마운트보다 먼저 등록해야 매치된다.
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="FPEI", theme_color="#002d56")
 
 app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")

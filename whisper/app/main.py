@@ -57,7 +57,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="WHISPER", theme_color="#0B1226")
 
 app.include_router(page_router, tags=["Pages"])
 app.include_router(api_router)
