@@ -37,6 +37,11 @@ class PathDeleteRequest(BaseModel):
     path: str
 
 
+class DomainRenameRequest(BaseModel):
+    old_domain: str
+    new_domain: str
+
+
 class FolderCreateRequest(BaseModel):
     name: str
 
@@ -203,6 +208,19 @@ async def delete_path(payload: PathDeleteRequest, user=Depends(get_current_user)
     return {"success": True, "message": message}
 
 
+@router.post("/domains/rename/check")
+async def check_rename_domain(
+    payload: DomainRenameRequest, user=Depends(get_current_user)
+):
+    """콘솔을 열기 전에 미리 검증한다. 실제 변경은 웹소켓 rename 액션이 수행한다."""
+    ok, message = NginxService.build_renamed_config(
+        payload.old_domain, payload.new_domain
+    )
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": "변경 가능한 도메인입니다."}
+
+
 @router.websocket("/ws/console")
 async def nginx_console_ws(websocket: WebSocket):
     await websocket.accept()
@@ -219,6 +237,7 @@ async def nginx_console_ws(websocket: WebSocket):
     try:
         data = await websocket.receive_json()
         action = data.get("action")
+        rename_stdin = None
 
         if action == "add":
             cmd = [
@@ -244,6 +263,37 @@ async def nginx_console_ws(websocket: WebSocket):
                 target={"type": "nginx_domain", "id": data["domain"]},
                 metadata={"port": data["port"], "path": data.get("path") or "/"},
             )
+        elif action == "rename":
+            old_domain = data["old_domain"]
+            new_domain = data["new_domain"]
+            ok, result = NginxService.build_renamed_config(old_domain, new_domain)
+            if not ok:
+                await websocket.send_text(f"에러 발생: {result}")
+                await websocket.close()
+                return
+            rename_stdin = result
+            cmd = [
+                "sudo",
+                "bash",
+                os.path.join(
+                    os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), "..", "scripts")
+                    ),
+                    "rename_nginx.sh",
+                ),
+                old_domain,
+                new_domain,
+                data["email"],
+            ]
+            insert_log(
+                user_logs_col,
+                admin_uid,
+                "admin.nginx.domain_rename",
+                "admin",
+                message=f"도메인 이름 변경: {old_domain} -> {new_domain}",
+                target={"type": "nginx_domain", "id": new_domain},
+                metadata={"old_domain": old_domain},
+            )
         elif action == "delete":
             cmd = [
                 "sudo",
@@ -267,8 +317,16 @@ async def nginx_console_ws(websocket: WebSocket):
             return
 
         process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+            *cmd,
+            stdin=asyncio.subprocess.PIPE if rename_stdin else None,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
         )
+
+        if rename_stdin:
+            process.stdin.write(rename_stdin.encode())
+            await process.stdin.drain()
+            process.stdin.close()
 
         while True:
             line = await process.stdout.readline()
@@ -277,6 +335,9 @@ async def nginx_console_ws(websocket: WebSocket):
             await websocket.send_text(line.decode().strip())
 
         await process.wait()
+        if action == "rename" and process.returncode == 0:
+            domain_folder_service.rename_domain(data["old_domain"], data["new_domain"])
+            await websocket.send_text("폴더 소속을 새 도메인으로 옮겼습니다.")
         if action == "delete":
             os.system(f"sudo rm -f /etc/nginx/sites-enabled/{data['domain']}")
             os.system(f"sudo rm -f /etc/nginx/sites-available/{data['domain']}")
