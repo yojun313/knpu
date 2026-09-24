@@ -126,17 +126,17 @@
     /* 스크린샷을 카드에 꽉 채우지 않고 옅은 판 위에 살짝 띄워, 아래쪽이 잘려
        이어지는 것처럼 보이게 한다(화면 일부를 들여다보는 느낌). */
     .card-media {
-      padding: 15px 15px 0;
+      padding: 15px;
       background: linear-gradient(180deg, #eaeff7 0%, #f6f8fc 100%);
       border-bottom: 1px solid var(--line);
     }
 
     .card-shot {
-      aspect-ratio: 16 / 10;
+      /* 스크린샷 원본 비율(1400x798)과 동일하게 맞춰 어떤 부분도 잘리지 않게 한다 */
+      aspect-ratio: 1400 / 798;
       overflow: hidden;
       border: 1px solid rgba(15, 23, 42, .10);
-      border-bottom: none;
-      border-radius: 10px 10px 0 0;
+      border-radius: 10px;
       background: #fff;
       box-shadow: 0 8px 20px rgba(15, 23, 42, .10);
     }
@@ -144,8 +144,7 @@
     .card-shot img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: top center;
+      object-fit: contain;
       display: block;
       transition: transform .5s var(--ease);
     }
