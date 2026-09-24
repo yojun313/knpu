@@ -117,7 +117,7 @@ import os as _os
 _static_path = _os.path.join(_os.path.dirname(__file__), "static")
 fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
 # 다른 서비스와 공유하는 프론트 자산(+ /shared-ui/services.js)
-mount_shared_ui(fastapi_app)
+mount_shared_ui(fastapi_app, app_name="CRAWLER", theme_color="#0B1226")
 
 from app.routes import api_router
 from app.routes.dashboard_routes import router as dashboard_router

@@ -88,7 +88,7 @@ app.mount(
 )
 
 # 관리자 화면 전용 — 테마 시스템(글래스/애플/뉴모피즘/메시 + 다크). 응답자 화면은
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="POLYDECISION", theme_color="#0B1226")
 
 app.include_router(api_router)
 

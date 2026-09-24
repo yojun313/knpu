@@ -1,0 +1,34 @@
+/* 홈 화면 웹앱 공통 레이어 — /shared-ui/theme.css 를 로드하지 않는 페이지용.
+   (theme.css 를 쓰는 페이지는 같은 규칙이 theme.css 끝에 포함돼 있다) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 767.98px) {
+    body {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+@media (pointer: coarse) {
+  html { touch-action: manipulation; }
+  button:active, [role="button"]:active { opacity: .7; }
+}
+
+/* iOS 확대 방지 — 모바일에서 모든 폼 컨트롤 16px 보장 (가이드 01-2) */
+@media (pointer: coarse), (max-width: 767.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="color"]),
+  textarea, select {
+    font-size: 16px !important;
+  }
+}

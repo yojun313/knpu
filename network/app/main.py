@@ -76,7 +76,7 @@ app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
 
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="NETWORK", theme_color="#0B1226")
 
 app.include_router(api_router)
 

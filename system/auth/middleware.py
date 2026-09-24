@@ -51,6 +51,9 @@ class AuthMiddleware:
             # 대체되므로 파일명 단위로 공개한다.
             or path.endswith("/favicon.ico")
             or path.endswith("/apple-touch-icon.png")
+            or path.endswith("/icon-192.png")
+            or path.endswith("/icon-512.png")
+            or path.endswith("/manifest.webmanifest")
         ):
             await self.app(scope, receive, send)
             return

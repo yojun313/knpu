@@ -104,7 +104,7 @@ class NoCacheStaticFiles(StaticFiles):
 
 
 # statistics/kemkim/network가 함께 쓰는 테마 시스템(테마 CSS) — 관리자 대시보드는
-mount_shared_ui(app)
+mount_shared_ui(app, app_name="ADMIN", theme_color="#0B1226")
 
 # 라우터 등록
 app.include_router(main_routes.router)

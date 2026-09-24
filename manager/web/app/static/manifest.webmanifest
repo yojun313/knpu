@@ -1,0 +1,31 @@
+{
+  "name": "MANAGER PROGRESS",
+  "short_name": "PROGRESS",
+  "id": "/progress",
+  "start_url": "/progress",
+  "scope": "/progress",
+  "display": "standalone",
+  "background_color": "#0B1226",
+  "theme_color": "#0B1226",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
