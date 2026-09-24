@@ -335,6 +335,13 @@ async def nginx_console_ws(websocket: WebSocket):
             await websocket.send_text(line.decode().strip())
 
         await process.wait()
+        if action == "add" and process.returncode == 0 and data.get("folder_id"):
+            # 추가 모달에서 폴더를 골랐으면 생성 성공 직후 바로 그 폴더로 분류한다
+            ok, _msg = domain_folder_service.assign_domain(
+                data["domain"], data["folder_id"]
+            )
+            if ok:
+                await websocket.send_text("도메인을 선택한 폴더로 분류했습니다.")
         if action == "rename" and process.returncode == 0:
             domain_folder_service.rename_domain(data["old_domain"], data["new_domain"])
             await websocket.send_text("폴더 소속을 새 도메인으로 옮겼습니다.")
