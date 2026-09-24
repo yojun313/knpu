@@ -46,6 +46,11 @@ class AuthMiddleware:
             path.startswith("/js/")
             or path.startswith("/css/")
             or path.startswith("/shared-ui/")
+            # 브라우저/iOS가 쿠키 없이 요청할 수 있는 사이트 아이콘.
+            # 302 로그인 리다이렉트를 받으면 iOS 홈화면 아이콘이 스크린샷으로
+            # 대체되므로 파일명 단위로 공개한다.
+            or path.endswith("/favicon.ico")
+            or path.endswith("/apple-touch-icon.png")
         ):
             await self.app(scope, receive, send)
             return
