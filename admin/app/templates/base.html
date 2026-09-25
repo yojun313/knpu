@@ -8,13 +8,10 @@
   <script src="/shared-ui/knpu.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // 페인트 전에 테마를 정해서 깜빡임(FOUC)을 막는다.
-        (function () {
-            var saved = localStorage.getItem('admin-theme');
-            var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-        
+        // 라이트/다크를 포함한 모든 테마 상태는 다른 KNPU 사이트와 같은
+        // domain=.knpu.re.kr 쿠키(ui_theme_style/ui_theme_mode)만 쓴다.
+        // (예전에는 admin 전용 localStorage 'admin-theme'로 다크모드를 따로
+        // 관리해서 다른 사이트에서 바꾼 모드가 여기 반영되지 않았다.)
         const THEME_COOKIE_KEY = 'ui_theme_style';
 
         function themeCookieDomainAttr() {
@@ -69,20 +66,10 @@
     </script>
     <link rel="stylesheet" href="/shared-ui/theme.css">
     <style>
-        /* 데스크톱 MANAGER 앱(kemkim/network 뷰어와 같은 뿌리) 배색 그대로 가져옴 */
+        /* 데스크톱 MANAGER 앱(kemkim/network 뷰어와 같은 뿌리) 배색 그대로 가져옴.
+           라이트가 기본이고, 다크는 공유 쿠키가 세팅하는 data-ui-theme-mode="dark"
+           로만 켠다 — 다른 KNPU 사이트와 같은 규칙. */
         :root {
-            --accent: #34495e;
-            --brand: #eaeaea;
-            --panel: #323232;
-            --panel2: #3c3c3c;
-            --line: #5a5a5a;
-            --muted: #9a9a9a;
-            --ink: #ffffff;
-            --success: #4CAF50;
-            --danger: #E74C3C;
-            --warn: #e08a2e;
-        }
-        :root[data-theme="light"] {
             --accent: #2c3e50;
             --brand: #2c3e50;
             --panel: #f7f8f9;
@@ -90,11 +77,23 @@
             --line: #bdc3c7;
             --muted: #7c8896;
             --ink: #16212c;
+            --success: #4CAF50;
+            --danger: #E74C3C;
+            --warn: #e08a2e;
+        }
+        :root[data-ui-theme-mode="dark"] {
+            --accent: #34495e;
+            --brand: #eaeaea;
+            --panel: #323232;
+            --panel2: #3c3c3c;
+            --line: #5a5a5a;
+            --muted: #9a9a9a;
+            --ink: #ffffff;
         }
 
         /* ── 기본 ── */
-        body { background-color: #202124; color: var(--ink); }
-        :root[data-theme="light"] body { background-color: #ecf0f1; }
+        body { background-color: #ecf0f1; color: var(--ink); }
+        :root[data-ui-theme-mode="dark"] body { background-color: #202124; }
 
         .sidebar { background-color: var(--panel); border-right: 1px solid var(--line); }
         .card { background-color: var(--panel); border: 1px solid var(--line); }
@@ -130,9 +129,9 @@
         [class*="border-zinc-900"] { border-color: var(--line) !important; }
 
         input, select, textarea { color: var(--ink) !important; background-color: transparent; }
-        :root[data-theme="light"] input,
-        :root[data-theme="light"] select,
-        :root[data-theme="light"] textarea { background-color: #ffffff !important; }
+        :root:not([data-ui-theme-mode="dark"]) input,
+        :root:not([data-ui-theme-mode="dark"]) select,
+        :root:not([data-ui-theme-mode="dark"]) textarea { background-color: #ffffff !important; }
         ::placeholder { color: var(--muted) !important; opacity: 0.8; }
 
         [class*="hover\:bg-zinc-800"]:hover,
@@ -151,13 +150,10 @@
             color: inherit; opacity: 0.7; transition: opacity 0.2s, background-color 0.2s;
         }
         .theme-toggle:hover { opacity: 1; background-color: rgba(127,127,127,0.15); }
-        .icon-sun { display: none; }
-        :root[data-theme="light"] .icon-moon { display: none; }
-        :root[data-theme="light"] .icon-sun { display: block; }
 
         /* ── 글래스모피즘/뉴모피즘/그라디언트 메시 스킨 ─────────────────────────
            이 페이지는 --panel/--panel2/--line/--ink/--muted/--accent/--brand 이
-           7개 변수(위 :root, :root[data-theme="light"])와, 그 변수를 참조하는
+           7개 변수(위 :root, :root[data-ui-theme-mode="dark"])와, 그 변수를 참조하는
            Tailwind zinc 계열 부분일치 선택자들로 전체 배색을 관리한다. 테마별로
            같은 변수만 다시 정의하면 사이드바/카드/텍스트가 전부 자동으로
            갈아입으므로, 셀렉터를 새로 나열할 필요 없이 변수만 덮어쓴다.
@@ -200,6 +196,55 @@
             backdrop-filter: blur(16px) saturate(130%);
             -webkit-backdrop-filter: blur(16px) saturate(130%);
             border-color: var(--line) !important;
+        }
+
+        /* ── 오로라 (라이트/다크) ────────────────────────────────────────────────
+           shared-ui theme.css의 오로라 팔레트(LecAI 룩)를 admin 변수 체계로 이식.
+           짙은 남색 바탕 + 파랑/보라/청록 빛무리 위에 반투명 유리 패널. */
+        :root[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) {
+            --accent: #3b82f6; --brand: #3f4a63;
+            --panel: rgba(255,255,255,0.62); --panel2: rgba(255,255,255,0.76);
+            --line: rgba(15,23,42,0.10); --muted: #6b7189; --ink: #1e2233;
+            --modal-panel: rgba(255,255,255,0.92);
+        }
+        :root[data-ui-theme="aurora"][data-ui-theme-mode="dark"] {
+            --accent: #60a5fa; --brand: #cdd6ea;
+            --panel: rgba(255,255,255,0.07); --panel2: rgba(255,255,255,0.11);
+            --line: rgba(255,255,255,0.10); --muted: #8f93a8; --ink: #e8e9ee;
+            --modal-panel: rgba(10,14,28,0.94);
+        }
+        :root[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) body {
+            background:
+                radial-gradient(circle at 10% 10%, rgba(99,102,241,0.14), transparent 35%),
+                radial-gradient(circle at 90% 0%, rgba(236,72,153,0.10), transparent 40%),
+                radial-gradient(circle at 50% 100%, rgba(16,185,129,0.10), transparent 45%),
+                #eef0f9 !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="aurora"][data-ui-theme-mode="dark"] body {
+            background:
+                radial-gradient(circle at 10% 10%, rgba(59,130,246,0.20), transparent 35%),
+                radial-gradient(circle at 90% 0%, rgba(168,85,247,0.18), transparent 40%),
+                radial-gradient(circle at 50% 100%, rgba(16,185,129,0.10), transparent 45%),
+                #05070f !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="aurora"] .sidebar,
+        :root[data-ui-theme="aurora"] .card,
+        :root[data-ui-theme="aurora"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="aurora"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="aurora"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="aurora"] [class*="bg-zinc-800"],
+        :root[data-ui-theme="aurora"] [class*="bg-black"]:not([class*="inset-0"]) {
+            background: var(--panel) !important;
+            backdrop-filter: blur(20px) saturate(130%);
+            -webkit-backdrop-filter: blur(20px) saturate(130%);
+            border-color: var(--line) !important;
+            box-shadow: 0 8px 28px rgba(5,10,25,0.18);
+        }
+        :root[data-ui-theme="aurora"] .nav-item.active {
+            background-color: rgba(96,165,250,0.14) !important;
+            color: var(--accent) !important;
         }
 
         /* ── 애플 리퀴드 글래스 (라이트/다크) ─────────────────────────────────────
@@ -282,6 +327,13 @@
             :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body { background: #000 !important; }
         }
 
+
+        :root[data-ui-theme="aurora"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="aurora"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="aurora"] [class*="inset-0"][class*="bg-black"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="aurora"] [class*="inset-0"][class*="bg-black"] [class*="bg-zinc-800"] {
+            background: var(--modal-panel) !important;
+        }
 
         /* ── 모달 카드 틴트 강화 (glass/apple/mesh) ──────────────────────────
            위 규칙은 모달 카드도 페이지의 일반 카드와 똑같은 --panel 불투명도를

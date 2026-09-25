@@ -173,6 +173,7 @@
     // 목록은 shared_ui/theme.js의 THEMES와 같은 순서로 맞춰 둔다.
     const THEME_OPTIONS = [
         { id: 'default', label: '기본' },
+        { id: 'aurora', label: '오로라' },
         { id: 'glass', label: '글래스모피즘' },
         { id: 'apple', label: '애플 리퀴드 글래스' },
         { id: 'neu', label: '뉴모피즘' },
@@ -182,7 +183,7 @@
     function themeOptionHtml(item) {
         return `
             <button type="button" class="theme-option" data-theme="${item.id}" onclick="selectUiTheme('${item.id}')">
-                <span class="theme-swatch theme-swatch-${item.id}"><span></span></span>
+                <span class="theme-swatch theme-swatch-${item.id}"><span></span><span></span><span></span></span>
                 <span class="theme-option-label">${escHtml(item.label)}<span class="theme-option-check">&#10003;</span></span>
             </button>`;
     }
