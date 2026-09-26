@@ -2,7 +2,8 @@ import re
 from datetime import datetime, timezone
 
 import pandas as pd
-import requests
+
+from system.llm import complete
 
 _CONTEXT_WINDOW = 200
 
@@ -112,22 +113,12 @@ def build_topic_prompt(topic_hint: str, titles: list) -> str:
     )
 
 
-def request_ai_topics(manager_server_api: str, session_token: str, prompt: str) -> str:
-    resp = requests.post(
-        f"{manager_server_api}/llm/v1/openai/chat/completions",
-        headers={
-            "Authorization": f"Bearer {session_token}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "gpt-5-mini",
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=120,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"]
+def request_ai_topics(prompt: str) -> str:
+    """전역 LLM 모듈로 주제 해석을 요청한다.
+
+    엔드포인트/모델/폴백은 .env(LLM_*)에서 읽으므로 여기서 정하지 않는다.
+    """
+    return complete(prompt)
 
 
 def now_iso() -> str:
