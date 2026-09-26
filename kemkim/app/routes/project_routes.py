@@ -390,19 +390,15 @@ async def project_interpret(project_id: str, request: Request):
                 "제목(Title) 열이 없거나 검색 결과가 없어 AI 해석을 건너뛰었습니다."
             )
         else:
-            session_token = request.cookies.get("session")
-            if not session_token:
-                ai_error = "AI 해석에는 로그인 세션이 필요합니다."
-            else:
-                try:
-                    prompt = kemkim_analysis.build_topic_prompt(
-                        ", ".join(keywords), result["titles"]
-                    )
-                    ai_analysis = kemkim_analysis.request_ai_topics(
-                        analyze_service.MANAGER_SERVER_API, session_token, prompt
-                    )
-                except Exception as e:
-                    ai_error = f"AI 해석 요청에 실패했습니다: {e}"
+            # 라우트 진입 시 _uid()가 이미 인증을 강제하므로 별도 세션 토큰은 필요 없다.
+            # 엔드포인트/모델/폴백은 전역 .env(LLM_*) 설정을 따른다.
+            try:
+                prompt = kemkim_analysis.build_topic_prompt(
+                    ", ".join(keywords), result["titles"]
+                )
+                ai_analysis = kemkim_analysis.request_ai_topics(prompt)
+            except Exception as e:
+                ai_error = f"AI 해석 요청에 실패했습니다: {e}"
 
     interpretation = {
         "id": uuid.uuid4().hex,

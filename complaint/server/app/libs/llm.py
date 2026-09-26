@@ -1,50 +1,12 @@
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
+"""전역 LLM 모듈(system.llm)을 쓰는 얇은 어댑터.
 
-load_dotenv()
+엔드포인트/모델/폴백 설정은 모두 .env(LLM_*)에 있다.
+기존 호출부 계약을 그대로 유지한다: (본문, 모델이름) 튜플을 돌려준다.
+"""
 
-api_key = os.getenv("OPENAI_API_KEY")
-
-
-def _create_local_client():
-    return OpenAI(api_key="dummy-key", base_url="http://localhost:9001/v1")
-
-
-def _create_official_client():
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set for official OpenAI fallback")
-    return OpenAI(api_key=api_key)
+from system.llm import chat
 
 
 def llm_generate(query):
-    try:
-        client = _create_local_client()
-        models = client.models.list()
-        model_objs = getattr(models, "data", models) or []
-        if not model_objs:
-            raise RuntimeError("No models available from local server")
-        first = model_objs[0]
-        model_id = getattr(first, "id", first)
-
-        response = client.chat.completions.create(
-            model=model_id,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": query},
-            ],
-        )
-
-        model_id = model_id.replace("/models/", "").replace("__", "/")
-        return response.choices[0].message.content, model_id
-    except Exception:
-        # 로컬 실패 시 공식 OpenAI로 폴백
-        client = _create_official_client()
-        response = client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": query},
-            ],
-        )
-        return response.choices[0].message.content, "gpt-5-mini"
+    result = chat(prompt=query)
+    return result.text, result.display_model

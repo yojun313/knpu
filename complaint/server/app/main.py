@@ -1,5 +1,14 @@
+import os
+import sys
 import traceback
 from pathlib import Path
+
+# 공용 모듈(system.*)을 쓰기 위해 저장소 루트를 경로에 추가한다 (kemkim/app/main.py와 동일한 방식).
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware

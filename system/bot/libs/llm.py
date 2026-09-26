@@ -1,66 +1,16 @@
+"""전역 LLM 모듈(system.llm)을 쓰는 얇은 어댑터.
+
+엔드포인트/모델/폴백 설정은 모두 .env(LLM_*)에 있다.
+기존 계약 유지: 성공 시 문자열, 실패 시 (0, 오류문자열) 튜플.
+"""
+
 import traceback
-from config import LLM_API_URL, LLM_KEY
-import requests
 
-
-def get_api_headers():
-    token = LLM_KEY
-    return {"Authorization": f"Bearer {token}"}
+from system.llm import LLMError, complete
 
 
 def generateLLM(query):
     try:
-        model_resp = requests.get(
-            f"{LLM_API_URL}/llm/v1/models", headers=get_api_headers(), timeout=5
-        )
-
-        model_data = model_resp.json().get("data", [])
-        if not model_data:
-            raise Exception("No model available on Server LLM")
-
-        model_id = model_data[0]["id"]
-        payload = {
-            "model": model_id,
-            "messages": [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": query},
-            ],
-            "temperature": 0.7,
-            "max_tokens": 1024,
-        }
-
-        response = requests.post(
-            f"{LLM_API_URL}/llm/v1/chat/completions",
-            headers=get_api_headers(),
-            json=payload,
-        )
-
-        result = response.json()
-        content = result.get("choices", [{}])[0].get("message", {}).get("content")
-
-        if not content:
-            raise Exception("Server LLM returned empty content.")
-
-        return content
-
-    except Exception:
-        try:
-            proxy_payload = {
-                "model": "gpt-5-mini",
-                "messages": [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": query},
-                ],
-            }
-
-            proxy_response = requests.post(
-                f"{LLM_API_URL}/llm/v1/openai/chat/completions",
-                headers=get_api_headers(),
-                json=proxy_payload,
-            )
-
-            proxy_result = proxy_response.json()
-            return proxy_result["choices"][0]["message"]["content"]
-
-        except Exception:
-            return (0, traceback.format_exc())
+        return complete(query)
+    except LLMError:
+        return (0, traceback.format_exc())
