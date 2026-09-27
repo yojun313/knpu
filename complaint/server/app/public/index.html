@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>AI 고소장 작성 | FPEI 미래치안공학연구원</title>
+  <meta name="description" content="사기 피해 상황을 AI와 대화하거나 양식으로 입력하면, 국가법령정보센터의 법령·판례를 근거로 경찰청 표준 양식 고소장 초안을 만들어 드립니다.">
+  <script>
+    // 첫 페인트 전에 테마 적용 — 다른 KNPU 사이트와 같은 ui_theme_mode 쿠키를 공유한다
+    (function () {
+      try {
+        var m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
+        var mode = m ? decodeURIComponent(m[1]) : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', mode === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0B1226">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="고소장">
+  <meta name="application-name" content="고소장">
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a class="brand" href="#/" aria-label="AI 고소장 홈">
+        <img src="/assets/lab_logo.png" alt="경찰대학 미래치안공학연구원">
+        <img class="brand-mark" src="/icon-192.png" alt="">
+        <span class="brand-divider"></span>
+        <span class="brand-product">AI 고소장<small>사기 피해</small></span>
+      </a>
+      <div class="header-spacer"></div>
+      <a class="header-btn" id="resumeBtn" href="#/" hidden><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg><span class="lbl">이어서 작성</span></a>
+      <button class="header-btn icon-only" id="themeBtn" type="button" aria-label="다크 모드 전환"></button>
+    </div>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <div class="toast-host" id="toasts"></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

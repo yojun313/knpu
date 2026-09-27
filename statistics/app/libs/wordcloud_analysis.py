@@ -45,9 +45,7 @@ def _period_groups(data: pd.DataFrame, date_col: str, period: str):
     if period == "total":
         return [("전체", data)]
 
-    dt = pd.to_datetime(
-        data[date_col].astype(str).str.split().str[0], errors="coerce"
-    )
+    dt = pd.to_datetime(data[date_col].astype(str).str.split().str[0], errors="coerce")
     valid = data[dt.notna()].copy()
     dt = dt.dropna()
     if valid.empty:
@@ -57,7 +55,9 @@ def _period_groups(data: pd.DataFrame, date_col: str, period: str):
         key = dt.dt.strftime("%Y-%m-%d")
     elif period == "1w":
         key = dt.dt.to_period("W").apply(
-            lambda p: f"{p.start_time.strftime('%Y%m%d')}-{p.end_time.strftime('%Y%m%d')}"
+            lambda p: (
+                f"{p.start_time.strftime('%Y%m%d')}-{p.end_time.strftime('%Y%m%d')}"
+            )
         )
     elif period == "1m":
         key = dt.dt.to_period("M").astype(str)
@@ -94,11 +94,15 @@ def run_wordcloud(
         )
     date_col = next((c for c in data.columns if "date" in str(c).lower()), None)
     if period != "total" and date_col is None:
-        raise ValueError("기간 분할에는 'Date' 열이 필요합니다. 기간을 '전체'로 선택해 주세요.")
+        raise ValueError(
+            "기간 분할에는 'Date' 열이 필요합니다. 기간을 '전체'로 선택해 주세요."
+        )
 
     font_path = _korean_font()
     if font_path is None:
-        raise ValueError("서버에 한글 폰트(NanumGothic)가 없어 워드클라우드를 만들 수 없습니다.")
+        raise ValueError(
+            "서버에 한글 폰트(NanumGothic)가 없어 워드클라우드를 만들 수 없습니다."
+        )
 
     csv_dir = os.path.join(output_dir, "csv_files")
     graph_dir = os.path.join(output_dir, "graphs")
@@ -137,9 +141,7 @@ def run_wordcloud(
             safe_path(os.path.join(graph_dir, f"wordcloud_{_safe_fname(label)}.png"))
         )
 
-        pd.DataFrame(
-            {"word": list(freq.keys()), "count": list(freq.values())}
-        ).to_csv(
+        pd.DataFrame({"word": list(freq.keys()), "count": list(freq.values())}).to_csv(
             safe_path(os.path.join(csv_dir, f"wordcount_{_safe_fname(label)}.csv")),
             index=False,
             encoding="utf-8-sig",
