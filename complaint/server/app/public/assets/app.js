@@ -234,6 +234,10 @@
   }
   addEventListener('hashchange', route);
 
+  const typeCard = (c, pressed) => `<button class="type-card" data-type="${esc(c.id)}" ${pressed != null ? `aria-pressed="${pressed}"` : ''}><strong>${esc(c.label)}</strong><span>${esc(c.summary)}</span></button>`;
+  const notesHtml = (notes) => (notes && notes.length
+    ? `<div class="callout warn" style="margin-bottom:16px"><span class="i">${icon('info')}</span><div>${notes.map((n) => `<div>${esc(n)}</div>`).join('')}</div></div>` : '');
+
   // ── 홈 ──────────────────────────────────────────────────────────────────
   async function renderHome() {
     const m = S.meta;
@@ -241,8 +245,8 @@
     app.innerHTML = `<div class="view">
       <section class="hero"><div class="container">
         <span class="eyebrow">${icon('shield')}경찰청 표준 양식 · 국가법령정보센터 원문 기반</span>
-        <h1>사기 피해, <em>AI와 대화하며</em><br>고소장으로 정리하세요</h1>
-        <p class="lead">있었던 일을 편하게 말씀해 주시면 AI가 법령과 판례를 근거로 꼭 필요한 내용을 되묻고, 경찰청 표준 양식의 고소장 초안을 만들어 드립니다.</p>
+        <h1>범죄 피해, <em>AI와 대화하며</em><br>고소장으로 정리하세요</h1>
+        <p class="lead">사기·명예훼손·폭행·스토킹·성범죄·임금체불까지, 있었던 일을 편하게 말씀해 주시면 AI가 법령과 판례를 근거로 꼭 필요한 내용을 되묻고 경찰청 표준 양식의 고소장 초안을 만들어 드립니다.</p>
         <div id="resumeSlot"></div>
         <div class="mode-grid">
           <button class="mode-card featured" data-start="chat">
@@ -265,15 +269,16 @@
         <h2 class="section-title">고소장이 만들어지는 과정</h2>
         <div class="steps4">
           <div class="step4"><div class="num">1</div><h4>사실관계 정리</h4><p>대화나 양식으로 언제·어디서·어떤 말에 속아·얼마를 넘겼는지 모읍니다.</p></div>
-          <div class="step4"><div class="num">2</div><h4>법령·판례 검토</h4><p>공식 법령 원문과 대법원 판례로 사기죄 구성요건을 하나씩 점검합니다.</p></div>
+          <div class="step4"><div class="num">2</div><h4>법령·판례 검토</h4><p>공식 법령 원문과 대법원 판례로 범죄의 구성요건을 하나씩 점검합니다.</p></div>
           <div class="step4"><div class="num">3</div><h4>초안 작성·교차 검토</h4><p>초안을 쓴 뒤 수사관 시각으로 다시 검토해 빠진 사실과 오류를 고칩니다.</p></div>
           <div class="step4"><div class="num">4</div><h4>표준 양식 문서</h4><p>경찰청 표준 고소장 양식의 Word·PDF로 받아 바로 수정·출력할 수 있습니다.</p></div>
         </div>
       </div></section>
 
       <section class="home-section"><div class="container">
-        <div class="row between wrap" style="margin-bottom:14px"><h2 class="section-title" style="margin:0">지원하는 사기 유형</h2><span class="muted small">유형을 누르면 바로 시작할 수 있어요</span></div>
-        <div class="type-grid">${m.crimes.map((c) => `<button class="type-card" data-type="${esc(c.id)}"><strong>${esc(c.label)}</strong><span>${esc(c.summary)}</span></button>`).join('')}</div>
+        <div class="row between wrap" style="margin-bottom:14px"><h2 class="section-title" style="margin:0">지원하는 사건 유형 <span class="muted" style="font-weight:600;font-size:15px">${m.crimes.length}가지</span></h2><span class="muted small">유형을 누르면 바로 시작할 수 있어요</span></div>
+        <div class="cat-tabs" id="catTabs">${m.categories.map((cat, i) => `<button type="button" data-cat="${esc(cat)}" aria-pressed="${i === 0}">${esc(cat)}<span>${m.crimes.filter((c) => c.category === cat).length}</span></button>`).join('')}</div>
+        <div class="type-grid" id="typeGrid"></div>
       </div></section>
 
       <section class="home-section"><div class="container">
@@ -289,14 +294,21 @@
     </div>`;
 
     $$('[data-start]', app).forEach((b) => b.addEventListener('click', () => startCase(b.dataset.start)));
-    $$('[data-type]', app).forEach((b) => b.addEventListener('click', () => {
+    const showCat = (cat) => {
+      $$('#catTabs button', app).forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cat === cat)));
+      $('#typeGrid').innerHTML = m.crimes.filter((c) => c.category === cat).map(typeCard).join('');
+      bindTypeCards();
+    };
+    $$('#catTabs button', app).forEach((b) => b.addEventListener('click', () => showCat(b.dataset.cat)));
+    function bindTypeCards() { $$('#typeGrid [data-type]', app).forEach((b) => b.addEventListener('click', () => {
       const c = crimeById(b.dataset.type);
-      openSheet(`<h3>${esc(c.label)}</h3><p class="muted" style="margin:0 0 18px">${esc(c.summary)}</p>
+      openSheet(`<h3>${esc(c.label)}</h3><p class="muted" style="margin:0 0 18px">${esc(c.summary)}</p>${notesHtml(c.notes)}
         <div class="stack"><button class="btn btn-primary btn-lg btn-block" data-m="chat">${icon('chat')}AI와 대화로 작성</button>
         <button class="btn btn-outline btn-lg btn-block" data-m="form">${icon('form')}양식으로 직접 작성</button></div>`, {
         onMount: (s) => $$('[data-m]', s).forEach((x) => x.addEventListener('click', () => { closeSheet(); startCase(x.dataset.m, c.id); })),
       });
-    }));
+    })); }
+    showCat(m.categories[0]);
 
     if (savedId) {
       try {
@@ -362,13 +374,14 @@
           <button class="btn btn-ghost btn-sm btn-icon only-mobile" id="panelClose" aria-label="닫기">${icon('x')}</button></div>
         <select class="select" id="crimeSelect" aria-label="사건 유형">
           <option value="">사건 유형 — 대화에서 자동으로 파악해요</option>
-          ${S.meta.crimes.map((c) => `<option value="${esc(c.id)}" ${c.id === state.crime_type ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}
+          ${S.meta.categories.map((cat) => `<optgroup label="${esc(cat)}">${S.meta.crimes.filter((c) => c.category === cat).map((c) => `<option value="${esc(c.id)}" ${c.id === state.crime_type ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</optgroup>`).join('')}
         </select>
         <div class="row between small" style="margin:12px 0 6px"><span class="muted">필수 항목</span><b>${crime ? `${done} / ${req}` : '-'}</b></div>
         <div class="progress"><span style="width:${pct}%"></span></div>
       </div>
       <div class="case-panel-body">
         <div class="panel-section"><h4>${icon('list')}정리된 사실 <span class="muted" style="text-transform:none;font-weight:600">· 눌러서 고칠 수 있어요</span></h4>${state.crime_type ? factRows(state, changed) : '<p class="muted small" style="margin:0">어떤 피해인지 말씀해 주시면 필요한 항목을 보여 드릴게요.</p>'}</div>
+        ${crime && crime.notes && crime.notes.length ? `<div class="panel-section"><h4>${icon('alert')}꼭 알아 두세요</h4><ul class="list-clean small" style="color:var(--ink-2)">${crime.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>` : ''}
         <div class="panel-section"><h4>${icon('scale')}관련 법령</h4>${lawCards(state.statutes, 'statute')}</div>
         <div class="panel-section"><h4>${icon('book')}참고 판례</h4>${lawCards(state.precedents, 'prec')}</div>
       </div>
@@ -598,10 +611,10 @@
 
   // ── 양식 모드 ────────────────────────────────────────────────────────────
   const FORM_GROUPS = [
-    { title: '언제, 어디서', icon: 'clock', keys: ['incident_datetime', 'incident_place'] },
-    { title: '무슨 일이 있었나요', icon: 'chat', keys: ['relationship', 'background', 'contact_channel', 'item_name', 'trade_url', 'company_name', 'company_relation', 'contract_details', 'contract_document', 'counterparty_capacity', 'actual_performance', 'other_contractors', 'insurance_reason', 'insurance_payment', 'court', 'claim', 'false_reason', 'lawsuit_motive', 'deception', 'belief_reason'] },
-    { title: '피해 내용', icon: 'bank', keys: ['disposition', 'damage_amount', 'repayment', 'post_conduct'] },
-    { title: '처음부터 속일 생각이었다고 볼 사정', icon: 'search', keys: ['intent_evidence', 'other_victims', 'suspect_description'] },
+    { title: '언제, 어디서', icon: 'clock', keys: ['incident_datetime', 'incident_place', 'employment_period', 'known_date', 'post_url'] },
+    { title: '무슨 일이 있었나요', icon: 'chat', keys: ['relationship', 'background', 'contact_channel', 'item_name', 'trade_url', 'company_name', 'company_relation', 'contract_details', 'contract_document', 'counterparty_capacity', 'actual_performance', 'other_contractors', 'insurance_reason', 'insurance_payment', 'court', 'claim', 'false_reason', 'lawsuit_motive', 'entrustment', 'duty', 'document_details', 'act_description', 'words_used', 'weapon', 'deception', 'belief_reason'] },
+    { title: '피해 내용', icon: 'bank', keys: ['disposition', 'target_property', 'injury', 'wage_details', 'damage_amount', 'repayment', 'post_conduct'] },
+    { title: '정황과 상대방 정보', icon: 'search', keys: ['publicity', 'identifiability', 'falsity', 'repeated', 'victim_response', 'intent_evidence', 'other_victims', 'witnesses', 'suspect_description'] },
     { title: '증거와 기타 사항', icon: 'list', keys: ['evidence', 'additional_notes'] },
     { title: '고소 관련 확인', icon: 'shield', keys: ['settlement', 'punishment_wish', 'same_complaint', 'related_investigation'] },
   ];
@@ -615,17 +628,30 @@
     const c = S.case;
     if (step === 'type' || !c.state.crime_type) {
       app.innerHTML = `<div class="container narrow page view">${stepper(0)}
-        <div class="page-head"><h1 class="page-title">어떤 사기 피해를 입으셨나요?</h1><p class="page-sub">가장 가까운 유형을 골라 주세요. 유형에 맞는 질문으로 양식을 구성합니다.</p></div>
-        <div class="type-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${S.meta.crimes.map((x) => `<button class="type-card" data-type="${esc(x.id)}" aria-pressed="${x.id === c.state.crime_type}"><strong>${esc(x.label)}</strong><span>${esc(x.summary)}</span></button>`).join('')}</div>
+        <div class="page-head"><h1 class="page-title">어떤 피해를 입으셨나요?</h1><p class="page-sub">가장 가까운 유형을 골라 주세요. 유형에 맞는 질문으로 양식을 구성합니다.</p></div>
+        <div class="search-box">${icon('search')}<input class="input" id="typeSearch" placeholder="예: 욕설, 폭행, 스토킹, 퇴직금" autocomplete="off"></div>
+        <div id="typeGroups"></div>
         <div class="form-actions"><a class="btn btn-outline" href="#/">${icon('left')}처음으로</a>
           <a class="btn btn-ghost" href="#" id="toChat">${icon('chat')}잘 모르겠어요 — AI와 대화로 작성</a></div></div>`;
-      $$('[data-type]', app).forEach((b) => b.addEventListener('click', async () => {
+      const drawTypes = () => {
+        const q = ($('#typeSearch').value || '').trim();
+        const hit = (x) => !q || (x.label + x.summary + x.category).includes(q);
+        const html = S.meta.categories.map((cat) => {
+          const list = S.meta.crimes.filter((x) => x.category === cat && hit(x));
+          return list.length ? `<h3 class="type-group-title">${esc(cat)}</h3><div class="type-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${list.map((x) => typeCard(x, x.id === c.state.crime_type)).join('')}</div>` : '';
+        }).join('');
+        $('#typeGroups').innerHTML = html || `<p class="muted">'${esc(q)}'에 맞는 유형이 없어요. ‘기타 사기’를 고르거나 AI와 대화로 작성해 보세요.</p>`;
+        $$('#typeGroups [data-type]', app).forEach((b) => b.addEventListener('click', () => pickType(b.dataset.type)));
+      };
+      $('#typeSearch').addEventListener('input', drawTypes);
+      drawTypes();
+      const pickType = async (typeId) => {
         try {
-          const r = await api(`/cases/${c.id}/facts`, { method: 'PUT', body: { crime_type: b.dataset.type, facts: {} } });
+          const r = await api(`/cases/${c.id}/facts`, { method: 'PUT', body: { crime_type: typeId, facts: {} } });
           c.state = r.state;
           go(`#/form/${c.id}/facts`);
         } catch (e) { toast(e.message, 'error'); }
-      }));
+      };
       $('#toChat').addEventListener('click', (e) => { e.preventDefault(); startCase('chat'); });
       return;
     }
@@ -643,6 +669,7 @@
     app.innerHTML = `<div class="container narrow page view">${stepper(1)}
       <div class="page-head row between wrap"><div><h1 class="page-title">${esc(crime.label)} 내용 입력</h1><p class="page-sub">입력한 내용은 자동으로 저장됩니다. <span class="req">*</span> 표시는 꼭 필요한 항목이에요.</p></div>
         <a class="btn btn-ghost btn-sm" href="#/form/${c.id}/type">유형 바꾸기</a></div>
+      ${notesHtml(crime.notes)}
       ${groups.map((g) => `<div class="card form-section"><div class="card-head"><h3>${icon(g.icon)}${esc(g.title)}</h3></div><div class="card-body grid-2">${g.keys.map(fieldHtml).join('')}</div></div>`).join('')}
       <div class="callout"><span class="i">${icon('info')}</span><div>상대방이 한 말은 <b>따옴표로 그대로</b>, 금액과 날짜는 <b>숫자로 정확히</b> 적을수록 좋은 고소장이 됩니다. 모르는 부분은 “모름”이라고 적어도 괜찮아요.</div></div>
       <div class="sticky-actions"><div class="form-actions" style="margin:0"><a class="btn btn-outline" href="#/form/${c.id}/type">${icon('left')}이전</a>
@@ -729,8 +756,10 @@
       <div class="card form-section"><div class="card-head"><h3>${icon('user')}피고소인 (상대방)</h3><span class="badge">아는 것만</span></div><div class="card-body">
         <p class="muted small" style="margin:0 0 16px">모르는 칸은 비워 두세요. 닉네임·계좌 명의 등 사건 정리에 적은 특정 정보는 ‘기타사항’에 자동으로 들어갑니다.</p>${personFields('s', susp, false)}</div></div>
       <div class="card form-section"><div class="card-head"><h3>${icon('bank')}제출 정보</h3></div><div class="card-body grid-2">
-        <label class="field"><span class="field-label">시·도 경찰청<span class="req">*</span></span><select class="select" id="sido"><option value="">불러오는 중…</option></select></label>
-        <label class="field"><span class="field-label">제출할 경찰서<span class="req">*</span></span><select class="select" id="station" disabled><option value="">경찰청을 먼저 고르세요</option></select></label>
+        <label class="field" data-police><span class="field-label">시·도 경찰청<span class="req">*</span></span><select class="select" id="sido"><option value="">불러오는 중…</option></select></label>
+        <label class="field" data-police><span class="field-label">제출할 경찰서<span class="req">*</span></span><select class="select" id="station" disabled><option value="">경찰청을 먼저 고르세요</option></select></label>
+        <label class="field span-2" id="customWrap" hidden><span class="field-label">제출 기관<span class="req">*</span></span><input class="input" id="customStation" placeholder="예: 서울지방고용노동청 서울강남지청"></label>
+        <div class="span-2"><label class="check"><input type="checkbox" id="customToggle"><span>경찰서가 아닌 기관에 제출합니다 (예: 임금체불은 지방고용노동청)</span></label></div>
         <label class="field"><span class="field-label">고소일자<span class="req">*</span></span><input class="input" type="date" id="filingDate" value="${esc(party.filing_date || today())}" max="9999-12-31"></label>
         <div class="field span-2"><div class="field-hint" style="margin:0">거주지 또는 사건 발생지 관할 경찰서에 제출하는 것이 일반적이며, 가까운 경찰서 민원실에 제출해도 됩니다.</div></div>
       </div></div>
@@ -783,6 +812,20 @@
       }
     } catch (e) { toast('경찰서 목록을 불러오지 못했습니다.', 'error'); }
 
+    const customToggle = $('#customToggle');
+    const setCustom = (on) => {
+      customToggle.checked = on;
+      $('#customWrap').hidden = !on;
+      $$('[data-police]', app).forEach((el) => { el.hidden = on; });
+    };
+    customToggle.addEventListener('change', () => setCustom(customToggle.checked));
+    if (party.station && policeData && !Object.values(policeData).some((l) => l.some((x) => x.name === party.station))) {
+      $('#customStation').value = party.station;
+      setCustom(true);
+    } else if (!party.station && c.state.crime_type === '임금체불') {
+      setCustom(true);
+    }
+
     $('#genBtn').addEventListener('click', () => {
       const get = (id) => ($(`#${id}`) ? $(`#${id}`).value.trim() : '');
       const person = (p) => {
@@ -793,7 +836,8 @@
           job: get(`${p}_job`), phone: get(`${p}_phone`), email: get(`${p}_email`),
         };
       };
-      const body = { complainant: person('c'), suspect: person('s'), station: station.value, filing_date: get('filingDate'), keep_rrn: true };
+      const custom = customToggle.checked;
+      const body = { complainant: person('c'), suspect: person('s'), station: custom ? get('customStation') : station.value, filing_date: get('filingDate'), keep_rrn: true };
       const errs = [];
       const mark = (id, bad) => { const el = $(`#${id}`); if (el) el.setAttribute('aria-invalid', String(!!bad)); if (bad) errs.push(id); };
       mark('c_name', !body.complainant.name);
@@ -805,8 +849,8 @@
       if (!needRrn) body.complainant.rrn = '';
       const sr = [get('s_rrn1'), get('s_rrn2')];
       if (sr.some(Boolean)) { mark('s_rrn1', !/^\d{6}$/.test(sr[0])); mark('s_rrn2', !/^\d{7}$/.test(sr[1])); }
-      mark('sido', !sido.value);
-      mark('station', !station.value);
+      if (custom) mark('customStation', get('customStation').length < 2);
+      else { mark('sido', !sido.value); mark('station', !station.value); }
       if (errs.length) {
         $(`#${errs[0]}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
         return toast('빨간색으로 표시된 칸을 확인해 주세요.', 'error');
@@ -820,7 +864,7 @@
   // ── 생성 진행 ────────────────────────────────────────────────────────────
   const GEN_STEPS = [
     ['research', '관련 법령·판례 찾기'],
-    ['analyze', '사기죄 구성요건 검토'],
+    ['analyze', '범죄 구성요건 검토'],
     ['draft', '고소장 초안 작성'],
     ['review', '수사관 시각으로 교차 검토'],
     ['render', '경찰청 표준 양식 문서 만들기'],
@@ -978,6 +1022,8 @@
         <table class="el-table"><thead><tr><th>요건</th><th>판단</th><th>근거</th><th>보완 방법</th></tr></thead><tbody>
         ${(a.elements || []).map((e) => `<tr><td>${esc(e.name)}</td><td><span class="badge ${STATUS_BADGE[e.status] || ''}">${esc(e.status)}</span></td><td>${esc(e.basis || '-')}</td><td class="muted">${esc(e.advice || '-')}</td></tr>`).join('')}
         </tbody></table></div></div>
+      ${a.deadline ? `<div class="callout warn"><span class="i">${icon('clock')}</span><div><b>고소 기한</b><div>${esc(a.deadline)}</div></div></div>` : ''}
+      ${(a.notes || []).length ? `<div class="callout"><span class="i">${icon('info')}</span><div><b>이 사건에서 알아 둘 점</b>${a.notes.map((n) => `<div>${esc(n)}</div>`).join('')}</div></div>` : ''}
       ${a.civil_risk ? `<div class="callout warn"><span class="i">${icon('alert')}</span><div><b>민사 사건으로 판단될 위험</b><div>${esc(a.civil_risk)}</div></div></div>` : ''}
       <div class="grid-2">
         <div class="card card-pad"><h3 style="font-size:15px;font-weight:800;margin-bottom:10px;color:var(--success)">유리한 사정</h3><ul class="list-clean small">${(a.strengths || []).map((x) => `<li>${esc(x)}</li>`).join('') || '<li class="muted">-</li>'}</ul></div>
@@ -1000,7 +1046,7 @@
         <li><b>내용 확인·수정</b><p>‘고소장’ 탭에서 사실관계와 날짜·금액을 다시 확인하세요. Word 파일로 받아 직접 고쳐도 됩니다.</p></li>
         <li><b>출력 후 서명·날인</b><p>고소인 란에 직접 서명하거나 도장을 찍어야 합니다. 제출일도 확인하세요.</p></li>
         <li><b>증거자료 준비</b><p>‘6. 증거자료’에 적은 자료의 사본(이체확인증, 대화 캡처 출력물 등)을 함께 준비하세요. 원본은 본인이 보관합니다.</p></li>
-        <li><b>경찰서 제출</b><p>${party.station ? `선택한 <b>${esc(party.station)}</b> 또는 ` : ''}가까운 경찰서 민원실에 신분증을 지참해 방문 제출하세요. 온라인 거래 사기 등 사이버 범죄는 경찰청 사이버범죄 신고시스템(ECRM)으로 신고할 수도 있습니다.</p></li>
+        <li><b>경찰서 제출</b><p>${party.station ? `선택한 <b>${esc(party.station)}</b> 또는 ` : ''}가까운 경찰서 민원실에 신분증을 지참해 방문 제출하세요. 온라인 사기·사이버 명예훼손 등 사이버 범죄는 경찰청 사이버범죄 신고시스템(ECRM)으로 신고할 수도 있습니다.</p></li>
         <li><b>접수 후 진행</b><p>접수 후 담당 수사관이 배정되며, 고소인 진술 조사를 위해 연락이 올 수 있습니다.</p></li>
       </ol></div>
       <div class="card"><div class="card-head"><h3>${icon('book')}관련 절차 법령</h3><span class="muted tiny">국가법령정보센터 원문</span></div><div class="card-body">

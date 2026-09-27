@@ -136,6 +136,12 @@ async def chat(case_id: str, body: ChatIn, request: Request):
             try:
                 async for ev in intake.chat_turn(case, body.message.strip()):
                     yield ev
+            except Exception:
+                logger.exception("채팅 처리 중 오류")
+                yield {
+                    "type": "error",
+                    "message": "답변을 만드는 중 오류가 발생했어요. 잠시 후 다시 보내 주세요.",
+                }
             finally:
                 store.save(case)
 
@@ -219,13 +225,23 @@ async def generate(case_id: str, body: PartyIn, request: Request):
     case = _load_or_404(case_id)
     if case.get("crime_type") not in CRIMES:
         raise HTTPException(400, "사건 유형이 정해지지 않았습니다.")
-    if not any(
-        str(case["facts"].get(k, "")).strip()
-        for k in ("deception", "disposition", "false_reason", "insurance_reason")
-    ):
+    # 피고소인이 무엇을 했는지 설명하는 항목이 하나도 없으면 범죄사실을 쓸 수 없다
+    act_keys = (
+        "deception",
+        "disposition",
+        "false_reason",
+        "insurance_reason",
+        "act_description",
+        "words_used",
+        "entrustment",
+        "duty",
+        "wage_details",
+        "document_details",
+    )
+    if not any(str(case["facts"].get(k, "")).strip() for k in act_keys):
         raise HTTPException(
             400,
-            "고소장을 쓰기에 사건 내용이 부족합니다. 어떤 거짓말에 속아 무엇을 넘겼는지 먼저 알려 주세요.",
+            "고소장을 쓰기에 사건 내용이 부족합니다. 상대방이 언제, 무엇을 했는지 먼저 알려 주세요.",
         )
     party = _merge_party(case, body)
 
@@ -281,7 +297,9 @@ async def rerender(case_id: str, body: RenderIn, request: Request):
             case["party"],
             case["facts"],
             sections,
-            (case.get("analysis") or {}).get("offense", "사기"),
+            CRIMES[case["crime_type"]].label
+            if case.get("crime_type") in CRIMES
+            else "고소장",
         )
         for ext in ("docx", "pdf"):
             if old.get("token"):

@@ -34,43 +34,6 @@ SECTION_LABELS = {
     "others": "8. 기타",
 }
 
-# 사기죄 구성요건 — 판례(대법원 2017도20682 등)가 쓰는 틀 그대로
-ELEMENTS = {
-    "default": [
-        (
-            "기망행위",
-            "피고소인이 거래상 중요한 사실에 관하여 거짓말을 하거나 알려야 할 사실을 숨겼는지",
-        ),
-        ("착오", "고소인이 그 말을 믿어 사실과 다르게 알게 되었는지"),
-        ("처분행위", "착오에 빠진 고소인이 돈·물건을 넘기는 등 재산을 처분했는지"),
-        (
-            "재산상 이익 취득·손해",
-            "그 결과 피고소인이 재물이나 재산상 이익을 얻었는지(금액 특정)",
-        ),
-        (
-            "편취의 고의",
-            "행위 당시부터 갚거나 이행할 의사·능력이 없었다고 볼 객관적 사정이 있는지",
-        ),
-    ],
-    "보험사기": [
-        (
-            "보험사기행위",
-            "보험사고의 발생·원인·내용에 관하여 보험자를 기망하여 보험금을 청구했는지",
-        ),
-        ("보험금 취득", "그로 인해 보험금을 받거나 제3자가 받게 했는지(금액 특정)"),
-        ("고의", "허위임을 알면서 청구했다고 볼 사정이 있는지"),
-    ],
-    "소송사기": [
-        (
-            "허위 주장·증거",
-            "피고소인이 허위의 주장이나 조작된 증거로 법원을 속이려 했는지",
-        ),
-        ("소송 제기", "법원에 소를 제기하는 등 실행에 착수했는지(법원·사건번호)"),
-        ("재산상 이익", "승소하면 얻게 될 재산상 이익이 무엇인지(금액)"),
-        ("고의", "주장이 허위임을 알고 있었다고 볼 사정이 있는지"),
-    ],
-}
-
 
 def _facts_for_prompt(crime_id: str, facts: dict) -> str:
     rows = []
@@ -105,7 +68,7 @@ ANALYZE_SYSTEM = """너는 형사 고소 사건을 검토하는 법률 전문가
   "offense": "고소취지에 쓸 죄명(예: 사기)",
   "applicable": [{"id": "법령 원문 목록의 [id]", "why": "이 사건에 적용되는 이유 1~2문장"}],
   "elements": [{"name": "구성요건 이름", "status": "충족|보완필요|불명확", "basis": "그렇게 판단한 사실 근거", "advice": "보완이 필요하면 무엇을 더 적거나 준비할지"}],
-  "civil_risk": "단순 민사(채무불이행 등)로 판단될 위험과 그 이유, 없으면 빈 문자열",
+  "civil_risk": "형사 사건이 아니라 단순 민사 분쟁(채무불이행 등)으로 판단되거나 범죄가 성립하지 않을 위험과 그 이유, 없으면 빈 문자열",
   "strengths": ["고소에 유리한 사정"],
   "weaknesses": ["부족하거나 불리한 사정"],
   "evidence_tips": ["추가로 준비하면 좋은 증거"]
@@ -122,7 +85,7 @@ async def analyze(
     crime_id: str, facts: dict, statutes: list[dict], precedents: list[dict]
 ) -> dict:
     crime = CRIMES[crime_id]
-    elements = ELEMENTS.get(crime_id, ELEMENTS["default"])
+    elements = crime.elements
     user = (
         f"[사건 유형] {crime.label} — {crime.summary}\n\n"
         f"[사실관계]\n{_facts_for_prompt(crime_id, facts)}\n\n"
@@ -221,8 +184,8 @@ DRAFT_SYSTEM = """너는 경찰청 표준 고소장 양식에 맞춰 고소장�
 [항목별 작성법]
 - suspect_other(피고소인 기타사항): 고소인과의 관계, 피고소인을 특정할 수 있는 정보(닉네임·계좌 명의·인상착의·연락 수단 등). 이름·주민번호·주소·전화·이메일은 쓰지 않는다.
 - purpose(고소취지): "고소인은 피고소인을 {죄명}({적용 법조}) 혐의로 고소하오니, 철저히 수사하여 엄중히 처벌하여 주시기 바랍니다." 형식. 적용 법조는 [적용 법조]에 있는 것만 쓴다.
-- facts(범죄사실): 일시(시각 포함, 모르면 '경' 또는 '불상'), 장소, 기망 내용(피고소인이 한 말은 큰따옴표로 인용), 고소인이 속은 경위, 처분행위(이체 일시·금액·계좌 등), 피해 결과를 시간 순서대로 쓴다. 편취의 고의를 보여주는 사정(당시 변제능력 없음, 연락 두절, 다른 피해자 등)이 있으면 포함한다. 마지막 문장은 "피고소인은 이와 같이 고소인을 기망하여 이에 속은 고소인으로부터 ○○을 교부받아 이를 편취하였습니다." 형태로 맺되 ○○은 실제 금액·물건으로 쓴다.
-- reasons(고소이유): 범행 경위와 정황, 편취의 고의를 뒷받침하는 사정, 고소하게 된 동기. 마지막에 합의 여부와 처벌 의사를 반드시 쓴다(예: "피고소인과는 합의하지 않았으며, 피고소인의 처벌을 원합니다.").
+- facts(범죄사실): 일시(시각 포함, 모르면 '경' 또는 '불상'), 장소, 피고소인의 행위, 결과를 시간 순서대로 구체적으로 쓴다. [구성요건 검토 결과]의 각 요건에 해당하는 사실이 빠짐없이 드러나야 한다. 피고소인이 한 말·글은 큰따옴표로 원문 그대로 인용한다. 마지막 문장은 [맺음 문장 형식]을 따르되 ○○은 실제 내용(금액·물건·기간 등)으로 채운다.
+- reasons(고소이유): 범행 경위와 정황, 범죄사실을 뒷받침하는 사정(고의·반복성·피해 정도 등), 고소하게 된 동기. 마지막에 합의 여부와 처벌 의사를 반드시 쓴다(예: "피고소인과는 합의하지 않았으며, 피고소인의 처벌을 원합니다.").
 - evidence(증거자료): "1. ...\\n2. ..." 번호 목록. 사실에 언급된 증거만 쓴다. 없으면 빈 문자열.
 - others(기타): 수사에 필요한 추가 사항. 없으면 빈 문자열.
 
@@ -242,8 +205,10 @@ async def draft(
     ]
     law_line = ", ".join(f"{a['label']}({a['title']})" for a in applicable)
     weak = "\n".join(f"- {e['name']}: {e['basis']}" for e in analysis["elements"])
+    crime = CRIMES[crime_id]
     user = (
-        f"[죄명] {analysis['offense']}\n[적용 법조] {law_line}\n\n"
+        f"[사건 유형] {crime.label}\n[죄명] {analysis['offense']}\n[적용 법조] {law_line}\n"
+        f"[맺음 문장 형식] {crime.closing}\n\n"
         f"[사실관계]\n{_facts_for_prompt(crime_id, facts)}\n\n"
         f"[구성요건 검토 결과 — 범죄사실에 각 요건의 사실이 드러나게 쓸 것]\n{weak}\n\nJSON만 출력하세요."
     )
@@ -300,7 +265,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 "section": "4. 범죄사실",
                 "level": "error",
                 "problem": "범죄사실이 너무 짧습니다.",
-                "fix": "일시·장소·기망 내용·처분행위·결과를 모두 적으세요.",
+                "fix": "일시·장소·피고소인의 행위·결과를 모두 적으세요.",
             }
         )
 
@@ -341,7 +306,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
 REVIEW_SYSTEM = """너는 경찰 수사관의 시각으로 고소장 초안을 검토하는 검토자다.
 [사실관계]와 [초안]을 비교해 다음을 확인한다.
 1) 초안에 사실관계에 없는 내용(지어낸 날짜·금액·말·장소)이 들어갔는지
-2) 사실관계에 있는 중요한 사실(특히 기망 내용, 이체 내역, 편취 고의 정황)이 빠졌는지
+2) 사실관계에 있는 중요한 사실(특히 구성요건에 해당하는 행위, 상대가 한 말의 원문, 피해 결과)이 빠졌는지
 3) 일시·금액·당사자 지칭이 정확하고 일관되는지
 4) [규칙 검사 결과]에 나온 문제
 
@@ -429,6 +394,24 @@ def limitation_note(crime_id: str, analysis: dict, facts: dict) -> str:
     )
 
 
+def complaint_deadline(crime, facts: dict) -> str:
+    """친고죄라면 범인을 알게 된 날부터 6개월(형사소송법 제230조) 기한을 계산해 알린다."""
+    if not any("친고죄" in n for n in crime.notes):
+        return ""
+    m = re.search(
+        r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})", str(facts.get("known_date") or "")
+    )
+    if not m:
+        return "친고죄이므로 범인을 알게 된 날부터 6개월 안에 고소해야 합니다. 범인을 알게 된 날을 확인해 주세요."
+    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    mo += 6
+    y, mo = y + (mo - 1) // 12, (mo - 1) % 12 + 1
+    return (
+        f"친고죄이므로 범인을 알게 된 날({m.group(1)}년 {int(m.group(2))}월 {d}일)부터 6개월, "
+        f"즉 {y}년 {mo}월 {d}일 무렵까지 고소해야 합니다(형사소송법 제230조). 기한이 가까우면 서둘러 제출하세요."
+    )
+
+
 async def generate(case: dict):
     """NDJSON 이벤트를 흘려보내며 case를 채운다. 마지막에 result 이벤트."""
     crime_id = case["crime_type"]
@@ -437,13 +420,9 @@ async def generate(case: dict):
 
     yield {"type": "step", "step": "research", "status": "start"}
     statutes = kb.statutes_for_case(crime_id, facts)
-    query = " ".join(
-        str(facts.get(k, "")) for k in ("deception", "intent_evidence", "post_conduct")
-    )
+    query = kb.case_query(facts)
     precedents = kb.search_precedents(query, crime_id, k=3)
-    live = await asyncio.to_thread(
-        kb.live_precedents, f"{crime.label} {facts.get('deception', '')[:40]}", 2
-    )
+    live = await asyncio.to_thread(kb.live_precedents, f"{crime.label} {query[:40]}", 2)
     precedents = (
         precedents + [p for p in live if p["id"] not in {x["id"] for x in precedents}]
     )[:4]
@@ -457,6 +436,8 @@ async def generate(case: dict):
     yield {"type": "step", "step": "analyze", "status": "start"}
     analysis = await analyze(crime_id, facts, statutes, precedents)
     analysis["limitation"] = limitation_note(crime_id, analysis, facts)
+    analysis["notes"] = list(crime.notes)
+    analysis["deadline"] = complaint_deadline(crime, facts)
     analysis["precedents"] = [
         {k: p.get(k) for k in ("case_no", "court", "date", "points", "summary", "url")}
         for p in precedents
@@ -525,7 +506,7 @@ async def generate(case: dict):
 
     yield {"type": "step", "step": "render", "status": "start"}
     files = await asyncio.to_thread(
-        document.render, case["party"], facts, sections, analysis["offense"]
+        document.render, case["party"], facts, sections, crime.label
     )
     yield {"type": "step", "step": "render", "status": "done"}
 

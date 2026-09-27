@@ -215,7 +215,11 @@ def contextual_statutes(crime_id: str | None, facts: dict) -> list[tuple[str, st
                 )
             )
     rel = f"{facts.get('relationship', '')} {facts.get('suspect_description', '')}"
-    if any(w in rel for w in _KIN_WORDS):
+    # 제354조는 '사기와 공갈의 죄'에 친족 특례(제328조)를 준용한다
+    kin_applies = crime_id in CRIMES and (
+        CRIMES[crime_id].category == "사기" or crime_id == "공갈"
+    )
+    if kin_applies and any(w in rel for w in _KIN_WORDS):
         out.append(
             (
                 "001692-354",
@@ -228,8 +232,20 @@ def contextual_statutes(crime_id: str | None, facts: dict) -> list[tuple[str, st
                 "친족 관계에 따라 고소가 있어야 공소를 제기할 수 있는 등 특칙이 적용될 수 있습니다.",
             )
         )
+    weapon = str(facts.get("weapon") or "").strip()
+    if crime_id in _SPECIAL and weapon and not any(w in weapon for w in _NONE_WORDS):
+        out.append(
+            (
+                _SPECIAL[crime_id],
+                f"'{weapon[:30]}'을(를) 사용했다면 위험한 물건을 휴대한 특수범으로 더 무겁게 처벌될 수 있습니다.",
+            )
+        )
     blob = " ".join(str(v) for v in facts.values())
-    if any(w in blob for w in _PHISHING_WORDS):
+    if (
+        crime_id
+        and CRIMES[crime_id].category == "사기"
+        and any(w in blob for w in _PHISHING_WORDS)
+    ):
         out.append(
             (
                 "011359-15의2",
@@ -247,6 +263,39 @@ def contextual_statutes(crime_id: str | None, facts: dict) -> list[tuple[str, st
             )
         )
     return [(sid, why) for sid, why in out if sid in STATUTE_BY_ID]
+
+
+_QUERY_KEYS = (
+    "deception",
+    "act_description",
+    "words_used",
+    "intent_evidence",
+    "post_conduct",
+    "entrustment",
+    "duty",
+    "injury",
+    "repeated",
+    "victim_response",
+    "wage_details",
+    "document_details",
+)
+
+
+def case_query(facts: dict) -> str:
+    """판례 검색에 쓸 사건 요지 — 행위를 설명하는 사실 항목을 이어 붙인다."""
+    return " ".join(str(facts.get(k, "")) for k in _QUERY_KEYS if facts.get(k))[:600]
+
+
+# 위험한 물건을 들었을 때 적용되는 특수범 조문
+_SPECIAL = {
+    "폭행": "001692-261",
+    "상해": "001692-258의2",
+    "협박": "001692-284",
+    "재물손괴": "001692-369",
+    "주거침입": "001692-320",
+    "공갈": "001692-350의2",
+}
+_NONE_WORDS = ("없음", "없었", "모름", "없어")
 
 
 def statutes_for_case(crime_id: str | None, facts: dict, limit: int = 8) -> list[dict]:
