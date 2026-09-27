@@ -39,8 +39,16 @@ COMMON_CATEGORY = HATE_CATEGORY
 # GPU 혐오도 측정(option_num=2)이 붙여 주는 레이블 열 — 이 열들이 이미 있으면
 # 측정을 건너뛰고 바로 통계 분석으로 넘어간다 (statistics_analysis.HateAnalysis와 동일 기준)
 HATE_LABEL_COLS = {
-    "여성/가족", "남성", "성소수자", "인종/국적", "연령",
-    "지역", "종교", "기타 혐오", "악플/욕설", "clean",
+    "여성/가족",
+    "남성",
+    "성소수자",
+    "인종/국적",
+    "연령",
+    "지역",
+    "종교",
+    "기타 혐오",
+    "악플/욕설",
+    "clean",
 }
 
 # 메모리 내 작업 상태 추적: pid -> {"status": "running"|"done"|"error", "project_id": ..., "error": ...}

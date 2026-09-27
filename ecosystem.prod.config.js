@@ -42,7 +42,11 @@ module.exports = {
     app("statistics", "statistics", "statistics"),
     app("manager_web", "manager/web", "progress", { watch: true }),
     app("mcdm", "mcdm", "mcdm"),
-    app("complaint", "complaint/server", "complaint", { watch: true }),
+    // storage/(사건·문서)는 요청마다 쓰이므로 감시하면 채팅·생성 도중 재시작된다
+    app("complaint", "complaint/server", "complaint", {
+      watch: true,
+      ignore_watch: ["app/storage", "app/logs", "__pycache__", "\\.pyc$"],
+    }),
     app("dashboard", "admin", "dashboard", { watch: true }),
     app("whisper", "whisper", "whisper"),
     app("bot", "system/bot", null, { watch: true }),

@@ -315,12 +315,7 @@ class NginxService:
 
         body = "\n".join(blocks)
         config = (
-            "server {\n"
-            "    listen 80;\n"
-            f"    server_name {new_domain};\n"
-            "\n"
-            f"{body}"
-            "}\n"
+            f"server {{\n    listen 80;\n    server_name {new_domain};\n\n{body}}}\n"
         )
         return True, config
 

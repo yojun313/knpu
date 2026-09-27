@@ -209,9 +209,7 @@ def chat(
                 lambda: _first_model_id(client.models.list()),
             )
             response = client.chat.completions.create(
-                **_payload(
-                    full_messages, resolved, temperature, max_tokens, extra_body
-                )
+                **_payload(full_messages, resolved, temperature, max_tokens, extra_body)
             )
             return LLMResult(
                 text=_extract_text(response),
@@ -222,7 +220,9 @@ def chat(
             )
         except Exception as e:
             attempts.append((f"{target.label} {target.base_url}", e))
-            logger.warning("LLM %s 호출 실패 (%s): %s", target.label, target.base_url, e)
+            logger.warning(
+                "LLM %s 호출 실패 (%s): %s", target.label, target.base_url, e
+            )
 
     raise LLMError("LLM 호출에 실패했습니다.", attempts)
 
@@ -270,9 +270,7 @@ async def achat(
                         _model_cache[key] = resolved
 
             response = await client.chat.completions.create(
-                **_payload(
-                    full_messages, resolved, temperature, max_tokens, extra_body
-                )
+                **_payload(full_messages, resolved, temperature, max_tokens, extra_body)
             )
             return LLMResult(
                 text=_extract_text(response),
@@ -283,7 +281,85 @@ async def achat(
             )
         except Exception as e:
             attempts.append((f"{target.label} {target.base_url}", e))
-            logger.warning("LLM %s 호출 실패 (%s): %s", target.label, target.base_url, e)
+            logger.warning(
+                "LLM %s 호출 실패 (%s): %s", target.label, target.base_url, e
+            )
+
+    raise LLMError("LLM 호출에 실패했습니다.", attempts)
+
+
+async def astream(
+    messages: list[Message] | None = None,
+    *,
+    prompt: str | None = None,
+    system: str | None = None,
+    model: str | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    extra_body: dict | None = None,
+):
+    """응답을 조각(str) 단위로 흘려보내는 async 제너레이터. 실패하면 LLMError.
+
+    첫 조각이 나오기 전에 실패하면 다음 엔드포인트(폴백)로 넘어간다. 이미 조각을
+    내보낸 뒤 끊기면 이어 붙일 수 없으므로 그대로 LLMError를 올린다.
+    """
+    settings = get_settings()
+    full_messages = _build_messages(prompt, messages, system, settings)
+
+    if base_url or api_key:
+        targets = [
+            _Target(
+                label="explicit",
+                base_url=base_url or settings.base_url,
+                api_key=api_key or settings.api_key,
+                model=model or settings.model,
+            )
+        ]
+    else:
+        targets = _targets(settings, model)
+
+    attempts: list[tuple[str, Exception]] = []
+    for target in targets:
+        client = get_async_client(target.base_url, target.api_key)
+        started = False
+        try:
+            resolved = target.model
+            if not resolved:
+                key = (target.base_url, target.api_key)
+                with _model_lock:
+                    resolved = _model_cache.get(key)
+                if not resolved:
+                    resolved = _first_model_id(await client.models.list())
+                    with _model_lock:
+                        _model_cache[key] = resolved
+
+            stream = await client.chat.completions.create(
+                **_payload(
+                    full_messages, resolved, temperature, max_tokens, extra_body
+                ),
+                stream=True,
+            )
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = getattr(chunk.choices[0].delta, "content", None)
+                if delta:
+                    started = True
+                    yield delta
+            if not started:
+                raise LLMError("LLM이 빈 응답을 반환했습니다.")
+            return
+        except Exception as e:
+            if started:
+                raise LLMError(
+                    "LLM 스트리밍이 중간에 끊겼습니다.", [(target.label, e)]
+                ) from e
+            attempts.append((f"{target.label} {target.base_url}", e))
+            logger.warning(
+                "LLM %s 스트리밍 실패 (%s): %s", target.label, target.base_url, e
+            )
 
     raise LLMError("LLM 호출에 실패했습니다.", attempts)
 

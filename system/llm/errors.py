@@ -5,7 +5,9 @@ class LLMError(RuntimeError):
     잡으면 된다. attempts에는 시도별 (라벨, 예외) 이력이 담긴다.
     """
 
-    def __init__(self, message: str, attempts: list[tuple[str, Exception]] | None = None):
+    def __init__(
+        self, message: str, attempts: list[tuple[str, Exception]] | None = None
+    ):
         self.attempts = attempts or []
         if self.attempts:
             detail = "; ".join(f"{label}: {exc}" for label, exc in self.attempts)

@@ -470,7 +470,9 @@ async def api_analyze_start(request: Request):
         raise HTTPException(400, "분석 종류와 플랫폼을 선택해주세요.")
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
-    extra_options = body.get("options") if isinstance(body.get("options"), dict) else None
+    extra_options = (
+        body.get("options") if isinstance(body.get("options"), dict) else None
+    )
     try:
         pid = analyze_service.start_job(
             content,
