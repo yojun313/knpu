@@ -6,13 +6,21 @@
   <title>AI 고소장 작성 | FPEI 미래치안공학연구원</title>
   <meta name="description" content="사기 피해 상황을 AI와 대화하거나 양식으로 입력하면, 국가법령정보센터의 법령·판례를 근거로 경찰청 표준 양식 고소장 초안을 만들어 드립니다.">
   <script>
-    // 첫 페인트 전에 테마 적용 — 다른 KNPU 사이트와 같은 ui_theme_mode 쿠키를 공유한다
+    // 첫 페인트 전에 테마 적용. 이 브라우저에서 고른 값(localStorage)을 가장 먼저 쓰고,
+    // 없으면 다른 KNPU 사이트와 공유하는 ui_theme_mode 쿠키, 그것도 없으면 OS 설정을 따른다.
     (function () {
-      try {
-        var m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
-        var mode = m ? decodeURIComponent(m[1]) : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', mode === 'dark' ? 'dark' : 'light');
-      } catch (e) {}
+      var mode = null;
+      try { mode = localStorage.getItem('complaint.theme'); } catch (e) {}
+      if (mode !== 'dark' && mode !== 'light') {
+        try {
+          var m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
+          mode = m ? decodeURIComponent(m[1]) : null;
+        } catch (e) {}
+      }
+      if (mode !== 'dark' && mode !== 'light') {
+        mode = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', mode);
     })();
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>

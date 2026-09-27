@@ -155,6 +155,7 @@
   $('#themeBtn').addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('complaint.theme', next); } catch (e) {}
     setThemeCookie(next);
     paintThemeBtn();
   });
