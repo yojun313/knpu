@@ -31,24 +31,32 @@ logger = logging.getLogger(__name__)
 
 GREETING = (
     "안녕하세요, FPEI AI 고소장 작성 도우미입니다.\n\n"
-    "어떤 피해를 입으셨는지 편하게 말씀해 주세요. 언제, 누구에게, 어떤 말에 속아 "
-    "얼마를 보내셨는지 기억나는 대로 적어 주시면 제가 고소장에 필요한 내용을 "
-    "하나씩 정리해 드릴게요.\n\n"
+    "어떤 일을 겪으셨는지 편하게 말씀해 주세요. 언제, 어디서, 누가, 무엇을 했는지 "
+    "기억나는 대로 적어 주시면 어떤 죄에 해당할 수 있는지 살펴보고 고소장에 필요한 "
+    "내용을 하나씩 정리해 드릴게요.\n\n"
     "주민등록번호 같은 개인정보는 여기서 적지 않으셔도 됩니다. 마지막 단계의 입력 양식에서 따로 받습니다."
 )
 
 STARTER_SUGGESTIONS = [
     "중고거래로 돈을 보냈는데 물건이 안 와요",
-    "빌려준 돈을 갚지 않고 연락이 끊겼어요",
-    "게임 아이템 거래에서 사기를 당했어요",
-    "취업시켜 준다며 돈을 받아 갔어요",
+    "단체 채팅방에서 저에 대한 거짓말을 퍼뜨렸어요",
+    "길에서 모르는 사람에게 맞았어요",
+    "헤어진 사람이 계속 연락하고 찾아와요",
+    "퇴사했는데 월급과 퇴직금을 못 받았어요",
 ]
 
 _HISTORY_TURNS = 12
 
 
 def _crime_catalog() -> str:
-    return "\n".join(f"- {c.id}: {c.summary}" for c in CRIMES.values())
+    return "\n".join(f"- {c.id} [{c.category}]: {c.summary}" for c in CRIMES.values())
+
+
+_CONFUSABLE = """- 돈을 속여서 받아 갔으면 사기, 맡긴 돈을 마음대로 썼으면 횡령
+- 구체적인 사실(거짓 포함)을 퍼뜨렸으면 명예훼손, 욕설·비하만 했으면 모욕. 인터넷·SNS·단체방이면 사이버명예훼손
+- 다치지 않았으면 폭행, 치료가 필요한 상처가 생겼으면 상해
+- 찾아오거나 따라다니는 등 접근까지 반복하면 스토킹, 공포·불안을 주는 메시지만 반복하면 불안감유발
+- 성적 촬영물을 퍼뜨리겠다고 협박했으면 촬영물협박(일반 협박보다 우선)"""
 
 
 def _facts_catalog(crime_id: str | None) -> str:
@@ -95,6 +103,9 @@ EXTRACT_SYSTEM = """너는 고소장 작성을 돕는 사건 정리 담당자다
 [사건 유형 목록]
 {crimes}
 
+[헷갈리기 쉬운 유형 구분]
+{confusable}
+
 [사실 항목 목록 (키: 설명)]
 {facts}
 
@@ -122,7 +133,9 @@ async def extract(case: dict, user_text: str) -> dict:
         {
             "role": "system",
             "content": EXTRACT_SYSTEM.format(
-                crimes=_crime_catalog(), facts=_facts_catalog(crime_id)
+                crimes=_crime_catalog(),
+                confusable=_CONFUSABLE,
+                facts=_facts_catalog(crime_id),
             ),
         },
         {
@@ -174,13 +187,15 @@ def suggestions_for(case: dict, missing: list[str]) -> list[str]:
         f = FACTS[missing[0]]
         if f.get("options"):
             return list(f["options"])
-        if missing[0] in ("repayment", "other_victims"):
-            return (
-                ["없음", "일부 돌려받았어요"]
-                if missing[0] == "repayment"
-                else ["없음", "모름", "있어요"]
-            )
-        return ["잘 모르겠어요"]
+        quick = {
+            "repayment": ["없음", "일부 돌려받았어요"],
+            "other_victims": ["없음", "모름", "있어요"],
+            "weapon": ["없었어요", "물건을 들고 있었어요"],
+            "witnesses": ["없었어요", "함께 있던 사람이 있어요"],
+            "victim_response": ["그만하라고 분명히 말했어요", "연락을 차단했어요"],
+            "evidence": ["캡처가 있어요", "녹음이 있어요", "증거가 없어요"],
+        }
+        return quick.get(missing[0], ["잘 모르겠어요"])
     return []
 
 
@@ -189,10 +204,7 @@ def case_state(case: dict) -> dict:
     crime_id = case.get("crime_type")
     missing = missing_required(crime_id, case["facts"])
     statutes = kb.statutes_for_case(crime_id, case["facts"]) if crime_id else []
-    query = " ".join(
-        str(case["facts"].get(k, ""))
-        for k in ("deception", "intent_evidence", "post_conduct", "disposition")
-    )
+    query = kb.case_query(case["facts"])
     precedents = kb.search_precedents(query, crime_id, k=3) if crime_id else []
     return {
         "crime_type": crime_id,
@@ -222,7 +234,7 @@ def _precedent_card(p: dict) -> dict:
     }
 
 
-REPLY_SYSTEM = """너는 경찰청 표준 고소장 작성을 돕는 'FPEI AI 고소장 작성 도우미'다. 사기 피해자와 대화하며 고소장에 필요한 사실을 빠짐없이 모은다.
+REPLY_SYSTEM = """너는 경찰청 표준 고소장 작성을 돕는 'FPEI AI 고소장 작성 도우미'다. 범죄 피해자와 대화하며 어떤 죄에 해당할 수 있는지 살피고, 고소장에 필요한 사실을 빠짐없이 모은다.
 
 [말투와 형식]
 - 한국어 존댓말. 따뜻하지만 간결하게, 3~6문장.
@@ -231,16 +243,22 @@ REPLY_SYSTEM = """너는 경찰청 표준 고소장 작성을 돕는 'FPEI AI �
 - 굵게(**)만 쓸 수 있다. 표·제목·코드블록은 쓰지 않는다.
 
 [법률 설명 규칙 — 매우 중요]
-- 법 조문·형량·판례는 아래 [참고 법령]·[참고 판례]에 적힌 원문에 있는 내용만 말한다. 거기에 없는 조문 번호·형량·판례 번호는 절대 지어내지 않는다.
-- 범죄 성립을 단정하지 않는다("사기죄에 해당할 수 있습니다" 처럼 말한다).
-- 돈을 빌려준 뒤 못 받은 사건은, 빌릴 당시부터 갚을 의사나 능력이 없었다는 사정이 있어야 사기죄가 되고 그렇지 않으면 민사상 채무불이행일 수 있다는 점을 필요할 때 부드럽게 설명하고 그 사정을 묻는다.
-- 법률 설명은 사용자가 묻거나 꼭 필요할 때만 1~2문장으로.
+- 법 조문·형량·판례는 아래 [참고 법령]·[참고 판례]·[유의사항]에 적힌 내용만 말한다. 거기에 없는 조문 번호·형량·판례 번호는 절대 지어내지 않는다.
+- 범죄 성립을 단정하지 않는다("○○죄에 해당할 수 있습니다" 처럼 말한다).
+- 사건 유형이 정해지면 어떤 죄로 볼 수 있는지 한 번 짧게 알려 준다. 판단에 꼭 필요한 요건이 빠져 있으면(예: 모욕의 공연성, 사기의 편취 고의) 그 요건이 왜 중요한지 한 문장으로 설명하고 묻는다.
+- 민사 문제일 가능성이 크면(예: 빌려준 돈을 못 받았지만 빌릴 때는 갚을 능력이 있었던 경우) 부드럽게 그 가능성도 알려 준다.
+- [유의사항]에 고소 기한·반의사불벌 같은 내용이 있으면 대화 중 적절한 때 한 번 안내한다.
 
 [그 밖의 규칙]
 - 이름·주민등록번호·주소·전화번호는 묻지 않는다(다음 단계 양식에서 받는다).
-- 보이스피싱 등으로 지금도 돈이 빠져나가고 있거나 위험이 진행 중이면, 즉시 112 신고와 송금 은행에 지급정지를 요청하라고 가장 먼저 안내한다.
+- 지금도 위험이 이어지고 있으면(폭행·스토킹·협박이 진행 중, 보이스피싱으로 돈이 빠져나가는 중 등) 무엇보다 먼저 112 신고를 안내한다. 보이스피싱이면 송금 은행에 지급정지 요청도 안내한다.
 - 필수 항목이 모두 모였다면 더 묻지 말고, 정리가 끝났으니 '고소장 작성하기' 버튼으로 다음 단계(당사자 정보 입력)로 넘어가면 된다고 안내한다. 추가로 적고 싶은 내용이 있으면 계속 말해도 된다고 덧붙인다.
-- 사기와 무관한 질문에는 이 서비스가 사기 피해 고소장 작성을 돕는다고 짧게 안내한다."""
+- 범죄 피해와 무관한 질문에는 이 서비스가 형사 고소장 작성을 돕는다고 짧게 안내한다."""
+
+SENSITIVE_GUIDE = """[민감한 사건 — 반드시 지킬 것]
+- 성범죄 피해자와 대화하고 있다. 피해자를 탓하거나 의심하는 표현(왜 거절하지 않았는지, 왜 그 자리에 갔는지 등)은 절대 쓰지 않는다.
+- 고소장에 꼭 필요한 만큼만 묻고, 필요 이상으로 자세한 신체 묘사를 요구하지 않는다. 말하기 힘들면 '기억나는 만큼만' 적어도 된다고 먼저 알린다.
+- 대화 초반에 [유의사항]의 지원 제도(국선변호사, 1366 상담 등)를 한 번 안내한다."""
 
 
 def _context_block(state: dict) -> str:
@@ -248,7 +266,7 @@ def _context_block(state: dict) -> str:
     missing = state["missing"]
     if not state["crime_type"]:
         todo = (
-            "- 어떤 피해인지(사건 유형), 언제 누구에게 어떤 말에 속아 얼마를 넘겼는지"
+            "- 어떤 일을 겪었는지(언제, 어디서, 누가, 무엇을 했는지)와 그로 인한 피해"
         )
     elif missing:
         todo = "\n".join(
@@ -258,10 +276,16 @@ def _context_block(state: dict) -> str:
         todo = "(필수 항목이 모두 채워졌음)"
     statutes = (
         "\n".join(
-            f"- {s['label']}({s['title']}): {' '.join(s['text'].splitlines()[1:3])[:260]}"
+            f"- {s['label']}({s['title']}): {' '.join(s['text'].split())[:280]}"
             for s in state["statutes"][:4]
         )
         or "(없음)"
+    )
+    crime_obj = CRIMES.get(state["crime_type"] or "")
+    notes = (
+        "\n".join(f"- {n}" for n in crime_obj.notes)
+        if crime_obj and crime_obj.notes
+        else "(없음)"
     )
     precedents = (
         "\n".join(
@@ -275,7 +299,8 @@ def _context_block(state: dict) -> str:
         f"[정리된 사실]\n{_facts_text(state['facts'])}\n"
         f"[다음에 물어볼 항목]\n{todo}\n"
         f"[참고 법령]\n{statutes}\n"
-        f"[참고 판례]\n{precedents}"
+        f"[참고 판례]\n{precedents}\n"
+        f"[유의사항]\n{notes}"
     )
 
 
@@ -288,7 +313,7 @@ async def chat_turn(case: dict, user_text: str):
     try:
         data = await extract(case, user_text)
         changed = merge_extraction(case, data)
-    except LLMError as e:
+    except Exception as e:  # 추출이 실패해도 대화는 이어간다
         logger.warning("사실 추출 실패: %s", e)
 
     state = case_state(case)
@@ -299,8 +324,12 @@ async def chat_turn(case: dict, user_text: str):
         for m in case["messages"][-_HISTORY_TURNS:]
         if m["role"] in ("user", "assistant")
     ]
+    crime_obj = CRIMES.get(state["crime_type"] or "")
+    system = REPLY_SYSTEM + (
+        "\n\n" + SENSITIVE_GUIDE if crime_obj and crime_obj.sensitive else ""
+    )
     messages = [
-        {"role": "system", "content": REPLY_SYSTEM},
+        {"role": "system", "content": system},
         {"role": "system", "content": _context_block(state)},
         *history,
     ]
