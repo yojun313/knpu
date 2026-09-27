@@ -88,12 +88,12 @@ svg.i { width: 1em; height: 1em; flex: none; stroke: currentColor; fill: none; s
 .app-header {
   position: sticky; top: 0; z-index: 50;
   height: calc(var(--header-h) + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  padding: env(safe-area-inset-top) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
   background: linear-gradient(110deg, #0b1226 0%, #1e2f58 58%, #36599f 100%);
   color: #fff;
   box-shadow: 0 2px 14px rgba(11, 18, 38, .28);
 }
-.app-header-inner { max-width: 1240px; height: var(--header-h); margin: 0 auto; display: flex; align-items: center; gap: 14px; }
+.app-header-inner { height: var(--header-h); display: flex; align-items: center; gap: 14px; }
 .brand { display: flex; align-items: center; gap: 12px; color: #fff; min-width: 0; }
 .brand:hover { text-decoration: none; }
 .brand img { height: 30px; width: auto; display: block; }
