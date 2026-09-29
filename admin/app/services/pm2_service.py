@@ -30,11 +30,13 @@ class PM2Service:
         if not pm2_path:
             return False
 
-        args_str = " ".join(extra_args) if extra_args else ""
-        command = f"{pm2_path} {action} {name} {args_str}"
+        # 셸을 거치지 않고 인자 목록으로 실행한다(이름에 ; $() 등이 있어도 명령이 되지 않게).
+        command = [pm2_path, action, name, *(extra_args or [])]
 
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            result = subprocess.run(
+                command, capture_output=True, text=True, timeout=120
+            )
 
             if result.returncode != 0:
                 print(f"PM2 Command Failed: {command}")
