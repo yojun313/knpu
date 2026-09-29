@@ -34,7 +34,7 @@
 }
 .btn-glow {
     color: #fff;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #1d4ed8, #6d28d9);
     box-shadow: 0 8px 24px rgba(59, 130, 246, 0.30);
     transition: box-shadow 150ms, transform 150ms, opacity 150ms;
 }
@@ -184,7 +184,7 @@ html:not([data-ui-theme-mode="dark"]) .ud-scope .sheet-action.danger { color: #d
 .sheet-buttons { display: flex; gap: 8px; padding: 8px 20px 4px; }
 .sheet-buttons button { flex: 1; min-height: 44px; border-radius: 12px; font-size: 14px; font-weight: 800; }
 .sheet-cancel { background: rgba(148,163,184,0.14); }
-.sheet-danger { color: #fff; background: linear-gradient(135deg, #ef4444, #dc2626); }
+.sheet-danger { color: #fff; background: linear-gradient(135deg, #b91c1c, #991b1b); }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(148,163,184,0.10); }
 .seg button { min-height: 36px; border-radius: 9px; font-size: 12.5px; font-weight: 700; opacity: 0.7; }
 .seg button.on { opacity: 1; background: rgba(59,130,246,0.2); color: #93c5fd; }
@@ -212,6 +212,12 @@ html:not([data-ui-theme-mode="dark"]) .ud-scope .seg button.on { color: #1d4ed8;
 html:not([data-ui-theme-mode="dark"]) .ud-scope .toast { background: rgba(255,255,255,0.98); color: #1e2233; border-color: rgba(15,23,42,0.1); box-shadow: 0 12px 30px rgba(30,41,59,0.18); }
 .toast.error i { color: #f87171; } .toast.ok i { color: #34d399; } .toast.info i { color: #60a5fa; } .toast.warn i { color: #fbbf24; }
 .toast button { margin-left: auto; font-size: 12px; font-weight: 800; color: #60a5fa; white-space: nowrap; }
+html:not([data-ui-theme-mode="dark"]) .ud-scope .sheet-action.current,
+html:not([data-ui-theme-mode="dark"]) .ud-scope .toast button,
+html:not([data-ui-theme-mode="dark"]) .ud-scope .toast.info i { color: #1d4ed8; }
+html:not([data-ui-theme-mode="dark"]) .ud-scope .toast.ok i { color: #047857; }
+html:not([data-ui-theme-mode="dark"]) .ud-scope .toast.error i { color: #b91c1c; }
+html:not([data-ui-theme-mode="dark"]) .ud-scope .toast.warn i { color: #92400e; }
 
 
 /* Git: AI 커밋 메시지 */

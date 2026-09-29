@@ -87,7 +87,7 @@
             --panel: #323232;
             --panel2: #3c3c3c;
             --line: #5a5a5a;
-            --muted: #9a9a9a;
+            --muted: #b5bac4;
             --ink: #ffffff;
         }
 
@@ -115,7 +115,11 @@
         [class*="bg-zinc-800"] { background-color: var(--panel2) !important; }
         [class*="bg-black"]:not([class*="inset-0"]) { background-color: var(--panel) !important; }
 
-        [class*="text-white"] { color: var(--ink) !important; }
+        [class~="text-white"] { color: var(--ink) !important; }
+        /* Tailwind의 text-white/40 등을 한꺼번에 불투명한 본문색으로 바꾸지 않는다. */
+        [class~="text-white/20"], [class~="text-white/30"], [class~="text-white/35"],
+        [class~="text-white/40"], [class~="text-white/50"], [class~="text-white/60"] { color: var(--muted) !important; }
+        [class~="text-white/70"], [class~="text-white/80"] { color: var(--ink) !important; }
         [class*="text-zinc-100"],
         [class*="text-zinc-200"] { color: var(--ink) !important; }
         [class*="text-zinc-300"] { color: var(--ink) !important; opacity: 0.85; }
@@ -368,7 +372,7 @@
         :root[data-ui-theme="neu"][data-ui-theme-mode="dark"] {
             --accent: #7c96d9; --brand: #d3d6de;
             --panel: #2b2e37; --panel2: #313540;
-            --line: transparent; --muted: #8b93a3; --ink: #d7dae2;
+            --line: transparent; --muted: #adb5c4; --ink: #d7dae2;
             --neu-dark: #212329; --neu-light: #353a46;
         }
         :root[data-ui-theme="neu"] body { background: var(--panel) !important; }
@@ -458,7 +462,7 @@
         :root:not([data-ui-theme])[data-ui-theme-mode="dark"] {
             --accent: #60a5fa; --brand: #93c5fd;
             --panel: rgba(255,255,255,0.045); --panel2: rgba(255,255,255,0.08);
-            --line: rgba(255,255,255,0.085); --muted: #7f889d; --ink: #f5f7fb;
+            --line: rgba(255,255,255,0.085); --muted: #aab5c9; --ink: #f5f7fb;
         }
         :root:not([data-ui-theme]) .sidebar,
         :root:not([data-ui-theme]) .card,
@@ -513,6 +517,66 @@
             #sidebarOverlay.open { display: block; top: 58px; }
             .admin-header .top-nav-link.active { order: -1; }
         }
+
+        /* 고정된 강조 배경에는 테마 본문색을 적용하지 않는다. 밝은 테마에서
+           text-white를 --ink로 바꾸면 파란색/주황색 버튼이 검은 글자가 된다. */
+        :root .admin-content [class~="text-white"]:is(
+            [class~="bg-blue-600"], [class~="bg-orange-600"],
+            [class~="bg-amber-600"], [class~="bg-emerald-600"],
+            [class~="bg-gradient-to-r"]
+        ),
+        :root .admin-content [class*="hover:text-white"]:hover:is(
+            [class*="hover:bg-blue-"], [class*="hover:bg-red-"],
+            [class*="hover:bg-orange-"], [class*="hover:bg-emerald-"]
+        ) { color: #fff !important; }
+        :root .admin-content [class~="bg-orange-600"] { background-color: #c2410c !important; }
+        :root .admin-content [class~="bg-amber-600"] { background-color: #92400e !important; }
+        :root .admin-content [class~="bg-emerald-600"] { background-color: #047857 !important; }
+        :root .admin-content [class*="hover:bg-blue-500"]:hover { background-color: #1d4ed8 !important; }
+        :root .admin-content [class*="hover:bg-orange-500"]:hover,
+        :root .admin-content [class*="hover:bg-orange-600"]:hover { background-color: #9a3412 !important; }
+        :root .admin-content [class*="hover:bg-amber-500"]:hover { background-color: #78350f !important; }
+        :root .admin-content [class*="hover:bg-emerald-500"]:hover { background-color: #065f46 !important; }
+        :root .admin-content [class~="bg-gradient-to-r"][class~="from-cyan-600"] {
+            --tw-gradient-from: #0e7490 var(--tw-gradient-from-position) !important;
+        }
+        :root .admin-content [class~="bg-gradient-to-r"][class~="from-emerald-600"] {
+            --tw-gradient-from: #047857 var(--tw-gradient-from-position) !important;
+        }
+        :root .admin-content [class~="bg-gradient-to-r"][class~="to-teal-600"] {
+            --tw-gradient-to: #0f766e var(--tw-gradient-to-position) !important;
+        }
+        :root .admin-content [class*="hover:from-cyan-500"]:hover {
+            --tw-gradient-from: #0e7490 var(--tw-gradient-from-position) !important;
+        }
+        :root .admin-content [class*="hover:to-blue-500"]:hover {
+            --tw-gradient-to: #1d4ed8 var(--tw-gradient-to-position) !important;
+        }
+        :root .admin-content [class*="hover:to-purple-500"]:hover {
+            --tw-gradient-to: #7e22ce var(--tw-gradient-to-position) !important;
+        }
+
+        /* 밝은 카드 위의 Tailwind 300~500 강조 글자색은 명도 대비가 낮다. */
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-blue-300"], [class~="text-blue-400"], [class~="text-blue-500"]
+        ) { color: #1d4ed8 !important; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-green-500"], [class~="text-emerald-400"], [class~="text-emerald-500"]
+        ) { color: #047857 !important; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-orange-200"], [class~="text-orange-300"], [class~="text-orange-400"],
+            [class~="text-orange-500"], [class~="text-amber-200"], [class~="text-amber-300"],
+            [class~="text-amber-400"], [class~="text-amber-500"]
+        ) { color: #92400e !important; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-red-300"], [class~="text-red-400"], [class~="text-red-500"]
+        ) { color: #b91c1c !important; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-cyan-300"], [class~="text-cyan-400"]
+        ) { color: #0e7490 !important; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content :is(
+            [class~="text-purple-400"], [class~="text-violet-300"]
+        ) { color: #6d28d9 !important; }
     </style>
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/shared-ui/apple-touch-icon.png">
