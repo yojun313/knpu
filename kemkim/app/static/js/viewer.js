@@ -283,7 +283,8 @@
   var isAdmin = false;
 
   function loadMe() {
-    return railApi('/api/me').then(function (me) {
+    return KNPU.me().then(function (me) {
+      if (!me) return;
       document.getElementById('railUserName').textContent = me.name || '';
       document.getElementById('railUserName').title = me.name || '';
       isAdmin = me.role === 'admin';

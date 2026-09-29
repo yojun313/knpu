@@ -142,11 +142,6 @@ def _stage_of(status: str, lc: dict) -> str:
     return "design"
 
 
-@router.get("/api/me")
-async def api_me(request: Request):
-    return JSONResponse(current_user(request))
-
-
 @router.get("/api/projects")
 async def list_projects(request: Request, all: bool = Query(False)):
     uid = current_uid(request)

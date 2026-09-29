@@ -73,14 +73,6 @@ async def manual_page():
     return _page("manual.html")
 
 
-@router.get("/api/me")
-async def api_me(request: Request):
-    user = request.scope.get("state", {}).get("user")
-    if not user:
-        raise HTTPException(401, "인증이 필요합니다")
-    return JSONResponse(user)
-
-
 @router.get("/api/projects")
 async def api_list_projects(request: Request, all: bool = False):
     if all:

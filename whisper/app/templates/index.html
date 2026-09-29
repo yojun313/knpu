@@ -1703,7 +1703,7 @@
         }
         document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
     });
-    fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+    KNPU.me().then(function (me) {
         if (me && me.name) document.getElementById('railUserName').textContent = me.name;
     }).catch(function () { });
     document.getElementById('railLogout').addEventListener('click', function () {

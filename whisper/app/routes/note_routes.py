@@ -51,16 +51,6 @@ def _get_owned_note(uid: str, user: dict, projection=None):
     return doc
 
 
-@router.get("/api/me")
-def me(user=Depends(get_current_user)):
-    """사이드바의 사용자 이름 · 연결 상태 표시용."""
-    return {
-        "uid": user.get("uid"),
-        "name": user.get("name") or "",
-        "role": user.get("role"),
-    }
-
-
 @router.get("/api/gpu-stats")
 def gpu_stats(user=Depends(get_current_user)):
     """GPU 서버의 nvidia-smi 실시간 사용량 (화면 우하단 모니터 위젯용)."""

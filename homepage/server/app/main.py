@@ -9,7 +9,7 @@ _REPO_ROOT = os.path.dirname(
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,6 +19,7 @@ from app.routes.frontend_routes import router as frontend_router
 from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
 from app.auth.jwt import decode_token
+from app.auth.dependencies import get_current_user
 from system.logging.user_log import AuditLogMiddleware
 from system.endpoints import COOKIE_DOMAIN as _COOKIE_DOMAIN
 from system.shared_ui import mount_shared_ui
@@ -28,7 +29,7 @@ PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 # services.json의 cookie_domain(".knpu.re.kr")에서 유도한다 — 우리 도메인의 모든
 # 서브도메인(dev-* 포함)만 credentialed 요청을 허용한다.
 _ROOT_DOMAIN_RE = re.escape(_COOKIE_DOMAIN.lstrip("."))
-CORS_ORIGIN_REGEX = rf"https://([a-z0-9-]+\.)?{_ROOT_DOMAIN_RE}"
+CORS_ORIGIN_REGEX = rf"https://([a-z0-9-]+\.)*{_ROOT_DOMAIN_RE}"
 
 
 def _extract_identity(request: Request):
@@ -101,6 +102,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/me", include_in_schema=False)
+def shared_me(user=Depends(get_current_user)):
+    return JSONResponse(
+        {"uid": user["sub"], "name": user.get("name", ""), "role": user.get("role")},
+        headers={"cache-control": "no-store"},
+    )
+
 
 app.include_router(api_router, prefix="/api", tags=["api"])
 app.include_router(frontend_router, tags=["frontend"])

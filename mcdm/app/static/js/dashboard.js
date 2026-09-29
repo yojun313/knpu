@@ -118,8 +118,8 @@
 
   async function checkAdmin() {
     try {
-      const me = await ahpApi('/api/me');
-      if (me.role === 'admin') {
+      const me = await KNPU.me();
+      if (me && me.role === 'admin') {
         document.getElementById('allToggleWrap').hidden = false;
       }
     } catch (e) { /* noop */ }

@@ -267,7 +267,7 @@
       if (label) label.textContent = ok ? '서버 연결됨' : '연결 끊김 · 재시도 중';
     }
     function ping() {
-      fetch(box.getAttribute('data-conn-url') || '/api/me', { credentials: 'same-origin', cache: 'no-store' })
+      fetch(box.getAttribute('data-conn-url') || '/shared-ui/services.js', { credentials: 'same-origin', cache: 'no-store' })
         .then(function (r) {
           var fallback = box.getAttribute('data-conn-fallback');
           if (r.status === 404 && fallback) {
