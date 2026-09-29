@@ -98,9 +98,9 @@
 
   async function loadMe() {
     try {
-      const me = await api('/api/me');
+      const me = await KNPU.me();
       const el = document.getElementById('railUserName');
-      if (el) el.textContent = me.name || me.uid || '';
+      if (el && me) el.textContent = me.name || me.uid || '';
     } catch (e) { /* 비로그인 상태는 미들웨어가 이미 리다이렉트했을 것 */ }
   }
 

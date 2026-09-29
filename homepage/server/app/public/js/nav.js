@@ -60,7 +60,7 @@
     }
 
     // 로그인 상태에 따라 LOGIN 항목을 MY PAGE로 전환
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch('/api/me', { credentials: 'include' })
         .then((res) => (res.ok ? res.json() : null))
         .then((user) => {
             if (!user) return;

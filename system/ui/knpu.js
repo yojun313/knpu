@@ -38,6 +38,7 @@
     return 'https://' + domain(name) + (svc(name).publicPath || '') + (path || '');
   }
 
+  var mePromise;
   var KNPU = {
     isDev: !!cfg.isDev,
     domain: domain,
@@ -51,6 +52,21 @@
     },
     homeUrl: function () {
       return cfg.loginOrigin;
+    },
+    me: function () {
+      if (!mePromise) {
+        mePromise = fetch(cfg.loginOrigin + '/api/me', {
+          credentials: 'include', cache: 'no-store'
+        }).then(function (response) {
+          if (response.status === 401) return null;
+          if (!response.ok) throw new Error('[KNPU] 사용자 정보를 가져오지 못했습니다.');
+          return response.json();
+        }).catch(function (error) {
+          mePromise = null;
+          throw error;
+        });
+      }
+      return mePromise;
     },
   };
   window.KNPU = KNPU;
@@ -138,7 +154,6 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
-      nav.classList.add('has-admin');
       nav.appendChild(link);
       if (nav.dataset.knpuActive === 'dashboard') {
         link.classList.add('active');
@@ -146,12 +161,7 @@
       }
     }
 
-    if (document.body && document.body.dataset.isAdmin === 'true') {
-      showAdmin();
-      return;
-    }
-    fetch('/api/me', { credentials: 'same-origin' })
-      .then(function (response) { return response.ok ? response.json() : null; })
+    KNPU.me()
       .then(function (user) { if (user && user.role === 'admin') showAdmin(); })
       .catch(function () {});
   }

@@ -1577,23 +1577,7 @@ html body .knpu-service-header .top-nav-link {
   transition: background 150ms, color 150ms;
 }
 html body .knpu-service-header .top-nav-link[data-knpu-admin-link] {
-  margin-left: auto !important; position: sticky !important; right: 0 !important; z-index: 1;
-  background: #253b67 !important; color: #fff !important;
-}
-html body .knpu-service-header .top-nav-link[data-knpu-service="whisper"] {
-  position: sticky !important; right: 0 !important; z-index: 1;
-  background: #304b7d !important; color: #fff !important;
-}
-html body .knpu-service-header .top-nav.has-admin .top-nav-link[data-knpu-service="whisper"] {
-  right: 72px !important;
-}
-html body .knpu-service-header .top-nav-link[data-knpu-service="whisper"]:hover,
-html body .knpu-service-header .top-nav-link[data-knpu-service="whisper"].active {
-  background: #3d5b94 !important;
-}
-html body .knpu-service-header .top-nav-link[data-knpu-admin-link]:hover,
-html body .knpu-service-header .top-nav-link[data-knpu-admin-link].active {
-  background: #3d5b94 !important;
+  margin-left: auto !important;
 }
 html body .knpu-service-header .top-nav-link:hover { background: rgba(255,255,255,.12) !important; color: #fff !important; }
 html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,255,.18) !important; color: #fff !important; }
