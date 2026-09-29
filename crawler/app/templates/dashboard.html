@@ -124,60 +124,7 @@
             min-height: 100vh;
         }
 
-        /* ── Header ──────────────────────────────────── */
-        /* 상단 브랜드 바 — 클래스 이름(.top-header/.top-header-logo)을 다른 KNPU
-           서비스와 똑같이 맞춰서 /shared-ui/theme.css의 테마별 규칙(글래스/애플 등)이
-           크롤러에도 그대로 적용되게 한다. 예전에는 .header라는 이 페이지만의 이름을
-           썼는데, 그래서 다른 서비스로 갔다가 돌아올 때마다 상단바 디자인·폰트가
-           미묘하게 달라 보였다(테마 규칙이 아예 안 걸렸으므로). */
-        .top-header {
-            /* 브랜드 바는 다크모드 팔레트(--deep/--blue가 밝은 색으로 뒤집힘)와 무관하게
-               항상 같은 남색 그라디언트로 고정한다 — statistics/kemkim/network와 동일. */
-            background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
-            padding: 0 24px;
-            height: 58px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 2px 12px rgba(11,18,38,0.30);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .top-header-logo {
-            height: 34px;
-            object-fit: contain;
-            display: block;
-            flex-shrink: 0;
-        }
-        .top-header > a:first-child { display: flex; align-items: center; flex-shrink: 0; }
-
-        /* 상단 서비스 네비게이션 — 크롤러/kemkim/network/statistics/manager 어디서든
-           똑같이 보여서 서비스 간 이동이 쉽게 만든다. */
-        .top-nav {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        .top-nav::-webkit-scrollbar { display: none; }
-        .top-nav-link {
-            flex-shrink: 0;
-            color: rgba(255,255,255,0.72);
-            text-decoration: none;
-            font-family: -apple-system, 'Pretendard', 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
-            font-size: 12.5px;
-            font-weight: 800;
-            letter-spacing: 0.3px;
-            padding: 7px 13px;
-            border-radius: 7px;
-            transition: background 150ms, color 150ms;
-            white-space: nowrap;
-        }
-        .top-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
-        .top-nav-link.active { background: rgba(255,255,255,0.18); color: #fff; }
+        /* 서비스 네비게이션은 /shared-ui/knpu.js와 theme.css가 담당한다. */
 
         .conn-badge {
             display: flex;
@@ -1048,14 +995,7 @@
                 inset 0 0 26px -10px rgba(255,255,255,0.12);
             --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
         }
-        /* body(및 그 상속값)의 애플 폰트/자간은 /shared-ui/theme.css가 이미 맡고 있어서
-           여기서 다시 선언하지 않는다 — 예전엔 여기 그대로 복사해뒀었는데, theme.css
-           쪽 폰트 스택이 나중에 업데이트되면서(Windows/Android 폴백 추가) 이 복사본만
-           구버전으로 뒤처져 있었다. 상단 네비(.top-nav-link)는 기본 테마에서 이
-           페이지만의 폰트(Nanum Gothic이 아니라 별도 지정한 값)를 쓰려고 font-family를
-           직접 지정해서 body 상속을 막아뒀는데, 애플 테마에서는 그 지정을 걷어내
-           body가 상속해준다 — theme.css 값이 바뀌어도 다시는 안 벌어지게. */
-        :root[data-ui-theme="apple"] .top-nav-link { font-family: inherit; }
+        /* 상단 서비스 메뉴의 글꼴과 간격은 /shared-ui/theme.css가 맡는다. */
         :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
             background:
                 radial-gradient(62% 55% at 14% 2%, rgba(118,170,255,.38) 0, transparent 62%),
@@ -1267,17 +1207,7 @@
 
 <div class="top-header knpu-service-header">
     <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
-    <nav class="top-nav">
-        <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
-        <a href="https://manager.knpu.re.kr" class="top-nav-link" onclick="return openManagerApp(event)">MANAGER</a>
-        <a href="https://crawler.knpu.re.kr" class="top-nav-link active">CRAWLER</a>
-        <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
-        <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
-        <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
-        <a href="https://mcdm.knpu.re.kr" class="top-nav-link">POLYDECISION</a>
-        <a href="https://whisper.knpu.re.kr" class="top-nav-link">WHISPER</a>
-        {% if is_admin %}<a href="https://dashboard.knpu.re.kr" data-knpu-service="dashboard" data-knpu-admin-link class="top-nav-link">ADMIN</a>{% endif %}
-    </nav>
+    <nav class="top-nav" data-knpu-active="crawler" aria-label="서비스 이동" data-knpu-manager-app="true"></nav>
     <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
