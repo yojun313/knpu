@@ -289,15 +289,25 @@
       + '<span class="tc-meta">' + table.row_count + '행 · ' + table.columns.length + '열</span></span>';
     card.appendChild(head);
 
-    function addExportButton() {
+    function addHeaderActions() {
       var actions = document.createElement('span');
       actions.className = 'tc-head-actions';
-      var pngBtn = document.createElement('button');
-      pngBtn.className = 'tc-png-btn';
-      pngBtn.title = 'PNG로 저장';
-      pngBtn.innerHTML = '&#8681;';
-      pngBtn.addEventListener('click', function () { openExportModal(table.id, table.title); });
-      actions.appendChild(pngBtn);
+      if (table.is_heatmap || planChart(table)) {
+        var pngBtn = document.createElement('button');
+        pngBtn.className = 'tc-png-btn';
+        pngBtn.title = 'PNG로 저장';
+        pngBtn.innerHTML = '&#8681;';
+        pngBtn.addEventListener('click', function () { openExportModal(table.id, table.title); });
+        actions.appendChild(pngBtn);
+      }
+      var privateTable = /writer|user_activity|top_10_percent_users|top_10_articles|top_10_videos|top_10_liked|top_controversial|top_articles_by_demographic|reply_text|rereply_text/i.test(table.id || '');
+      var privateColumn = (table.columns || []).some(function (name) { return /text|content|본문|제목|title|url|link|작성자|사용자|user|writer|author|name|이름|닉네임|아이디|계정|email|전화|주소|ip/i.test(name); });
+      if (!privateTable && !privateColumn) {
+        var aiBtn = document.createElement('button');
+        aiBtn.className = 'tc-ai-btn'; aiBtn.type = 'button'; aiBtn.textContent = '✦ AI 해석';
+        aiBtn.addEventListener('click', function () { runAiAnalysis('table', table.id, null, table.title); });
+        actions.appendChild(aiBtn);
+      }
       head.appendChild(actions);
     }
 
@@ -309,7 +319,6 @@
       card.appendChild(heatmapWrap);
       heatmapTables[table.id] = table;
       drawHeatmap(heatmapCanvas, table);
-      addExportButton();
     } else {
       var plan = planChart(table);
       if (plan) {
@@ -319,9 +328,9 @@
         chartWrap.appendChild(canvas);
         card.appendChild(chartWrap);
         chartsById[table.id] = buildChart(canvas, table, plan);
-        addExportButton();
       }
     }
+    addHeaderActions();
 
     if (table.description) {
       var desc = document.createElement('div');
@@ -539,6 +548,10 @@
     ]).then(function (res) {
       currentMeta = res[0];
       base = res[1];
+      document.getElementById('aiResults').innerHTML = '';
+      resetAiChat();
+      document.getElementById('aiChatProject').textContent = currentMeta.name || '현재 프로젝트';
+      document.getElementById('aiChatLauncher').hidden = false;
 
       document.getElementById('projectName').textContent = currentMeta.name || 'Statistics Analyzer';
       document.title = (currentMeta.name || 'Statistics Analyzer') + ' · Statistics Analyzer';
@@ -1417,9 +1430,135 @@
   // ---------------------------------------------------------------
   var RAIL_MIN_WIDTH = 180, RAIL_MAX_WIDTH = 440, RAIL_DEFAULT_WIDTH = 236;
   var mobileQuery = window.matchMedia('(max-width:1100px)');
+  var chatHistory = [], chatBusy = false, chatEpoch = 0;
+
+  function resetAiChat() {
+    chatEpoch++;
+    chatHistory = [];
+    chatBusy = false;
+    document.getElementById('aiChatSend').disabled = false;
+    document.getElementById('aiChatInput').value = '';
+    document.getElementById('aiChatMessages').innerHTML = '<div class="ai-chat-welcome">현재 프로젝트의 통계표를 검색하고 계산하며 질문에 답합니다. 그래프의 패턴이나 결과의 한계도 물어보세요.</div>';
+  }
+
+  function openAiChat() {
+    if (!currentMeta || !currentMeta.project_id) return;
+    var windowEl = document.getElementById('aiChatWindow');
+    windowEl.hidden = false;
+    document.getElementById('aiChatLauncher').setAttribute('aria-expanded', 'true');
+    document.getElementById('aiChatInput').focus();
+  }
+
+  function addChatBubble(role, content, meta) {
+    var host = document.getElementById('aiChatMessages');
+    var el = document.createElement('div');
+    el.className = 'ai-chat-message ' + role;
+    el.textContent = content;
+    if (meta) { var small = document.createElement('small'); small.textContent = meta; el.appendChild(small); }
+    host.appendChild(el);
+    host.scrollTop = host.scrollHeight;
+    return el;
+  }
+
+  function sendChatQuestion(question) {
+    question = String(question || '').trim();
+    if (!question || !currentMeta || chatBusy) return;
+    openAiChat();
+    var project = currentMeta.project_id, epoch = chatEpoch;
+    chatBusy = true;
+    document.getElementById('aiChatSend').disabled = true;
+    addChatBubble('user', question);
+    var waiting = addChatBubble('assistant', '통계표를 확인하고 있습니다…');
+    var history = chatHistory.slice(-12);
+    postJson('/api/projects/' + encodeURIComponent(project) + '/ai-analysis', {
+      mode: 'chat', question: question, history: history
+    }).then(function (result) {
+      if (epoch !== chatEpoch) return;
+      waiting.textContent = result.text || '답변을 생성하지 못했습니다.';
+      var meta = [result.provider, result.model];
+      if (result.tables_used && result.tables_used.length) meta.push('근거 표: ' + result.tables_used.join(', '));
+      if (result.cost_usd != null) meta.push('$' + Number(result.cost_usd).toFixed(4));
+      var small = document.createElement('small'); small.textContent = meta.filter(Boolean).join(' · '); waiting.appendChild(small);
+      chatHistory.push({role: 'user', content: question}, {role: 'assistant', content: result.text || ''});
+      document.getElementById('aiChatMessages').scrollTop = document.getElementById('aiChatMessages').scrollHeight;
+    }).catch(function (error) {
+      if (epoch !== chatEpoch) return;
+      waiting.textContent = error.message || 'AI 분석에 실패했습니다.';
+      waiting.classList.add('error');
+    }).finally(function () {
+      if (epoch !== chatEpoch) return;
+      chatBusy = false;
+      document.getElementById('aiChatSend').disabled = false;
+      document.getElementById('aiChatInput').focus();
+    });
+  }
+
+  function addAiResult(title, result, error) {
+    var host = document.getElementById('aiResults');
+    var card = document.createElement('article');
+    card.className = 'ai-result' + (error ? ' is-error' : '');
+    var heading = document.createElement('div'); heading.className = 'ai-result-title'; heading.textContent = title;
+    var body = document.createElement('div'); body.className = 'ai-result-text';
+    body.textContent = error || result.text;
+    card.appendChild(heading); card.appendChild(body);
+    if (!error) {
+      var meta = document.createElement('div'); meta.className = 'ai-result-meta';
+      var details = [result.provider, result.model, result.cost_usd != null ? ('$' + Number(result.cost_usd).toFixed(4)) : ''].filter(Boolean);
+      if (result.tables_used && result.tables_used.length) details.push('근거 표: ' + result.tables_used.join(', '));
+      if (result.notes && result.notes.length) details.push(result.notes.join(', '));
+      meta.textContent = details.join(' · '); card.appendChild(meta);
+    }
+    host.prepend(card);
+  }
+
+  function runAiAnalysis(mode, tableId, question, title) {
+    if (!currentMeta || !currentMeta.project_id) return;
+    var label = title || ({overview:'전체 요약', findings:'핵심 발견', relationships:'변수 관계·가설', methods:'통계 방법·한계 점검', question:'질문 분석'}[mode] || 'AI 분석');
+    var button = document.activeElement;
+    if (button && button.tagName === 'BUTTON') { button.disabled = true; button.classList.add('is-loading'); }
+    postJson('/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/ai-analysis', {
+      mode: mode, table_id: tableId || undefined, question: question || ''
+    }).then(function (result) { addAiResult(label, result, null); })
+      .catch(function (error) { addAiResult(label, null, error.message || 'AI 분석에 실패했습니다.'); })
+      .finally(function () { if (button && button.tagName === 'BUTTON') { button.disabled = false; button.classList.remove('is-loading'); } });
+  }
 
   function bindEvents() {
     document.getElementById('navManagerLink').addEventListener('click', openManagerApp);
+
+    document.getElementById('aiChatLauncher').addEventListener('click', openAiChat);
+    document.getElementById('aiChatClose').addEventListener('click', function () {
+      document.getElementById('aiChatWindow').hidden = true;
+      document.getElementById('aiChatLauncher').setAttribute('aria-expanded', 'false');
+      document.getElementById('aiChatLauncher').focus();
+    });
+    document.getElementById('aiChatClear').addEventListener('click', function () { resetAiChat(); document.getElementById('aiChatInput').focus(); });
+    document.getElementById('aiChatForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var input = document.getElementById('aiChatInput'), question = input.value.trim();
+      if (!question || chatBusy) return;
+      input.value = ''; sendChatQuestion(question);
+    });
+    document.getElementById('aiChatInput').addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault(); document.getElementById('aiChatForm').requestSubmit();
+      }
+    });
+    document.querySelectorAll('[data-chat-prompt]').forEach(function (button) {
+      button.addEventListener('click', function () { sendChatQuestion(button.getAttribute('data-chat-prompt')); });
+    });
+
+    document.querySelectorAll('[data-ai-mode]').forEach(function (button) {
+      button.addEventListener('click', function () { runAiAnalysis(button.getAttribute('data-ai-mode')); });
+    });
+    document.getElementById('aiQuestionForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var input = document.getElementById('aiQuestion');
+      var question = input.value.trim();
+      if (!question) { input.focus(); return; }
+      if (chatBusy) { openAiChat(); return; }
+      input.value = ''; sendChatQuestion(question);
+    });
 
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');

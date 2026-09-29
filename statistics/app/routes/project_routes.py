@@ -6,7 +6,7 @@ from fastapi import APIRouter, UploadFile, File, Form, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from starlette.background import BackgroundTask
 
-from app.services import project_store, analyze_service
+from app.services import project_store, analyze_service, ai_analysis
 from system import uploads as upload_staging
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
@@ -320,6 +320,35 @@ async def project_base(project_id: str, request: Request):
         project_store.load_base, _uid(request), project_id, _is_admin(request)
     )
     return JSONResponse(base)
+
+
+@router.post("/api/projects/{project_id}/ai-analysis")
+async def project_ai_analysis(project_id: str, request: Request):
+    user = _user(request)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(400, "AI 분석 요청 형식이 올바르지 않습니다.")
+    base = _handle_store_error(
+        project_store.load_base, user["uid"], project_id, _is_admin(request)
+    )
+    try:
+        result = await ai_analysis.analyze(
+            base,
+            user["uid"],
+            str(body.get("mode") or ""),
+            table_id=body.get("table_id"),
+            question=str(body.get("question") or ""),
+            history=body.get("history"),
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    except Exception as e:
+        from system.llm import LLMError
+
+        if isinstance(e, LLMError):
+            raise HTTPException(502, str(e)) from e
+        raise
+    return JSONResponse(result)
 
 
 # ---------------------------------------------------------------------------
