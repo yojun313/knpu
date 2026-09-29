@@ -60,6 +60,17 @@ def list_db(
     return {"items": docs, "total": total, "page": page, "per_page": per_page}
 
 
+@router.get("/db-summary")
+def db_summary(user=Depends(get_current_user)):
+    rows = list(
+        crawlList_db.aggregate([{"$group": {"_id": "$status", "count": {"$sum": 1}}}])
+    )
+    return {
+        "total": sum(row["count"] for row in rows),
+        **{row["_id"]: row["count"] for row in rows if row.get("_id")},
+    }
+
+
 @router.get("/db-list/{uid}")
 def get_db_detail(uid: str, user=Depends(get_current_user)):
     resp = getCrawlDbInfo(uid, user["uid"])

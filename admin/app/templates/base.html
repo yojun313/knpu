@@ -481,17 +481,14 @@
             box-shadow: none !important;
         }
         body.admin-layout { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
-        .admin-header {
-            display: flex; align-items: center; gap: 20px; height: 58px; min-height: 58px;
-            padding: 0 20px; color: #eaf1ff; background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
-            border-bottom: 1px solid rgba(255,255,255,.16); position: relative; z-index: 60;
+        :root:not([data-ui-theme-mode="dark"]) body.admin-layout { --muted: #52617a; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content #danglingCard {
+            background: #fff7ed !important; border-color: #fdba74 !important;
         }
-        .admin-header .top-header-logo { width: auto; height: 34px; object-fit: contain; display: block; }
-        .admin-header .top-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-        .admin-header .top-nav::-webkit-scrollbar { display: none; }
-        .admin-header .top-nav-link { flex: none; padding: 9px 10px; border-radius: 9px; color: #c6d4ef; font-size: 12px; font-weight: 750; text-decoration: none; white-space: nowrap; }
-        .admin-header .top-nav-link:hover, .admin-header .top-nav-link.active { color: #fff; background: rgba(255,255,255,.15); }
-        .admin-header .theme-settings-btn { flex: none; }
+        :root:not([data-ui-theme-mode="dark"]) .admin-content #danglingCard h3,
+        :root:not([data-ui-theme-mode="dark"]) .admin-content #danglingCard svg,
+        :root:not([data-ui-theme-mode="dark"]) .admin-content #danglingList,
+        :root:not([data-ui-theme-mode="dark"]) .admin-content #danglingList span { color: #9a3412 !important; }
         .admin-shell { display: flex; flex: 1; min-height: 0; }
         #sidebar.admin-sidebar {
             position: relative; inset: auto; transform: none; width: 280px; min-width: 280px;
@@ -500,7 +497,9 @@
         #sidebar .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); }
         #sidebar .sb-bottom { margin-top: auto; }
         #sidebar .admin-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 3px; }
-        #sidebar .admin-nav .nav-item { flex: none; padding: 9px 12px; color: var(--text-strong); }
+        #sidebar .admin-nav .nav-item { flex: none; display: flex; align-items: center; gap: 11px; padding: 9px 12px; color: var(--text-strong); }
+        #sidebar .admin-nav .nav-item svg { width: 17px; height: 17px; flex: none; color: var(--sidebar-muted); }
+        #sidebar .admin-nav .nav-item.active svg { color: currentColor; }
         #sidebar .admin-nav .nav-item:hover { background: var(--ud-hover); }
         #sidebar .sb-user-text { min-width: 0; }
         #sidebar .sb-username { margin: 1px 0 0; color: var(--text-strong); font-size: 13.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -512,8 +511,6 @@
             #sidebar.admin-sidebar { position: fixed; top: 58px; left: 0; bottom: 0; height: auto; transform: translateX(-100%); transition: transform .2s ease; }
             #sidebar.admin-sidebar.open { transform: translateX(0); }
             #sidebarOverlay.open { display: block; top: 58px; }
-            .admin-header { padding: 0 12px; gap: 10px; }
-            .admin-header .top-header-logo { height: 30px; }
             .admin-header .top-nav-link.active { order: -1; }
         }
     </style>
@@ -529,7 +526,7 @@
     {% block head_extra %}{% endblock %}
 </head>
 <body class="admin-layout">
-    <div class="top-header admin-header">
+    <div class="top-header knpu-service-header admin-header">
         <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
         <nav class="top-nav" aria-label="서비스 이동">
             <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
@@ -540,7 +537,7 @@
             <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
             <a href="https://mcdm.knpu.re.kr" class="top-nav-link">POLYDECISION</a>
             <a href="https://whisper.knpu.re.kr" class="top-nav-link">WHISPER</a>
-            <a href="/" class="top-nav-link active" aria-current="page">ADMIN</a>
+            <a href="/" class="top-nav-link active" data-knpu-admin-link aria-current="page">ADMIN</a>
         </nav>
         <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 10h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33A1.65 1.65 0 0 0 10 3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -558,8 +555,23 @@
             </div>
             <p class="sb-section sb-section-list">Management</p>
             <nav id="sidebarNav" class="admin-nav" aria-label="관리자 기능">
+                {% set nav_icons = {
+                    'overview': 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+                    'logs': 'M4 4h16v16H4z M8 9h8 M8 13h8 M8 17h5',
+                    'audit_logs': 'M12 3 4 7v5c0 5 3 8 8 9 5-1 8-4 8-9V7l-8-4z M9 12l2 2 4-4',
+                    'user_bugs': 'M12 3 2 20h20L12 3z M12 9v5 M12 17h.01',
+                    'crawlers': 'M4 6h16 M4 12h16 M4 18h16 M7 4v4 M12 10v4 M17 16v4',
+                    'bugs': 'M8 8a4 4 0 0 1 8 0 M5 12h14 M7 8l-2-2 M17 8l2-2 M7 16l-2 2 M17 16l2 2 M8 12v4a4 4 0 0 0 8 0v-4',
+                    'users': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M17 11a4 4 0 0 1 0-8 M22 21v-2a4 4 0 0 0-3-3.87',
+                    'process': 'M4 4h16v7H4z M4 13h16v7H4z M8 8h.01 M8 17h.01',
+                    'nginx': 'M3 12h18 M12 3v18 M5 5l14 14 M19 5 5 19',
+                    'ports': 'M4 7h16v10H4z M8 11h.01 M12 11h.01 M16 11h.01 M9 17v4 M15 17v4',
+                    'claude_usage': 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3z',
+                    'git': 'M6 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4z M6 7v10 M18 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4z M18 17V9a4 4 0 0 0-4-4h-2 M6 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+                    'versions': 'M4 5h16v14H4z M8 10h8 M8 14h5'
+                } %}
                 {% for item in get_nav_items() %}
-                <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item {% if active_page == item.id %}active{% endif %}">{{ item.label }}</a>
+                <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item {% if active_page == item.id %}active{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ nav_icons.get(item.id, nav_icons.overview) }}"/></svg><span>{{ item.label }}</span></a>
                 {% endfor %}
             </nav>
             <div class="sb-bottom">
