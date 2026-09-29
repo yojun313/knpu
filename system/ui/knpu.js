@@ -112,7 +112,7 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
-      nav.appendChild(link);
+      nav.insertBefore(link, nav.firstChild);
     }
 
     if (document.body && document.body.dataset.isAdmin === 'true') {
