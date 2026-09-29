@@ -1646,3 +1646,55 @@ html:not([data-ui-theme-mode="dark"]) .sb-logout { color: #dc2626; }
   html body .rail.collapsed .sb-logout { flex: none; width: 36px; padding: 0; justify-content: center; }
   html body .rail.collapsed .sb-collapse svg { transform: rotate(180deg); }
 }
+
+/* ── 오른쪽 패널 접기 · 너비 조절 · 기본 폭 (sidepanel.js) — UnivDash 워크스페이스와 동일 ── */
+.side-head-btns { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
+.side-hbtn, .rail-hbtn {
+  width: 30px; height: 30px; border-radius: 9px; border: none; background: transparent; padding: 0;
+  color: var(--sidebar-muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.side-hbtn:hover, .rail-hbtn:hover { background: var(--ud-hover); color: var(--text-strong); }
+.side-strip { display: none; }
+html.side-resizing, html.side-resizing * { cursor: col-resize !important; user-select: none !important; }
+@media (min-width: 1101px) {
+  html body #side { position: relative; }
+  html body .side-close-mobile { display: none !important; }
+  html body #side.side-strip-mode { width: 44px !important; min-width: 44px !important; flex-basis: 44px; }
+  html body #side.side-strip-mode > :not(.side-strip) { display: none !important; }
+  html body #side.side-strip-mode > .side-strip {
+    display: flex; flex-direction: column; align-items: center; gap: 14px; flex: 1; width: 100%;
+    padding: 14px 0 0; border: 0; background: transparent; color: var(--sidebar-muted); cursor: pointer; font: inherit;
+  }
+  html body #side > .side-strip:hover { background: var(--ud-hover); color: var(--text-strong); }
+  .side-strip-label {
+    writing-mode: vertical-rl; display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  }
+  .side-strip-icon { writing-mode: horizontal-tb; font-size: 13px; }
+  html body #side > .side-resizer {
+    position: absolute; z-index: 30; top: 0; bottom: 0; left: -4px; width: 8px;
+    cursor: col-resize; background: transparent !important; opacity: 1 !important;
+  }
+  html body #side > .side-resizer::after, html body .rail > .rail-resizer::after {
+    content: ""; position: absolute; inset: 0 3px; background: transparent; transition: background .12s;
+  }
+  html body #side > .side-resizer:hover::after, html body #side > .side-resizer.active::after,
+  html body .rail > .rail-resizer:hover::after, html body .rail > .rail-resizer.active::after { background: rgba(96, 165, 250, .8); }
+}
+@media (max-width: 1100px) { html body .side-head-btns, html body #side > .side-resizer, html body .rail-reset-btn { display: none !important; } }
+/* 왼쪽 레일 너비 손잡이: 레일이 overflow:hidden 이라 경계 밖 절반이 잘려 잡기 어려웠다 → 안쪽 7px */
+@media (min-width: 1101px) {
+  html body .rail > .rail-resizer { right: 0 !important; width: 7px !important; z-index: 20 !important; cursor: col-resize; }
+}
+
+/* 캔버스 위 알약(제목·검색·배지·KEM/KIM 탭·확대 버튼) 색 — 사이트별 다크 배색은 "기본"
+   테마에서만 적용되므로, 나머지 테마는 밝기에 맞춰 여기서 정한다(다크에서 흰 알약 방지). */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]):not([data-ui-theme-mode="dark"]) body {
+  --pill-bg: rgba(255, 255, 255, .8); --pill-border: rgba(15, 23, 42, .1);
+  --pill-text: #1c2530; --pill-muted: #64748b; --pill-shadow: 0 6px 20px rgba(15, 23, 42, .1);
+}
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])[data-ui-theme-mode="dark"] body {
+  --pill-bg: rgba(18, 22, 34, .8); --pill-border: rgba(255, 255, 255, .1);
+  --pill-text: #f1f3f8; --pill-muted: #9aa5b8; --pill-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+}

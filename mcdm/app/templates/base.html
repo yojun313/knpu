@@ -67,6 +67,7 @@
       <div id="railList" class="rail-list"></div>
       <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
       <nav id="railServices" class="rail-services"></nav>
+      <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절 · 더블클릭하면 기본 폭"></div>
       <div class="sb-bottom">
         <div class="sb-conn" title="서버 연결 상태">
           <span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span>
@@ -74,6 +75,7 @@
         <div class="sb-account">
           <button id="railLogout" class="sb-logout" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
           <button type="button" class="sb-icon" data-theme-settings title="테마 설정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.63 0-.43-.17-.8-.44-1.1-.26-.29-.43-.66-.43-1.1A1.64 1.64 0 0 1 14.27 16.5H16c3.05 0 5.56-2.5 5.56-5.56C21.56 6.01 17.06 2 12 2z"/></svg></button>
+          <button id="railReset" class="sb-icon rail-reset-btn" type="button" data-rail-reset title="사이드바 기본 폭으로" aria-label="사이드바 기본 폭으로"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M3 12h6M6 9l3 3-3 3M21 12h-6M18 9l-3 3 3 3"/></svg></button>
           <button id="railToggle" class="sb-icon sb-collapse" type="button" title="사이드바 접기 / 펼치기"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
         </div>
       </div>
@@ -100,6 +102,7 @@
 
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
+  <script src="/shared-ui/sidepanel.js"></script>
   <script src="/js/admin_shell.js"></script>
   {% block extra_scripts %}{% endblock %}
   <script src="/shared-ui/theme.js"></script>

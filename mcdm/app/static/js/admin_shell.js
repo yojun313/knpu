@@ -137,11 +137,57 @@
       if (backdrop) backdrop.hidden = false;
     }
 
+    // ── 데스크톱 사이드바: 접기 상태·너비 기억, 경계 드래그로 너비 조절, 기본 폭 복귀 ──
+    const RAIL_DEFAULT = 256, RAIL_MIN = 220, RAIL_MAX = 440;
+    const lsGet = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const lsSet = function (k, v) { try { localStorage.setItem(k, v); } catch (e) { } };
+    let railWidth = parseInt(lsGet('pd_rail_width'), 10);
+    if (!(railWidth >= RAIL_MIN && railWidth <= RAIL_MAX)) railWidth = RAIL_DEFAULT;
+    function applyRail() {
+      if (!rail) return;
+      rail.style.width = (mq.matches || rail.classList.contains('collapsed')) ? '' : railWidth + 'px';
+    }
+    if (rail && !mq.matches && lsGet('pd_rail_collapsed') === '1') rail.classList.add('collapsed');
+    applyRail();
+
     if (toggle && rail) {
       toggle.addEventListener('click', function () {
         // 모바일: 서랍 닫기. 데스크톱: 접기/펼치기.
-        if (mq.matches) closeRail();
-        else rail.classList.toggle('collapsed');
+        if (mq.matches) { closeRail(); return; }
+        const c = rail.classList.toggle('collapsed');
+        lsSet('pd_rail_collapsed', c ? '1' : '0');
+        applyRail();
+      });
+    }
+    function resetRail() {
+      if (!rail || mq.matches) return;
+      railWidth = RAIL_DEFAULT;
+      rail.classList.remove('collapsed');
+      lsSet('pd_rail_width', String(railWidth)); lsSet('pd_rail_collapsed', '0');
+      applyRail();
+    }
+    const resetBtn = document.getElementById('railReset');
+    if (resetBtn) resetBtn.addEventListener('click', resetRail);
+    const resizer = document.getElementById('railResizer');
+    if (resizer && rail) {
+      resizer.addEventListener('dblclick', resetRail);
+      resizer.addEventListener('mousedown', function (e) {
+        if (mq.matches || rail.classList.contains('collapsed')) return;
+        e.preventDefault();
+        const left = rail.getBoundingClientRect().left;
+        rail.classList.add('resizing'); resizer.classList.add('active');
+        document.documentElement.classList.add('side-resizing');
+        function move(ev) {
+          railWidth = Math.max(RAIL_MIN, Math.min(RAIL_MAX, Math.round(ev.clientX - left)));
+          rail.style.width = railWidth + 'px';
+        }
+        function up() {
+          rail.classList.remove('resizing'); resizer.classList.remove('active');
+          document.documentElement.classList.remove('side-resizing');
+          document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+          lsSet('pd_rail_width', String(railWidth));
+        }
+        document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
       });
     }
     if (menuBtn) menuBtn.addEventListener('click', openRail);
@@ -156,7 +202,7 @@
     }
     // 데스크톱으로 넓어지면 서랍 상태 정리
     (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(
-      function () { if (!mq.matches) closeRail(); }
+      function () { if (!mq.matches) closeRail(); applyRail(); }
     );
 
     const logoutBtn = document.getElementById('railLogout');
