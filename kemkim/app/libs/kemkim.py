@@ -16,8 +16,6 @@ import matplotlib.font_manager as fm
 import seaborn as sns
 from collections import Counter
 from datetime import datetime
-import psutil
-import signal
 from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
@@ -239,12 +237,6 @@ class KemKim:
                     for index, period in enumerate(self.period_list)
                 ]
 
-                def kill_child_processes(parent_pid=os.getpid(), sig=signal.SIGTERM):
-                    parent = psutil.Process(parent_pid)
-                    for child in parent.children(recursive=True):
-                        print(f"Killing child process: {child.pid}")
-                        child.send_signal(sig)
-
                 executor = ProcessPoolExecutor(max_workers=os.cpu_count())
 
                 try:
@@ -254,8 +246,8 @@ class KemKim:
                     ]
                     results = [fut.result() for fut in as_completed(futures)]
                 finally:
+                    # 이 분석에 속한 워커만 정리한다. 다른 분석의 자식 프로세스는 유지한다.
                     executor.shutdown(wait=True)
-                    kill_child_processes()
                     gc.collect()  # 메모리 누수 방지
 
                 for result in results:
@@ -1701,11 +1693,13 @@ class KemKim:
         plt.axvline(x=graph_term, color="k", linestyle="--")  # x축 수직선
         plt.axhline(y=graph_DoV, color="k", linestyle="--")  # y축 수평선
 
+        # 경계값은 높은 쪽에 포함하고, 기준선 메타데이터(axis)는 분류에서 제외한다.
         strong_signal = sorted(
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] >= graph_term
+                if word != "axis"
+                and coordinates[word][0] >= graph_term
                 and coordinates[word][1] >= graph_DoV
             ]
         )
@@ -1713,7 +1707,8 @@ class KemKim:
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] <= graph_term
+                if word != "axis"
+                and coordinates[word][0] < graph_term
                 and coordinates[word][1] >= graph_DoV
             ]
         )
@@ -1721,23 +1716,20 @@ class KemKim:
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] <= graph_term
-                and coordinates[word][1] <= graph_DoV
+                if word != "axis"
+                and coordinates[word][0] < graph_term
+                and coordinates[word][1] < graph_DoV
             ]
         )
         well_known_signal = sorted(
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] >= graph_term
-                and coordinates[word][1] <= graph_DoV
+                if word != "axis"
+                and coordinates[word][0] >= graph_term
+                and coordinates[word][1] < graph_DoV
             ]
         )
-
-        strong_signal.remove("axis")
-        weak_signal.remove("axis")
-        latent_signal.remove("axis")
-        well_known_signal.remove("axis")
 
         # 각 좌표와 해당 키를 표시, 글자 크기 변경
         for key, value in coordinates.items():
@@ -1864,11 +1856,13 @@ class KemKim:
         plt.axvline(x=graph_doc, color="k", linestyle="--")  # x축 중앙값 수직선
         plt.axhline(y=graph_DoD, color="k", linestyle="--")  # y축 중앙값 수평선
 
+        # 경계값은 높은 쪽에 포함하고, 기준선 메타데이터(axis)는 분류에서 제외한다.
         strong_signal = sorted(
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] >= graph_doc
+                if word != "axis"
+                and coordinates[word][0] >= graph_doc
                 and coordinates[word][1] >= graph_DoD
             ]
         )
@@ -1876,7 +1870,8 @@ class KemKim:
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] <= graph_doc
+                if word != "axis"
+                and coordinates[word][0] < graph_doc
                 and coordinates[word][1] >= graph_DoD
             ]
         )
@@ -1884,23 +1879,20 @@ class KemKim:
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] <= graph_doc
-                and coordinates[word][1] <= graph_DoD
+                if word != "axis"
+                and coordinates[word][0] < graph_doc
+                and coordinates[word][1] < graph_DoD
             ]
         )
         well_known_signal = sorted(
             [
                 word
                 for word in coordinates
-                if coordinates[word][0] >= graph_doc
-                and coordinates[word][1] <= graph_DoD
+                if word != "axis"
+                and coordinates[word][0] >= graph_doc
+                and coordinates[word][1] < graph_DoD
             ]
         )
-
-        strong_signal.remove("axis")
-        weak_signal.remove("axis")
-        latent_signal.remove("axis")
-        well_known_signal.remove("axis")
 
         # 각 좌표와 해당 키를 표시
         for key, value in coordinates.items():

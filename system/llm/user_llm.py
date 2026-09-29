@@ -134,7 +134,7 @@ def public_settings(uid: str) -> dict:
             {"id": m, "input_per_1m": p[0], "output_per_1m": p[1]}
             for m, p in PRICES.items()
         ],
-        "local_model": get_settings().model or "서버 기본 모델",
+        "local_model": "서버 모델 자동 선택",
     }
 
 

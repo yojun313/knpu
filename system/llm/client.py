@@ -12,7 +12,6 @@
 
 import logging
 import re
-import threading
 from dataclasses import dataclass, field
 
 from openai import AsyncOpenAI, OpenAI
@@ -23,10 +22,6 @@ from .errors import LLMError
 logger = logging.getLogger(__name__)
 
 Message = dict[str, str]
-
-# (base_url, api_key) -> 자동 탐색한 모델 id
-_model_cache: dict[tuple[str | None, str | None], str] = {}
-_model_lock = threading.Lock()
 
 
 @dataclass
@@ -125,27 +120,21 @@ def get_async_client(
     )
 
 
-def _cached_model(key, resolver):
-    with _model_lock:
-        if key in _model_cache:
-            return _model_cache[key]
-    model_id = resolver()
-    with _model_lock:
-        _model_cache[key] = model_id
-    return model_id
-
-
 def _first_model_id(models) -> str:
     items = getattr(models, "data", models) or []
     if not items:
         raise LLMError("LLM 서버에 사용 가능한 모델이 없습니다.")
     first = items[0]
-    return getattr(first, "id", first)
+    model_id = (
+        first.get("id") if isinstance(first, dict) else getattr(first, "id", first)
+    )
+    if not isinstance(model_id, str) or not model_id.strip():
+        raise LLMError("LLM 서버의 모델 목록에 유효한 모델 ID가 없습니다.")
+    return model_id
 
 
 def clear_model_cache() -> None:
-    with _model_lock:
-        _model_cache.clear()
+    """기존 호출 코드 호환용. 모델 목록은 캐시하지 않고 매 요청마다 조회한다."""
 
 
 # OpenAI의 추론 모델(gpt-5, o1/o3/o4 …)은 max_tokens 대신 max_completion_tokens 를 받고,
@@ -332,10 +321,7 @@ def chat(
     for target in targets:
         client = get_client(target.base_url, target.api_key)
         try:
-            resolved = target.model or _cached_model(
-                (target.base_url, target.api_key),
-                lambda: _first_model_id(client.models.list()),
-            )
+            resolved = target.model or _first_model_id(client.models.list())
             response = _create(
                 client,
                 _payload(
@@ -395,15 +381,7 @@ async def achat(
     for target in targets:
         client = get_async_client(target.base_url, target.api_key)
         try:
-            resolved = target.model
-            if not resolved:
-                key = (target.base_url, target.api_key)
-                with _model_lock:
-                    resolved = _model_cache.get(key)
-                if not resolved:
-                    resolved = _first_model_id(await client.models.list())
-                    with _model_lock:
-                        _model_cache[key] = resolved
+            resolved = target.model or _first_model_id(await client.models.list())
 
             response = await _acreate(
                 client,
@@ -469,15 +447,7 @@ async def astream(
         client = get_async_client(target.base_url, target.api_key)
         started = False
         try:
-            resolved = target.model
-            if not resolved:
-                key = (target.base_url, target.api_key)
-                with _model_lock:
-                    resolved = _model_cache.get(key)
-                if not resolved:
-                    resolved = _first_model_id(await client.models.list())
-                    with _model_lock:
-                        _model_cache[key] = resolved
+            resolved = target.model or _first_model_id(await client.models.list())
 
             payload = _payload(
                 full_messages,
