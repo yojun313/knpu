@@ -69,6 +69,20 @@
                 loginLink.textContent = 'MY PAGE';
                 loginLink.setAttribute('href', '/account');
             }
+            if (user.role === 'admin') {
+                const navList = document.querySelector('#mainNav .navbar-nav');
+                if (navList && !navList.querySelector('[data-admin-dashboard]')) {
+                    const item = document.createElement('li');
+                    item.className = 'nav-item';
+                    const link = document.createElement('a');
+                    link.className = 'nav-link';
+                    link.textContent = 'ADMIN';
+                    link.href = 'https://' + (location.hostname.startsWith('dev.') ? 'dev.' : '') + 'dashboard.knpu.re.kr';
+                    link.setAttribute('data-admin-dashboard', '');
+                    item.appendChild(link);
+                    navList.appendChild(item);
+                }
+            }
         })
         .catch(() => {});
 })();
