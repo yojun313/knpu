@@ -96,6 +96,24 @@
             </div>
           </div>
 
+          <section class="ai-panel" aria-labelledby="aiTitle">
+            <div class="ai-panel-head">
+              <div><h2 id="aiTitle">AI 통계 분석</h2><p>저장된 집계표를 여러 관점에서 해석합니다. 결과는 통계적 검토를 돕는 참고 의견입니다.</p></div>
+            </div>
+            <div class="ai-actions">
+              <button class="btn" type="button" data-ai-mode="overview">전체 요약</button>
+              <button class="btn" type="button" data-ai-mode="findings">핵심 발견</button>
+              <button class="btn" type="button" data-ai-mode="relationships">변수 관계·가설</button>
+              <button class="btn" type="button" data-ai-mode="methods">통계 방법·한계 점검</button>
+            </div>
+            <form id="aiQuestionForm" class="ai-question-form">
+              <input id="aiQuestion" type="text" maxlength="1000" placeholder="예: 가장 큰 집단 차이는 무엇이고 어떤 표가 근거인가요?" aria-label="AI에게 통계 질문하기">
+              <button class="btn primary" type="submit">질문하기</button>
+            </form>
+            <div class="ai-privacy">선택한 AI 제공자/로컬 모델로 집계 통계표 일부를 전송합니다. 원문·제목·URL·작성자 등 민감 열과 개인별 표는 제외합니다.</div>
+            <div id="aiResults" class="ai-results" aria-live="polite"></div>
+          </section>
+
           <div id="graphGrid" class="graph-grid" hidden></div>
           <div id="tableGrid" class="table-grid"></div>
         </div>
@@ -103,6 +121,30 @@
     </div>
     <div id="mobileBackdrop"></div>
   </div>
+
+  <button id="aiChatLauncher" class="ai-chat-launcher" type="button" aria-controls="aiChatWindow" aria-expanded="false" hidden>✦ AI와 대화</button>
+  <section id="aiChatWindow" class="ai-chat-window" role="dialog" aria-labelledby="aiChatTitle" hidden>
+    <div class="ai-chat-head">
+      <div><strong id="aiChatTitle">Statistics AI 분석</strong><span id="aiChatProject">현재 프로젝트 결과를 함께 살펴봅니다</span></div>
+      <div class="ai-chat-head-actions">
+        <button id="aiChatClear" type="button" title="대화 초기화" aria-label="대화 초기화">새 대화</button>
+        <button id="aiChatClose" type="button" title="채팅창 닫기" aria-label="채팅창 닫기">×</button>
+      </div>
+    </div>
+    <div id="aiChatMessages" class="ai-chat-messages" role="log" aria-live="polite">
+      <div class="ai-chat-welcome">현재 프로젝트의 통계표를 검색하고 계산하며 질문에 답합니다. 그래프의 패턴이나 결과의 한계도 물어보세요.</div>
+    </div>
+    <div class="ai-chat-suggestions">
+      <button type="button" data-chat-prompt="이 결과에서 가장 중요한 발견과 근거 표를 알려줘">핵심 발견</button>
+      <button type="button" data-chat-prompt="통계적으로 해석할 때 주의할 점을 알려줘">해석 주의점</button>
+      <button type="button" data-chat-prompt="다음에 확인하면 좋은 분석 질문을 제안해줘">다음 분석 제안</button>
+    </div>
+    <form id="aiChatForm" class="ai-chat-form">
+      <textarea id="aiChatInput" rows="2" maxlength="1500" placeholder="통계 결과에 대해 자유롭게 질문하세요" aria-label="AI 분석 대화 입력"></textarea>
+      <button id="aiChatSend" type="submit">전송</button>
+    </form>
+    <div class="ai-chat-note">최근 대화와 선택한 통계표를 AI 모델에 전달합니다. 답변의 근거 표와 수치를 확인하세요.</div>
+  </section>
 
   <div id="railCtxMenu" class="ctx-menu" hidden>
     <button class="ctx-item" data-act="props"><span class="ctx-ico">ℹ</span><span>속성</span></button>
