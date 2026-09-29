@@ -610,3 +610,59 @@ def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
     )
     archive_path = shutil.make_archive(tmp_base, "zip", raw_dir)
     return archive_path
+
+
+# ---------------------------------------------------------------------------
+# AI 분석 결과 보관 (프로젝트 폴더의 ai_results.json, 최근 것부터)
+# ---------------------------------------------------------------------------
+
+MAX_AI_RESULTS = 40
+
+
+def _ai_results_path(owner_uid: str, project_id: str) -> str:
+    return os.path.join(_project_dir(owner_uid, project_id), "ai_results.json")
+
+
+def _read_ai_results(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def list_ai_results(uid: str, project_id: str, is_admin: bool = False) -> list:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    return _read_ai_results(_ai_results_path(doc["uid"], project_id))
+
+
+def add_ai_result(
+    uid: str, project_id: str, result: dict, is_admin: bool = False
+) -> dict:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    path = _ai_results_path(doc["uid"], project_id)
+    item = {**result, "id": uuid.uuid4().hex}
+    items = [item] + _read_ai_results(path)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(items[:MAX_AI_RESULTS], f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return item
+
+
+def delete_ai_result(
+    uid: str, project_id: str, result_id: str, is_admin: bool = False
+) -> None:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    path = _ai_results_path(doc["uid"], project_id)
+    items = _read_ai_results(path)
+    kept = [i for i in items if i.get("id") != result_id]
+    if len(kept) == len(items):
+        raise NotFound("AI 분석 결과를 찾을 수 없습니다.")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(kept, f, ensure_ascii=False)
+    os.replace(tmp, path)

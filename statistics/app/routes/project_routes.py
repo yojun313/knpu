@@ -1,9 +1,12 @@
 # app/routes/project_routes.py
+import asyncio
 import os
+import time
+import uuid
 
 import requests
 from fastapi import APIRouter, UploadFile, File, Form, Request, HTTPException
-from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, Response
 from starlette.background import BackgroundTask
 
 from app.services import project_store, analyze_service, ai_analysis
@@ -322,33 +325,155 @@ async def project_base(project_id: str, request: Request):
     return JSONResponse(base)
 
 
+# ---------------------------------------------------------------------------
+# AI 분석 — LLM 응답이 nginx 기본 60초를 넘기 쉬워 백그라운드 작업 + 폴링으로 돈다.
+# (uvicorn 워커가 하나라 메모리 레지스트리로 충분하다.)
+# ---------------------------------------------------------------------------
+
+_ai_jobs: dict[str, dict] = {}
+_AI_JOB_TTL = 3600
+
+
+def _prune_ai_jobs():
+    now = time.time()
+    for jid in [j for j, v in _ai_jobs.items() if now - v["created"] > _AI_JOB_TTL]:
+        _ai_jobs.pop(jid, None)
+
+
 @router.post("/api/projects/{project_id}/ai-analysis")
 async def project_ai_analysis(project_id: str, request: Request):
     user = _user(request)
+    is_admin = _is_admin(request)
     body = await request.json()
     if not isinstance(body, dict):
         raise HTTPException(400, "AI 분석 요청 형식이 올바르지 않습니다.")
+    mode = str(body.get("mode") or "")
+    if mode not in ai_analysis.MODES:
+        raise HTTPException(400, "지원하지 않는 AI 분석 방식입니다.")
+    question = str(body.get("question") or "")
+    if mode in ("question", "chat") and not question.strip():
+        raise HTTPException(400, "AI에게 물어볼 질문을 입력해주세요.")
     base = _handle_store_error(
-        project_store.load_base, user["uid"], project_id, _is_admin(request)
+        project_store.load_base, user["uid"], project_id, is_admin
     )
-    try:
-        result = await ai_analysis.analyze(
-            base,
-            user["uid"],
-            str(body.get("mode") or ""),
-            table_id=body.get("table_id"),
-            question=str(body.get("question") or ""),
-            history=body.get("history"),
+    if mode == "table":
+        # 표를 잘못 고른 경우는 작업을 만들기 전에 바로 알려 준다.
+        try:
+            ai_analysis.select_tables(base, "table", body.get("table_id"))
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+
+    _prune_ai_jobs()
+    running = [
+        j
+        for j in _ai_jobs.values()
+        if j["uid"] == user["uid"] and j["status"] == "running"
+    ]
+    if len(running) >= 3:
+        raise HTTPException(
+            429, "진행 중인 AI 분석이 3개 있습니다. 끝난 뒤 다시 요청해 주세요."
         )
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
-    except Exception as e:
+
+    job_id = uuid.uuid4().hex
+    job = {
+        "uid": user["uid"],
+        "project_id": project_id,
+        "mode": mode,
+        "status": "running",
+        "stage": "준비 중",
+        "prompt": None,
+        "result": None,
+        "error": None,
+        "created": time.time(),
+    }
+    _ai_jobs[job_id] = job
+
+    def progress(stage, prompt=None):
+        job["stage"] = stage
+        if prompt is not None:
+            job["prompt"] = prompt
+
+    async def worker():
         from system.llm import LLMError
 
-        if isinstance(e, LLMError):
-            raise HTTPException(502, str(e)) from e
-        raise
-    return JSONResponse(result)
+        try:
+            if mode == "chat":
+                result = await ai_analysis.run_chat(
+                    base, user["uid"], question, body.get("history"), progress
+                )
+            else:
+                result = await ai_analysis.run_report(
+                    base, user["uid"], mode, body.get("table_id"), question, progress
+                )
+                # 보고서형 결과는 프로젝트에 보관해 다시 열어도 보이게 한다.
+                result = await asyncio.to_thread(
+                    project_store.add_ai_result,
+                    user["uid"],
+                    project_id,
+                    result,
+                    is_admin,
+                )
+            job["result"], job["status"] = result, "done"
+        except (ValueError, LLMError) as e:
+            job["status"], job["error"] = "error", str(e)
+        except Exception as e:  # 예상 못 한 오류도 화면에 알린다
+            job["status"], job["error"] = (
+                "error",
+                f"AI 분석 중 오류가 발생했습니다: {e}",
+            )
+
+    asyncio.create_task(worker())
+    return JSONResponse({"job_id": job_id, "status": "running"}, status_code=202)
+
+
+@router.get("/api/ai-jobs/{job_id}")
+async def ai_job_status(job_id: str, request: Request):
+    job = _ai_jobs.get(job_id)
+    if not job or job["uid"] != _uid(request):
+        raise HTTPException(
+            404, "AI 분석 작업을 찾을 수 없습니다. 서버가 다시 시작되었을 수 있어요."
+        )
+    out = {k: job[k] for k in ("status", "stage", "prompt", "result", "error", "mode")}
+    out["elapsed"] = round(time.time() - job["created"], 1)
+    return JSONResponse(out)
+
+
+@router.get("/api/projects/{project_id}/ai-results")
+async def ai_results(project_id: str, request: Request):
+    items = _handle_store_error(
+        project_store.list_ai_results, _uid(request), project_id, _is_admin(request)
+    )
+    return JSONResponse({"results": items})
+
+
+@router.delete("/api/projects/{project_id}/ai-results/{result_id}")
+async def ai_result_delete(project_id: str, result_id: str, request: Request):
+    _handle_store_error(
+        project_store.delete_ai_result,
+        _uid(request),
+        project_id,
+        result_id,
+        _is_admin(request),
+    )
+    return JSONResponse({"ok": True})
+
+
+@router.get("/api/projects/{project_id}/ai-results/{result_id}.md")
+async def ai_result_markdown(project_id: str, result_id: str, request: Request):
+    items = _handle_store_error(
+        project_store.list_ai_results, _uid(request), project_id, _is_admin(request)
+    )
+    item = next((i for i in items if i.get("id") == result_id), None)
+    if item is None:
+        raise HTTPException(404, "AI 분석 결과를 찾을 수 없습니다.")
+    from urllib.parse import quote
+
+    name = quote(f"AI분석_{item.get('label') or 'result'}.md")
+    return Response(
+        ai_analysis.to_markdown(item),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{name}"},
+    )
 
 
 # ---------------------------------------------------------------------------
