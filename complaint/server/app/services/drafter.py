@@ -76,6 +76,7 @@ ANALYZE_SYSTEM = """너는 형사 고소 사건을 검토하는 법률 전문가
 
 [규칙]
 - applicable 의 id 는 반드시 [법령 원문]에 있는 [id] 중에서만 고른다. 목록에 없는 법조는 쓰지 않는다.
+- 미수범 규정은 범행이 끝나지 않은 경우(돈·물건을 실제로 넘기지 않은 경우 등)에만 적용한다. 피해가 이미 발생했으면 applicable 에 넣지 않는다.
 - 판단 근거는 제공된 사실에서만 찾는다. 사실을 지어내지 않는다.
 - elements 는 [검토할 구성요건] 순서대로 모두 포함한다.
 - 법적 판단은 단정하지 않는다."""
@@ -99,7 +100,7 @@ async def analyze(
             {"role": "user", "content": user},
         ],
         temperature=0.15,
-        max_tokens=2500,
+        max_tokens=6000,
     )
     return _clean_analysis(data, crime, statutes, elements)
 
@@ -194,6 +195,8 @@ DRAFT_SYSTEM = """너는 경찰청 표준 고소장 양식에 맞춰 고소장�
 - 고소인 자신은 '고소인', 상대방은 '피고소인'으로만 지칭한다.
 - [사실관계]에 없는 사실(날짜·금액·장소·말)을 절대 지어내지 않는다. 모르는 부분은 '불상'으로 쓴다.
 - 금액은 '금 3,000,000원'처럼 숫자와 쉼표로 쓴다.
+- 날짜는 '2026. 3. 2. 15:00경'처럼 쓴다('2026-03-02' 같은 기계식 표기를 쓰지 않는다).
+- 범죄사실(facts)에는 범행 사실만 쓴다. 합의 여부·처벌 의사·증거 보유 사실은 facts에 쓰지 않는다(각각 reasons·evidence에 쓴다).
 - 법조문 번호는 [적용 법조]에 있는 것만 쓴다."""
 
 
@@ -218,9 +221,61 @@ async def draft(
             {"role": "user", "content": user},
         ],
         temperature=0.25,
-        max_tokens=3500,
+        max_tokens=8000,
     )
-    return {k: str(data.get(k) or "").strip() for k in SECTION_KEYS}
+    return tidy_sections({k: str(data.get(k) or "").strip() for k in SECTION_KEYS})
+
+
+_ALT_RE = re.compile(r"\s*\((?:또는|혹은)[^)]*\)")
+_SENT_SPLIT_RE = re.compile(r"(?<=[.다])\s+")
+
+
+def tidy_sections(sections: dict) -> dict:
+    """모델이 자주 남기는 형식 실수를 기계적으로 정리한다.
+
+    - 맺음 문장 형식의 선택지 괄호('(또는 물건)')를 지운다.
+    - 합의·처벌 의사 문장이 범죄사실에 섞였으면, 고소이유에 이미 있을 때 범죄사실에서 뺀다.
+    """
+    out = dict(sections)
+    for k in ("purpose", "facts", "reasons"):
+        out[k] = _ALT_RE.sub("", out.get(k, ""))
+        # '고소인은 이와 같이 고소인을 기망하여'처럼 주어가 뒤바뀐 문장 바로잡기
+        out[k] = re.sub(
+            r"(^|[\s.])고소인은(\s+이와\s+같이)?(\s+)고소인(을|에게)",
+            r"\1피고소인은\2\3고소인\4",
+            out[k],
+        )
+    # 범죄사실에 섞인 '증거가 있다'는 문장은 증거자료 항목과 겹치므로 뺀다
+    out["facts"] = "\n".join(
+        " ".join(
+            x
+            for x in _SENT_SPLIT_RE.split(line)
+            if not re.search(
+                r"(캡처|확인서|확인증|스크린샷|증거|녹음).{0,15}(존재|있습니다|보관)", x
+            )
+        )
+        for line in out.get("facts", "").split("\n")
+    ).strip()
+    # 증거자료는 명사형 목록으로('1. 채팅 캡처입니다.' → '1. 채팅 캡처')
+    out["evidence"] = "\n".join(
+        re.sub(r"\s*(입니다|이 있습니다|가 있습니다)\.?$", "", ln.rstrip())
+        for ln in out.get("evidence", "").split("\n")
+    )
+    facts = out.get("facts", "")
+    if re.search(r"처벌을 원|합의하(지 않|였)", facts) and "처벌" in out.get(
+        "reasons", ""
+    ):
+        kept = []
+        for line in facts.split("\n"):
+            sents = [
+                x
+                for x in _SENT_SPLIT_RE.split(line)
+                if not re.search(r"처벌을 원|합의하(지 않|였)", x)
+            ]
+            if sents:
+                kept.append(" ".join(sents))
+        out["facts"] = "\n".join(kept).strip()
+    return out
 
 
 # ── 검증 ─────────────────────────────────────────────────────────────────────
@@ -291,6 +346,25 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 }
             )
 
+    ft = sections.get("facts", "")
+    if re.search(r"처벌을 원|합의하(지 않|였)", ft):
+        issues.append(
+            {
+                "section": "4. 범죄사실",
+                "level": "warn",
+                "problem": "범죄사실에 합의·처벌 의사가 들어 있습니다.",
+                "fix": "합의 여부와 처벌 의사는 고소이유로 옮기세요.",
+            }
+        )
+    if re.search(r"\d{4}-\d{2}-\d{2}", ft):
+        issues.append(
+            {
+                "section": "4. 범죄사실",
+                "level": "warn",
+                "problem": "날짜가 '2026-03-02' 형식으로 쓰여 있습니다.",
+                "fix": "'2026. 3. 2. 15:00경'처럼 고치세요.",
+            }
+        )
     if facts.get("punishment_wish") and "처벌" not in sections.get("reasons", ""):
         issues.append(
             {
@@ -336,7 +410,7 @@ async def review(
             {"role": "user", "content": user},
         ],
         temperature=0.1,
-        max_tokens=4000,
+        max_tokens=8000,
     )
     issues = [
         {
@@ -486,6 +560,7 @@ async def generate(case: dict):
         rv = {"issues": [], "revised": None}
     revised_applied = False
     if rv["revised"]:
+        rv["revised"] = tidy_sections(rv["revised"])
         new_issues = rule_check(rv["revised"], facts, allowed)
         # 고친 판이 규칙 검사에서 더 나빠지지 않을 때만 채택한다
         if sum(i["level"] == "error" for i in new_issues) <= sum(

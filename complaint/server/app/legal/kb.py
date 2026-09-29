@@ -232,6 +232,15 @@ def contextual_statutes(crime_id: str | None, facts: dict) -> list[tuple[str, st
                 "친족 관계에 따라 고소가 있어야 공소를 제기할 수 있는 등 특칙이 적용될 수 있습니다.",
             )
         )
+    if crime_id in CRIMES and CRIMES[crime_id].category == "사기":
+        dmg = f"{facts.get('disposition', '')} {facts.get('damage_amount', '')}"
+        if not dmg.strip() or re.search(r"보내지 않|이체하지 않|미수|하려다", dmg):
+            out.append(
+                (
+                    "001692-352",
+                    "돈·물건을 넘기기 전이라면 사기 미수로 처벌될 수 있습니다.",
+                )
+            )
     weapon = str(facts.get("weapon") or "").strip()
     if crime_id in _SPECIAL and weapon and not any(w in weapon for w in _NONE_WORDS):
         out.append(

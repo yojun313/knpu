@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from system.llm import complete
+from system.llm import user_llm
 
 _CONTEXT_WINDOW = 200
 
@@ -113,12 +113,15 @@ def build_topic_prompt(topic_hint: str, titles: list) -> str:
     )
 
 
-def request_ai_topics(prompt: str) -> str:
-    """전역 LLM 모듈로 주제 해석을 요청한다.
-
-    엔드포인트/모델/폴백은 .env(LLM_*)에서 읽으므로 여기서 정하지 않는다.
-    """
-    return complete(prompt)
+def request_ai_topics(prompt: str, uid: str | None = None) -> str:
+    """주제 해석을 요청한다. 사용자의 LLM 설정(로컬/내 GPT API)을 순서대로 쓴다."""
+    call = user_llm.chat_for_user(
+        uid,
+        [{"role": "user", "content": prompt}],
+        purpose="KEMKIM 키워드 주제 요약",
+        max_tokens=4000,
+    )
+    return call.result.text
 
 
 def now_iso() -> str:

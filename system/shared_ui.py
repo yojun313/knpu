@@ -1,7 +1,9 @@
+import asyncio
 import json
 import os
 
-from fastapi.responses import Response
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
@@ -103,6 +105,37 @@ def mount_shared_ui(
                 media_type="application/manifest+json",
                 headers={"cache-control": "no-store, must-revalidate"},
             )
+
+    # 사용자별 LLM 설정(로컬/내 GPT API·월 한도·사용량) — 네비바 설정 창에서 쓴다.
+    # AuthMiddleware 가 붙은 서비스에서만 로그인 사용자가 잡히고, 아니면 401을 돌려
+    # 설정 창이 이 영역을 숨긴다.
+    def _llm_uid(request: Request) -> str:
+        user = request.scope.get("state", {}).get("user")
+        if not user:
+            raise HTTPException(401, "인증이 필요합니다")
+        return user["uid"]
+
+    @app.get("/api/llm-settings", include_in_schema=False)
+    def llm_settings_get(request: Request):
+        from system.llm import user_llm
+
+        return JSONResponse(
+            user_llm.public_settings(_llm_uid(request)),
+            headers={"cache-control": "no-store"},
+        )
+
+    @app.put("/api/llm-settings", include_in_schema=False)
+    async def llm_settings_put(request: Request):
+        from system.llm import user_llm
+
+        uid = _llm_uid(request)
+        body = await request.json()
+        try:
+            return JSONResponse(
+                await asyncio.to_thread(user_llm.save_settings, uid, body)
+            )
+        except user_llm.SettingsError as e:
+            raise HTTPException(400, str(e))
 
     app.mount(
         "/shared-ui",
