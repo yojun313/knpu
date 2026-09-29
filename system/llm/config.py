@@ -5,7 +5,7 @@ OpenAI 공식 API, manager 서버의 /llm 프록시 등).
 
     LLM_BASE_URL   : OpenAI 호환 base URL (…/v1 까지)
     LLM_API_KEY    : API 키 (없으면 OPENAI_API_KEY를 재사용)
-    LLM_MODEL      : 모델 이름. 비워두면 /models 에서 첫 모델을 자동 선택
+    모델 이름은 매 요청 전에 /models 에서 자동 조회한다(LLM_MODEL은 사용하지 않음).
     LLM_TIMEOUT    : 요청 타임아웃(초)
     LLM_MAX_RETRIES: 엔드포인트별 재시도 횟수(기본 1)
 
@@ -48,7 +48,8 @@ class LLMSettings:
         self.base_url = _normalize_base_url(get("LLM_BASE_URL")) or _DEFAULT_BASE_URL
         # 키를 따로 주지 않았으면 기존 OPENAI_API_KEY를 그대로 쓴다.
         self.api_key = get("LLM_API_KEY") or get("OPENAI_API_KEY")
-        self.model = get("LLM_MODEL")  # None이면 자동 탐색
+        # 주 엔드포인트는 현재 제공 중인 모델을 매 요청마다 조회한다.
+        self.model = None  # 기존 설정 조회 코드와의 호환성을 유지한다.
 
         try:
             self.timeout = float(get("LLM_TIMEOUT") or 120)
