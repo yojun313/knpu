@@ -1,8 +1,17 @@
 import os
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 
 router = APIRouter()
+
+
+@router.get("/api/me")
+def current_user(request: Request):
+    user = request.scope.get("state", {}).get("user")
+    if not user:
+        raise HTTPException(401, "인증이 필요합니다")
+    return JSONResponse(user)
+
 
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
 MANUALS_DIR = os.path.join(PUBLIC_DIR, "manuals")

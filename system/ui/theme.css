@@ -1572,6 +1572,7 @@ html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,2
 html[data-ui-nav="autohide"] body .top-header.knpu-service-header { position: fixed; top: 0; left: 0; right: 0; }
 @media (max-width: 600px) {
   html body .top-header.knpu-service-header { gap: 10px; padding: 0 12px; }
+  html body .knpu-service-header .top-nav-link[data-knpu-admin-link] { order: -1; }
 }
 html body .rail { display: flex; flex-direction: column; }
 html body .rail .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); flex-shrink: 0; }
