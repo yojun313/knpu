@@ -7,7 +7,7 @@
     <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-    <link rel="manifest" href="/shared-ui/manifest.webmanifest">
+    <link rel="manifest" href="/static/manifest.webmanifest">
     <meta name="theme-color" content="#0B1226">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1197,6 +1197,74 @@
             border-color: var(--line) !important;
             color: var(--ink);
         }
+
+        /* 공통 서비스 구조: 고정 사이드바 + 독립 스크롤 본문 */
+        html body { overflow: hidden; font-family: -apple-system, 'Pretendard', 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif; }
+        html body .crawler-app { display: flex; height: calc(100vh - 58px); padding: 0; gap: 0; min-width: 0; }
+        @supports (height: 100dvh) { html body .crawler-app { height: calc(100dvh - 58px); } }
+        html body #crawlerSidebar {
+            width: 280px; min-width: 280px; height: 100%; display: flex; flex-direction: column;
+            position: relative; flex-shrink: 0; overflow: hidden; border-radius: 0 !important;
+            border: none !important; border-right: 1px solid var(--ud-line, var(--line)) !important;
+            box-shadow: none !important; background: var(--ud-surface-strong, var(--surface)) !important;
+        }
+        #crawlerSidebar .sb-top { flex-shrink: 0; }
+        #crawlerSidebar .sb-top > .rail-upload { width: 100%; }
+        #crawlerSidebar .sb-bottom { margin-top: auto; flex-shrink: 0; }
+        .crawler-rail-nav { flex: 1; min-height: 0; overflow: auto; padding: 4px 10px; }
+        .crawler-rail-nav button {
+            display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px;
+            background: transparent; color: var(--ink); text-align: left; font: inherit; font-size: 12px;
+            cursor: pointer;
+        }
+        .crawler-rail-nav button:hover, .crawler-rail-nav button:focus-visible {
+            color: var(--blue); background: var(--tone-neutral-bg); outline: none;
+        }
+        .crawler-main { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow-y: auto; }
+        .crawler-page-head {
+            display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 5;
+            padding: 12px 20px; min-height: 58px; border-bottom: 1px solid var(--ud-line, var(--line));
+            background: var(--ud-surface-strong, var(--surface));
+        }
+        .crawler-page-head strong { display: block; font-size: 14px; color: var(--ink); }
+        .crawler-page-head span { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); }
+        .crawler-mobile-rail-btn {
+            display: none; width: 36px; height: 36px; flex-shrink: 0; border: 1px solid var(--line);
+            border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 17px; cursor: pointer;
+        }
+        .crawler-main .container { width: 100%; max-width: none; margin: 0; padding: 18px 20px 36px; }
+        .crawler-main .layout-grid { grid-template-columns: minmax(340px, 460px) minmax(0, 1fr); min-height: 0; }
+        .crawler-main .panel { scroll-margin-top: 78px; }
+        .crawler-rail-backdrop[hidden] { display: none; }
+        @media (min-width: 861px) {
+            html body #crawlerSidebar.collapsed { width: 68px; min-width: 68px; }
+            #crawlerSidebar.collapsed :is(.sb-label, .sb-user, .sb-overview, .sb-section-list, .crawler-rail-nav) { display: none !important; }
+            #crawlerSidebar.collapsed .sb-top { padding: 14px 10px; }
+            #crawlerSidebar.collapsed .sb-brand { justify-content: center; }
+            #crawlerSidebar.collapsed .sb-top > .rail-upload { width: 44px; min-width: 44px; margin: 0 auto; padding: 0 !important; }
+            #crawlerSidebar.collapsed .sb-bottom { padding: 10px 6px; }
+            #crawlerSidebar.collapsed .sb-conn { justify-content: center; padding: 6px 0; }
+            #crawlerSidebar.collapsed .sb-account { flex-direction: column; }
+            #crawlerSidebar.collapsed .sb-logout { width: 36px; justify-content: center; }
+        }
+        @media (max-width: 1250px) {
+            .crawler-main .layout-grid { display: flex; flex-direction: column; gap: 16px; }
+            .crawler-main .col-left, .crawler-main .col-right { display: flex; flex-direction: column; gap: 16px; }
+            .crawler-main .layout-grid .panel + .panel { margin-top: 0; }
+        }
+        @media (max-width: 860px) {
+            html body #crawlerSidebar {
+                position: fixed; top: 0; bottom: 0; left: 0; z-index: 160; height: 100dvh;
+                width: min(300px, 84vw); min-width: 0; transform: translateX(-105%);
+                transition: transform .2s ease; box-shadow: 0 0 40px rgba(5,7,15,.25) !important;
+            }
+            html body #crawlerSidebar.mobile-open { transform: translateX(0); }
+            .crawler-rail-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 155; background: rgba(8,12,18,.48); }
+            .crawler-mobile-rail-btn { display: inline-flex; align-items: center; justify-content: center; }
+            #crawlerRailToggle { display: none; }
+            .crawler-main .container { padding: 14px 12px 30px; }
+            .crawler-page-head { padding: 10px 12px; }
+        }
     </style>
   <link rel="stylesheet" href="/shared-ui/theme.css">
   <script src="/shared-ui/services.js"></script>
@@ -1221,12 +1289,48 @@
     </button>
 </div>
 
+<div class="app crawler-app">
+  <aside id="crawlerSidebar" class="panel sidebar rail" aria-label="크롤러 메뉴">
+    <div class="sb-top">
+      <div class="sb-brand">
+        <div class="sb-logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 7l3 9M16 7l-3 9M8 6h8"/></svg></div>
+        <div class="sb-label"><h1 class="sb-title">Crawler</h1><p class="sb-sub">Data Collection</p></div>
+      </div>
+      <button class="rail-upload sb-new" type="button" data-crawler-target="controlPanel" title="새 작업 만들기"><span class="ru-icon">＋</span><span class="ru-text sb-label">새 작업</span></button>
+    </div>
+    <div class="sb-overview">
+      <p class="sb-section">Overview</p>
+      <div class="sb-stats"><div class="sb-stat"><p>DB</p><b id="sb-total-count">0</b></div><div class="sb-stat"><p>진행 중</p><b id="sb-active-count">0</b></div></div>
+    </div>
+    <p class="sb-section sb-section-list">Workspace</p>
+    <nav class="crawler-rail-nav sb-label" aria-label="크롤러 화면 바로가기">
+      <button type="button" data-crawler-target="controlPanel">＋ 새 작업</button>
+      <button type="button" data-crawler-target="activePanel">● 진행 중</button>
+      <button type="button" data-crawler-target="queuedPanel">◷ 대기 중</button>
+      <button type="button" data-crawler-target="databasePanel">▤ 데이터베이스</button>
+    </nav>
+    <div class="sb-bottom">
+      <div class="sb-conn" data-conn-url="/api/health" title="서버 연결 상태"><span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span></div>
+      <div class="sb-user">
+        <div class="sb-avatar" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="sb-label sb-user-text"><p class="sb-welcome">Welcome,</p><p class="rail-user sb-username">{{ username or '-' }}</p></div>
+      </div>
+      <div class="sb-account">
+        <button id="crawlerLogout" class="sb-logout" type="button" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 0-2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
+        <button type="button" class="sb-icon" data-theme-settings title="테마 설정" aria-label="테마 설정">⚙</button>
+        <button id="crawlerRailToggle" class="sb-icon sb-collapse" type="button" title="사이드바 접기 / 펼치기" aria-label="사이드바 접기 / 펼치기">☰</button>
+      </div>
+    </div>
+  </aside>
+  <div id="crawlerRailBackdrop" class="crawler-rail-backdrop" hidden></div>
+  <main class="crawler-main">
+    <div class="crawler-page-head"><button id="crawlerMobileRailBtn" class="crawler-mobile-rail-btn" type="button" aria-controls="crawlerSidebar" aria-expanded="false" aria-label="크롤러 메뉴 열기">☰</button><div><strong>크롤링 작업</strong><span>작업 생성과 데이터베이스 관리</span></div></div>
 <div class="container">
   <div class="layout-grid">
     <div class="col-left">
 
     <!-- ── Control Panel ── -->
-    <div class="panel">
+    <div class="panel" id="controlPanel">
         <div class="panel-head">
             <div class="panel-title">CRAWLER Control</div>
             <div class="panel-count">새 작업 추가</div>
@@ -1309,7 +1413,7 @@
     </div>
 
     <!-- ── Running Jobs ── -->
-    <div class="panel">
+    <div class="panel" id="activePanel">
         <div class="panel-head">
             <div class="panel-title">Running Jobs</div>
             <div class="panel-count" id="active-count">0</div>
@@ -1320,7 +1424,7 @@
     </div>
 
     <!-- ── Queued Jobs ── -->
-    <div class="panel">
+    <div class="panel" id="queuedPanel">
         <div class="panel-head">
             <div class="panel-title">Queued Jobs</div>
             <div class="panel-count" id="queued-count">0</div>
@@ -1334,7 +1438,7 @@
     <div class="col-right">
 
     <!-- ── Database (크롤 DB 전체 목록) ── -->
-    <div class="panel">
+    <div class="panel" id="databasePanel">
         <div class="panel-head">
             <div class="panel-title">Database</div>
             <div class="panel-count" id="total-count">0건</div>
@@ -1384,6 +1488,8 @@
 
     </div>
   </div>
+</div>
+  </main>
 </div>
 
 <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this) closeDbDetail()">
@@ -1728,6 +1834,7 @@
     function renderActive(jobs) {
         const el = document.getElementById('active-list');
         document.getElementById('active-count').textContent = jobs.length;
+        document.getElementById('sb-active-count').textContent = jobs.length;
         if (!jobs.length) { el.innerHTML='<div class="empty">실행 중인 크롤링 없음</div>'; return; }
         el.innerHTML = jobs.map(job => {
             const cs  = job.crawler_status || {};
@@ -1936,6 +2043,7 @@
 
         totalDbPages = Math.max(1, Math.ceil(data.total / dbPerPage));
         document.getElementById('total-count').textContent = `${data.total}건`;
+        document.getElementById('sb-total-count').textContent = data.total;
         document.getElementById('pg-info').textContent = `${data.page} / ${totalDbPages}`;
         document.getElementById('pg-prev').disabled = data.page <= 1;
         document.getElementById('pg-next').disabled = data.page >= totalDbPages;
@@ -2372,7 +2480,37 @@
         loadDbList();
     }
 
-    document.getElementById('f-name').textContent = '{{ username }}';
+    function closeCrawlerRail() {
+        document.getElementById('crawlerSidebar').classList.remove('mobile-open');
+        document.getElementById('crawlerRailBackdrop').hidden = true;
+        document.getElementById('crawlerMobileRailBtn').setAttribute('aria-expanded', 'false');
+    }
+    document.getElementById('crawlerMobileRailBtn').addEventListener('click', () => {
+        const sidebar = document.getElementById('crawlerSidebar');
+        const opened = sidebar.classList.toggle('mobile-open');
+        document.getElementById('crawlerRailBackdrop').hidden = !opened;
+        document.getElementById('crawlerMobileRailBtn').setAttribute('aria-expanded', String(opened));
+    });
+    document.getElementById('crawlerRailBackdrop').addEventListener('click', closeCrawlerRail);
+    document.querySelectorAll('[data-crawler-target]').forEach(button => {
+        button.addEventListener('click', () => {
+            closeCrawlerRail();
+            document.getElementById(button.dataset.crawlerTarget).scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+    });
+    const crawlerSidebar = document.getElementById('crawlerSidebar');
+    crawlerSidebar.classList.toggle('collapsed', localStorage.getItem('crawler_rail_collapsed') === '1');
+    document.getElementById('crawlerRailToggle').addEventListener('click', () => {
+        const collapsed = crawlerSidebar.classList.toggle('collapsed');
+        localStorage.setItem('crawler_rail_collapsed', collapsed ? '1' : '0');
+    });
+    window.matchMedia('(min-width: 861px)').addEventListener('change', closeCrawlerRail);
+    document.getElementById('crawlerLogout').addEventListener('click', () => {
+        fetch(KNPU.logoutUrl(), {method: 'POST', credentials: 'include'})
+            .finally(() => { location.href = KNPU.loginUrl(); });
+    });
+
+    document.getElementById('f-name').textContent = {{ username | tojson }};
     document.getElementById('f-db-mine').checked = localStorage.getItem(MINE_ONLY_KEY) === '1';
     updateOptions();
     fillToday();

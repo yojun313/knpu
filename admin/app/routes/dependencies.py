@@ -24,4 +24,5 @@ async def get_current_user(request: Request):
     if not live or live.get("role") != "admin":
         raise HTTPException(status_code=307, detail="Not logged in")
 
+    request.state.current_user = live
     return live

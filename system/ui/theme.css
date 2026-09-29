@@ -1618,6 +1618,7 @@ html body .rail .rail-list { flex: 1; min-height: 0; }
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--ud-line); flex-shrink: 0;
 }
+.sb-bottom .sb-user { margin: 0 0 8px; }
 .sb-conn { display: flex; align-items: center; gap: 8px; padding: 2px 8px 8px; font-size: 11px; color: var(--ud-label); min-width: 0; }
 .sb-conn .conn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; transition: background 200ms; }
