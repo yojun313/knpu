@@ -90,7 +90,7 @@
     overlay.innerHTML =
       '<div class="theme-modal" role="dialog" aria-modal="true" aria-label="테마 설정">'
       + '<div class="theme-modal-head">'
-      + '<div><h3>테마 설정</h3><p class="theme-modal-sub">원하는 테마를 골라보세요. 모든 KNPU 사이트에 동일하게 적용됩니다.</p></div>'
+      + '<div><h3>설정</h3><p class="theme-modal-sub">테마와 AI 모델을 고를 수 있어요. 모든 KNPU 사이트에 동일하게 적용됩니다.</p></div>'
       + '<button type="button" class="theme-modal-close" aria-label="닫기">&times;</button>'
       + '</div>'
       + '<div class="theme-modal-body">' + optionsHtml + '</div>'
@@ -98,6 +98,17 @@
       + '<button type="button" class="theme-mode-switch" id="themeModeSwitch" aria-label="다크 모드 전환"></button></div>'
       + '<div class="theme-nav-row"><span>상단 네비게이션 바 자동 숨김 (마우스를 올리면 표시)</span>'
       + '<button type="button" class="theme-mode-switch" id="themeNavSwitch" aria-label="네비게이션 바 자동 숨김 전환"></button></div>'
+      + '<section class="llm-settings" id="llmSettings" hidden>'
+      + '<div class="llm-head"><h4>AI 모델</h4><span class="theme-modal-sub">AI 해석·요약 기능에 쓸 모델을 고릅니다. 모든 KNPU 사이트에 똑같이 적용됩니다.</span></div>'
+      + '<div class="llm-modes" id="llmModes"></div>'
+      + '<div class="llm-openai" id="llmOpenai">'
+      + '<label class="llm-field"><span>OpenAI API 키</span><input type="password" id="llmKey" autocomplete="off" placeholder="sk-..."><small id="llmKeyHint"></small></label>'
+      + '<div class="llm-row"><label class="llm-field"><span>모델</span><select id="llmModel"></select></label>'
+      + '<label class="llm-field"><span>월 사용 한도 (USD)</span><input type="number" id="llmLimit" min="0" max="1000" step="0.5"></label></div>'
+      + '<div class="llm-usage" id="llmUsage"></div>'
+      + '</div>'
+      + '<div class="llm-actions"><span class="llm-status" id="llmStatus"></span><button type="button" class="llm-save" id="llmSave">저장</button></div>'
+      + '</section>'
       + '</div>';
 
     document.body.appendChild(overlay);
@@ -166,6 +177,86 @@
     if (isChromium) document.documentElement.classList.add('lg-refract');
   }
 
+  // ── 사용자별 AI 모델 설정 (로컬 LLM / 내 GPT API · 월 한도 · 사용량) ──────────
+  var llmState = null;
+  function llmEsc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function llmMode() { var el = document.querySelector('#llmModes input:checked'); return el ? el.value : 'local'; }
+  function renderLlmSettings(st) {
+    llmState = st;
+    var sec = document.getElementById('llmSettings');
+    sec.hidden = false;
+    document.getElementById('llmModes').innerHTML = Object.keys(st.modes).map(function (k) {
+      return '<label class="llm-mode"><input type="radio" name="llmMode" value="' + k + '"' + (st.mode === k ? ' checked' : '') + '>'
+        + '<span>' + llmEsc(st.modes[k]) + (k === 'local' ? ' <em>(' + llmEsc(st.local_model) + ')</em>' : '') + '</span></label>';
+    }).join('');
+    document.getElementById('llmModel').innerHTML = st.models.map(function (m) {
+      return '<option value="' + llmEsc(m.id) + '"' + (m.id === st.model ? ' selected' : '') + '>' + llmEsc(m.id)
+        + ' ($' + m.input_per_1m + ' / $' + m.output_per_1m + ')</option>';
+    }).join('');
+    document.getElementById('llmLimit').value = st.monthly_limit_usd;
+    document.getElementById('llmKey').value = '';
+    document.getElementById('llmKeyHint').innerHTML = st.has_key
+      ? '저장된 키: ••••' + llmEsc(st.key_hint) + ' · 새로 입력하면 교체됩니다 <button type="button" class="llm-link" id="llmClearKey">키 삭제</button>'
+      : '키는 서버에 암호화해 저장하며 다시 보여 주지 않습니다.';
+    var u = st.usage, limit = st.monthly_limit_usd || 0;
+    var pct = limit > 0 ? Math.min(100, u.cost_usd / limit * 100) : 0;
+    document.getElementById('llmUsage').innerHTML =
+      '<div class="llm-usage-head"><span>' + llmEsc(u.month) + ' 사용량 (추정)</span><b>$' + u.cost_usd.toFixed(4) + ' / $' + Number(limit).toFixed(2) + '</b></div>'
+      + '<div class="llm-bar"><span style="width:' + pct + '%"' + (pct >= 90 ? ' class="warn"' : '') + '></span></div>'
+      + '<div class="llm-usage-meta">호출 ' + u.calls + '회 · 입력 ' + u.input_tokens.toLocaleString() + ' / 출력 ' + u.output_tokens.toLocaleString() + ' 토큰 · 남은 한도 $' + u.remaining_usd.toFixed(2) + '</div>'
+      + (u.recent && u.recent.length ? '<details class="llm-recent"><summary>최근 사용 내역</summary><ul>' + u.recent.map(function (r) {
+          return '<li><span>' + llmEsc((r.at || '').replace('T', ' ').slice(0, 16)) + ' · ' + llmEsc(r.purpose || r.model) + '</span><b>$' + Number(r.cost_usd).toFixed(4) + '</b></li>';
+        }).join('') + '</ul></details>' : '')
+      + '<div class="llm-usage-meta">토큰 수 × 모델 요금으로 계산한 추정치입니다. 실제 청구액은 OpenAI 대시보드에서 확인하세요.</div>';
+    syncLlmMode();
+    var clear = document.getElementById('llmClearKey');
+    if (clear) clear.addEventListener('click', function () { saveLlmSettings({ clear_key: true }); });
+  }
+  function syncLlmMode() {
+    document.getElementById('llmOpenai').hidden = llmMode() === 'local' && !(llmState && llmState.has_key);
+  }
+  function llmSetStatus(text, kind) {
+    var el = document.getElementById('llmStatus');
+    el.textContent = text || ''; el.className = 'llm-status' + (kind ? ' ' + kind : '');
+  }
+  function loadLlmSettings() {
+    var sec = document.getElementById('llmSettings');
+    if (!sec) return;
+    fetch('/api/llm-settings', { credentials: 'same-origin' }).then(function (res) {
+      if (!res.ok) throw new Error('unavailable');
+      return res.json();
+    }).then(renderLlmSettings).catch(function () { sec.hidden = true; });
+  }
+  function saveLlmSettings(extra) {
+    var body = {
+      mode: llmMode(),
+      model: document.getElementById('llmModel').value,
+      monthly_limit_usd: parseFloat(document.getElementById('llmLimit').value || '0'),
+      api_key: document.getElementById('llmKey').value.trim(),
+    };
+    Object.keys(extra || {}).forEach(function (k) { body[k] = extra[k]; });
+    var btn = document.getElementById('llmSave');
+    btn.disabled = true;
+    llmSetStatus(body.api_key ? 'API 키를 확인하는 중...' : '저장하는 중...');
+    fetch('/api/llm-settings', {
+      method: 'PUT', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var j = null; try { j = JSON.parse(t); } catch (e) { }
+        if (!res.ok) throw new Error((j && j.detail) || ('저장하지 못했습니다 (HTTP ' + res.status + ')'));
+        return j;
+      });
+    }).then(function (st) {
+      btn.disabled = false;
+      renderLlmSettings(st);
+      llmSetStatus('저장했습니다.', 'ok');
+    }).catch(function (err) {
+      btn.disabled = false;
+      llmSetStatus(err.message, 'err');
+    });
+  }
+
   function init() {
     initLiquidGlass();
     var btn = document.getElementById('themeSettingsBtn');
@@ -173,7 +264,7 @@
 
     var overlay = buildModal();
 
-    function open() { markSelected(overlay); overlay.hidden = false; }
+    function open() { markSelected(overlay); overlay.hidden = false; loadLlmSettings(overlay); }
     function close() { overlay.hidden = true; }
 
     btn.addEventListener('click', open);
@@ -186,6 +277,8 @@
         close();
       });
     });
+    overlay.querySelector('#llmSave').addEventListener('click', function () { saveLlmSettings(); });
+    overlay.querySelector('#llmModes').addEventListener('change', syncLlmMode);
     overlay.querySelector('#themeModeSwitch').addEventListener('click', function () {
       applyMode(currentMode() === 'dark' ? 'light' : 'dark');
       markSelected(overlay);

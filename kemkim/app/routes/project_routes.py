@@ -1,3 +1,5 @@
+import time
+import asyncio
 import csv
 import io
 import os
@@ -425,6 +427,7 @@ async def project_interpret(project_id: str, request: Request):
 
     ai_analysis = None
     ai_error = None
+    ai_prompt = None
     if use_ai:
         if not result["titles"]:
             ai_error = (
@@ -434,10 +437,13 @@ async def project_interpret(project_id: str, request: Request):
             # 라우트 진입 시 _uid()가 이미 인증을 강제하므로 별도 세션 토큰은 필요 없다.
             # 엔드포인트/모델/폴백은 전역 .env(LLM_*) 설정을 따른다.
             try:
-                prompt = kemkim_analysis.build_topic_prompt(
+                ai_prompt = kemkim_analysis.build_topic_prompt(
                     ", ".join(keywords), result["titles"]
                 )
-                ai_analysis = kemkim_analysis.request_ai_topics(prompt)
+                # 동기 LLM 호출이 이벤트 루프(다른 요청)를 막지 않게 스레드에서 돌린다
+                ai_analysis = await asyncio.to_thread(
+                    kemkim_analysis.request_ai_topics, ai_prompt, uid
+                )
             except Exception as e:
                 ai_error = f"AI 해석 요청에 실패했습니다: {e}"
 
@@ -453,6 +459,7 @@ async def project_interpret(project_id: str, request: Request):
         "results": result["results"],
         "ai_analysis": ai_analysis,
         "ai_error": ai_error,
+        "ai_prompt": ai_prompt,
     }
     saved = _handle_store_error(
         project_store.save_interpretation, uid, project_id, interpretation
@@ -480,6 +487,56 @@ def _try_load_source(uid: str, project_id: str):
         return None
 
 
+# AI 해석은 기사 맥락을 읽고 LLM을 부르느라 1분을 넘기기 쉽다. 요청 하나로 기다리면
+# 앞단 프록시(nginx 기본 60초)가 끊고 HTML 오류 페이지를 돌려주므로, 백그라운드 작업으로
+# 돌리고 화면은 상태를 주기적으로 조회한다. kemkim은 워커 1개로 돌아서 메모리 보관으로 충분하다.
+_signal_jobs: dict[str, dict] = {}
+_JOB_TTL_SEC = 3600
+
+
+def _prune_jobs():
+    now = time.time()
+    for jid in [
+        j for j, v in _signal_jobs.items() if now - v["created"] > _JOB_TTL_SEC
+    ]:
+        _signal_jobs.pop(jid, None)
+
+
+def _start_signal_job(uid: str, project_id: str, run, finish) -> str:
+    """run(progress) 코루틴을 백그라운드로 돌리고 끝나면 finish(result)로 저장한다."""
+    _prune_jobs()
+    job_id = uuid.uuid4().hex
+    job = {
+        "uid": uid,
+        "project_id": project_id,
+        "status": "running",
+        "stage": "준비 중",
+        "prompt": None,
+        "result": None,
+        "error": None,
+        "created": time.time(),
+    }
+    _signal_jobs[job_id] = job
+
+    def progress(stage, prompt=None):
+        job["stage"] = stage
+        if prompt is not None:
+            job["prompt"] = prompt
+
+    async def worker():
+        try:
+            result = await run(progress)
+            job["result"] = await asyncio.to_thread(finish, result)
+            job["status"] = "done"
+        except ValueError as e:
+            job["status"], job["error"] = "error", str(e)
+        except Exception as e:  # 예상 못 한 오류도 화면에 알린다
+            job["status"], job["error"] = "error", f"해석 중 오류가 발생했습니다: {e}"
+
+    asyncio.create_task(worker())
+    return job_id
+
+
 @router.get("/api/projects/{project_id}/signal-profile")
 async def project_signal_profile(project_id: str, word: str, request: Request):
     """기간별 수치와 신호 단계만 빠르게 돌려준다(AI 호출 없음)."""
@@ -497,31 +554,37 @@ async def project_signal_ai(project_id: str, request: Request):
     if not word:
         raise HTTPException(400, "해석할 단어를 선택해주세요.")
     graph = _handle_store_error(project_store.load_graph, uid, project_id)
+    profile = signal_ai.signal_profile(graph, word)
+    if not any(r["DoV"] is not None or r["DoD"] is not None for r in profile["series"]):
+        raise HTTPException(
+            400, f"'{word}'은(는) 이 분석의 기간별 데이터에 없는 단어입니다."
+        )
     source_df = _try_load_source(uid, project_id)
-    try:
-        result = await signal_ai.analyze_word(graph, source_df, word)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    result.update(
-        {
-            "id": uuid.uuid4().hex,
-            "keywords": [word],
-            "match_mode": "signal",
-            "created_at": kemkim_analysis.now_iso(),
-        }
-    )
-    saved = _handle_store_error(
-        project_store.save_interpretation, uid, project_id, result
-    )
-    insert_log(
-        user_logs_db,
-        uid,
-        "kemkim.interpretation.signal_ai",
-        "kemkim",
-        target={"type": "project", "id": project_id},
-        metadata={"word": word, "has_ai": bool(result.get("ai"))},
-    )
-    return JSONResponse(saved)
+
+    async def run(progress):
+        return await signal_ai.analyze_word(graph, source_df, word, progress, uid=uid)
+
+    def finish(result):
+        result.update(
+            {
+                "id": uuid.uuid4().hex,
+                "keywords": [word],
+                "match_mode": "signal",
+                "created_at": kemkim_analysis.now_iso(),
+            }
+        )
+        saved = project_store.save_interpretation(uid, project_id, result)
+        insert_log(
+            user_logs_db,
+            uid,
+            "kemkim.interpretation.signal_ai",
+            "kemkim",
+            target={"type": "project", "id": project_id},
+            metadata={"word": word, "has_ai": bool(result.get("ai"))},
+        )
+        return saved
+
+    return JSONResponse({"job_id": _start_signal_job(uid, project_id, run, finish)})
 
 
 @router.post("/api/projects/{project_id}/signal-group-ai")
@@ -534,35 +597,55 @@ async def project_signal_group_ai(project_id: str, request: Request):
         raise HTTPException(400, "신호군 선택이 올바르지 않습니다.")
     graph = _handle_store_error(project_store.load_graph, uid, project_id)
     source_df = _handle_store_error(project_store.load_source_csv, uid, project_id)
-    try:
-        result = await signal_ai.analyze_group(graph, source_df, signal, basis)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
     label = (
         {"final": "최종", "kem": "KEM", "kim": "KIM"}[basis]
         + " "
         + signal_ai.SIGNAL_LABEL[signal]
     )
-    result.update(
-        {
-            "id": uuid.uuid4().hex,
-            "keywords": [label],
-            "match_mode": "signal_group",
-            "created_at": kemkim_analysis.now_iso(),
-        }
+
+    async def run(progress):
+        return await signal_ai.analyze_group(
+            graph, source_df, signal, basis, progress, uid=uid
+        )
+
+    def finish(result):
+        result.update(
+            {
+                "id": uuid.uuid4().hex,
+                "keywords": [label],
+                "match_mode": "signal_group",
+                "created_at": kemkim_analysis.now_iso(),
+            }
+        )
+        saved = project_store.save_interpretation(uid, project_id, result)
+        insert_log(
+            user_logs_db,
+            uid,
+            "kemkim.interpretation.signal_group_ai",
+            "kemkim",
+            target={"type": "project", "id": project_id},
+            metadata={
+                "signal": signal,
+                "basis": basis,
+                "has_ai": bool(result.get("ai")),
+            },
+        )
+        return saved
+
+    return JSONResponse({"job_id": _start_signal_job(uid, project_id, run, finish)})
+
+
+@router.get("/api/signal-jobs/{job_id}")
+async def signal_job_status(job_id: str, request: Request):
+    uid = _uid(request)
+    job = _signal_jobs.get(job_id)
+    if not job or job["uid"] != uid:
+        raise HTTPException(
+            404, "해석 작업을 찾을 수 없습니다. 서버가 다시 시작되었을 수 있어요."
+        )
+    return JSONResponse(
+        {k: job[k] for k in ("status", "stage", "prompt", "result", "error")}
     )
-    saved = _handle_store_error(
-        project_store.save_interpretation, uid, project_id, result
-    )
-    insert_log(
-        user_logs_db,
-        uid,
-        "kemkim.interpretation.signal_group_ai",
-        "kemkim",
-        target={"type": "project", "id": project_id},
-        metadata={"signal": signal, "basis": basis, "has_ai": bool(result.get("ai"))},
-    )
-    return JSONResponse(saved)
 
 
 @router.get("/api/projects/{project_id}/interpretations")

@@ -11,6 +11,7 @@
 """
 
 import logging
+import re
 import threading
 from dataclasses import dataclass, field
 
@@ -147,23 +148,150 @@ def clear_model_cache() -> None:
         _model_cache.clear()
 
 
-def _payload(messages, model, temperature, max_tokens, extra):
+# OpenAI의 추론 모델(gpt-5, o1/o3/o4 …)은 max_tokens 대신 max_completion_tokens 를 받고,
+# temperature 는 기본값만 허용한다.
+_OPENAI_REASONING_RE = re.compile(r"^(gpt-5|o\d)", re.I)
+
+
+def _is_openai_reasoning(base_url: str | None, model: str | None) -> bool:
+    return bool(
+        base_url
+        and "api.openai.com" in base_url
+        and model
+        and _OPENAI_REASONING_RE.match(model)
+    )
+
+
+def _payload(messages, model, temperature, max_tokens, extra, base_url=None):
     payload = {"model": model, "messages": messages}
+    reasoning = _is_openai_reasoning(base_url, model)
     # None은 보내지 않는다. 일부 서버(및 일부 모델)는 명시적 null을 거부한다.
-    if temperature is not None:
+    if temperature is not None and not reasoning:
         payload["temperature"] = temperature
     if max_tokens is not None:
-        payload["max_tokens"] = max_tokens
+        payload["max_completion_tokens" if reasoning else "max_tokens"] = max_tokens
     payload.update(extra or {})
     return payload
 
 
+def _adapt_payload(payload: dict, err: Exception) -> dict | None:
+    """서버가 파라미터를 거부한 400 오류면 그 파라미터를 고친 새 payload를, 아니면 None.
+
+    모델마다 지원하는 파라미터가 달라서(예: max_tokens → max_completion_tokens,
+    temperature 고정) 오류 메시지를 보고 한 번 맞춰서 다시 보낸다.
+    """
+    if getattr(err, "status_code", None) != 400:
+        return None
+    msg = str(err)
+    new = dict(payload)
+    if "max_tokens" in new and "max_completion_tokens" in msg:
+        new["max_completion_tokens"] = new.pop("max_tokens")
+    elif "temperature" in new and "temperature" in msg:
+        new.pop("temperature")
+    elif "response_format" in new and "response_format" in msg:
+        new.pop("response_format")
+    else:
+        return None
+    return new
+
+
+_MAX_TOKEN_CAP = 32768
+
+
+def _token_key(payload: dict) -> str | None:
+    return next(
+        (k for k in ("max_tokens", "max_completion_tokens") if k in payload), None
+    )
+
+
+def _cut_by_length(response) -> bool:
+    """추론 모델이 생각하느라 출력 한도를 다 써서 본문이 빈 응답인지."""
+    try:
+        choice = response.choices[0]
+        return (
+            choice.finish_reason == "length"
+            and not (choice.message.content or "").strip()
+        )
+    except (AttributeError, IndexError):
+        return False
+
+
+def _grow_tokens(payload: dict) -> dict | None:
+    key = _token_key(payload)
+    if not key or payload[key] >= _MAX_TOKEN_CAP:
+        return None
+    new = dict(payload)
+    new[key] = min(payload[key] * 2, _MAX_TOKEN_CAP)
+    return new
+
+
+def _create(client, payload, **kw):
+    grown = False
+    for _ in range(4):
+        try:
+            response = client.chat.completions.create(**payload, **kw)
+        except Exception as e:
+            adapted = _adapt_payload(payload, e)
+            if adapted is None:
+                raise
+            logger.info("LLM 파라미터 조정 후 재시도: %s", e)
+            payload = adapted
+            continue
+        bigger = (
+            None
+            if grown or kw.get("stream")
+            else (_cut_by_length(response) and _grow_tokens(payload))
+        )
+        if not bigger:
+            return response
+        logger.info(
+            "출력 한도 초과로 빈 응답 — 한도를 %s로 늘려 재시도",
+            bigger[_token_key(bigger)],
+        )
+        payload, grown = bigger, True
+    return client.chat.completions.create(**payload, **kw)
+
+
+async def _acreate(client, payload, **kw):
+    grown = False
+    for _ in range(4):
+        try:
+            response = await client.chat.completions.create(**payload, **kw)
+        except Exception as e:
+            adapted = _adapt_payload(payload, e)
+            if adapted is None:
+                raise
+            logger.info("LLM 파라미터 조정 후 재시도: %s", e)
+            payload = adapted
+            continue
+        bigger = (
+            None
+            if grown or kw.get("stream")
+            else (_cut_by_length(response) and _grow_tokens(payload))
+        )
+        if not bigger:
+            return response
+        logger.info(
+            "출력 한도 초과로 빈 응답 — 한도를 %s로 늘려 재시도",
+            bigger[_token_key(bigger)],
+        )
+        payload, grown = bigger, True
+    return await client.chat.completions.create(**payload, **kw)
+
+
 def _extract_text(response) -> str:
     try:
-        content = response.choices[0].message.content
+        choice = response.choices[0]
+        content = choice.message.content
     except (AttributeError, IndexError, KeyError) as e:
         raise LLMError(f"LLM 응답 형식을 해석할 수 없습니다: {e}") from e
     if not content or not content.strip():
+        if getattr(choice, "finish_reason", None) == "length":
+            # 추론 모델이 생각하느라 출력 한도를 다 쓰고 본문을 못 쓴 경우가 대부분이다
+            raise LLMError(
+                "LLM이 출력 한도(max_tokens) 안에 답을 끝내지 못해 빈 응답을 반환했습니다. "
+                "추론 모델이라면 max_tokens를 늘려 주세요."
+            )
         raise LLMError("LLM이 빈 응답을 반환했습니다.")
     return content
 
@@ -208,8 +336,16 @@ def chat(
                 (target.base_url, target.api_key),
                 lambda: _first_model_id(client.models.list()),
             )
-            response = client.chat.completions.create(
-                **_payload(full_messages, resolved, temperature, max_tokens, extra_body)
+            response = _create(
+                client,
+                _payload(
+                    full_messages,
+                    resolved,
+                    temperature,
+                    max_tokens,
+                    extra_body,
+                    target.base_url,
+                ),
             )
             return LLMResult(
                 text=_extract_text(response),
@@ -269,8 +405,16 @@ async def achat(
                     with _model_lock:
                         _model_cache[key] = resolved
 
-            response = await client.chat.completions.create(
-                **_payload(full_messages, resolved, temperature, max_tokens, extra_body)
+            response = await _acreate(
+                client,
+                _payload(
+                    full_messages,
+                    resolved,
+                    temperature,
+                    max_tokens,
+                    extra_body,
+                    target.base_url,
+                ),
             )
             return LLMResult(
                 text=_extract_text(response),
@@ -335,22 +479,41 @@ async def astream(
                     with _model_lock:
                         _model_cache[key] = resolved
 
-            stream = await client.chat.completions.create(
-                **_payload(
-                    full_messages, resolved, temperature, max_tokens, extra_body
-                ),
-                stream=True,
+            payload = _payload(
+                full_messages,
+                resolved,
+                temperature,
+                max_tokens,
+                extra_body,
+                target.base_url,
             )
-            async for chunk in stream:
-                if not chunk.choices:
-                    continue
-                delta = getattr(chunk.choices[0].delta, "content", None)
-                if delta:
-                    started = True
-                    yield delta
-            if not started:
-                raise LLMError("LLM이 빈 응답을 반환했습니다.")
-            return
+            for attempt in range(2):
+                stream = await _acreate(client, payload, stream=True)
+                finish = None
+                async for chunk in stream:
+                    if not chunk.choices:
+                        continue
+                    finish = chunk.choices[0].finish_reason or finish
+                    delta = getattr(chunk.choices[0].delta, "content", None)
+                    if delta:
+                        started = True
+                        yield delta
+                if started:
+                    return
+                bigger = (
+                    _grow_tokens(payload)
+                    if finish == "length" and attempt == 0
+                    else None
+                )
+                if not bigger:
+                    break
+                logger.info("스트림이 출력 한도로 비어 끝남 — 한도를 늘려 재시도")
+                payload = bigger
+            raise LLMError(
+                "LLM이 출력 한도(max_tokens) 안에 답을 끝내지 못해 빈 응답을 반환했습니다."
+                if finish == "length"
+                else "LLM이 빈 응답을 반환했습니다."
+            )
         except Exception as e:
             if started:
                 raise LLMError(

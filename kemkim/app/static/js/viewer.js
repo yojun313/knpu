@@ -36,20 +36,34 @@
   function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
   function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
 
-  function api(path) {
-    return fetch(path).then(function (res) {
-      if (!res.ok) return res.json().then(function (b) { throw new Error(b.detail || res.statusText); });
-      return res.json();
+  // 응답 본문을 JSON으로 읽는다. 프록시(nginx 등)가 오류 시 HTML 페이지를 돌려주면
+  // res.json()이 "Unexpected token '<'"로 깨지므로, 먼저 텍스트로 받아 사람이 읽을 수 있는 오류로 바꾼다.
+  function readJson(res) {
+    return res.text().then(function (text) {
+      var body = null;
+      try { body = text ? JSON.parse(text) : {}; } catch (e) { body = null; }
+      if (body === null) {
+        var msg = (res.status === 504 || res.status === 524)
+          ? '서버 응답이 너무 오래 걸려 중간에서 끊겼습니다 (HTTP ' + res.status + '). 잠시 후 다시 시도해 주세요.'
+          : '서버가 올바르지 않은 응답을 보냈습니다 (HTTP ' + res.status + ').';
+        throw new Error(msg);
+      }
+      if (!res.ok) {
+        var d = body.detail;
+        throw new Error(typeof d === 'string' ? d : (d ? JSON.stringify(d) : (res.statusText || ('HTTP ' + res.status))));
+      }
+      return body;
     });
+  }
+
+  function api(path) {
+    return fetch(path).then(readJson);
   }
 
   function railApi(path, opts) {
     return fetch(path, opts).then(function (res) {
       if (res.status === 401) { location.href = KNPU.loginUrl(); return Promise.reject(new Error('unauthorized')); }
-      return res.json().then(function (b) {
-        if (!res.ok) throw new Error(b.detail || res.statusText);
-        return b;
-      });
+      return readJson(res);
     });
   }
 
@@ -1601,6 +1615,7 @@
     } else if (interp.ai_error) {
       html += '<div class="hint" style="color:var(--danger)">' + esc(interp.ai_error) + '</div>';
     }
+    if (interp.ai_prompt) html += promptHtml({ system: '', user: interp.ai_prompt });
 
     // 뉴스기사를 사이드바에 전부 풀어놓지 않고, 단어(키워드)당 한 줄만 보여준 뒤 클릭하면
     // 모달에서 기사 목록을 확인하도록 한다 — 목록 자체는 스크롤 가능한 고정 높이 박스.
@@ -1820,6 +1835,53 @@
     }).join('');
   }
 
+  // 어떤 모델이 답했는지, 내 GPT API를 썼다면 추정 비용과 앞선 실패 사유
+  function llmUsedHtml(llm) {
+    if (!llm) return '';
+    var cost = llm.provider === 'openai' ? ' · 추정 비용 $' + Number(llm.cost_usd || 0).toFixed(4) : '';
+    var notes = (llm.notes || []).filter(Boolean);
+    return '<div class="sig-llm">해석 모델: <b>' + esc(llm.used) + '</b>' + cost
+      + (notes.length ? '<div class="sig-meta">' + notes.map(esc).join('<br>') + '</div>' : '') + '</div>';
+  }
+
+  // AI에게 보낸 프롬프트(시스템 지시 + 실제 입력) — 기본은 닫힌 상태
+  function promptHtml(prompt) {
+    if (!prompt) return '';
+    var sys = prompt.system || '', user = prompt.user || '';
+    return '<details class="sig-prompt"><summary>AI에게 보낸 프롬프트 보기 <span class="sig-meta">(' + (sys.length + user.length).toLocaleString() + '자)</span></summary>'
+      + '<div class="sig-prompt-label">시스템 지시</div><pre>' + esc(sys) + '</pre>'
+      + '<div class="sig-prompt-label">입력 데이터</div><pre>' + esc(user) + '</pre></details>';
+  }
+
+  // 백그라운드 해석 작업을 2초마다 조회한다. 진행 단계 문구와 프롬프트를 로딩 영역에 반영한다.
+  function pollSignalJob(jobId, onDone, onError) {
+    var timer = null, tries = 0;
+    function tick() {
+      tries++;
+      api('/api/signal-jobs/' + jobId).then(function (job) {
+        var stageEl = document.getElementById('sigStage');
+        if (stageEl && job.stage) stageEl.textContent = job.stage;
+        var slot = document.getElementById('sigPromptSlot');
+        if (slot && job.prompt && !slot.firstChild) slot.innerHTML = promptHtml(job.prompt);
+        if (job.status === 'done') { onDone(job.result); return; }
+        if (job.status === 'error') { onError(new Error(job.error || '해석에 실패했습니다.')); return; }
+        if (tries > 450) { onError(new Error('해석이 15분 넘게 끝나지 않았습니다. 잠시 후 해석 목록을 확인해 주세요.')); return; }
+        timer = setTimeout(tick, 2000);
+      }).catch(function (err) {
+        // 일시적인 네트워크 오류는 몇 번 더 시도한다
+        if (tries < 450 && !/찾을 수 없습니다/.test(err.message)) { timer = setTimeout(tick, 3000); return; }
+        onError(err);
+      });
+    }
+    timer = setTimeout(tick, 1200);
+  }
+
+  function loadingBlockHtml(text) {
+    return '<div class="sig-loading"><span class="sig-spin"></span><div><div id="sigStage">' + esc(text) + '</div>'
+      + '<div class="sig-meta">AI 해석은 1~2분 걸릴 수 있어요. 창을 닫아도 작업은 계속되고, 끝나면 해석 목록에 저장됩니다.</div></div></div>'
+      + '<div id="sigPromptSlot"></div>';
+  }
+
   function renderSignalResult(it, loading) {
     var prof = it.profile || it;
     var ctx = it.context || null;
@@ -1834,9 +1896,7 @@
     html += signalChartSvg(prof);
     html += '<div class="sig-section"><h4>기간별 신호 단계</h4>' + signalTimelineHtml(prof, ctx) + '</div>';
 
-    if (loading) {
-      html += '<div class="sig-loading"><span class="sig-spin"></span>AI가 기간별 기사 맥락을 읽고 신호의 흐름을 해석하고 있어요. 30초~1분 정도 걸립니다.</div>';
-    }
+    if (loading) html += loadingBlockHtml(typeof loading === 'string' ? loading : '해석을 준비하고 있어요');
     if (ai) {
       html += '<div class="sig-section"><h4>AI 해석</h4>'
         + (ai.headline ? '<div class="sig-headline">' + esc(ai.headline) + '</div>' : '')
@@ -1858,6 +1918,8 @@
       if (ai.caveats) html += '<div class="sig-caveat">해석의 한계 · ' + esc(ai.caveats) + '</div>';
     }
     if (it.ai_error) html += '<div class="sig-err">' + esc(it.ai_error) + '</div>';
+    if (!loading && it.llm) html += llmUsedHtml(it.llm);
+    if (!loading && it.prompt) html += '<div class="sig-section">' + promptHtml(it.prompt) + '</div>';
     if (ctx && ctx.by_period && Object.keys(ctx.by_period).length) {
       html += '<details class="sig-section"><summary style="cursor:pointer;font-weight:700">기간별 연관어 자세히 보기</summary><table class="sig-table" style="margin-top:8px"><thead><tr><th>기간</th><th>기사</th><th>이 기간에 두드러진 연관어 (파란색: 처음 나타남)</th></tr></thead><tbody>'
         + (prof.series || []).map(function (r) {
@@ -1884,19 +1946,29 @@
     }
     signalBusy = true;
     openSignalModal("'" + word + "' 신호 해석");
-    document.getElementById('signalModalBody').innerHTML = '<div class="sig-loading"><span class="sig-spin"></span>기간별 수치를 불러오는 중...</div>';
+    var body = document.getElementById('signalModalBody');
+    body.innerHTML = loadingBlockHtml('기간별 수치를 불러오는 중...');
+    var fail = function (err) {
+      signalBusy = false;
+      var ld = body.querySelector('.sig-loading'); if (ld) ld.remove();
+      body.insertAdjacentHTML('beforeend', '<div class="sig-err">' + esc(err.message || String(err)) + '</div>');
+    };
     api('/api/projects/' + projectId + '/signal-profile?word=' + encodeURIComponent(word)).then(function (prof) {
-      renderSignalResult({ profile: prof }, true);
+      // 프롬프트 영역을 보존한 채 위쪽 수치 화면만 먼저 그린다
+      if (!signalBusy) return;
+      var slot = document.getElementById('sigPromptSlot');
+      var keep = slot ? slot.innerHTML : '';
+      var stageEl = document.getElementById('sigStage');
+      renderSignalResult({ profile: prof }, stageEl ? stageEl.textContent : true);
+      if (keep) document.getElementById('sigPromptSlot').innerHTML = keep;
     }).catch(function () { });
-    postJson('/api/projects/' + projectId + '/signal-ai', { word: word }).then(function (it) {
-      signalBusy = false;
-      renderSignalResult(it, false);
-      loadInterpretations();
-    }).catch(function (err) {
-      signalBusy = false;
-      document.getElementById('signalModalBody').insertAdjacentHTML('beforeend', '<div class="sig-err">' + esc(err.message || String(err)) + '</div>');
-      var ld = document.querySelector('#signalModalBody .sig-loading'); if (ld) ld.remove();
-    });
+    postJson('/api/projects/' + projectId + '/signal-ai', { word: word }).then(function (res) {
+      pollSignalJob(res.job_id, function (it) {
+        signalBusy = false;
+        renderSignalResult(it, false);
+        loadInterpretations();
+      }, fail);
+    }).catch(fail);
   }
 
   function renderGroupResult(it) {
@@ -1917,12 +1989,15 @@
         + '<div>' + esc(t.description) + '</div><div class="sig-terms">' + termChips(t.words, true) + '</div>' + evidenceHtml(t.evidence, snippets) + '</div>';
     }).join('') + '</div></div>';
     if ((ai.unassigned || []).length) html += '<div class="sig-section"><h4>테마에 묶이지 않은 단어</h4><div class="sig-terms">' + termChips(ai.unassigned, true) + '</div></div>';
+    if ((ai.not_in_source || []).length) html += '<div class="sig-section"><h4>원본 기사에서 찾지 못한 단어</h4><div class="hint">첨부한 원본 CSV에 이 단어가 들어간 기사가 없어 AI 해석에서 제외했습니다. 원본이 분석 데이터와 같은지 확인해 보세요.</div><div class="sig-terms">' + termChips(ai.not_in_source, false) + '</div></div>';
     html += '<details class="sig-section"><summary style="cursor:pointer;font-weight:700">단어별 요약 보기</summary><table class="sig-table" style="margin-top:8px"><thead><tr><th>단어</th><th>기사</th><th>처음</th><th>정점</th><th>연관어</th></tr></thead><tbody>'
       + (it.items || []).map(function (x) {
         return '<tr><td><button type="button" class="sig-term" data-sigword="' + escAttr(x.word) + '">' + esc(x.word) + '</button></td><td>' + x.docs + '</td><td>' + esc(x.first || '-') + '</td><td>' + esc(x.peak || '-') + '</td><td>' + esc((x.terms || []).join(', ')) + '</td></tr>';
       }).join('') + '</tbody></table></details>';
     if (ai.caveats) html += '<div class="sig-caveat">해석의 한계 · ' + esc(ai.caveats) + '</div>';
     if (it.ai_error) html += '<div class="sig-err">' + esc(it.ai_error) + '</div>';
+    if (it.llm) html += llmUsedHtml(it.llm);
+    if (it.prompt) html += '<div class="sig-section">' + promptHtml(it.prompt) + '</div>';
     var body = document.getElementById('signalModalBody');
     body.innerHTML = html;
     body.querySelectorAll('[data-sigword]').forEach(function (el) {
@@ -1938,15 +2013,20 @@
     var signal = document.getElementById('sigGroupSignal').value;
     signalBusy = true;
     openSignalModal('신호군 종합 해석');
-    document.getElementById('signalModalBody').innerHTML = '<div class="sig-loading"><span class="sig-spin"></span>신호군의 단어별 맥락을 모아 AI가 떠오르는 이슈를 묶고 있어요. 1분 정도 걸릴 수 있습니다.</div>';
-    postJson('/api/projects/' + projectId + '/signal-group-ai', { basis: basis, signal: signal }).then(function (it) {
+    var body = document.getElementById('signalModalBody');
+    body.innerHTML = loadingBlockHtml('신호군 해석을 준비하고 있어요');
+    var fail = function (err) {
       signalBusy = false;
-      renderGroupResult(it);
-      loadInterpretations();
-    }).catch(function (err) {
-      signalBusy = false;
-      document.getElementById('signalModalBody').innerHTML = '<div class="sig-err">' + esc(err.message || String(err)) + '</div>';
-    });
+      var ld = body.querySelector('.sig-loading'); if (ld) ld.remove();
+      body.insertAdjacentHTML('afterbegin', '<div class="sig-err">' + esc(err.message || String(err)) + '</div>');
+    };
+    postJson('/api/projects/' + projectId + '/signal-group-ai', { basis: basis, signal: signal }).then(function (res) {
+      pollSignalJob(res.job_id, function (it) {
+        signalBusy = false;
+        renderGroupResult(it);
+        loadInterpretations();
+      }, fail);
+    }).catch(fail);
   }
 
   function fillSignalWordList() {

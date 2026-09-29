@@ -655,3 +655,14 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .sig-cell .st{white-space:nowrap;padding:3px 4px}
 .sig-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 @media (max-width:640px){.sig-chart-wrap .sig-chart{min-width:640px}}
+
+/* AI 프롬프트 보기 (기본 닫힘) */
+.sig-prompt{margin-top:12px;border:1px solid var(--sidebar-border);border-radius:10px;background:var(--sidebar-panel)}
+.sig-prompt>summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:12.5px;color:var(--sidebar-text)}
+.sig-prompt[open]>summary{border-bottom:1px solid var(--sidebar-border)}
+.sig-prompt-label{padding:8px 12px 0;font-size:11px;font-weight:800;color:var(--sidebar-muted)}
+.sig-prompt pre{margin:4px 12px 10px;padding:10px;border-radius:8px;background:var(--sidebar-bg);border:1px solid var(--sidebar-border);
+  white-space:pre-wrap;word-break:break-word;font-size:11.5px;line-height:1.55;max-height:360px;overflow:auto;color:var(--sidebar-text)}
+.sig-loading>div{flex:1}
+.sig-llm{margin-top:14px;font-size:12px;color:var(--sidebar-muted)}
+.sig-llm b{color:var(--sidebar-text)}

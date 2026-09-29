@@ -19,7 +19,11 @@ from collections import Counter, defaultdict
 
 import pandas as pd
 
-from system.llm import LLMError, achat
+import logging
+
+from system.llm import LLMError, achat, user_llm
+
+logger = logging.getLogger(__name__)
 
 SIGNAL_LABEL = {
     "strong_signal": "강한 신호",
@@ -526,21 +530,57 @@ def _parse_json(text: str) -> dict:
     raise ValueError("AI 응답에서 JSON을 찾지 못했습니다.")
 
 
-async def _ask_json(system: str, user: str, max_tokens: int = 3000) -> dict:
+async def _ask_json(
+    system: str,
+    user: str,
+    max_tokens: int = 8000,
+    uid: str | None = None,
+    purpose: str = "",
+) -> tuple[dict, dict]:
+    """사용자 LLM 설정 순서대로(로컬 → 내 GPT API 등) JSON 답을 받는다.
+
+    대상마다 한 번 호출하고, JSON이 깨졌으면 같은 대상에 한 번 고쳐 달라고 한 뒤,
+    그래도 안 되면 다음 대상으로 넘어간다. (답, 사용 정보)를 돌려준다.
+    """
     msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-    res = await achat(msgs, temperature=0.3, max_tokens=max_tokens)
-    try:
-        return _parse_json(res.text)
-    except ValueError:
-        retry = msgs + [
-            {"role": "assistant", "content": res.text[:6000]},
-            {
-                "role": "user",
-                "content": "설명 없이 올바른 JSON 객체 하나만 다시 출력하세요.",
-            },
-        ]
-        res2 = await achat(retry, temperature=0, max_tokens=max_tokens)
-        return _parse_json(res2.text)
+    targets, note = user_llm.plan(uid, msgs, max_tokens)
+    notes = [note] if note else []
+    total_cost = 0.0
+    last_err = None
+    for t in targets:
+        try:
+            res = await achat(msgs, temperature=0.3, max_tokens=max_tokens, **t.kwargs)
+            total_cost += user_llm.record_usage(uid, t, res, purpose)
+            try:
+                data = _parse_json(res.text)
+            except ValueError:
+                retry = msgs + [
+                    {"role": "assistant", "content": res.text[:6000]},
+                    {
+                        "role": "user",
+                        "content": "설명 없이 올바른 JSON 객체 하나만 다시 출력하세요.",
+                    },
+                ]
+                res2 = await achat(
+                    retry, temperature=0, max_tokens=max_tokens, **t.kwargs
+                )
+                total_cost += user_llm.record_usage(
+                    uid, t, res2, purpose + " (형식 재요청)"
+                )
+                data = _parse_json(res2.text)
+            return data, {
+                "used": t.label,
+                "provider": t.provider,
+                "cost_usd": round(total_cost, 5),
+                "notes": notes,
+            }
+        except (LLMError, ValueError) as e:
+            last_err = e
+            notes.append(f"{t.label}: {e}")
+            logger.warning("신호 해석 LLM 실패(%s): %s", t.label, e)
+    raise LLMError(
+        " / ".join(notes) or str(last_err or "사용할 수 있는 LLM이 없습니다.")
+    )
 
 
 WORD_SYSTEM = """너는 뉴스 빅데이터로 미래 이슈의 징후를 찾는 KEMKIM(Keyword Emergence Map / Keyword Issue Map) 분석 전문가다.
@@ -644,9 +684,21 @@ def _clean_word_ai(data: dict, profile: dict, ctx: dict) -> dict:
     }
 
 
-async def analyze_word(graph: dict, source_df: pd.DataFrame | None, word: str) -> dict:
+def _noop(*_a, **_k):
+    pass
+
+
+async def analyze_word(
+    graph: dict,
+    source_df: pd.DataFrame | None,
+    word: str,
+    progress=_noop,
+    uid: str | None = None,
+) -> dict:
+    """progress(stage, prompt=None): 진행 단계와(만들어졌다면) AI에 보낼 프롬프트를 알린다."""
     import asyncio
 
+    progress("기간별 신호 단계를 계산하고 있어요")
     profile = signal_profile(graph, word)
     if not any(s["DoV"] is not None or s["DoD"] is not None for s in profile["series"]):
         raise ValueError(f"'{word}'은(는) 이 분석의 기간별 데이터에 없는 단어입니다.")
@@ -657,23 +709,35 @@ async def analyze_word(graph: dict, source_df: pd.DataFrame | None, word: str) -
         "context": None,
         "ai": None,
         "ai_error": None,
+        "prompt": None,
     }
     if source_df is None:
         result["ai_error"] = (
             "원본 CSV가 없어 맥락 해석은 건너뛰었습니다. 원본을 첨부하면 AI 해석을 받을 수 있습니다."
         )
         return result
+    progress("원본 기사에서 기간별 맥락과 연관어를 뽑고 있어요")
     df = await asyncio.to_thread(prepare_source, source_df, graph)
     ctx = await asyncio.to_thread(word_contexts, df, profile)
     result["context"] = ctx
     if not ctx["total_docs"]:
         result["ai_error"] = "원본 기사에서 이 단어가 들어간 문서를 찾지 못했습니다."
         return result
+    prompt = {
+        "system": WORD_SYSTEM,
+        "user": _word_user_prompt(profile, ctx, graph.get("metadata") or {}),
+    }
+    result["prompt"] = prompt
+    progress("AI가 국면별 맥락을 해석하고 있어요", prompt)
     try:
-        data = await _ask_json(
-            WORD_SYSTEM, _word_user_prompt(profile, ctx, graph.get("metadata") or {})
+        data, used = await _ask_json(
+            prompt["system"],
+            prompt["user"],
+            uid=uid,
+            purpose=f"KEMKIM 신호 해석: {word}",
         )
         result["ai"] = _clean_word_ai(data, profile, ctx)
+        result["llm"] = used
     except (LLMError, ValueError) as e:
         result["ai_error"] = f"AI 해석 요청에 실패했습니다: {e}"
     return result
@@ -747,7 +811,12 @@ def _group_contexts(
 
 
 async def analyze_group(
-    graph: dict, source_df: pd.DataFrame, signal: str, basis: str
+    graph: dict,
+    source_df: pd.DataFrame,
+    signal: str,
+    basis: str,
+    progress=_noop,
+    uid: str | None = None,
 ) -> dict:
     import asyncio
 
@@ -760,6 +829,7 @@ async def analyze_group(
     if not words:
         raise ValueError("선택한 신호군에 단어가 없습니다.")
     words = words[:40]
+    progress(f"신호군 단어 {len(words)}개의 맥락을 모으고 있어요")
     df = await asyncio.to_thread(prepare_source, source_df, graph)
     items, snippets = await asyncio.to_thread(_group_contexts, df, graph, words)
     lines = [
@@ -767,7 +837,20 @@ async def analyze_group(
         "",
     ]
     snip = {s["id"]: s for s in snippets}
+    # 원본 기사에 한 번도 나오지 않은 단어는 AI가 근거 없이 추측하게 되므로 입력에서 뺀다
+    missing = [it["word"] for it in items if not it["docs"]]
+    if missing:
+        lines.insert(
+            1,
+            f"(원본 기사에서 찾지 못해 제외한 단어 {len(missing)}개는 테마에 넣지 마세요)",
+        )
+    if len(missing) == len(items):
+        raise ValueError(
+            "원본 기사에서 이 신호군의 단어를 하나도 찾지 못했습니다. 원본 CSV가 분석 데이터와 같은지 확인해 주세요."
+        )
     for it in items:
+        if not it["docs"]:
+            continue
         lines.append(
             f"- {it['word']} (기사 {it['docs']}건, 처음 {it['first'] or '-'}, 정점 {it['peak'] or '-'}) 연관어: {', '.join(it['terms'])}"
         )
@@ -787,8 +870,18 @@ async def analyze_group(
         "ai": None,
         "ai_error": None,
     }
+    prompt = {"system": GROUP_SYSTEM, "user": "\n".join(lines)}
+    result["prompt"] = prompt
+    progress("AI가 떠오르는 이슈를 묶고 있어요", prompt)
     try:
-        data = await _ask_json(GROUP_SYSTEM, "\n".join(lines), max_tokens=2500)
+        data, used = await _ask_json(
+            prompt["system"],
+            prompt["user"],
+            max_tokens=6000,
+            uid=uid,
+            purpose=f"KEMKIM 신호군 해석: {SIGNAL_LABEL.get(signal, signal)}",
+        )
+        result["llm"] = used
         wordset, used = set(words), set()
         themes = []
         for t in (data.get("themes") or [])[:6]:
@@ -809,7 +902,8 @@ async def analyze_group(
         result["ai"] = {
             "summary": str(data.get("summary") or "")[:1200],
             "themes": themes,
-            "unassigned": [w for w in words if w not in used],
+            "unassigned": [w for w in words if w not in used and w not in missing],
+            "not_in_source": missing,
             "priority": [
                 {"word": p.get("word"), "reason": str(p.get("reason") or "")[:300]}
                 for p in (data.get("priority") or [])

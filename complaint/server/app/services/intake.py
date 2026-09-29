@@ -11,6 +11,8 @@
 """
 
 import difflib
+import re
+from datetime import date
 import json
 import logging
 import time
@@ -116,7 +118,9 @@ EXTRACT_SYSTEM = """너는 고소장 작성을 돕는 사건 정리 담당자다
 - 값은 기존에 정리된 내용과 새 내용을 합친 '완성된 문장'으로 쓴다(기존 내용을 지우지 말 것).
 - 사용자가 말하지 않은 사실은 절대 추측해서 채우지 않는다. 모르면 넣지 않는다.
 - 사용자가 '모른다', '없다'고 분명히 답한 항목은 "모름" 또는 "없음"으로 적는다.
-- 날짜·시각·금액·계좌·말한 내용은 사용자가 말한 그대로 보존한다(날짜는 연-월-일 시:분 형식이 가능하면 그렇게).
+- 상대방이 한 말·계좌·장소는 사용자가 말한 그대로 보존한다.
+- 날짜는 [오늘 날짜]를 기준으로 계산한다. '지난달', '작년', '어제'처럼 상대적으로 말하면 실제 날짜로 바꾸고, 연도 없이 월·일만 말하면 오늘 이전의 가장 가까운 그 날짜로 본다. 절대 다른 연도를 지어내지 않는다. 형식은 '2026-03-02 15:00'처럼 쓰고 시각을 모르면 날짜만 쓴다.
+- 금액은 사용자가 말한 단위 그대로 원화로 쓴다(예: '65만원'). 외화 표기(KRW 등)로 바꾸지 않는다.
 - 선택형 항목은 제시된 보기 중 하나로만 적는다.
 - crime_type 은 목록의 id 중 가장 알맞은 것. 판단할 정보가 없으면 null.
 - 이름·주민등록번호·주소·전화번호 같은 개인 식별정보는 facts 에 넣지 않는다(피고소인을 특정할 닉네임·계좌 명의 등은 suspect_description 에 넣어도 된다)."""
@@ -141,6 +145,7 @@ async def extract(case: dict, user_text: str) -> dict:
         {
             "role": "user",
             "content": (
+                f"[오늘 날짜] {date.today().isoformat()}\n"
                 f"[현재 사건 유형] {crime_id or '미정'}\n\n"
                 f"[지금까지 정리된 사실]\n{json.dumps(case['facts'], ensure_ascii=False)}\n\n"
                 f"[최근 대화]\n{convo}\n\n"
@@ -149,34 +154,252 @@ async def extract(case: dict, user_text: str) -> dict:
             ),
         },
     ]
-    return await chat_json(messages, temperature=0.1, max_tokens=1500)
+    return await chat_json(messages, temperature=0.1, max_tokens=4000)
 
 
-def merge_extraction(case: dict, data: dict) -> list[str]:
-    """추출 결과를 사건에 반영하고, 바뀐 사실 키 목록을 돌려준다."""
-    changed = []
-    ct = data.get("crime_type")
+_NEGATIVE_VALUES = (
+    "없음",
+    "모름",
+    "해당 없음",
+    "해당없음",
+    "없습니다",
+    "모릅니다",
+    "알 수 없음",
+    "불상",
+)
+_NEGATIVE_HINT_RE = re.compile(r"없|모르|몰라|기억(이|나지)|안\s?했|안했|아니")
+
+
+def resolve_crime_id(value) -> str | None:
+    """모델이 돌려준 유형 표기(id·표시 이름·공백·유사 표기)를 사건 유형 id로 맞춘다."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    v = value.strip()
+    if v in CRIMES:
+        return v
+    squash = lambda x: re.sub(r"[\s·\-_()]", "", x)
+    table = {}
+    for c in CRIMES.values():
+        table[squash(c.id)] = c.id
+        table[squash(c.label)] = c.id
+    if squash(v) in table:
+        return table[squash(v)]
+    close = difflib.get_close_matches(squash(v), list(table), n=1, cutoff=0.75)
+    return table[close[0]] if close else None
+
+
+# 모델이 유형을 정하지 못했을 때 쓰는 키워드 분류(앞에 있을수록 우선)
+_CRIME_KEYWORDS = [
+    ("촬영물협박", ("유포하겠", "뿌리겠", "퍼뜨리겠")),
+    ("허위영상물", ("딥페이크", "합성")),
+    ("불법촬영", ("몰카", "몰래 촬영", "몰래 찍", "도촬", "불법촬영")),
+    ("통신매체음란", ("음란", "성적인 메시지", "야한 사진", "성기 사진")),
+    ("강제추행", ("추행", "만졌", "더듬")),
+    ("스토킹", ("스토킹", "따라다니", "집 앞에 찾아", "계속 찾아")),
+    ("보험사기", ("보험금",)),
+    ("소송사기", ("소송", "허위 소장")),
+    ("분양사기", ("분양",)),
+    ("취업사기", ("취업", "입사시켜")),
+    ("아이템사기", ("아이템", "게임머니")),
+    (
+        "인터넷물품사기",
+        ("당근", "중고", "번개장터", "중고나라", "택배", "판매자", "구매"),
+    ),
+    ("계약금사기", ("계약금", "납품", "발주")),
+    ("차용사기", ("빌려", "차용", "돈을 갚", "안 갚")),
+    ("횡령", ("맡긴", "맡겼", "보관", "횡령")),
+    ("배임", ("배임",)),
+    ("임금체불", ("월급", "임금", "퇴직금", "급여")),
+    ("정보통신망침입", ("해킹", "계정", "로그인", "비밀번호")),
+    ("개인정보유출", ("개인정보",)),
+    (
+        "사이버명예훼손",
+        ("단톡", "단체방", "커뮤니티", "게시글", "댓글", "SNS", "인스타"),
+    ),
+    ("명예훼손", ("소문", "명예")),
+    ("모욕", ("욕", "모욕")),
+    ("상해", ("다쳤", "진단", "골절", "피가")),
+    ("폭행", ("때렸", "맞았", "폭행", "밀쳤")),
+    ("협박", ("협박", "죽이겠", "가만두지")),
+    ("주거침입", ("무단으로 들어", "침입")),
+    ("재물손괴", ("부쉈", "파손", "망가뜨")),
+    ("절도", ("훔쳐", "도난", "절도", "훔친")),
+]
+
+
+def guess_crime(text: str) -> str | None:
+    for crime_id, words in _CRIME_KEYWORDS:
+        if any(w in text for w in words):
+            # 사이버 명예훼손은 명예훼손성 내용이 있을 때만(욕설만이면 모욕)
+            if crime_id == "사이버명예훼손" and not re.search(
+                r"소문|거짓|허위|사실|퍼뜨|명예", text
+            ):
+                continue
+            return crime_id
+    return None
+
+
+# 모델이 사용자가 말하지 않은 내용을 채우기 쉬운 항목: 대화에 관련 단어가 있어야 받는다
+_GROUNDING = {
+    "evidence": (
+        "캡처",
+        "스크린샷",
+        "녹음",
+        "내역",
+        "확인증",
+        "계약서",
+        "사진",
+        "영상",
+        "증거",
+        "문자",
+        "메시지",
+        "기록",
+        "진단서",
+        "영수증",
+        "CCTV",
+        "cctv",
+    ),
+    "settlement": ("합의",),
+    "punishment_wish": ("처벌",),
+    "same_complaint": ("고소", "신고"),
+    "related_investigation": ("수사", "조사", "재판"),
+    "repayment": ("돌려", "갚", "환불", "변제", "받았", "못 받", "못받"),
+    "other_victims": ("다른 사람", "다른 피해", "피해자", "여러 명", "더치트"),
+    "witnesses": ("목격", "봤", "같이 있", "함께 있", "옆에"),
+    "weapon": ("칼", "흉기", "몽둥이", "병", "둔기", "물건", "도구", "들고"),
+    "injury": ("다쳤", "상처", "진단", "골절", "멍", "피", "병원", "치료"),
+    "known_date": ("알게", "알았", "확인"),
+}
+_HANGUL_RE = re.compile(r"[가-힣]{2,}")
+_QUOTE_RE = re.compile(r"[‘'\"“]([^‘’'\"“”]{4,150})[’'\"”]")
+
+
+def _grounded(key: str, value: str, corpus: str) -> bool:
+    words = _GROUNDING.get(key)
+    if words is not None:
+        return any(w in corpus for w in words)
+    if FACTS[key].get("options"):
+        return True
+    # 자유 서술 항목은 사용자가 쓴 한국어 낱말과 겹치는 부분이 있어야 한다.
+    # 날짜·금액처럼 모델이 형식을 바꾼 숫자는 비교하지 않는다(지난달 3월 2일 → 2026-03-02).
+    toks = {t for t in _HANGUL_RE.findall(value)}
+    return not toks or any(t[:2] in corpus for t in toks)
+
+
+_DATE_RE = re.compile(
+    r"(?:(?P<y>\d{4})\s*년\s*|(?P<rel>작년|지난해|올해|이번\s*해)\s*)?(?P<m>\d{1,2})\s*월\s*(?P<d>\d{1,2})\s*일"
+    r"(?:\s*(?P<ap>오전|오후|새벽|밤|저녁|아침)?\s*(?P<h>\d{1,2})\s*시(?:\s*(?P<mi>\d{1,2})\s*분|\s*반)?)?"
+)
+
+
+def parse_korean_datetime(text: str, today: date | None = None) -> str | None:
+    """'지난달 3월 2일 오후 3시쯤', '2025년 3월 2일 15시' 같은 표현을 '2026-03-02 15:00'으로.
+
+    연도가 없으면 오늘 이전의 가장 가까운 그 날짜로 본다(미래 날짜를 만들지 않는다).
+    """
+    today = today or date.today()
+    m = _DATE_RE.search(text or "")
+    if not m:
+        return None
+    mo, d = int(m.group("m")), int(m.group("d"))
+    if not (1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    if m.group("y"):
+        y = int(m.group("y"))
+    elif m.group("rel") in ("작년", "지난해"):
+        y = today.year - 1
+    else:
+        y = today.year if (mo, d) <= (today.month, today.day) else today.year - 1
     try:
-        conf = float(data.get("crime_confidence") or 0)
-    except (TypeError, ValueError):
-        conf = 0.0
-    if isinstance(ct, str) and ct in CRIMES and ct != case.get("crime_type"):
+        date(y, mo, d)
+    except ValueError:
+        return None
+    out = f"{y:04d}-{mo:02d}-{d:02d}"
+    if m.group("h"):
+        h = int(m.group("h"))
+        if m.group("ap") in ("오후", "밤", "저녁") and h < 12:
+            h += 12
+        mi = 30 if "반" in m.group(0) and not m.group("mi") else int(m.group("mi") or 0)
+        if 0 <= h <= 23 and 0 <= mi <= 59:
+            out += f" {h:02d}:{mi:02d}"
+    return out
+
+
+def merge_extraction(
+    case: dict, data: dict, user_text: str = "", asked: list[str] | None = None
+) -> list[str]:
+    """추출 결과를 사건에 반영하고, 바뀐 사실 키 목록을 돌려준다.
+
+    - 사실은 판정된 사건 유형에 해당하는 항목만 받는다(유형이 없으면 공통 항목만).
+    - '없음/모름' 같은 값은 사용자가 실제로 부정·모름을 말했고, 직전에 물어본 항목이거나
+      선택형 항목일 때만 받는다. 모델이 모든 항목을 '없음'으로 채우는 것을 막는다.
+    """
+    changed = []
+    corpus = (
+        " ".join(
+            m["content"] for m in case.get("messages", []) if m.get("role") == "user"
+        )
+        + " "
+        + (user_text or "")
+    )
+    current = case.get("crime_type")
+    # 모델이 유형을 못 정했으면(아직 유형이 없을 때만) 키워드로 분류한다
+    ct = resolve_crime_id(data.get("crime_type")) or (
+        None if current else guess_crime(corpus)
+    )
+    if ct and ct != current:
+        try:
+            conf = float(data.get("crime_confidence") or 0)
+        except (TypeError, ValueError):
+            conf = 0.0
         # 이미 유형이 정해졌다면 확신이 높을 때만 바꾼다(대화 중 흔들림 방지)
-        if not case.get("crime_type") or conf >= 0.75:
+        if not current or conf >= 0.75:
             case["crime_type"] = ct
             changed.append("crime_type")
+
+    allowed = set(fact_keys_for(case.get("crime_type")))
+    asked = set(asked or [])
+    says_negative = bool(_NEGATIVE_HINT_RE.search(user_text or ""))
     facts = data.get("facts") or {}
     if isinstance(facts, dict):
         for k, v in facts.items():
-            if k not in FACTS or v is None:
+            if k not in FACTS or k not in allowed or v is None:
                 continue
             v = str(v).strip()
-            if not v or v.lower() in ("null", "none"):
+            if not v or v.lower() in ("null", "none", "n/a"):
+                continue
+            is_negative = v.rstrip(".") in _NEGATIVE_VALUES
+            if is_negative and not (
+                says_negative and (k in asked or FACTS[k].get("options"))
+            ):
+                continue
+            if not is_negative and not _grounded(k, v, corpus):
+                logger.info("대화에 근거가 없는 추출 값 무시: %s=%s", k, v[:40])
                 continue
             v = _normalize_choice(k, v)[:4000]
             if case["facts"].get(k) != v:
                 case["facts"][k] = v
                 changed.append(k)
+    # 날짜는 고소장의 핵심인데 모델이 가끔 빠뜨린다 — 사용자가 쓴 날짜 표현을 직접 읽어 채운다
+    if "incident_datetime" in allowed and not case["facts"].get("incident_datetime"):
+        dt = parse_korean_datetime(corpus)
+        if dt:
+            case["facts"]["incident_datetime"] = dt
+            changed.append("incident_datetime")
+    # 사기 유형은 '상대방이 한 말'이 곧 기망행위다. 모델이 이 칸을 비워 두는 일이 잦아
+    # (1) 모델이 words_used 로 뽑은 말, (2) 사용자가 따옴표로 인용한 말 순으로 채운다.
+    crime = CRIMES.get(case.get("crime_type") or "")
+    if crime and crime.category == "사기" and not case["facts"].get("deception"):
+        said = str((data.get("facts") or {}).get("words_used") or "").strip()
+        quotes = list(dict.fromkeys(q.strip() for q in _QUOTE_RE.findall(corpus)))
+        if said and _grounded("words_used", said, corpus):
+            case["facts"]["deception"] = said
+        elif quotes:
+            case["facts"]["deception"] = " ".join(
+                f"피고소인은 “{q.strip()}”라고 말하였습니다." for q in quotes[:3]
+            )
+        if case["facts"].get("deception"):
+            changed.append("deception")
     return changed
 
 
@@ -238,7 +461,9 @@ REPLY_SYSTEM = """너는 경찰청 표준 고소장 작성을 돕는 'FPEI AI �
 
 [말투와 형식]
 - 한국어 존댓말. 따뜻하지만 간결하게, 3~6문장.
-- 먼저 사용자가 방금 말한 핵심을 한 문장으로 확인한다.
+- 사용자를 '당신'이라고 부르지 않는다(주어를 생략하거나 '고소인님'도 쓰지 않고 자연스럽게 말한다).
+- 인사는 대화의 첫 답변에서만 한다. 이미 대화가 진행 중이면 '안녕하세요'로 시작하지 않는다.
+- 먼저 사용자가 방금 말한 핵심을 한 문장으로 받아서 정리한다. 되묻는 형태('~상황이신가요?')가 아니라 확인하는 평서문('~하셨군요.')으로 쓴다.
 - 그다음 [다음에 물어볼 항목]의 첫 번째(필요하면 두 번째까지)만 자연스럽게 묻는다. 여러 개를 한꺼번에 나열하지 않는다.
 - 굵게(**)만 쓸 수 있다. 표·제목·코드블록은 쓰지 않는다.
 
@@ -311,8 +536,13 @@ async def chat_turn(case: dict, user_text: str):
     yield {"type": "status", "text": "말씀하신 내용을 정리하고 있어요"}
     changed: list[str] = []
     try:
+        asked = (
+            missing_required(case.get("crime_type"), case["facts"])[:3]
+            if case.get("crime_type")
+            else []
+        )
         data = await extract(case, user_text)
-        changed = merge_extraction(case, data)
+        changed = merge_extraction(case, data, user_text, asked)
     except Exception as e:  # 추출이 실패해도 대화는 이어간다
         logger.warning("사실 추출 실패: %s", e)
 
@@ -335,7 +565,7 @@ async def chat_turn(case: dict, user_text: str):
     ]
     reply = ""
     try:
-        async for piece in stream_text(messages, temperature=0.4, max_tokens=900):
+        async for piece in stream_text(messages, temperature=0.4, max_tokens=3000):
             reply += piece
             yield {"type": "delta", "text": piece}
     except LLMError as e:
