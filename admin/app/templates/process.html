@@ -1,4 +1,12 @@
 {% extends "base.html" %}
+{% block head_extra %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/static/ud/ud-compat.css">
+{% endblock %}
+{% block scripts %}
+    <script src="/static/ud/ud-compat.js"></script>
+    <script src="/static/ud/ecosystem.js"></script>
+{% endblock %}
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -231,6 +239,20 @@
         </table>
     </div>
 </div>
+
+<!-- ecosystem.config.js: 등록된 앱 목록 · 새 앱 추가 · 시작 (UnivDash 에서 옮겨 옴) -->
+<section id="ecosystem" class="ud-scope mt-8 mb-8">
+    <div class="mb-4 flex items-end justify-between gap-3">
+        <div class="min-w-0">
+            <h2 class="text-lg font-bold text-white"><i class="fas fa-file-code mr-2 text-purple-400"></i>Ecosystem</h2>
+            <p id="ecoPath" class="mt-1 truncate font-mono text-[11px] text-white/40">ecosystem.config.js</p>
+        </div>
+        <button id="ecoAddBtn" type="button" class="btn-glow flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-plus text-xs"></i> 새 앱</button>
+    </div>
+    <div id="ecoList" class="glass rounded-2xl overflow-hidden divide-y divide-white/5">
+        <div class="p-5 text-xs text-white/35">불러오는 중...</div>
+    </div>
+</section>
 
 <div id="logModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-zinc-900 border border-zinc-800 w-full max-w-5xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl scale-up-animation">

@@ -106,6 +106,13 @@ class NoCacheStaticFiles(StaticFiles):
 # statistics/kemkim/network가 함께 쓰는 테마 시스템(테마 CSS) — 관리자 대시보드는
 mount_shared_ui(app, app_name="ADMIN", theme_color="#0B1226")
 
+# UnivDash 에서 옮겨 온 Git · Server 화면의 스크립트/스타일
+app.mount(
+    "/static",
+    NoCacheStaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
+    name="static",
+)
+
 # 라우터 등록
 app.include_router(main_routes.router)
 app.include_router(log_routes.router)

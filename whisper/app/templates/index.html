@@ -787,6 +787,27 @@
                 box-shadow: 0 0 40px rgba(5,7,15,.35) !important;
             }
         }
+
+        /* ── UnivDash 사이드바 (공용 theme.css 의 .sb-* 스타일 사용) + 접기 · 너비 조절 ── */
+        html body .app > .panel.sidebar { width: 280px; position: relative; overflow: hidden; }
+        html body .app > .panel.sidebar .sidebar-tools { padding: 0 12px 8px; border-bottom: none; }
+        html body .app > .panel.sidebar .note-list { flex: 1; min-height: 0; }
+        @media (min-width: 861px) {
+            html body .app > .panel.sidebar.collapsed { width: 68px !important; min-width: 68px; }
+            html body .app > .panel.sidebar.collapsed :is(.sb-label, .sb-user, .sb-overview, .sb-section, .sidebar-tools, .note-list, .gpu-widget, .rail-resizer, .rail-reset-btn) { display: none !important; }
+            html body .app > .panel.sidebar.collapsed .sb-top { padding: 14px 10px; }
+            html body .app > .panel.sidebar.collapsed .sb-brand { justify-content: center; margin-bottom: 12px; }
+            html body .app > .panel.sidebar.collapsed .rail-upload.sb-new { flex: none; width: 44px; padding: 0 !important; margin: 0 auto; }
+            html body .app > .panel.sidebar.collapsed .sb-bottom { margin-top: auto; padding: 10px 6px; }
+            html body .app > .panel.sidebar.collapsed .sb-conn { justify-content: center; padding: 6px 0; }
+            html body .app > .panel.sidebar.collapsed .sb-account { flex-direction: column; gap: 4px; }
+            html body .app > .panel.sidebar.collapsed .sb-logout { flex: none; width: 36px; padding: 0; justify-content: center; }
+            html body .app > .panel.sidebar.collapsed .sb-collapse svg { transform: rotate(180deg); }
+            html body .app > .panel.sidebar > .rail-resizer { position: absolute; top: 0; right: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 20; }
+            html body .app > .panel.sidebar > .rail-resizer::after { content: ""; position: absolute; inset: 0 3px; transition: background .12s; }
+            html body .app > .panel.sidebar > .rail-resizer:hover::after, html body .app > .panel.sidebar > .rail-resizer.active::after { background: rgba(96,165,250,.8); }
+        }
+        @media (max-width: 860px) { html body .app > .panel.sidebar :is(.rail-resizer, .rail-reset-btn, .sb-collapse) { display: none !important; } }
     </style>
     <link rel="stylesheet" href="/shared-ui/theme.css">
     <script src="/shared-ui/services.js"></script>
@@ -813,13 +834,37 @@
 
 <div class="app">
     <!-- 사이드바: 노트 목록 -->
-    <aside class="panel sidebar" id="sidebar">
-        <div class="panel-head">
-            <div class="panel-title">내 노트</div>
-            <div class="panel-count" id="note-count">0</div>
+    <aside class="panel sidebar rail" id="sidebar">
+        <div class="sb-top">
+            <div class="sb-brand">
+                <div class="sb-logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div>
+                <div class="sb-label">
+                    <h1 class="sb-title">Whisper</h1>
+                    <p class="sb-sub">Speech to Text</p>
+                </div>
+            </div>
+            <div class="sb-user">
+                <div class="sb-avatar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="sb-label sb-user-text">
+                    <p class="sb-welcome">Welcome,</p>
+                    <p id="railUserName" class="rail-user sb-username">-</p>
+                </div>
+            </div>
+            <div class="rail-actions-row">
+                <button class="rail-upload sb-new" type="button" onclick="openUploadModal()" title="새 노트 만들기">
+                    <span class="ru-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="ru-text sb-label">새 노트</span>
+                </button>
+            </div>
         </div>
+        <div class="sb-overview">
+            <p class="sb-section">Overview</p>
+            <div class="sb-stats">
+                <div class="sb-stat"><p>노트</p><b id="note-count">0</b></div>
+                <div class="sb-stat"><p>변환 중</p><b id="statBusy" class="c-violet">0</b></div>
+            </div>
+        </div>
+        <p class="sb-section sb-section-list">Notes</p>
         <div class="sidebar-tools">
-            <button class="btn btn-primary" onclick="openUploadModal()">+ 새 노트 만들기</button>
             <input type="text" class="search-input" id="note-search" placeholder="노트 검색..." oninput="renderNoteList()">
         </div>
         <div class="note-list" id="note-list">
@@ -827,6 +872,18 @@
         </div>
         <div class="gpu-widget" id="gpu-widget" style="display:none;">
             <div class="gpu-body" id="gpu-body"></div>
+        </div>
+        <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절 · 더블클릭하면 기본 폭"></div>
+        <div class="sb-bottom">
+            <div class="sb-conn" title="서버 연결 상태">
+                <span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span>
+            </div>
+            <div class="sb-account">
+                <button id="railLogout" class="sb-logout" type="button" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
+                <button type="button" class="sb-icon" data-theme-settings title="테마 설정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.63 0-.43-.17-.8-.44-1.1-.26-.29-.43-.66-.43-1.1A1.64 1.64 0 0 1 14.27 16.5H16c3.05 0 5.56-2.5 5.56-5.56C21.56 6.01 17.06 2 12 2z"/></svg></button>
+                <button id="railReset" class="sb-icon rail-reset-btn" type="button" title="사이드바 기본 폭으로" aria-label="사이드바 기본 폭으로"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M3 12h6M6 9l3 3-3 3M21 12h-6M18 9l-3 3 3 3"/></svg></button>
+                <button id="railToggle" class="sb-icon sb-collapse" type="button" title="사이드바 접기 / 펼치기"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
+            </div>
         </div>
     </aside>
 
@@ -1034,6 +1091,8 @@
         const list = document.getElementById('note-list');
         const filtered = q ? notes.filter(n => (n.title || '').toLowerCase().includes(q)) : notes;
         document.getElementById('note-count').textContent = notes.length;
+        const busyEl = document.getElementById('statBusy');
+        if (busyEl) busyEl.textContent = notes.filter(n => n.status === 'queued' || n.status === 'processing').length;
 
         if (!filtered.length) {
             list.innerHTML = `<div class="transcript-empty">${q ? '검색 결과가 없습니다' : '아직 노트가 없습니다.<br>파일을 업로드해 첫 노트를 만들어 보세요.'}</div>`;
@@ -1637,6 +1696,56 @@
     listPollTimer = setInterval(() => {
         if (notes.some(n => n.status === 'queued' || n.status === 'processing')) loadNotes();
     }, 4000);
+</script>
+
+<script>
+// 사이드바: 사용자 이름 · 로그아웃 · 접기(아이콘 막대) · 경계 드래그로 너비 조절 · 기본 폭 복귀 — 다른 KNPU 사이트와 같은 동작
+(function () {
+    const rail = document.getElementById('sidebar');
+    const DEF = 280, MIN = 220, MAX = 460;
+    const mq = window.matchMedia('(max-width: 860px)');
+    const get = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } };
+    let width = parseInt(get('ws_rail_width'), 10);
+    if (!(width >= MIN && width <= MAX)) width = DEF;
+    function apply() { rail.style.width = (mq.matches || rail.classList.contains('collapsed')) ? '' : width + 'px'; }
+    if (!mq.matches && get('ws_rail_collapsed') === '1') rail.classList.add('collapsed');
+    apply();
+    (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(function () {
+        if (mq.matches) rail.classList.remove('collapsed'); apply();
+    });
+    document.getElementById('railToggle').addEventListener('click', function () {
+        if (mq.matches) return;
+        set('ws_rail_collapsed', rail.classList.toggle('collapsed') ? '1' : '0'); apply();
+    });
+    function reset() {
+        if (mq.matches) return;
+        width = DEF; rail.classList.remove('collapsed');
+        set('ws_rail_width', String(width)); set('ws_rail_collapsed', '0'); apply();
+    }
+    document.getElementById('railReset').addEventListener('click', reset);
+    const rz = document.getElementById('railResizer');
+    rz.addEventListener('dblclick', reset);
+    rz.addEventListener('mousedown', function (e) {
+        if (mq.matches || rail.classList.contains('collapsed')) return;
+        e.preventDefault();
+        const left = rail.getBoundingClientRect().left;
+        rz.classList.add('active'); document.documentElement.classList.add('side-resizing');
+        function move(ev) { width = Math.max(MIN, Math.min(MAX, Math.round(ev.clientX - left))); rail.style.width = width + 'px'; }
+        function up() {
+            rz.classList.remove('active'); document.documentElement.classList.remove('side-resizing');
+            document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+            set('ws_rail_width', String(width));
+        }
+        document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    });
+    fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+        if (me) document.getElementById('railUserName').textContent = me.name || '';
+    }).catch(function () { });
+    document.getElementById('railLogout').addEventListener('click', function () {
+        fetch(KNPU.logoutUrl(), { method: 'POST', credentials: 'include' }).finally(function () { location.href = KNPU.loginUrl(); });
+    });
+})();
 </script>
 <script src="/shared-ui/theme.js"></script>
 </body>

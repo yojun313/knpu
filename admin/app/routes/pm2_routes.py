@@ -81,8 +81,16 @@ async def restart_all_processes(user=Depends(get_current_user)):
 async def control_process(action: str, name: str, user=Depends(get_current_user)):
     if action not in ["restart", "stop", "start", "delete"]:
         raise HTTPException(status_code=400, detail="Invalid action")
+    # URL 로 받은 이름이 실제 PM2 프로세스인지 확인 (옵션 주입 · 임의 대상 차단)
+    if not name or name.startswith("-") or len(name) > 200:
+        raise HTTPException(status_code=400, detail="Invalid process name")
+    names = {p.get("name") for p in await asyncio.to_thread(PM2Service.get_processes)}
+    if name not in names:
+        raise HTTPException(status_code=404, detail="Process not found")
 
-    success = PM2Service.run_command(action, name)
+    # 재시작은 --update-env 로 환경 변수 변경을 반영한다 (UnivDash 와 같은 동작)
+    extra = ["--update-env"] if action == "restart" else None
+    success = await asyncio.to_thread(PM2Service.run_command, action, name, extra)
     insert_log(
         user_logs_col,
         user["sub"],
@@ -241,3 +249,109 @@ async def save_pm2_list():
     if not success:
         raise HTTPException(status_code=500, detail="Save failed")
     return {"status": "success"}
+
+
+# ── ecosystem.config.js: 등록된 앱 목록 · 새 앱 추가 · 시작 (UnivDash 에서 옮겨 옴) ──
+
+from pydantic import BaseModel, Field  # noqa: E402
+from fastapi import Query  # noqa: E402
+
+from app.services import ecosystem_service  # noqa: E402
+from app.services.ecosystem_service import EcosystemError  # noqa: E402
+
+
+class EcosystemAppRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    cwd: str = Field(min_length=1, max_length=1024)
+    script: str = Field(min_length=1, max_length=500)
+    interpreter: str = Field(default="", max_length=500)
+    args: str = Field(default="", max_length=500)
+    watch: bool = False
+    time: bool = True
+    env: str = Field(default="", max_length=20000)
+    start: bool = True
+
+
+def _ecosystem_error(error: Exception):
+    if isinstance(error, KeyError):
+        raise HTTPException(
+            status_code=404, detail=str(error.args[0] if error.args else error)
+        ) from error
+    if isinstance(error, ValueError):
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    raise HTTPException(status_code=503, detail=str(error)) from error
+
+
+@router.get("/api/ecosystem")
+async def get_ecosystem(user=Depends(get_current_user)):
+    path = ecosystem_service.ecosystem_path()
+    try:
+        apps = await asyncio.to_thread(ecosystem_service.load_apps, path)
+    except EcosystemError as error:
+        return {
+            "path": str(path),
+            "exists": path.exists(),
+            "error": str(error),
+            "apps": [],
+        }
+    running = {
+        proc.get("name"): (proc.get("pm2_env") or {}).get("status")
+        for proc in await asyncio.to_thread(PM2Service.get_processes)
+    }
+    for app in apps:
+        app["status"] = running.get(app.get("name"))
+    return {"path": str(path), "exists": path.exists(), "apps": apps}
+
+
+@router.get("/api/ecosystem/inspect")
+async def inspect_ecosystem_directory(
+    cwd: str = Query(..., max_length=1024), user=Depends(get_current_user)
+):
+    return await asyncio.to_thread(ecosystem_service.inspect_directory, cwd)
+
+
+@router.post("/api/ecosystem/apps")
+async def add_ecosystem_app(body: EcosystemAppRequest, user=Depends(get_current_user)):
+    try:
+        result = await asyncio.to_thread(ecosystem_service.add_app, body.model_dump())
+    except (ValueError, KeyError, EcosystemError, OSError) as error:
+        _ecosystem_error(error)
+    result["started"] = None
+    if body.start:
+        try:
+            ok, output = await asyncio.to_thread(ecosystem_service.start_app, body.name)
+        except (ValueError, KeyError, EcosystemError) as error:
+            ok, output = False, str(error)
+        result.update(started=ok, output=output)
+    insert_log(
+        user_logs_col,
+        user.get("uid") or user.get("sub"),
+        "admin.pm2.ecosystem_add",
+        "admin",
+        message=f"ecosystem 앱 추가: {body.name} ({body.cwd})",
+        target={"type": "pm2_process", "id": body.name},
+        outcome="success",
+    )
+    return result
+
+
+@router.post("/api/ecosystem/apps/{name}/start")
+async def start_ecosystem_app(name: str, user=Depends(get_current_user)):
+    try:
+        ok, output = await asyncio.to_thread(ecosystem_service.start_app, name)
+    except (ValueError, KeyError, EcosystemError) as error:
+        _ecosystem_error(error)
+    insert_log(
+        user_logs_col,
+        user.get("uid") or user.get("sub"),
+        "admin.pm2.ecosystem_start",
+        "admin",
+        message=f"ecosystem 앱 시작: {name}",
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if ok else "failure",
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=500, detail=output or "pm2 start 가 실패했습니다."
+        )
+    return {"started": True, "output": output}

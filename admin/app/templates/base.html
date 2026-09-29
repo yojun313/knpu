@@ -490,6 +490,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="ADMIN">
   <meta name="application-name" content="ADMIN">
+    {% block head_extra %}{% endblock %}
 </head>
 <body class="flex h-screen overflow-hidden bg-[#09090b]">
 
@@ -529,8 +530,8 @@
             </button>
         </header>
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">
-            <div class="max-w-7xl mx-auto">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden {% block main_class %}p-4 md:p-8{% endblock %}">
+            <div class="{% block container_class %}max-w-7xl mx-auto{% endblock %}">
                 {% block content %}{% endblock %}
             </div>
         </main>
@@ -571,5 +572,6 @@
             }
         });
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
