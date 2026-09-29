@@ -7,7 +7,7 @@
     <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-    <link rel="manifest" href="/shared-ui/manifest.webmanifest">
+    <link rel="manifest" href="/static/manifest.webmanifest">
     <meta name="theme-color" content="#0B1226">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -843,13 +843,6 @@
                     <p class="sb-sub">Speech to Text</p>
                 </div>
             </div>
-            <div class="sb-user">
-                <div class="sb-avatar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                <div class="sb-label sb-user-text">
-                    <p class="sb-welcome">Welcome,</p>
-                    <p id="railUserName" class="rail-user sb-username">-</p>
-                </div>
-            </div>
             <div class="rail-actions-row">
                 <button class="rail-upload sb-new" type="button" onclick="openUploadModal()" title="새 노트 만들기">
                     <span class="ru-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="ru-text sb-label">새 노트</span>
@@ -875,8 +868,15 @@
         </div>
         <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절 · 더블클릭하면 기본 폭"></div>
         <div class="sb-bottom">
-            <div class="sb-conn" title="서버 연결 상태">
+            <div class="sb-conn" data-conn-fallback="/api/notes" title="서버 연결 상태">
                 <span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span>
+            </div>
+            <div class="sb-user">
+                <div class="sb-avatar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="sb-label sb-user-text">
+                    <p class="sb-welcome">Welcome,</p>
+                    <p id="railUserName" class="rail-user sb-username">{{ username or '-' }}</p>
+                </div>
             </div>
             <div class="sb-account">
                 <button id="railLogout" class="sb-logout" type="button" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
@@ -1082,6 +1082,10 @@
             if (!res.ok) return;
             const data = await res.json();
             notes = data.items || [];
+            const nameEl = document.getElementById('railUserName');
+            if (nameEl && nameEl.textContent.trim() === '-' && notes.length && notes[0].requester) {
+                nameEl.textContent = notes[0].requester;
+            }
             renderNoteList();
         } catch (e) { /* 네트워크 순단은 다음 폴링에서 회복 */ }
     }
@@ -1740,7 +1744,7 @@
         document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
     });
     fetch('/api/me', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
-        if (me) document.getElementById('railUserName').textContent = me.name || '';
+        if (me && me.name) document.getElementById('railUserName').textContent = me.name;
     }).catch(function () { });
     document.getElementById('railLogout').addEventListener('click', function () {
         fetch(KNPU.logoutUrl(), { method: 'POST', credentials: 'include' }).finally(function () { location.href = KNPU.loginUrl(); });

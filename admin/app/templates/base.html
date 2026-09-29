@@ -60,7 +60,7 @@
             try{
                 var v=currentUiTheme();
                 if(v&&v!=='default')document.documentElement.setAttribute('data-ui-theme',v);
-                if(currentUiThemeMode()==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');
+                if(currentUiThemeMode()==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');var n=document.cookie.match(/(?:^|; )ui_nav_visibility=([^;]*)/);if(n&&decodeURIComponent(n[1])==='autohide')document.documentElement.setAttribute('data-ui-nav','autohide');
             }catch(e){}
         })();
     </script>
@@ -480,6 +480,42 @@
             border-color: var(--ud-active-line, rgba(37,99,235,.24)) !important;
             box-shadow: none !important;
         }
+        body.admin-layout { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+        .admin-header {
+            display: flex; align-items: center; gap: 20px; height: 58px; min-height: 58px;
+            padding: 0 20px; color: #eaf1ff; background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
+            border-bottom: 1px solid rgba(255,255,255,.16); position: relative; z-index: 60;
+        }
+        .admin-header .top-header-logo { width: auto; height: 34px; object-fit: contain; display: block; }
+        .admin-header .top-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+        .admin-header .top-nav::-webkit-scrollbar { display: none; }
+        .admin-header .top-nav-link { flex: none; padding: 9px 10px; border-radius: 9px; color: #c6d4ef; font-size: 12px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+        .admin-header .top-nav-link:hover, .admin-header .top-nav-link.active { color: #fff; background: rgba(255,255,255,.15); }
+        .admin-header .theme-settings-btn { flex: none; }
+        .admin-shell { display: flex; flex: 1; min-height: 0; }
+        #sidebar.admin-sidebar {
+            position: relative; inset: auto; transform: none; width: 280px; min-width: 280px;
+            height: 100%; z-index: 50; background: var(--ud-surface) !important; border-right: 1px solid var(--ud-line) !important;
+        }
+        #sidebar .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); }
+        #sidebar .sb-bottom { margin-top: auto; }
+        #sidebar .admin-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 3px; }
+        #sidebar .admin-nav .nav-item { flex: none; padding: 9px 12px; color: var(--text-strong); }
+        #sidebar .admin-nav .nav-item:hover { background: var(--ud-hover); }
+        #sidebar .sb-user-text { min-width: 0; }
+        #sidebar .sb-username { margin: 1px 0 0; color: var(--text-strong); font-size: 13.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #sidebar .sb-logout { text-decoration: none; }
+        .admin-content { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+        .admin-content main { min-height: 0; }
+        html[data-ui-nav="autohide"] .admin-shell { height: 100dvh; }
+        @media (max-width: 1023px) {
+            #sidebar.admin-sidebar { position: fixed; top: 58px; left: 0; bottom: 0; height: auto; transform: translateX(-100%); transition: transform .2s ease; }
+            #sidebar.admin-sidebar.open { transform: translateX(0); }
+            #sidebarOverlay.open { display: block; top: 58px; }
+            .admin-header { padding: 0 12px; gap: 10px; }
+            .admin-header .top-header-logo { height: 30px; }
+            .admin-header .top-nav-link.active { order: -1; }
+        }
     </style>
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/shared-ui/apple-touch-icon.png">
@@ -492,49 +528,60 @@
   <meta name="application-name" content="ADMIN">
     {% block head_extra %}{% endblock %}
 </head>
-<body class="flex h-screen overflow-hidden bg-[#09090b]">
-
-    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden"></div>
-
-    <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 flex-shrink-0 flex flex-col h-full z-50 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0">
-        <div class="p-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-xl font-bold"><span class="brand-mark">KNPU</span></h1>
-                <p class="text-xs text-zinc-500 mt-1">System Analytics</p>
-            </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-zinc-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-
-        <nav id="sidebarNav" class="flex-1 px-4 space-y-2 overflow-y-auto">
-            {% for item in get_nav_items() %}
-            <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == item.id %}active{% endif %}">{{ item.label }}</a>
-            {% endfor %}
+<body class="admin-layout">
+    <div class="top-header admin-header">
+        <a href="https://knpu.re.kr" data-knpu-service="homepage" title="홈으로"><img src="/static/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+        <nav class="top-nav" aria-label="서비스 이동">
+            <a href="https://knpu.re.kr" data-knpu-service="homepage" class="top-nav-link">HOME</a>
+            <a href="https://manager.knpu.re.kr" class="top-nav-link">MANAGER</a>
+            <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+            <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+            <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+            <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+            <a href="https://mcdm.knpu.re.kr" class="top-nav-link">POLYDECISION</a>
+            <a href="https://whisper.knpu.re.kr" class="top-nav-link">WHISPER</a>
+            <a href="/" class="top-nav-link active" aria-current="page">ADMIN</a>
         </nav>
-
-        <div class="p-4 border-t border-zinc-800 flex items-center justify-between gap-2">
-            <a href="#" onclick="logout(event)" class="nav-item flex-1 flex items-center px-4 py-2 rounded-md text-sm">Logout</a>
-            <a href="/settings" class="theme-toggle {% if active_page == 'settings' %}active{% endif %}" title="메뉴 순서 설정">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </a>
-        </div>
-    </aside>
-
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        <header class="lg:hidden flex items-center justify-between p-4 border-b border-zinc-800 bg-[#09090b]">
-            <h1 class="text-lg font-bold"><span class="brand-mark">KNPU</span></h1>
-            <button onclick="toggleSidebar()" class="p-2 text-zinc-400 hover:text-white transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-        </header>
-
-        <main class="flex-1 overflow-y-auto overflow-x-hidden {% block main_class %}p-4 md:p-8{% endblock %}">
-            <div class="{% block container_class %}max-w-7xl mx-auto{% endblock %}">
-                {% block content %}{% endblock %}
+        <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 10h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33A1.65 1.65 0 0 0 10 3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button type="button" onclick="toggleSidebar()" class="lg:hidden text-white" aria-label="관리자 메뉴 열기">☰</button>
+    </div>
+    <div class="admin-shell">
+        <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden"></div>
+        <aside id="sidebar" class="sidebar admin-sidebar flex flex-col" aria-label="관리자 메뉴">
+            <div class="sb-top">
+                <div class="sb-brand">
+                    <div class="sb-logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7v5c0 5 3.5 8 9 9s9-4 9-9V7l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                    <div class="sb-label"><h1 class="sb-title">Admin</h1><p class="sb-sub">System Analytics</p></div>
+                </div>
             </div>
-        </main>
+            <p class="sb-section sb-section-list">Management</p>
+            <nav id="sidebarNav" class="admin-nav" aria-label="관리자 기능">
+                {% for item in get_nav_items() %}
+                <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item {% if active_page == item.id %}active{% endif %}">{{ item.label }}</a>
+                {% endfor %}
+            </nav>
+            <div class="sb-bottom">
+                <div class="sb-conn" data-conn-url="/api/nav-order" title="서버 연결 상태"><span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span></div>
+                <div class="sb-user">
+                    <div class="sb-avatar" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div class="sb-user-text"><p class="sb-welcome">Welcome,</p><p class="sb-username">{{ request.state.current_user.name or '-' }}</p></div>
+                </div>
+                <div class="sb-account">
+                    <a href="#" onclick="logout(event)" class="sb-logout" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></a>
+                    <button type="button" class="sb-icon" data-theme-settings title="테마 설정" aria-label="테마 설정">⚙</button>
+                    <a href="/settings" class="sb-icon" title="메뉴 순서 설정" aria-label="메뉴 순서 설정">☷</a>
+                </div>
+            </div>
+        </aside>
+        <div class="admin-content">
+            <main class="flex-1 overflow-y-auto overflow-x-hidden {% block main_class %}p-4 md:p-8{% endblock %}">
+                <div class="{% block container_class %}max-w-7xl mx-auto{% endblock %}">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
     </div>
 
     <script>
@@ -553,25 +600,20 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-
-            sidebar.classList.toggle('-translate-x-full');
-
-            if (sidebar.classList.contains('-translate-x-full')) {
-                overlay.classList.add('hidden');
-            } else {
-                overlay.classList.remove('hidden');
-            }
+            const open = sidebar.classList.toggle('open');
+            overlay.classList.toggle('open', open);
+            overlay.classList.toggle('hidden', !open);
         }
 
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 1024) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('open');
                 document.getElementById('sidebarOverlay').classList.add('hidden');
-                document.getElementById('sidebar').classList.remove('-translate-x-full');
-            } else {
-                document.getElementById('sidebar').classList.add('-translate-x-full');
             }
         });
     </script>
+    <script src="/shared-ui/theme.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

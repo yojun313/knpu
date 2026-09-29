@@ -35,6 +35,7 @@ from app.libs.discord_notify import notify_discord
 from system.logging.user_log import AuditLogMiddleware
 from system.endpoints import LOGIN_URL
 from system.shared_ui import mount_shared_ui
+from app.routes.dependencies import get_current_user
 
 
 def _extract_identity(request: Request):
@@ -50,6 +51,25 @@ def _extract_identity(request: Request):
 
 
 app = FastAPI(title="KNPU Dashboard", docs_url=None, redoc_url=None, openapi_url=None)
+
+
+@app.middleware("http")
+async def provide_shared_settings_user(request: Request, call_next):
+    if request.url.path == "/api/llm-settings":
+        try:
+            user = await get_current_user(request)
+        except StarletteHTTPException:
+            return JSONResponse(
+                status_code=401, content={"detail": "인증이 필요합니다"}
+            )
+        request.state.user = {
+            "uid": user["sub"],
+            "name": user.get("name"),
+            "role": user["role"],
+        }
+    return await call_next(request)
+
+
 app.add_middleware(
     AuditLogMiddleware,
     service="admin",

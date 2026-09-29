@@ -267,8 +267,15 @@
       if (label) label.textContent = ok ? '서버 연결됨' : '연결 끊김 · 재시도 중';
     }
     function ping() {
-      fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
-        .then(function (r) { set(r.ok || r.status === 401); })
+      fetch(box.getAttribute('data-conn-url') || '/api/me', { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) {
+          var fallback = box.getAttribute('data-conn-fallback');
+          if (r.status === 404 && fallback) {
+            return fetch(fallback, { credentials: 'same-origin', cache: 'no-store' })
+              .then(function (alt) { set(alt.ok || alt.status === 401); });
+          }
+          set(r.ok || r.status === 401);
+        })
         .catch(function () { set(false); })
         .then(function () { setTimeout(ping, document.hidden ? 60000 : 30000); });
     }
