@@ -69,6 +69,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
           <input id="search" type="text" placeholder="표 검색...">
         </div>
+        <button id="aiSideBtn" class="ai-side-toggle" type="button" aria-controls="side" aria-expanded="true" title="AI 통계 분석 패널 열기/닫기"><span class="spark">✦</span><span class="lbl">AI 분석</span></button>
       </div>
 
       <div id="content">
@@ -96,55 +97,65 @@
             </div>
           </div>
 
-          <section class="ai-panel" aria-labelledby="aiTitle">
-            <div class="ai-panel-head">
-              <div><h2 id="aiTitle">AI 통계 분석</h2><p>저장된 집계표를 여러 관점에서 해석합니다. 결과는 통계적 검토를 돕는 참고 의견입니다.</p></div>
-            </div>
-            <div class="ai-actions">
-              <button class="btn" type="button" data-ai-mode="overview">전체 요약</button>
-              <button class="btn" type="button" data-ai-mode="findings">핵심 발견</button>
-              <button class="btn" type="button" data-ai-mode="relationships">변수 관계·가설</button>
-              <button class="btn" type="button" data-ai-mode="methods">통계 방법·한계 점검</button>
-            </div>
-            <form id="aiQuestionForm" class="ai-question-form">
-              <input id="aiQuestion" type="text" maxlength="1000" placeholder="예: 가장 큰 집단 차이는 무엇이고 어떤 표가 근거인가요?" aria-label="AI에게 통계 질문하기">
-              <button class="btn primary" type="submit">질문하기</button>
-            </form>
-            <div class="ai-privacy">선택한 AI 제공자/로컬 모델로 집계 통계표 일부를 전송합니다. 원문·제목·URL·작성자 등 민감 열과 개인별 표는 제외합니다.</div>
-            <div id="aiResults" class="ai-results" aria-live="polite"></div>
-          </section>
-
           <div id="graphGrid" class="graph-grid" hidden></div>
           <div id="tableGrid" class="table-grid"></div>
         </div>
       </div>
     </div>
+    <aside id="side" class="ai-side" aria-label="AI 통계 분석">
+      <div class="side-head">
+        <div class="side-title">
+          <span class="side-spark" aria-hidden="true">✦</span>
+          <div class="side-title-text"><h2>AI 통계 분석</h2><button type="button" id="aiModelLine" class="side-model" title="AI 모델 설정 열기">모델 설정 확인 중…</button></div>
+        </div>
+        <button class="side-icon-btn" id="sideCloseBtn" type="button" title="AI 패널 닫기" aria-label="AI 패널 닫기">✕</button>
+      </div>
+      <div class="side-tabs" role="tablist">
+        <button type="button" role="tab" class="side-tab active" id="tabReport" data-side-tab="report" aria-selected="true" aria-controls="paneReport">분석 리포트</button>
+        <button type="button" role="tab" class="side-tab" id="tabChat" data-side-tab="chat" aria-selected="false" aria-controls="paneChat">대화</button>
+      </div>
+      <div id="sideEmpty" class="side-empty">
+        <div class="side-empty-ico">✦</div>
+        <b>프로젝트를 선택하세요</b>
+        <p>저장된 통계표를 AI가 읽고 핵심 발견, 변수 관계, 방법상 한계를 정리해 드립니다.</p>
+      </div>
+
+      <section id="paneReport" class="side-pane" role="tabpanel" aria-labelledby="tabReport" hidden>
+        <div class="side-scroll" id="reportScroll">
+          <div class="ai-modes">
+            <button type="button" class="ai-mode" data-ai-mode="overview"><span class="ai-mode-ico">◎</span><span class="ai-mode-txt"><b>전체 요약</b><small>데이터 범위와 주요 결과</small></span></button>
+            <button type="button" class="ai-mode" data-ai-mode="findings"><span class="ai-mode-ico">★</span><span class="ai-mode-txt"><b>핵심 발견</b><small>근거가 강한 결과 순</small></span></button>
+            <button type="button" class="ai-mode" data-ai-mode="relationships"><span class="ai-mode-ico">⇄</span><span class="ai-mode-txt"><b>변수 관계·가설</b><small>상관·회귀·집단 차이</small></span></button>
+            <button type="button" class="ai-mode" data-ai-mode="methods"><span class="ai-mode-ico">✓</span><span class="ai-mode-txt"><b>방법·한계 점검</b><small>가정·효과크기·편향</small></span></button>
+          </div>
+          <form id="aiQuestionForm" class="ai-compose">
+            <textarea id="aiQuestion" rows="2" maxlength="1000" placeholder="궁금한 점으로 리포트 만들기 (예: 성별·연령별 반응 차이가 유의한가요?)" aria-label="질문으로 리포트 만들기"></textarea>
+            <button type="submit" class="ai-send" id="aiQuestionSend" title="리포트 만들기" aria-label="리포트 만들기">↑</button>
+          </form>
+          <p class="ai-tip">표 카드의 <b>✦</b> 버튼을 누르면 그 표 하나만 해석합니다. 결과는 프로젝트에 저장됩니다.</p>
+          <div class="ai-list-head"><span>분석 결과</span><span id="aiResultCount" class="ai-count"></span></div>
+          <div id="aiResults" class="ai-results" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="paneChat" class="side-pane" role="tabpanel" aria-labelledby="tabChat" hidden>
+        <div id="aiChatMessages" class="chat-log side-scroll" role="log" aria-live="polite"></div>
+        <div class="chat-suggest" id="chatSuggest">
+          <button type="button" data-chat-prompt="이 결과에서 가장 중요한 발견 3가지와 근거 표를 알려줘">핵심 발견</button>
+          <button type="button" data-chat-prompt="통계적으로 해석할 때 주의할 점을 알려줘">해석 주의점</button>
+          <button type="button" data-chat-prompt="집단 간 차이가 가장 큰 변수는 무엇이고 효과 크기는 어느 정도야?">집단 차이</button>
+          <button type="button" data-chat-prompt="다음에 해 보면 좋은 추가 분석을 제안해줘">다음 분석</button>
+        </div>
+        <form id="aiChatForm" class="ai-compose chat-compose">
+          <textarea id="aiChatInput" rows="2" maxlength="1500" placeholder="통계 결과에 대해 물어보세요 (Enter 전송, Shift+Enter 줄바꿈)" aria-label="AI에게 질문"></textarea>
+          <button id="aiChatSend" type="submit" class="ai-send" title="보내기" aria-label="보내기">↑</button>
+        </form>
+        <div class="chat-foot"><button type="button" id="aiChatClear">새 대화</button><span>원문·작성자·URL 열은 AI에 보내지 않습니다</span></div>
+      </section>
+      <div id="sideResizer" class="side-resizer" title="드래그해서 너비 조절"></div>
+    </aside>
     <div id="mobileBackdrop"></div>
   </div>
-
-  <button id="aiChatLauncher" class="ai-chat-launcher" type="button" aria-controls="aiChatWindow" aria-expanded="false" hidden>✦ AI와 대화</button>
-  <section id="aiChatWindow" class="ai-chat-window" role="dialog" aria-labelledby="aiChatTitle" hidden>
-    <div class="ai-chat-head">
-      <div><strong id="aiChatTitle">Statistics AI 분석</strong><span id="aiChatProject">현재 프로젝트 결과를 함께 살펴봅니다</span></div>
-      <div class="ai-chat-head-actions">
-        <button id="aiChatClear" type="button" title="대화 초기화" aria-label="대화 초기화">새 대화</button>
-        <button id="aiChatClose" type="button" title="채팅창 닫기" aria-label="채팅창 닫기">×</button>
-      </div>
-    </div>
-    <div id="aiChatMessages" class="ai-chat-messages" role="log" aria-live="polite">
-      <div class="ai-chat-welcome">현재 프로젝트의 통계표를 검색하고 계산하며 질문에 답합니다. 그래프의 패턴이나 결과의 한계도 물어보세요.</div>
-    </div>
-    <div class="ai-chat-suggestions">
-      <button type="button" data-chat-prompt="이 결과에서 가장 중요한 발견과 근거 표를 알려줘">핵심 발견</button>
-      <button type="button" data-chat-prompt="통계적으로 해석할 때 주의할 점을 알려줘">해석 주의점</button>
-      <button type="button" data-chat-prompt="다음에 확인하면 좋은 분석 질문을 제안해줘">다음 분석 제안</button>
-    </div>
-    <form id="aiChatForm" class="ai-chat-form">
-      <textarea id="aiChatInput" rows="2" maxlength="1500" placeholder="통계 결과에 대해 자유롭게 질문하세요" aria-label="AI 분석 대화 입력"></textarea>
-      <button id="aiChatSend" type="submit">전송</button>
-    </form>
-    <div class="ai-chat-note">최근 대화와 선택한 통계표를 AI 모델에 전달합니다. 답변의 근거 표와 수치를 확인하세요.</div>
-  </section>
 
   <div id="railCtxMenu" class="ctx-menu" hidden>
     <button class="ctx-item" data-act="props"><span class="ctx-ico">ℹ</span><span>속성</span></button>

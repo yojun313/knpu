@@ -530,6 +530,70 @@ html[data-ui-theme="mesh"] .rail-item.active { background: var(--overlay-hover) 
 html[data-ui-theme="mesh"] ::selection { background: var(--overlay-hover); }
 
 /* ============================================================================
+   떠 있는 패널 모양 통일 — glass / aurora / mesh / neu
+   ----------------------------------------------------------------------------
+   network·kemkim·statistics 뷰어는 모두 "왼쪽 레일 · 가운데 캔버스 · 오른쪽 #side"
+   세 장의 카드로 이루어진다. 테마마다 일부 패널에만 모서리를 줘서(레일·캔버스는
+   둥글고 #side·#netWrap은 각지고, 그래프 위 #top 오버레이는 네모난 띠) 모양이
+   제각각이었다. 여기서 세 장을 같은 반경·같은 테두리·같은 재질로 맞춘다.
+   ============================================================================ */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"]) body { --panel-r: 18px; }
+html[data-ui-theme="neu"] body { --panel-r: 20px; }
+
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
+  :is(.rail, #main, #plotWrap, #netWrap, #side) {
+  border-radius: var(--panel-r) !important;
+}
+/* 한쪽 면에만 있던 구분선(border-left/right)을 네 면 모두로 — 카드는 사방이 같아야 한다 */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"])
+  :is(.rail, #main, #plotWrap, #netWrap, #side) {
+  border: 1px solid var(--sidebar-border) !important;
+}
+/* network 캔버스(#netWrap)는 목록에서 빠져 있어 테마 배경 없이 흰 판으로 남았다 */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"]) #netWrap {
+  background: var(--sidebar-bg) !important;
+  box-shadow: 0 8px 28px rgba(5, 10, 25, 0.16);
+}
+html[data-ui-theme="neu"] #netWrap {
+  background: var(--sidebar-bg) !important;
+  box-shadow: 8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light);
+}
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
+  :is(#plotWrap, #netWrap) { overflow: hidden; }
+/* network/kemkim의 #top은 캔버스 위에 떠 있는 투명 오버레이다. 여기에 패널 배경을
+   깔면 둥근 캔버스 위에 네모난 띠가 생기므로 비우고, 안의 알약들만 보이게 한다.
+   (statistics의 #top은 #main 안의 툴바라 해당하지 않는다.) */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
+  :is(#plotWrap, #netWrap) > #top {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+}
+/* 캔버스 위에 떠 있는 알약(제목·검색·배지·KEM/KIM 탭·확대 버튼) 색. 각 사이트의 다크
+   배색은 "기본" 테마일 때만 적용돼서, 다크 모드의 테마들에서는 밝은 알약이 어두운
+   캔버스 위에 떠 있었다. 테마의 밝기에 맞춰 여기서 한 번에 정한다. */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]):not([data-ui-theme-mode="dark"]) body {
+  --pill-bg: rgba(255, 255, 255, .8); --pill-border: rgba(15, 23, 42, .1);
+  --pill-text: #1c2530; --pill-muted: #64748b; --pill-shadow: 0 4px 16px rgba(15, 23, 42, .1);
+}
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])[data-ui-theme-mode="dark"] body {
+  --pill-bg: rgba(22, 26, 38, .78); --pill-border: rgba(255, 255, 255, .1);
+  --pill-text: #f1f3f8; --pill-muted: #9aa5b8; --pill-shadow: 0 4px 16px rgba(0, 0, 0, .3);
+}
+/* 모바일에서는 레일/#side가 화면 가장자리에 붙는 서랍이 되므로 바깥쪽 모서리는 각지게 */
+@media (max-width: 1100px) {
+  html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]) .rail {
+    border-radius: 0 var(--panel-r) var(--panel-r) 0 !important;
+  }
+  html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]) #side {
+    border-radius: var(--panel-r) 0 0 var(--panel-r) !important;
+  }
+}
+
+/* ============================================================================
    애플 리퀴드 글래스 (Liquid Glass) — 애플 디자인 철학을 그대로 옮긴 전면 투명 테마
    ----------------------------------------------------------------------------
    기존 glass 테마와 무엇이 다른가:
