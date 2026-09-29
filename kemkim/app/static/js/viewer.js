@@ -152,6 +152,7 @@
       renderAnalysisOptions(meta.analysis_options);
       renderFilteredWords();
       updateSourceStatusUI();
+      fillSignalWordList();
       loadInterpretations();
 
       currentPlotTab = 'dov';
@@ -842,7 +843,10 @@
     }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
   }
 
+  var crawlAnalyzeSource = null;
+  var crawlCurrentDbLabel = '';
   function openCrawlDbFiles(uid, dbName, keyword) {
+    crawlCurrentDbLabel = keyword || dbName || '';
     document.getElementById('crawlDbStep').hidden = true;
     document.getElementById('crawlFileStep').hidden = false;
     document.getElementById('crawlFileDbName').textContent = keyword || dbName;
@@ -878,6 +882,7 @@
     postJson('/api/crawl-dbs/' + encodeURIComponent(uid) + '/select', { name: file.name }).then(function (res) {
       progEl.hidden = true;
       crawlAnalyzeStage = res.stage_id;
+      crawlAnalyzeSource = res.crawl_source ? { uid: res.crawl_source.uid, name: res.crawl_source.name, db_name: crawlCurrentDbLabel } : null;
       document.getElementById('crawlProjectName').value = res.suggested_name || '';
       if (res.suggested_start_date) document.getElementById('crawlOptStartDate').value = res.suggested_start_date;
       if (res.suggested_end_date) document.getElementById('crawlOptEndDate').value = res.suggested_end_date;
@@ -908,7 +913,7 @@
     var name = document.getElementById('crawlProjectName').value.trim();
     var btn = document.getElementById('btnCrawlStartAnalyze');
     statusEl.textContent = ''; btn.disabled = true;
-    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, option: option }).then(function (res) {
+    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, option: option, crawl_source: crawlAnalyzeSource }).then(function (res) {
       btn.disabled = false;
       crawlAnalyzeStage = null;
       closeUploadModal();
@@ -1410,11 +1415,13 @@
       });
     }
 
+    html += '<button class="btn primary" id="detailSigBtn" type="button" style="width:100%;margin-top:14px">✦ AI 신호 해석 — 어떤 맥락으로 커졌나</button>';
     html += '<div class="chk-row" style="margin-top:14px">'
       + '<input type="checkbox" id="detailSelectChk" ' + (hiddenWords[word] ? 'checked' : '') + '>'
       + '<label for="detailSelectChk">이 단어 끄기 (그래프에서 숨기기)</label></div>';
 
     document.getElementById('detail').innerHTML = html;
+    document.getElementById('detailSigBtn').addEventListener('click', function () { runSignalAnalysis(word); });
     document.getElementById('detailSelectChk').addEventListener('change', function (e) {
       setWordHidden(word, e.target.checked);
     });
@@ -1425,10 +1432,129 @@
   // ---------------------------------------------------------------
   // 해석
   // ---------------------------------------------------------------
+  // 토큰 파일(token_X.parquet)에 대응하는 원본 파일(X.parquet)
+  function rawNameForToken(name) { return String(name || '').replace(/^token_/, ''); }
+
   function updateSourceStatusUI() {
     document.getElementById('sourceFileLabel').textContent = hasSource
       ? '원본 CSV 첨부됨 (다시 올리면 교체)'
       : '원본(토큰화 전) CSV 업로드';
+    var ref = currentMeta && currentMeta.source_ref;
+    var refEl = document.getElementById('sourceRef');
+    if (hasSource) {
+      refEl.hidden = false;
+      refEl.innerHTML = ref
+        ? '첨부된 원본: <b>' + esc(ref.db_name || '크롤링 DB') + '</b> · ' + esc(ref.csv_name || ref.name)
+        : '첨부된 원본: 직접 업로드한 CSV';
+    } else {
+      refEl.hidden = true;
+    }
+    // 크롤링 DB에서 바로 분석한 프로젝트라면 그 DB의 원본을 한 번에 불러올 수 있게 한다
+    var cs = currentMeta && currentMeta.crawl_source;
+    var btn = document.getElementById('btnSourceSuggest');
+    var alreadyLinked = ref && cs && ref.uid === cs.uid && ref.name === rawNameForToken(cs.name);
+    if (cs && cs.uid && cs.name && !alreadyLinked) {
+      btn.hidden = false;
+      btn.textContent = '분석에 쓴 DB' + (cs.db_name ? '(' + cs.db_name + ')' : '') + '의 원본 불러오기';
+    } else {
+      btn.hidden = true;
+    }
+  }
+
+  function attachSourceFromDb(uid, name, dbName) {
+    var statusEl = document.getElementById('sourceStatus');
+    var modalOpen = !document.getElementById('sourceDbModal').hidden;
+    var modalStatus = document.getElementById('srcDbStatus');
+    var prog = document.getElementById('srcDbProgress');
+    var suggestBtn = document.getElementById('btnSourceSuggest');
+    statusEl.textContent = ''; statusEl.className = 'modal-status';
+    modalStatus.textContent = ''; modalStatus.className = 'modal-status';
+    if (modalOpen) prog.hidden = false;
+    else { statusEl.textContent = '크롤링 DB에서 원본을 불러오는 중...'; }
+    suggestBtn.disabled = true;
+    return postJson('/api/projects/' + projectId + '/source/from-crawl-db', { uid: uid, name: name, db_name: dbName || '' }).then(function (res) {
+      prog.hidden = true; suggestBtn.disabled = false;
+      hasSource = true;
+      if (currentMeta) { currentMeta.has_source = true; currentMeta.source_ref = res.source_ref; }
+      updateSourceStatusUI();
+      closeSourceDbModal();
+      statusEl.textContent = '크롤링 DB의 원본을 첨부했습니다. 바로 해석할 수 있어요.'; statusEl.className = 'modal-status ok';
+    }).catch(function (err) {
+      prog.hidden = true; suggestBtn.disabled = false;
+      var msg = err.message || String(err);
+      if (modalOpen) { modalStatus.textContent = msg; modalStatus.className = 'modal-status err'; }
+      else { statusEl.textContent = msg; statusEl.className = 'modal-status err'; }
+    });
+  }
+
+  // ── 크롤링 DB 선택 창(해석용 원본) ──
+  var srcDbQ = '';
+  function openSourceDbModal() {
+    document.getElementById('sourceDbModal').hidden = false;
+    document.getElementById('srcDbStep').hidden = false;
+    document.getElementById('srcFileStep').hidden = true;
+    document.getElementById('srcDbStatus').textContent = '';
+    document.getElementById('srcDbProgress').hidden = true;
+    document.getElementById('srcDbSearch').value = srcDbQ;
+    srcLoadList(srcDbQ, 1);
+  }
+  function closeSourceDbModal() { document.getElementById('sourceDbModal').hidden = true; }
+
+  function srcLoadList(q, page) {
+    srcDbQ = q || '';
+    var wrapEl = document.getElementById('srcDbList');
+    var pagerEl = document.getElementById('srcDbPager');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    pagerEl.innerHTML = '';
+    railApi('/api/crawl-dbs?q=' + encodeURIComponent(srcDbQ) + '&page=' + (page || 1)).then(function (data) {
+      var items = data.items || [];
+      if (!items.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">검색된 크롤링 DB가 없습니다.</div>'; return; }
+      var byUid = {};
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr><th>키워드</th><th>크롤러</th><th>요청자</th><th>기간</th><th>크기</th></tr></thead><tbody>'
+        + items.map(function (it) {
+          byUid[it.uid] = it;
+          return '<tr data-uid="' + esc(it.uid) + '">'
+            + '<td class="ct-main" data-label="키워드">' + esc(it.keyword || it.name) + '</td>'
+            + '<td class="ct-muted" data-label="크롤러">' + esc(CRAWL_OBJECTS[it.crawlObject] || '-') + '</td>'
+            + '<td class="ct-muted" data-label="요청자">' + esc(it.requester || '-') + '</td>'
+            + '<td class="ct-muted" data-label="기간">' + formatCrawlDate(it.startDate) + ' ~ ' + formatCrawlDate(it.endDate) + '</td>'
+            + '<td class="ct-muted" data-label="크기">' + formatCrawlSize(it.dbSize) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () { var it = byUid[tr.dataset.uid]; srcOpenFiles(it.uid, it.keyword || it.name); });
+      });
+      var total = data.total || items.length, perPage = data.per_page || 30, cur = data.page || 1;
+      var pages = Math.max(1, Math.ceil(total / perPage));
+      if (pages > 1) {
+        pagerEl.innerHTML = '<button class="btn" type="button" data-p="' + (cur - 1) + '"' + (cur <= 1 ? ' disabled' : '') + '>← 이전</button>'
+          + '<span class="crawl-pager-info">' + cur + ' / ' + pages + '</span>'
+          + '<button class="btn" type="button" data-p="' + (cur + 1) + '"' + (cur >= pages ? ' disabled' : '') + '>다음 →</button>';
+        Array.prototype.forEach.call(pagerEl.querySelectorAll('button[data-p]'), function (b) {
+          b.addEventListener('click', function () { srcLoadList(srcDbQ, +b.dataset.p); });
+        });
+      }
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
+  }
+
+  function srcOpenFiles(uid, label) {
+    document.getElementById('srcDbStep').hidden = true;
+    document.getElementById('srcFileStep').hidden = false;
+    document.getElementById('srcFileDbName').textContent = label;
+    var wrapEl = document.getElementById('srcFileList');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    railApi('/api/crawl-dbs/' + encodeURIComponent(uid) + '/files?kind=raw').then(function (data) {
+      var files = data.files || [];
+      if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">원본 파일이 없습니다.</div>'; return; }
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr><th>파일명</th><th>종류</th><th>크기</th></tr></thead><tbody>'
+        + files.map(function (f, i) {
+          return '<tr data-idx="' + i + '"><td class="ct-main" data-label="파일명">' + esc(f.csv_name) + '</td>'
+            + '<td data-label="종류"><span class="ct-filetype raw">원본</span></td>'
+            + '<td class="ct-muted" data-label="크기">' + formatCrawlSize(f.size) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () { attachSourceFromDb(uid, files[+tr.dataset.idx].name, label); });
+      });
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
   }
 
   function uploadSource(file) {
@@ -1449,6 +1575,7 @@
     }).then(function () {
       progEl.hidden = true;
       hasSource = true;
+      if (currentMeta) { currentMeta.has_source = true; currentMeta.source_ref = null; }
       updateSourceStatusUI();
       statusEl.textContent = '원본 CSV가 저장되었습니다.'; statusEl.className = 'modal-status ok';
     }).catch(function (err) {
@@ -1561,17 +1688,272 @@
     if (!interpretationsList.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">아직 해석 결과가 없습니다</div>'; return; }
     var html = '';
     interpretationsList.slice().reverse().forEach(function (it) {
-      html += '<div class="rev-item" data-interp="' + escAttr(it.id) + '">'
-        + '<span class="rev-label">' + esc((it.keywords || []).join(', ')) + (it.has_ai ? ' 🤖' : '') + '</span>'
+      var kindTag = it.kind === 'signal' ? '📈 ' : it.kind === 'signal_group' ? '🧭 ' : '';
+      html += '<div class="rev-item" data-interp="' + escAttr(it.id) + '" data-kind="' + escAttr(it.kind || 'keyword') + '">'
+        + '<span class="rev-label">' + kindTag + esc((it.keywords || []).join(', ')) + (it.kind === 'signal' ? ' 신호' : '') + (it.has_ai ? ' 🤖' : '') + '</span>'
         + '<span class="rev-date">' + esc(fmtAnalyzedAt(it.created_at)) + '</span></div>';
     });
     box.innerHTML = html;
     box.querySelectorAll('[data-interp]').forEach(function (el) {
       el.addEventListener('click', function () {
         var id = el.getAttribute('data-interp');
-        api('/api/projects/' + projectId + '/interpretations/' + id).then(renderInterpretResult);
+        var kind = el.getAttribute('data-kind');
+        api('/api/projects/' + projectId + '/interpretations/' + id).then(function (it) {
+          if (kind === 'signal' || it.kind === 'signal') { openSignalModal("'" + it.word + "' 신호 해석"); renderSignalResult(it, false); }
+          else if (kind === 'signal_group' || it.kind === 'signal_group') { openSignalModal('신호군 종합 해석'); renderGroupResult(it); }
+          else renderInterpretResult(it);
+        });
       });
     });
+  }
+
+  // ---------------------------------------------------------------
+  // AI 신호 해석 (단어별 신호 진화 / 신호군 종합)
+  // ---------------------------------------------------------------
+  var SIG_COLOR_VAR = { strong_signal: '--strong-signal', weak_signal: '--weak-signal', latent_signal: '--latent-signal', well_known_signal: '--well-known-signal' };
+  function sigColor(stage) {
+    var v = SIG_COLOR_VAR[stage];
+    return v ? getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888' : 'transparent';
+  }
+  function sigBadge(stage, prefix) {
+    if (!SIGNAL_LABEL[stage]) return '<span class="sig-badge" style="background:var(--latent-signal)">' + (prefix ? esc(prefix) + ' ' : '') + '해당 없음</span>';
+    return '<span class="sig-badge" style="background:var(' + SIG_COLOR_VAR[stage] + ')">' + (prefix ? esc(prefix) + ' · ' : '') + esc(SIGNAL_LABEL[stage]) + '</span>';
+  }
+  function graphHasWord(w) {
+    return !!(graph && ((graph.dov && graph.dov.coordinates && w in graph.dov.coordinates) || (graph.dod && graph.dod.coordinates && w in graph.dod.coordinates)));
+  }
+  function highlight(text, word) {
+    return esc(text).split(esc(word)).join('<mark>' + esc(word) + '</mark>');
+  }
+  var signalBusy = false;
+  function openSignalModal(title) {
+    document.getElementById('signalModalTitle').textContent = title;
+    closeMobileDrawers();
+    document.getElementById('signalModal').hidden = false;
+  }
+  function closeSignalModal() { document.getElementById('signalModal').hidden = true; }
+
+  // 기간별 DoV 곡선 + 국면 배경 띠
+  function signalChartSvg(profile) {
+    var s = profile.series || [];
+    if (!s.length) return '';
+    var W = 960, H = 210, L = 44, R = 14, T = 16, B = 34;
+    var vals = s.map(function (r) { return r.DoV; });
+    var dfv = s.map(function (r) { return r.DF; });
+    var mx = Math.max.apply(null, vals.map(function (v) { return v || 0; }).concat([0.0001]));
+    var mxDf = Math.max.apply(null, dfv.map(function (v) { return v || 0; }).concat([1]));
+    var step = s.length > 1 ? (W - L - R) / (s.length - 1) : 0;
+    var X = function (i) { return L + (s.length > 1 ? i * step : (W - L - R) / 2); };
+    var Y = function (v) { return T + (H - T - B) * (1 - v / mx); };
+    var Yd = function (v) { return T + (H - T - B) * (1 - v / mxDf); };
+    var idx = {}; s.forEach(function (r, i) { idx[r.period] = i; });
+    var out = '<div class="sig-chart-wrap"><svg class="sig-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="기간별 신호 추이">';
+    (profile.phases || []).forEach(function (ph) {
+      var a = idx[ph.periods[0]], b = idx[ph.periods[ph.periods.length - 1]];
+      var x0 = Math.max(L, X(a) - step / 2), x1 = Math.min(W - R, X(b) + step / 2);
+      if (s.length === 1) { x0 = L; x1 = W - R; }
+      out += '<rect x="' + x0 + '" y="' + T + '" width="' + Math.max(2, x1 - x0) + '" height="' + (H - T - B) + '" fill="' + sigColor(ph.stage) + '" opacity="0.10"/>';
+      out += '<text x="' + (x0 + 6) + '" y="' + (T + 13) + '" font-size="11" font-weight="700" fill="' + sigColor(ph.stage) + '">' + esc(ph.label) + '</text>';
+    });
+    [0, 0.5, 1].forEach(function (f) {
+      var y = T + (H - T - B) * (1 - f);
+      out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="currentColor" opacity="0.08"/>';
+      out += '<text x="' + (L - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="currentColor" opacity="0.5">' + (mx * f).toFixed(mx < 1 ? 2 : 0) + '</text>';
+    });
+    var dfPts = dfv.map(function (v, i) { return v == null ? null : X(i) + ',' + Yd(v); }).filter(Boolean);
+    if (dfPts.length > 1) out += '<polyline points="' + dfPts.join(' ') + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.35"/>';
+    var pts = vals.map(function (v, i) { return v == null ? null : X(i) + ',' + Y(v); }).filter(Boolean);
+    if (pts.length > 1) out += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
+    var kem = {}; ((profile.stages || {}).kem || []).forEach(function (r) { kem[r.period] = r; });
+    vals.forEach(function (v, i) {
+      if (v == null) return;
+      var st = kem[s[i].period] || {};
+      // 집계가 끝나지 않은 기간은 속이 빈 점으로 표시해 실제 감소와 구분한다
+      var fill = st.partial ? 'var(--sidebar-bg)' : sigColor(st.stage);
+      var stroke = st.partial ? sigColor(st.stage) : 'var(--sidebar-bg)';
+      out += '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="4.5" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"><title>' + esc(s[i].label) + ' DoV ' + v.toFixed(3) + (st.partial ? ' (집계 중)' : '') + '</title></circle>';
+    });
+    var every = Math.ceil(s.length / 12);
+    s.forEach(function (r, i) {
+      if (i % every && i !== s.length - 1) return;
+      out += '<text x="' + X(i) + '" y="' + (H - 12) + '" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.6">' + esc(r.label) + '</text>';
+    });
+    return out + '</svg></div><div class="sig-legend"><span><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--accent)" stroke-width="2.5"/></svg>DoV(단어 빈도 가중치)</span>'
+      + '<span><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" opacity=".5"/></svg>DF(문서 빈도)</span>'
+      + SIGNAL_KEYS.map(function (k) { return '<span><span class="signal-dot ' + k + '"></span>' + SIGNAL_LABEL[k] + '</span>'; }).join('') + '</div>';
+  }
+
+  function signalTimelineHtml(profile, ctx) {
+    var kem = {}, kim = {};
+    ((profile.stages || {}).kem || []).forEach(function (r) { kem[r.period] = r; });
+    ((profile.stages || {}).kim || []).forEach(function (r) { kim[r.period] = r; });
+    var byP = (ctx && ctx.by_period) || {};
+    return '<div class="sig-timeline">' + (profile.series || []).map(function (r) {
+      var a = kem[r.period] || {}, b = kim[r.period] || {};
+      var cell = function (st, cls, tag) {
+        var ok = SIGNAL_LABEL[st.stage];
+        var g = st.growth != null ? (st.growth > 0 ? '+' : '') + Math.round(st.growth) + '%' : (st.new ? '신규' : '');
+        return '<div class="st ' + cls + ' ' + (ok ? st.stage : 'absent') + '" title="' + tag + ' ' + (ok ? SIGNAL_LABEL[st.stage] : '미등장') + (g ? ' · 증가율 ' + g : '') + (st.partial ? ' · 집계 중' : '') + '">'
+          + tag + ' ' + (ok ? SIGNAL_LABEL[st.stage].replace(' 신호', '') : '-') + (st.partial ? '*' : '') + '</div>';
+      };
+      var docs = byP[r.period] ? byP[r.period].docs : null;
+      return '<div class="sig-cell"><div class="p">' + esc(r.label) + '</div>' + cell(a, '', 'KEM') + cell(b, 'kim', 'KIM')
+        + (docs != null ? '<div class="d">기사 ' + docs + '건</div>' : '') + '</div>';
+    }).join('') + '</div>' + ((profile.partial || []).length ? '<div class="hint" style="margin-top:4px">* 집계가 끝나지 않은 기간은 감소처럼 보일 수 있어 직전 단계를 이어서 표시합니다.</div>' : '');
+  }
+
+  function evidenceHtml(ids, snippets, word) {
+    var map = {}; (snippets || []).forEach(function (sn) { map[sn.id] = sn; });
+    var items = (ids || []).map(function (id) { return map[id]; }).filter(Boolean);
+    if (!items.length) return '';
+    return '<div class="sig-evidence">' + items.map(function (sn) {
+      return '<div class="sig-ev"><div class="m">' + esc(sn.id) + ' · ' + esc(sn.date) + (sn.title ? ' · ' + esc(sn.title) : '') + '</div>' + highlight(sn.context, sn.word || word) + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function termChips(terms, clickable) {
+    return (terms || []).map(function (t) {
+      var term = typeof t === 'string' ? t : t.term;
+      var isNew = typeof t === 'object' && t.new;
+      if (clickable && graphHasWord(term)) return '<button type="button" class="sig-term' + (isNew ? ' new' : '') + '" data-sigword="' + escAttr(term) + '" title="이 단어 신호 해석">' + esc(term) + '</button>';
+      return '<span class="sig-term' + (isNew ? ' new' : '') + '">' + esc(term) + (isNew ? ' ·새' : '') + '</span>';
+    }).join('');
+  }
+
+  function renderSignalResult(it, loading) {
+    var prof = it.profile || it;
+    var ctx = it.context || null;
+    var ai = it.ai || null;
+    var mem = prof.membership || {};
+    var body = document.getElementById('signalModalBody');
+    var html = '<div class="sig-head"><span class="sig-word">' + esc(prof.word) + '</span>'
+      + sigBadge(mem.final, '최종') + sigBadge(mem.kem, 'KEM') + sigBadge(mem.kim, 'KIM')
+      + '<span class="sig-meta">' + (ctx ? '관련 기사 ' + (ctx.total_docs || 0).toLocaleString() + '건' + (ctx.first_seen ? ' · 처음 등장 ' + esc(ctx.first_seen) : '') : '') + '</span>'
+      + (it.id ? '<span class="sig-actions"><a class="btn" href="/api/projects/' + projectId + '/interpretations/' + it.id + '/export">보고서(.md)</a><button class="btn" type="button" data-rerun="' + escAttr(prof.word) + '">다시 분석</button></span>' : '')
+      + '</div>';
+    html += signalChartSvg(prof);
+    html += '<div class="sig-section"><h4>기간별 신호 단계</h4>' + signalTimelineHtml(prof, ctx) + '</div>';
+
+    if (loading) {
+      html += '<div class="sig-loading"><span class="sig-spin"></span>AI가 기간별 기사 맥락을 읽고 신호의 흐름을 해석하고 있어요. 30초~1분 정도 걸립니다.</div>';
+    }
+    if (ai) {
+      html += '<div class="sig-section"><h4>AI 해석</h4>'
+        + (ai.headline ? '<div class="sig-headline">' + esc(ai.headline) + '</div>' : '')
+        + '<div>' + esc(ai.summary) + '</div>'
+        + (ai.transition ? '<div class="sig-transition">맥락 이동 · ' + esc(ai.transition) + '</div>' : '') + '</div>';
+      var aiPh = {}; (ai.phases || []).forEach(function (p) { aiPh[p.id] = p; });
+      var ctxPh = {}; ((ctx && ctx.phases) || []).forEach(function (p) { ctxPh[p.id] = p; });
+      html += '<div class="sig-section"><h4>국면별 맥락</h4><div class="sig-phases">' + (prof.phases || []).map(function (ph) {
+        var p = aiPh[ph.id] || {}, c = ctxPh[ph.id] || {};
+        return '<div class="sig-phase ' + ph.stage + '"><div class="sig-phase-head"><b>' + esc(ph.range) + '</b>' + sigBadge(ph.stage) + (c.docs != null ? '<span class="sig-meta">기사 ' + c.docs + '건</span>' : '') + '</div>'
+          + (p.context ? '<div>' + esc(p.context) + '</div>' : '<div class="sig-meta">이 국면에 대한 AI 서술이 없습니다.</div>')
+          + '<div class="sig-terms">' + termChips(p.key_terms && p.key_terms.length ? p.key_terms : (c.terms || []).slice(0, 8), true) + '</div>'
+          + evidenceHtml(p.evidence, ctx && ctx.snippets, prof.word) + '</div>';
+      }).join('') + '</div></div>';
+      html += '<div class="sig-section sig-grid2">'
+        + '<div class="sig-box"><h5>신호를 키운 계기</h5>' + ((ai.drivers || []).length ? '<ul>' + ai.drivers.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>' : '<div class="sig-meta">-</div>') + '</div>'
+        + '<div class="sig-box"><h5>앞으로 주목할 점</h5><div>' + esc(ai.outlook || '-') + '</div>'
+        + ((ai.watch_terms || []).length ? '<div class="sig-terms">' + termChips(ai.watch_terms, true) + '</div>' : '') + '</div></div>';
+      if (ai.caveats) html += '<div class="sig-caveat">해석의 한계 · ' + esc(ai.caveats) + '</div>';
+    }
+    if (it.ai_error) html += '<div class="sig-err">' + esc(it.ai_error) + '</div>';
+    if (ctx && ctx.by_period && Object.keys(ctx.by_period).length) {
+      html += '<details class="sig-section"><summary style="cursor:pointer;font-weight:700">기간별 연관어 자세히 보기</summary><table class="sig-table" style="margin-top:8px"><thead><tr><th>기간</th><th>기사</th><th>이 기간에 두드러진 연관어 (파란색: 처음 나타남)</th></tr></thead><tbody>'
+        + (prof.series || []).map(function (r) {
+          var b = ctx.by_period[r.period] || { docs: 0, terms: [] };
+          return '<tr><td>' + esc(r.label) + '</td><td>' + b.docs + '</td><td><div class="sig-terms" style="margin:0">' + termChips(b.terms, true) + '</div></td></tr>';
+        }).join('') + '</tbody></table></details>';
+    }
+    body.innerHTML = html;
+    body.querySelectorAll('[data-sigword]').forEach(function (el) {
+      el.addEventListener('click', function () { runSignalAnalysis(el.getAttribute('data-sigword')); });
+    });
+    body.querySelectorAll('[data-rerun]').forEach(function (el) {
+      el.addEventListener('click', function () { runSignalAnalysis(el.getAttribute('data-rerun')); });
+    });
+  }
+
+  function runSignalAnalysis(word) {
+    word = String(word || '').trim();
+    if (!word || signalBusy) return;
+    if (!graphHasWord(word)) {
+      var st = document.getElementById('interpretStatus');
+      st.textContent = "'" + word + "'은(는) 이 분석 결과에 없는 단어입니다."; st.className = 'modal-status err';
+      return;
+    }
+    signalBusy = true;
+    openSignalModal("'" + word + "' 신호 해석");
+    document.getElementById('signalModalBody').innerHTML = '<div class="sig-loading"><span class="sig-spin"></span>기간별 수치를 불러오는 중...</div>';
+    api('/api/projects/' + projectId + '/signal-profile?word=' + encodeURIComponent(word)).then(function (prof) {
+      renderSignalResult({ profile: prof }, true);
+    }).catch(function () { });
+    postJson('/api/projects/' + projectId + '/signal-ai', { word: word }).then(function (it) {
+      signalBusy = false;
+      renderSignalResult(it, false);
+      loadInterpretations();
+    }).catch(function (err) {
+      signalBusy = false;
+      document.getElementById('signalModalBody').insertAdjacentHTML('beforeend', '<div class="sig-err">' + esc(err.message || String(err)) + '</div>');
+      var ld = document.querySelector('#signalModalBody .sig-loading'); if (ld) ld.remove();
+    });
+  }
+
+  function renderGroupResult(it) {
+    var ai = it.ai || {};
+    var snippets = it.snippets || [];
+    var items = {}; (it.items || []).forEach(function (x) { items[x.word] = x; });
+    var html = '<div class="sig-head"><span class="sig-word">' + esc((it.keywords || [''])[0]) + '</span>'
+      + '<span class="sig-meta">' + (it.words || []).length + '개 단어</span>'
+      + (it.id ? '<span class="sig-actions"><a class="btn" href="/api/projects/' + projectId + '/interpretations/' + it.id + '/export">보고서(.md)</a></span>' : '') + '</div>';
+    if (ai.summary) html += '<div class="sig-headline" style="font-size:15px;font-weight:700">' + esc(ai.summary) + '</div>';
+    if ((ai.priority || []).length) {
+      html += '<div class="sig-section"><h4>가장 주목할 단어</h4><div class="sig-phases">' + ai.priority.map(function (p) {
+        return '<div class="sig-box"><h5><button type="button" class="sig-term" data-sigword="' + escAttr(p.word) + '">' + esc(p.word) + ' 신호 해석 →</button></h5>' + esc(p.reason) + '</div>';
+      }).join('') + '</div></div>';
+    }
+    html += '<div class="sig-section"><h4>떠오르는 이슈</h4><div class="sig-grid2">' + (ai.themes || []).map(function (t) {
+      return '<div class="sig-box sig-theme"><h5><span>' + esc(t.name) + '</span><span class="sig-meta">' + t.words.length + '개</span></h5>'
+        + '<div>' + esc(t.description) + '</div><div class="sig-terms">' + termChips(t.words, true) + '</div>' + evidenceHtml(t.evidence, snippets) + '</div>';
+    }).join('') + '</div></div>';
+    if ((ai.unassigned || []).length) html += '<div class="sig-section"><h4>테마에 묶이지 않은 단어</h4><div class="sig-terms">' + termChips(ai.unassigned, true) + '</div></div>';
+    html += '<details class="sig-section"><summary style="cursor:pointer;font-weight:700">단어별 요약 보기</summary><table class="sig-table" style="margin-top:8px"><thead><tr><th>단어</th><th>기사</th><th>처음</th><th>정점</th><th>연관어</th></tr></thead><tbody>'
+      + (it.items || []).map(function (x) {
+        return '<tr><td><button type="button" class="sig-term" data-sigword="' + escAttr(x.word) + '">' + esc(x.word) + '</button></td><td>' + x.docs + '</td><td>' + esc(x.first || '-') + '</td><td>' + esc(x.peak || '-') + '</td><td>' + esc((x.terms || []).join(', ')) + '</td></tr>';
+      }).join('') + '</tbody></table></details>';
+    if (ai.caveats) html += '<div class="sig-caveat">해석의 한계 · ' + esc(ai.caveats) + '</div>';
+    if (it.ai_error) html += '<div class="sig-err">' + esc(it.ai_error) + '</div>';
+    var body = document.getElementById('signalModalBody');
+    body.innerHTML = html;
+    body.querySelectorAll('[data-sigword]').forEach(function (el) {
+      el.addEventListener('click', function () { runSignalAnalysis(el.getAttribute('data-sigword')); });
+    });
+  }
+
+  function runGroupAnalysis() {
+    var st = document.getElementById('interpretStatus');
+    if (!hasSource) { st.textContent = '신호군 해석에는 원본 CSV가 필요합니다. 먼저 원본을 첨부해 주세요.'; st.className = 'modal-status err'; return; }
+    if (signalBusy) return;
+    var basis = document.getElementById('sigGroupBasis').value;
+    var signal = document.getElementById('sigGroupSignal').value;
+    signalBusy = true;
+    openSignalModal('신호군 종합 해석');
+    document.getElementById('signalModalBody').innerHTML = '<div class="sig-loading"><span class="sig-spin"></span>신호군의 단어별 맥락을 모아 AI가 떠오르는 이슈를 묶고 있어요. 1분 정도 걸릴 수 있습니다.</div>';
+    postJson('/api/projects/' + projectId + '/signal-group-ai', { basis: basis, signal: signal }).then(function (it) {
+      signalBusy = false;
+      renderGroupResult(it);
+      loadInterpretations();
+    }).catch(function (err) {
+      signalBusy = false;
+      document.getElementById('signalModalBody').innerHTML = '<div class="sig-err">' + esc(err.message || String(err)) + '</div>';
+    });
+  }
+
+  function fillSignalWordList() {
+    var dl = document.getElementById('sigWordList');
+    if (!dl || !graph) return;
+    var words = Object.keys((graph.dov && graph.dov.coordinates) || {});
+    dl.innerHTML = words.slice(0, 2000).map(function (w) { return '<option value="' + escAttr(w) + '">'; }).join('');
   }
 
   // ---------------------------------------------------------------
@@ -1758,6 +2140,29 @@
     document.getElementById('railUploadBtn').addEventListener('click', openUploadModal);
     document.getElementById('emptyUploadBtn').addEventListener('click', openUploadModal);
     document.getElementById('uploadModalClose').addEventListener('click', closeUploadModal);
+    document.getElementById('btnSourceFromDb').addEventListener('click', openSourceDbModal);
+    document.getElementById('signalModalClose').addEventListener('click', closeSignalModal);
+    document.getElementById('signalModal').addEventListener('click', function (e) { if (e.target.id === 'signalModal') closeSignalModal(); });
+    document.getElementById('btnSigWord').addEventListener('click', function () { runSignalAnalysis(document.getElementById('sigWordInput').value); });
+    document.getElementById('sigWordInput').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) runSignalAnalysis(e.target.value); });
+    document.getElementById('btnSigGroup').addEventListener('click', runGroupAnalysis);
+    document.getElementById('btnSourceSuggest').addEventListener('click', function () {
+      var cs = currentMeta && currentMeta.crawl_source;
+      if (cs) attachSourceFromDb(cs.uid, rawNameForToken(cs.name), cs.db_name);
+    });
+    document.getElementById('sourceDbModalClose').addEventListener('click', closeSourceDbModal);
+    document.getElementById('sourceDbModal').addEventListener('click', function (e) { if (e.target.id === 'sourceDbModal') closeSourceDbModal(); });
+    document.getElementById('btnSrcBack').addEventListener('click', function () {
+      document.getElementById('srcFileStep').hidden = true;
+      document.getElementById('srcDbStep').hidden = false;
+      document.getElementById('srcDbStatus').textContent = '';
+    });
+    var srcSearchTimer = null;
+    document.getElementById('srcDbSearch').addEventListener('input', function (e) {
+      clearTimeout(srcSearchTimer);
+      var q = e.target.value.trim();
+      srcSearchTimer = setTimeout(function () { srcLoadList(q, 1); }, 300);
+    });
     document.getElementById('uploadModal').addEventListener('click', function (e) { if (e.target.id === 'uploadModal') closeUploadModal(); });
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
@@ -1765,6 +2170,8 @@
       else if (!ctxMenu.hidden) closeRailCtxMenu();
       else if (!document.getElementById('articleModal').hidden) document.getElementById('articleModal').hidden = true;
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
+      else if (!document.getElementById('signalModal').hidden) closeSignalModal();
+      else if (!document.getElementById('sourceDbModal').hidden) closeSourceDbModal();
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
       else closeMobileDrawers();
     });

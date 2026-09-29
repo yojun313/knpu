@@ -15,13 +15,21 @@ from app.utils.zip import fast_zip
 
 
 def _save_as_project(
-    zip_path: str, uid: str, project_name: str, pid: str
+    zip_path: str,
+    uid: str,
+    project_name: str,
+    pid: str,
+    crawl_source: dict | None = None,
 ) -> str | None:
     try:
         with open(zip_path, "rb") as f:
             content = f.read()
         project = project_store.create_project(
-            uid, content, project_name or "KEMKIM 분석", "analysis"
+            uid,
+            content,
+            project_name or "KEMKIM 분석",
+            "analysis",
+            crawl_source=crawl_source,
         )
         project_id = project["project_id"]
         send_message(
@@ -42,6 +50,7 @@ def start_kemkim(
     token_data,
     uid: str | None = None,
     project_name: str | None = None,
+    crawl_source: dict | None = None,
 ):
 
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
@@ -89,7 +98,7 @@ def start_kemkim(
             response_headers = {}
             if uid:
                 project_id = _save_as_project(
-                    zip_path, uid, project_name, option["pid"]
+                    zip_path, uid, project_name, option["pid"], crawl_source
                 )
                 if project_id:
                     response_headers["X-Kemkim-Project-Id"] = project_id

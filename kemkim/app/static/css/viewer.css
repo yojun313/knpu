@@ -567,3 +567,91 @@ input[type=number]{width:70px}
   .crawl-table td:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;
     letter-spacing:.3px;color:var(--sidebar-muted);margin-bottom:1px}
 }
+
+/* 해석 — 크롤링 DB에서 원본 선택 */
+.source-db-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;margin:8px 0 0}
+.source-suggest{width:100%;margin:8px 0 0;white-space:normal;line-height:1.4;text-align:center}
+.source-or{text-align:center;font-size:11px;color:var(--sidebar-muted);margin:8px 0 6px}
+.source-ref{margin:8px 0 0;padding:8px 10px;border-radius:8px;border:1px solid var(--sidebar-border);
+  background:var(--sidebar-panel);font-size:11.5px;line-height:1.5;color:var(--sidebar-text);word-break:break-all}
+.source-ref b{font-weight:700}
+.upload-progress-fill.indeterminate{width:35%;animation:srcIndet 1.1s ease-in-out infinite}
+@keyframes srcIndet{0%{margin-left:-35%}100%{margin-left:100%}}
+
+/* ── AI 신호 해석 ─────────────────────────────────────────────── */
+.sig-ai-block{margin:12px 0 4px;padding:12px;border-radius:12px;border:1px solid var(--sidebar-border);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 70%)}
+.sig-ai-title{font-weight:800;font-size:13px;color:var(--text-strong);margin-bottom:4px}
+.sig-ai-row{display:flex;gap:6px;margin-top:8px;align-items:center}
+.sig-ai-row .wl-search{margin:0;flex:1;min-width:0}
+.sig-select{flex:1;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--sidebar-border);
+  background:var(--sidebar-panel);color:var(--sidebar-text);font:inherit;font-size:12.5px}
+.sig-ai-row .btn{white-space:nowrap;flex:none}
+.modal-card.xwide{width:min(1040px,96vw);max-height:92vh}
+.sig-body{padding:18px 20px 22px;color:var(--sidebar-text);font-size:13.5px;line-height:1.65}
+.sig-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:14px}
+.sig-word{font-size:22px;font-weight:800;color:var(--text-strong);letter-spacing:-.02em}
+.sig-meta{font-size:12px;color:var(--sidebar-muted)}
+.sig-actions{margin-left:auto;display:flex;gap:6px}
+.sig-section{margin-top:18px}
+.sig-section>h4{margin:0 0 8px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--sidebar-muted);text-transform:uppercase}
+.sig-chart{width:100%;height:auto;display:block;border:1px solid var(--sidebar-border);border-radius:12px;background:var(--sidebar-panel)}
+.sig-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11.5px;color:var(--sidebar-muted)}
+.sig-legend span{display:inline-flex;align-items:center;gap:5px}
+.sig-timeline{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+.sig-cell{flex:1 0 64px;border-radius:9px;border:1px solid var(--sidebar-border);background:var(--sidebar-panel);padding:7px 6px;text-align:center;font-size:11px}
+.sig-cell .p{font-weight:700;color:var(--text-strong);white-space:nowrap}
+.sig-cell .st{margin-top:5px;border-radius:6px;padding:3px 0;color:#fff;font-weight:700;font-size:10.5px}
+.sig-cell .st.kim{opacity:.72}
+.sig-cell .st.absent{background:transparent;color:var(--sidebar-muted);border:1px dashed var(--sidebar-border)}
+.sig-cell .d{margin-top:4px;color:var(--sidebar-muted)}
+.st.strong_signal{background:var(--strong-signal)}.st.weak_signal{background:var(--weak-signal)}
+.st.latent_signal{background:var(--latent-signal)}.st.well_known_signal{background:var(--well-known-signal)}
+.sig-headline{font-size:17px;font-weight:800;color:var(--text-strong);line-height:1.45;margin:4px 0 8px}
+.sig-transition{display:inline-block;margin-top:10px;padding:8px 12px;border-radius:10px;font-weight:700;
+  background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text-strong)}
+.sig-phases{display:grid;gap:10px}
+.sig-phase{border:1px solid var(--sidebar-border);border-left-width:4px;border-radius:12px;padding:12px 14px;background:var(--sidebar-panel)}
+.sig-phase.strong_signal{border-left-color:var(--strong-signal)}.sig-phase.weak_signal{border-left-color:var(--weak-signal)}
+.sig-phase.latent_signal{border-left-color:var(--latent-signal)}.sig-phase.well_known_signal{border-left-color:var(--well-known-signal)}
+.sig-phase-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.sig-phase-head b{color:var(--text-strong);font-size:14px}
+.sig-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff}
+.sig-terms{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sig-term{padding:3px 9px;border-radius:999px;border:1px solid var(--sidebar-border);background:var(--sidebar-bg);font-size:11.5px;color:var(--sidebar-text)}
+.sig-term.new{border-color:var(--accent);color:var(--accent);font-weight:700}
+button.sig-term{cursor:pointer;font:inherit;font-size:11.5px}
+button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
+.sig-evidence{margin-top:8px;display:grid;gap:6px}
+.sig-ev{border-radius:9px;background:var(--sidebar-bg);border:1px solid var(--sidebar-border);padding:7px 10px;font-size:12px}
+.sig-ev .m{color:var(--sidebar-muted);font-size:11px;margin-bottom:2px}
+.sig-ev mark{background:color-mix(in srgb,var(--weak-signal) 35%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+.sig-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sig-box{border:1px solid var(--sidebar-border);border-radius:12px;padding:12px 14px;background:var(--sidebar-panel)}
+.sig-box h5{margin:0 0 6px;font-size:13px;color:var(--text-strong)}
+.sig-box ul{margin:0;padding-left:18px}
+.sig-caveat{margin-top:14px;font-size:11.5px;color:var(--sidebar-muted)}
+.sig-err{margin-top:12px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);font-size:12.5px}
+.sig-loading{display:flex;align-items:center;gap:10px;padding:14px;border-radius:12px;border:1px dashed var(--sidebar-border);color:var(--sidebar-muted);margin-top:16px}
+.sig-spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;animation:sigspin .8s linear infinite}
+@keyframes sigspin{to{transform:rotate(360deg)}}
+.sig-table{width:100%;border-collapse:collapse;font-size:12px}
+.sig-table th,.sig-table td{padding:7px 8px;border-bottom:1px solid var(--sidebar-border);text-align:left;vertical-align:top}
+.sig-table th{color:var(--sidebar-muted);font-weight:700}
+.sig-theme h5{display:flex;justify-content:space-between;gap:8px}
+@media (max-width:640px){
+  .sig-body{padding:14px}
+  .sig-grid2{grid-template-columns:minmax(0,1fr)}
+  .sig-actions{margin-left:0;width:100%}
+  .sig-word{font-size:19px}
+}
+/* 좁은 사이드 패널: 입력칸과 버튼을 줄바꿈해 쌓는다 */
+.sig-ai-row{flex-wrap:wrap}
+.sig-ai-row .wl-search{flex:1 1 100%}
+.sig-ai-row .sig-select{flex:1 1 40%}
+.sig-ai-row .btn{flex:1 1 100%}
+.sig-actions .btn{white-space:nowrap}
+.sig-cell{flex:1 0 78px}
+.sig-cell .st{white-space:nowrap;padding:3px 4px}
+.sig-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media (max-width:640px){.sig-chart-wrap .sig-chart{min-width:640px}}

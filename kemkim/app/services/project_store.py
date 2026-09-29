@@ -278,12 +278,20 @@ def _doc_out(doc: dict) -> dict:
         "summary": doc.get("summary", {}),
         "interpretations": doc.get("interpretations", []),
         "has_source": doc.get("has_source", False),
+        # 원본 CSV를 어디서 가져왔는지(크롤링 DB 선택 시 {uid, name, db_name})
+        "source_ref": doc.get("source_ref"),
+        # 크롤링 DB에서 바로 분석한 프로젝트라면 그 DB와 토큰 파일
+        "crawl_source": doc.get("crawl_source"),
         "folder_id": doc.get("folder_id"),
     }
 
 
 def create_project(
-    uid: str, upload_bytes: bytes, name: str, source: str = "upload"
+    uid: str,
+    upload_bytes: bytes,
+    name: str,
+    source: str = "upload",
+    crawl_source: dict | None = None,
 ) -> dict:
     project_id = uuid.uuid4().hex
     root = _project_dir(uid, project_id)
@@ -314,6 +322,8 @@ def create_project(
         "interpretations": [],
         "has_source": False,
     }
+    if crawl_source:
+        doc["crawl_source"] = crawl_source
     kemkim_projects_db.insert_one(doc)
     return _doc_out(doc)
 
@@ -476,13 +486,22 @@ def load_graph(uid: str, project_id: str, is_admin: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def save_source_csv(uid: str, project_id: str, content: bytes):
+def save_source_csv(
+    uid: str, project_id: str, content: bytes, source_ref: dict | None = None
+):
     _get_owned_doc(uid, project_id)
     with open(_source_csv_path(uid, project_id), "wb") as f:
         f.write(content)
     kemkim_projects_db.update_one(
         {"_id": project_id},
-        {"$set": {"has_source": True, "updated_at": datetime.now(timezone.utc)}},
+        {
+            "$set": {
+                "has_source": True,
+                # 직접 업로드하면 None으로 덮어써서 이전 DB 출처 표시가 남지 않게 한다
+                "source_ref": source_ref,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
     )
 
 
@@ -519,7 +538,11 @@ def save_interpretation(uid: str, project_id: str, interpretation: dict) -> dict
                     "id": interpretation["id"],
                     "keywords": interpretation["keywords"],
                     "match_mode": interpretation["match_mode"],
-                    "has_ai": bool(interpretation.get("ai_analysis")),
+                    # keyword(키워드 문맥) | signal(단어 신호 진화) | signal_group(신호군 종합)
+                    "kind": interpretation.get("kind", "keyword"),
+                    "has_ai": bool(
+                        interpretation.get("ai_analysis") or interpretation.get("ai")
+                    ),
                     "created_at": interpretation["created_at"],
                 }
             },
