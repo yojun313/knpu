@@ -1229,7 +1229,6 @@ html body {
   --ud-card-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .06);
   --ud-blur: blur(22px) saturate(140%);
   --ud-label: #6b7490;
-  --ud-header-bg: rgba(8, 11, 22, .82);
 }
 html[data-ui-theme-mode="dark"] body {
   --ud-active-bg: rgba(59, 130, 246, .16);
@@ -1301,44 +1300,6 @@ html body { font-family: var(--ud-font); }
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
-
-/* ── 상단 사이트 바: 어두운 유리 바 + 알약형 메뉴 ────────────────────────── */
-html body .top-header {
-  background: var(--ud-header-bg) !important;
-  backdrop-filter: var(--ud-blur);
-  -webkit-backdrop-filter: var(--ud-blur);
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
-  box-shadow: none !important;
-}
-html:not([data-ui-theme-mode="dark"]) body .top-header {
-  background: rgba(255, 255, 255, .72) !important;
-  border-bottom-color: rgba(15, 23, 42, .08);
-}
-/* 로고 PNG는 밝은 글자라 라이트 바에서는 반전(파란 엠블럼은 색상을 되돌려 유지) */
-html:not([data-ui-theme-mode="dark"]) body .top-header-logo { filter: invert(1) hue-rotate(180deg) saturate(1.3); }
-html body .top-nav { gap: 2px; }
-html body .top-nav-link {
-  border-radius: var(--ud-r-icon) !important;
-  border: 1px solid transparent;
-  font-weight: 700 !important; letter-spacing: .02em;
-  color: rgba(255, 255, 255, .58) !important;
-  transition: background 150ms, color 150ms, border-color 150ms;
-}
-html body .top-nav-link:hover { background: rgba(255, 255, 255, .07) !important; color: #fff !important; }
-html body .top-nav-link.active {
-  background: rgba(59, 130, 246, .18) !important; color: #bfdbfe !important;
-  border-color: rgba(96, 165, 250, .3);
-}
-html:not([data-ui-theme-mode="dark"]) body .top-nav-link { color: #5a6781 !important; }
-html:not([data-ui-theme-mode="dark"]) body .top-nav-link:hover { background: rgba(15, 23, 42, .05) !important; color: #101828 !important; }
-html:not([data-ui-theme-mode="dark"]) body .top-nav-link.active {
-  background: rgba(59, 130, 246, .10) !important; color: #1d4ed8 !important; border-color: rgba(37, 99, 235, .22);
-}
-html body .theme-settings-btn { border-radius: var(--ud-r-icon); }
-html:not([data-ui-theme-mode="dark"]) body .theme-settings-btn {
-  border-color: rgba(15, 23, 42, .12); background: rgba(15, 23, 42, .04); color: #47536e;
-}
-html:not([data-ui-theme-mode="dark"]) body .theme-settings-btn:hover { background: rgba(15, 23, 42, .08); color: #101828; }
 
 /* ── 구조: 붙은 기둥 (모든 테마) ─────────────────────────────────────────── */
 html body #app { padding: 0 !important; gap: 0 !important; background: transparent; }
