@@ -329,6 +329,24 @@
            모달 마크업/CSS, 5개 스와치, 다크모드 스위치)은 지웠다(system/ui/theme.js
            참고). */
 
+        /* ── 기본 테마 = UnivDash 배색 (라이트/다크) — 공용 theme.css 의 오로라 배경 위 유리 카드 ── */
+        :root:not([data-ui-theme]):not([data-ui-theme-mode="dark"]) {
+            --primary: #2563eb; --primary-bg: rgba(255,255,255,0.62); --dark: #101828;
+            --text-main: #253046; --text-muted: #6b7490; --bg-body: rgba(255,255,255,0.6);
+            --bg-side: rgba(255,255,255,0.45); --border: rgba(15,23,42,0.09);
+        }
+        :root:not([data-ui-theme])[data-ui-theme-mode="dark"] {
+            --primary: #60a5fa; --primary-bg: rgba(255,255,255,0.05); --dark: #f5f7fb;
+            --text-main: #cfd5e2; --text-muted: #7f889d; --bg-body: rgba(255,255,255,0.045);
+            --bg-side: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.085);
+        }
+        :root:not([data-ui-theme]) .download-card-simple,
+        :root:not([data-ui-theme]) .img-container {
+            background: var(--bg-body) !important; backdrop-filter: blur(22px) saturate(140%);
+            -webkit-backdrop-filter: blur(22px) saturate(140%); border-color: var(--border) !important;
+            border-radius: 16px !important;
+        }
+
         /* ── 글래스모피즘 (라이트/다크) ────────────────────── */
         :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
             --primary: #7c6fd6; --primary-bg: rgba(255,255,255,0.62); --dark: #171d26;

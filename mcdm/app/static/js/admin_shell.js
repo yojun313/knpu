@@ -53,6 +53,10 @@
 
   function renderProjects(projects) {
     const list = document.getElementById('railList');
+    // 사이드바 Overview 통계
+    const statP = document.getElementById('statProjects'), statA = document.getElementById('statActive');
+    if (statP) statP.textContent = projects.length;
+    if (statA) statA.textContent = projects.filter(function (p) { return p.status === 'active'; }).length;
     const empty = document.getElementById('railEmpty');
     if (!list) return;
     if (!projects.length) {

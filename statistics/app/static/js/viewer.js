@@ -314,7 +314,8 @@
       if (!privateTable && !privateColumn) {
         var aiBtn = document.createElement('button');
         aiBtn.className = 'tc-ai-btn'; aiBtn.type = 'button'; aiBtn.textContent = '✦ AI 해석'; aiBtn.title = '이 표를 AI로 해석';
-        aiBtn.addEventListener('click', function () { runAiReport('table', table.id, '', aiBtn); });
+        aiBtn.setAttribute('data-table', table.id);
+        aiBtn.addEventListener('click', function () { runAiReport('table', table.id, ''); });
         actions.appendChild(aiBtn);
       }
       head.appendChild(actions);
@@ -814,6 +815,10 @@
   }
 
   function renderRail() {
+    // 사이드바 Overview 통계
+    var statP = document.getElementById('statProjects'), statF = document.getElementById('statFolders');
+    if (statP) statP.textContent = railProjects.length;
+    if (statF) statF.textContent = railFolders.length;
     var listEl = document.getElementById('railList');
     var emptyEl = document.getElementById('railEmpty');
     listEl.innerHTML = '';
@@ -825,6 +830,7 @@
     } else {
       renderProjectTree(listEl, railProjects, railFolders, true);
     }
+    applyAiActivity();
   }
 
   function highlightActiveRailItem() {
@@ -1438,21 +1444,25 @@
   // ---------------------------------------------------------------
   // 이벤트 바인딩
   // ---------------------------------------------------------------
-  var RAIL_MIN_WIDTH = 180, RAIL_MAX_WIDTH = 440, RAIL_DEFAULT_WIDTH = 236;
+  var RAIL_MIN_WIDTH = 220, RAIL_MAX_WIDTH = 440, RAIL_DEFAULT_WIDTH = 256;
   var mobileQuery = window.matchMedia('(max-width:1100px)');
   // ---------------------------------------------------------------
   // AI 통계 분석 — 오른쪽 사이드바
-  //   * 요청은 서버 백그라운드 작업으로 돌고(nginx 60초 제한 회피), 여기서는 폴링한다.
-  //   * 리포트형 결과는 서버(프로젝트 폴더)에 저장되고, 대화는 브라우저에 프로젝트별로 남긴다.
+  //   * 작업·대화·결과는 모두 서버(프로젝트 폴더)에 저장된다. 이 화면은 서버 상태를
+  //     보여 주기만 하므로, 다른 페이지로 갔다 오거나 다른 기기·브라우저에서 같은
+  //     계정으로 들어와도 진행 중인 작업이 그대로 이어서 보인다.
+  //   * 진행 중인 작업이 있으면 2초마다, 없으면 20초마다 상태를 다시 읽는다.
   // ---------------------------------------------------------------
   var AI_KIND = { overview: '전체 요약', findings: '핵심 발견', relationships: '변수 관계·가설', methods: '방법·한계 점검', table: '표 해석', question: '질문' };
   function aiChip(mode) { return mode === 'table' ? '표' : mode === 'question' ? '질문' : '리포트'; }
   var AI_SIDE_KEY = 'sv_ai_side_open', AI_SIDE_W_KEY = 'sv_ai_side_width', AI_TAB_KEY = 'sv_ai_side_tab';
-  var aiResults = [], aiPending = [], aiOpen = {}, aiEpoch = 0, aiTimer = null;
-  var chatLog = [], chatBusy = false;
+  var aiResults = [], aiJobs = [], chatLog = [], aiOpen = {}, aiEpoch = 0;
+  var aiResultsVersion = null, aiPollTimer = null, aiTickTimer = null, aiActivityTimer = null;
+  var aiPromptCache = {}, aiActivity = [];
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  function projectApi(sub) { return '/api/projects/' + encodeURIComponent(currentMeta.project_id) + sub; }
 
   function friendlyAiError(msg) {
     msg = String(msg || '');
@@ -1468,6 +1478,11 @@
     var now = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
     var t = pad(d.getHours()) + ':' + pad(d.getMinutes());
     return d.toDateString() === now.toDateString() ? t : (d.getMonth() + 1) + '/' + d.getDate() + ' ' + t;
+  }
+
+  function elapsedText(iso) {
+    var s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+    return s < 60 ? s + '초' : Math.floor(s / 60) + '분 ' + (s % 60) + '초';
   }
 
   function tableTitle(id) {
@@ -1500,10 +1515,14 @@
     document.getElementById('aiSideBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
+  function resizeCharts() {
+    Object.keys(chartsById).forEach(function (k) { if (chartsById[k] && chartsById[k].resize) chartsById[k].resize(); });
+  }
+
   function openAiSide(tab) {
     var side = document.getElementById('side');
     if (isMobileLayout()) openMobileDrawer('side');
-    else { side.classList.remove('collapsed'); lsSet(AI_SIDE_KEY, '1'); }
+    else { side.classList.remove('collapsed'); lsSet(AI_SIDE_KEY, '1'); setTimeout(resizeCharts, 50); }
     if (tab) setSideTab(tab);
     syncSideToggle();
   }
@@ -1511,19 +1530,19 @@
   function closeAiSide() {
     var side = document.getElementById('side');
     if (isMobileLayout()) closeMobileDrawers();
-    else { side.classList.add('collapsed'); lsSet(AI_SIDE_KEY, '0'); }
+    else { side.classList.add('collapsed'); lsSet(AI_SIDE_KEY, '0'); setTimeout(resizeCharts, 50); }
     syncSideToggle();
   }
 
   function refreshModelLine() {
-    var el = document.getElementById('aiModelLine');
+    var line = document.getElementById('aiModelLine');
     railApi('/api/llm-settings').then(function (s) {
       var u = s.usage || {};
       var money = '$' + Number(u.cost_usd || 0).toFixed(2) + ' / $' + Number(s.monthly_limit_usd || 0).toFixed(2);
-      el.textContent = s.mode === 'openai' ? '내 GPT API · ' + s.model + ' · 이번 달 ' + money
+      line.textContent = s.mode === 'openai' ? '내 GPT API · ' + s.model + ' · 이번 달 ' + money
         : s.mode === 'local_then_openai' ? '로컬 LLM 우선 → ' + s.model + ' · ' + money
         : '로컬 LLM (연구실 서버) · 설정 변경';
-    }).catch(function () { el.textContent = 'AI 모델 설정'; });
+    }).catch(function () { line.textContent = 'AI 모델 설정'; });
   }
 
   function openLlmSettings() {
@@ -1536,104 +1555,124 @@
     }, 350);
   }
 
-  // ---- 프로젝트 전환 ----
-  function aiSetProject(meta) {
-    aiEpoch++;
-    aiResults = []; aiPending = []; aiOpen = {};
-    chatBusy = false;
-    document.getElementById('aiChatSend').disabled = false;
-    if (!meta) { chatLog = []; renderChat(); renderAiResults(); setSideTab(lsGet(AI_TAB_KEY)); return; }
-    try { chatLog = JSON.parse(lsGet('sv_ai_chat_' + meta.project_id) || '[]'); } catch (e) { chatLog = []; }
-    if (!Array.isArray(chatLog)) chatLog = [];
-    renderChat();
-    setSideTab(lsGet(AI_TAB_KEY));
-    var epoch = aiEpoch;
-    document.getElementById('aiResults').innerHTML = '<div class="ai-results-empty">저장된 결과를 불러오는 중…</div>';
-    railApi('/api/projects/' + encodeURIComponent(meta.project_id) + '/ai-results').then(function (r) {
+  // ---- 서버 상태 동기화 ----
+  function hasRunning() { return aiJobs.some(function (j) { return j.status === 'running'; }); }
+
+  function schedulePoll(ms) {
+    clearTimeout(aiPollTimer);
+    aiPollTimer = setTimeout(pollAiState, ms);
+  }
+
+  function loadAiResults(epoch) {
+    return railApi(projectApi('/ai-results')).then(function (r) {
       if (epoch !== aiEpoch) return;
       aiResults = r.results || [];
-      if (aiResults[0]) aiOpen[aiResults[0].id] = true;
+      if (aiResults[0] && !Object.keys(aiOpen).length) aiOpen[aiResults[0].id] = true;
       renderAiResults();
-    }).catch(function () {
+    });
+  }
+
+  function applyAiState(state, epoch) {
+    if (epoch !== aiEpoch) return;
+    var before = {};
+    aiJobs.forEach(function (j) { before[j.id] = j.status; });
+    aiJobs = state.jobs || [];
+    // 방금 끝난 리포트는 펼쳐서 보여 준다
+    aiJobs.forEach(function (j) {
+      if (j.status === 'done' && before[j.id] === 'running' && j.result_id) aiOpen[j.result_id] = true;
+    });
+    var chatChanged = JSON.stringify(state.chat || []) !== JSON.stringify(chatLog);
+    chatLog = state.chat || [];
+    if (state.results_version !== aiResultsVersion) {
+      aiResultsVersion = state.results_version;
+      loadAiResults(epoch);
+    } else {
+      renderAiResults();
+    }
+    if (chatChanged) renderChat(); else updateChatStage();
+    var busy = chatBusy();
+    document.getElementById('aiChatSend').disabled = busy;
+    ensureTick();
+  }
+
+  function pollAiState() {
+    if (!currentMeta) return;
+    var epoch = aiEpoch;
+    railApi(projectApi('/ai-state')).then(function (state) {
+      applyAiState(state, epoch);
+    }).catch(function () { }).then(function () {
       if (epoch !== aiEpoch) return;
-      aiResults = []; renderAiResults();
+      schedulePoll(hasRunning() ? 2000 : (document.hidden ? 60000 : 20000));
     });
   }
 
-  // ---- 작업 폴링 ----
-  function pollAiJob(jobId, onUpdate) {
-    var fails = 0;
-    return new Promise(function (resolve, reject) {
-      function tick() {
-        railApi('/api/ai-jobs/' + jobId).then(function (job) {
-          fails = 0;
-          if (onUpdate) onUpdate(job);
-          if (job.status === 'done') resolve(job.result);
-          else if (job.status === 'error') reject(new Error(job.error || 'AI 분석에 실패했습니다.'));
-          else setTimeout(tick, 1500);
-        }).catch(function (err) {
-          if (/찾을 수 없습니다|unauthorized/.test(err.message) || ++fails > 6) reject(err);
-          else setTimeout(tick, 3000);
-        });
-      }
-      setTimeout(tick, 700);
-    });
-  }
-
-  function ensureAiTimer() {
-    if (aiTimer) return;
-    aiTimer = setInterval(function () {
-      var any = false;
-      aiPending.forEach(function (t) {
-        if (t.error) return;
-        any = true;
-        var el = document.querySelector('[data-pending="' + t.key + '"] .ai-pending-time');
-        if (el) el.textContent = Math.round((Date.now() - t.started) / 1000) + '초';
-      });
-      if (!any) { clearInterval(aiTimer); aiTimer = null; }
+  function ensureTick() {
+    if (aiTickTimer || !hasRunning()) return;
+    aiTickTimer = setInterval(function () {
+      if (!hasRunning()) { clearInterval(aiTickTimer); aiTickTimer = null; return; }
+      document.querySelectorAll('[data-elapsed]').forEach(function (e) { e.textContent = elapsedText(e.getAttribute('data-elapsed')); });
     }, 1000);
   }
 
-  // ---- 리포트 실행 ----
-  function runAiReport(mode, tableId, question, sourceBtn) {
+  // 다른 프로젝트에서 돌고 있는 작업도 왼쪽 목록에 표시한다
+  function pollAiActivity() {
+    clearTimeout(aiActivityTimer);
+    railApi('/api/ai-activity').then(function (r) {
+      aiActivity = r.running || [];
+      applyAiActivity();
+      aiActivityTimer = setTimeout(pollAiActivity, aiActivity.length ? 4000 : 20000);
+    }).catch(function () { aiActivityTimer = setTimeout(pollAiActivity, 30000); });
+  }
+
+  function applyAiActivity() {
+      var running = {};
+      aiActivity.forEach(function (a) { running[a.project_id] = (running[a.project_id] || 0) + 1; });
+      document.querySelectorAll('.rail-item').forEach(function (item) {
+        var id = item.getAttribute('data-id'), badge = item.querySelector('.ri-ai');
+        if (running[id]) {
+          if (!badge) {
+            badge = document.createElement('span'); badge.className = 'ri-ai'; badge.title = 'AI 분석 진행 중';
+            badge.innerHTML = '<span class="ri-ai-dot"></span>AI';
+            var main = item.querySelector('.ri-main'); if (main) main.after(badge);
+          }
+        } else if (badge) badge.remove();
+      });
+  }
+
+  // ---- 프로젝트 전환 ----
+  function aiSetProject(meta) {
+    aiEpoch++;
+    clearTimeout(aiPollTimer);
+    aiResults = []; aiJobs = []; chatLog = []; aiOpen = {}; aiResultsVersion = null;
+    renderChat(); renderAiResults(); setSideTab(lsGet(AI_TAB_KEY));
+    if (!meta) return;
+    document.getElementById('aiResults').innerHTML = '<div class="ai-results-empty">저장된 결과와 진행 중인 작업을 불러오는 중…</div>';
+    pollAiState();
+  }
+
+  // ---- 작업 시작 ----
+  function startAiJob(payload) {
+    return postJson(projectApi('/ai-analysis'), payload).then(function (r) {
+      if (r.job && !aiJobs.some(function (j) { return j.id === r.job.id; })) aiJobs.unshift(r.job);
+      schedulePoll(600);
+      pollAiActivity();
+      return r;
+    });
+  }
+
+  function runAiReport(mode, tableId, question) {
     if (!currentMeta || !currentMeta.project_id) return;
     openAiSide('report');
-    var epoch = aiEpoch;
-    var task = {
-      key: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      mode: mode, tableId: tableId || null, question: question || '',
-      label: mode === 'table' ? tableTitle(tableId) : mode === 'question' ? question : AI_KIND[mode],
-      started: Date.now(), stage: '요청을 보내는 중', prompt: null, error: null,
-    };
-    aiPending.unshift(task);
-    renderAiResults();
-    document.getElementById('reportScroll').scrollTop = 0;
-    ensureAiTimer();
-    if (sourceBtn) sourceBtn.classList.add('is-busy');
+    startAiJob({ mode: mode, table_id: tableId || undefined, question: question || '' }).then(function () {
+      renderAiResults(); ensureTick();
+      document.getElementById('reportScroll').scrollTop = 0;
+    }).catch(function (err) { toast(friendlyAiError(err.message)); });
+  }
 
-    postJson('/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/ai-analysis', {
-      mode: mode, table_id: tableId || undefined, question: question || '',
-    }).then(function (r) {
-      return pollAiJob(r.job_id, function (job) {
-        if (epoch !== aiEpoch) return;
-        task.stage = job.stage || task.stage;
-        if (job.prompt) task.prompt = job.prompt;
-        updatePendingCard(task);
-      });
-    }).then(function (result) {
-      if (epoch !== aiEpoch) return;
-      aiPending = aiPending.filter(function (t) { return t !== task; });
-      aiResults.unshift(result);
-      aiOpen[result.id] = true;
-      renderAiResults();
-      refreshModelLine();
-    }).catch(function (err) {
-      if (epoch !== aiEpoch) return;
-      task.error = friendlyAiError(err.message);
-      renderAiResults();
-    }).then(function () {
-      if (sourceBtn) sourceBtn.classList.remove('is-busy');
-    });
+  function dismissJob(job) {
+    aiJobs = aiJobs.filter(function (j) { return j.id !== job.id; });
+    renderAiResults();
+    railApi(projectApi('/ai-jobs/' + encodeURIComponent(job.id)), { method: 'DELETE' }).catch(function () { });
   }
 
   // ---- 결과 렌더링 ----
@@ -1644,10 +1683,18 @@
     return e;
   }
 
-  function promptDetails(prompt) {
+  // 프롬프트는 크기가 커서 펼칠 때 서버에서 받아 온다
+  function promptDetails(url) {
     var d = el('details', 'ai-prompt');
     d.appendChild(el('summary', null, 'AI에 보낸 프롬프트 보기'));
-    d.appendChild(el('pre', null, prompt));
+    var pre = el('pre', null, '불러오는 중…');
+    d.appendChild(pre);
+    d.addEventListener('toggle', function () {
+      if (!d.open) return;
+      if (aiPromptCache[url]) { pre.textContent = aiPromptCache[url]; return; }
+      railApi(url).then(function (r) { aiPromptCache[url] = r.prompt || '(비어 있음)'; pre.textContent = aiPromptCache[url]; })
+        .catch(function (e) { pre.textContent = e.message || '프롬프트를 불러오지 못했습니다.'; });
+    });
     return d;
   }
 
@@ -1662,27 +1709,27 @@
     card.classList.remove('ai-flash'); void card.offsetWidth; card.classList.add('ai-flash');
   }
 
-  function buildPendingCard(t) {
-    var card = el('article', 'ai-card open' + (t.error ? ' is-error' : ' is-pending'));
-    card.setAttribute('data-pending', t.key);
+  function jobTitle(j) {
+    return j.mode === 'table' ? (j.label || tableTitle(j.table_id)) : j.mode === 'question' ? (j.question || j.label) : (AI_KIND[j.mode] || j.label || 'AI 분석');
+  }
+
+  function buildJobCard(j) {
+    var failed = j.status === 'error';
+    var card = el('article', 'ai-card open' + (failed ? ' is-error' : ' is-pending'));
     var head = el('div', 'ai-card-head');
-    head.appendChild(el('span', 'ai-card-kind', aiChip(t.mode)));
-    head.appendChild(el('span', 'ai-card-title', t.label));
+    head.appendChild(el('span', 'ai-card-kind', aiChip(j.mode)));
+    head.appendChild(el('span', 'ai-card-title', jobTitle(j)));
+    head.appendChild(el('span', 'ai-card-time', fmtClock(j.created_at)));
     card.appendChild(head);
-    if (t.error) {
-      card.appendChild(el('div', 'ai-error', t.error));
+    if (failed) {
+      card.appendChild(el('div', 'ai-error', friendlyAiError(j.error)));
       var acts = el('div', 'ai-error-actions');
       var retry = el('button', null, '다시 시도'); retry.type = 'button';
-      retry.addEventListener('click', function () {
-        aiPending = aiPending.filter(function (x) { return x !== t; });
-        runAiReport(t.mode, t.tableId, t.question);
-      });
+      retry.addEventListener('click', function () { dismissJob(j); runAiReport(j.mode, j.table_id, j.question); });
       var dismiss = el('button', null, '닫기'); dismiss.type = 'button';
-      dismiss.addEventListener('click', function () {
-        aiPending = aiPending.filter(function (x) { return x !== t; }); renderAiResults();
-      });
+      dismiss.addEventListener('click', function () { dismissJob(j); });
       acts.appendChild(retry); acts.appendChild(dismiss);
-      if (/모델|LLM|한도|API/.test(t.error)) {
+      if (/모델|LLM|한도|API/.test(j.error || '')) {
         var cfg = el('button', null, 'AI 모델 설정'); cfg.type = 'button';
         cfg.addEventListener('click', openLlmSettings); acts.appendChild(cfg);
       }
@@ -1693,29 +1740,25 @@
     p.appendChild(el('div', 'spin'));
     var txt = el('div', 'ai-pending-text');
     txt.appendChild(el('b', null, '분석 중'));
-    txt.appendChild(el('span', 'ai-pending-stage', t.stage));
+    txt.appendChild(el('span', null, j.stage || '대기 중'));
     p.appendChild(txt);
-    p.appendChild(el('span', 'ai-pending-time', Math.round((Date.now() - t.started) / 1000) + '초'));
+    var time = el('span', 'ai-pending-time', elapsedText(j.created_at));
+    time.setAttribute('data-elapsed', j.created_at);
+    p.appendChild(time);
     card.appendChild(p);
-    var body = el('div', 'ai-card-body ai-pending-prompt');
-    if (t.prompt) body.appendChild(promptDetails(t.prompt));
-    card.appendChild(body);
+    var note = el('div', 'ai-pending-note', '다른 페이지로 이동하거나 창을 닫아도 서버에서 계속 진행되고, 다시 열면 이어서 보입니다.');
+    card.appendChild(note);
+    if (j.has_prompt) {
+      var body = el('div', 'ai-card-body');
+      body.appendChild(promptDetails('/api/ai-jobs/' + encodeURIComponent(j.id) + '/prompt'));
+      card.appendChild(body);
+    }
     return card;
-  }
-
-  function updatePendingCard(t) {
-    var card = document.querySelector('[data-pending="' + t.key + '"]');
-    if (!card) return;
-    var stage = card.querySelector('.ai-pending-stage');
-    if (stage) stage.textContent = t.stage;
-    var body = card.querySelector('.ai-pending-prompt');
-    if (body && t.prompt && !body.firstChild) body.appendChild(promptDetails(t.prompt));
   }
 
   function buildEvidence(ev) {
     var b = el('button', 'ai-ev ' + (ev.status || 'unknown_table')); b.type = 'button';
-    var mark = ev.status === 'verified' ? '✓' : '!';
-    b.appendChild(el('span', 'ai-ev-mark', mark));
+    b.appendChild(el('span', 'ai-ev-mark', ev.status === 'verified' ? '✓' : '!'));
     var body = el('span', 'ai-ev-body');
     body.appendChild(el('span', 'ai-ev-table', ev.table_title || ev.table_id || '표 미지정'));
     body.appendChild(document.createTextNode(ev.value || ''));
@@ -1780,7 +1823,7 @@
     }
     var llm = r.llm || {};
     if ((llm.notes || []).length) body.appendChild(el('div', 'ai-notes', llm.notes.join(' · ')));
-    if (r.prompt) body.appendChild(promptDetails(r.prompt));
+    if (r.has_prompt) body.appendChild(promptDetails(projectApi('/ai-results/' + encodeURIComponent(r.id) + '/prompt')));
 
     var foot = el('div', 'ai-card-foot');
     var v = rep.verification || {};
@@ -1795,7 +1838,7 @@
     if ((r.tables || []).length) foot.appendChild(el('span', null, '참고 표 ' + r.tables.length + '개'));
     foot.appendChild(el('span', 'grow'));
     var md = el('a', 'ai-link-btn', '.md 저장');
-    md.href = '/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/ai-results/' + encodeURIComponent(r.id) + '.md';
+    md.href = projectApi('/ai-results/' + encodeURIComponent(r.id) + '.md');
     md.setAttribute('download', '');
     foot.appendChild(md);
     var del = el('button', 'ai-link-btn danger', '삭제'); del.type = 'button';
@@ -1807,8 +1850,8 @@
         return;
       }
       clearTimeout(armed);
-      railApi('/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/ai-results/' + encodeURIComponent(r.id), { method: 'DELETE' })
-        .then(function () { aiResults = aiResults.filter(function (x) { return x.id !== r.id; }); renderAiResults(); })
+      railApi(projectApi('/ai-results/' + encodeURIComponent(r.id)), { method: 'DELETE' })
+        .then(function () { aiResults = aiResults.filter(function (x) { return x.id !== r.id; }); aiResultsVersion = null; renderAiResults(); })
         .catch(function (err) { toast(err.message || '삭제에 실패했습니다.'); });
     });
     foot.appendChild(del);
@@ -1819,14 +1862,22 @@
 
   function renderAiResults() {
     var host = document.getElementById('aiResults');
+    var scroll = document.getElementById('reportScroll'), top = scroll.scrollTop;
+    // 펼친 프롬프트는 다시 그려도 열린 채로 둔다
     host.innerHTML = '';
-    aiPending.forEach(function (t) { host.appendChild(buildPendingCard(t)); });
+    var jobs = aiJobs.filter(function (j) { return j.kind === 'report' && j.status !== 'done'; });
+    jobs.forEach(function (j) { host.appendChild(buildJobCard(j)); });
     aiResults.forEach(function (r) { host.appendChild(buildResultCard(r)); });
-    var n = aiResults.length;
-    document.getElementById('aiResultCount').textContent = n ? n + '개 저장됨' : '';
-    if (!aiPending.length && !n) {
+    var n = aiResults.length, running = jobs.filter(function (j) { return j.status === 'running'; }).length;
+    document.getElementById('aiResultCount').textContent = (running ? '진행 중 ' + running + ' · ' : '') + (n ? n + '개 저장됨' : '');
+    if (!jobs.length && !n) {
       host.appendChild(el('div', 'ai-results-empty', '아직 분석 결과가 없습니다. 위에서 분석 방식을 고르거나 질문을 입력해 보세요.'));
     }
+    scroll.scrollTop = top;
+    var busy = {};
+    jobs.forEach(function (j) { if (j.status === 'running') busy[j.mode === 'table' ? 't:' + j.table_id : j.mode] = true; });
+    document.querySelectorAll('[data-ai-mode]').forEach(function (b) { b.classList.toggle('is-busy', !!busy[b.getAttribute('data-ai-mode')]); });
+    document.querySelectorAll('.tc-ai-btn').forEach(function (b) { b.classList.toggle('is-busy', !!busy['t:' + b.getAttribute('data-table')]); });
   }
 
   // ---- 대화 ----
@@ -1860,6 +1911,7 @@
       if ((m = line.match(/^\s*#{1,4}\s+(.*)$/))) { flushPara(); flushList(); html += '<h4>' + mdInline(m[1]) + '</h4>'; continue; }
       if ((m = line.match(/^\s*[-*•]\s+(.*)$/))) { flushPara(); if (list !== 'ul') { flushList(); html += '<ul>'; list = 'ul'; } html += '<li>' + mdInline(m[1]) + '</li>'; continue; }
       if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { flushPara(); if (list !== 'ol') { flushList(); html += '<ol>'; list = 'ol'; } html += '<li>' + mdInline(m[1]) + '</li>'; continue; }
+      if (/^\s*(---|\*\*\*)\s*$/.test(line)) { flushPara(); flushList(); continue; }
       if (!line.trim()) { flushPara(); flushList(); continue; }
       flushList(); para.push(line);
     }
@@ -1867,20 +1919,21 @@
     return html;
   }
 
-  function saveChat() {
-    if (!currentMeta) return;
-    lsSet('sv_ai_chat_' + currentMeta.project_id, JSON.stringify(chatLog.slice(-40)));
-  }
+  function chatBusy() { return chatLog.some(function (m) { return m.pending; }); }
+  function chatJob(m) { return aiJobs.filter(function (j) { return j.id === m.job_id; })[0]; }
 
   function buildChatMessage(m) {
     var box = el('div', 'chat-msg ' + m.role + (m.error ? ' error' : ''));
     if (m.role === 'user') { box.textContent = m.content; return box; }
     if (m.pending) {
+      var job = chatJob(m) || {};
       var st = el('div', 'chat-status'); st.appendChild(el('span', 'spin'));
-      st.appendChild(el('span', 'chat-stage', m.stage || '통계표를 확인하는 중'));
+      st.appendChild(el('span', 'chat-stage', job.stage || '통계표를 확인하는 중'));
+      var t = el('span', 'chat-elapsed', elapsedText(m.created_at)); t.setAttribute('data-elapsed', m.created_at);
+      st.appendChild(t);
       box.appendChild(st); return box;
     }
-    if (m.error) { box.textContent = m.content; return box; }
+    if (m.error) { box.textContent = friendlyAiError(m.content); return box; }
     var md = el('div', 'md'); md.innerHTML = renderMarkdown(m.content || '');
     md.querySelectorAll('code.tref').forEach(function (c) {
       c.addEventListener('click', function () { focusTable(c.getAttribute('data-table')); });
@@ -1912,51 +1965,41 @@
 
   function renderChat() {
     var host = document.getElementById('aiChatMessages');
+    var atBottom = host.scrollHeight - host.scrollTop - host.clientHeight < 60;
     host.innerHTML = '';
     if (!chatLog.length) {
       var w = el('div', 'chat-welcome');
-      w.innerHTML = '<b>통계 결과에 대해 대화해 보세요.</b><br>AI가 이 프로젝트의 표를 직접 찾아 읽고, 필요하면 계산까지 해서 답합니다. 답에 나온 표 이름을 누르면 해당 표로 이동합니다.';
+      w.innerHTML = '<b>통계 결과에 대해 대화해 보세요.</b><br>AI가 이 프로젝트의 표를 직접 찾아 읽고, 필요하면 계산까지 해서 답합니다. 답에 나온 표 이름을 누르면 해당 표로 이동합니다. 대화는 계정에 저장되어 다른 기기에서도 이어집니다.';
       host.appendChild(w);
     }
     chatLog.forEach(function (m) { host.appendChild(buildChatMessage(m)); });
-    host.scrollTop = host.scrollHeight;
+    if (atBottom || chatBusy()) host.scrollTop = host.scrollHeight;
     document.getElementById('chatSuggest').hidden = chatLog.length > 0;
+    document.getElementById('aiChatSend').disabled = chatBusy();
+  }
+
+  function updateChatStage() {
+    chatLog.forEach(function (m) {
+      if (!m.pending) return;
+      var job = chatJob(m), s = document.querySelector('#aiChatMessages .chat-stage');
+      if (job && s) s.textContent = job.stage || s.textContent;
+    });
   }
 
   function sendChat(question) {
     question = String(question || '').trim();
-    if (!question || !currentMeta || chatBusy) return;
+    if (!question || !currentMeta || chatBusy()) return;
     openAiSide('chat');
-    var epoch = aiEpoch;
-    var history = chatLog.filter(function (m) { return !m.pending && !m.error; })
-      .map(function (m) { return { role: m.role, content: m.content }; }).slice(-10);
-    chatLog.push({ role: 'user', content: question });
-    var pending = { role: 'assistant', pending: true, stage: '요청을 보내는 중' };
-    chatLog.push(pending);
-    chatBusy = true;
-    document.getElementById('aiChatSend').disabled = true;
+    var now = new Date().toISOString();
+    chatLog = chatLog.concat([{ role: 'user', content: question, created_at: now }, { role: 'assistant', pending: true, created_at: now }]);
     renderChat();
-    postJson('/api/projects/' + encodeURIComponent(currentMeta.project_id) + '/ai-analysis', {
-      mode: 'chat', question: question, history: history,
-    }).then(function (r) {
-      return pollAiJob(r.job_id, function (job) {
-        if (epoch !== aiEpoch) return;
-        pending.stage = job.stage;
-        var s = document.querySelector('#aiChatMessages .chat-msg:last-child .chat-stage');
-        if (s) s.textContent = job.stage;
-      });
-    }).then(function (res) {
-      if (epoch !== aiEpoch) return;
-      chatLog[chatLog.indexOf(pending)] = { role: 'assistant', content: res.text, tables: res.tables, steps: res.steps, llm: res.llm };
-      refreshModelLine();
+    startAiJob({ mode: 'chat', question: question }).then(function (r) {
+      chatLog[chatLog.length - 1].job_id = r.job_id;
     }).catch(function (err) {
-      if (epoch !== aiEpoch) return;
-      chatLog[chatLog.indexOf(pending)] = { role: 'assistant', error: true, content: friendlyAiError(err.message) };
-    }).then(function () {
-      if (epoch !== aiEpoch) return;
-      chatBusy = false;
-      document.getElementById('aiChatSend').disabled = false;
-      saveChat(); renderChat();
+      chatLog = chatLog.slice(0, -2);
+      renderChat();
+      toast(friendlyAiError(err.message));
+      document.getElementById('aiChatInput').value = question;
     });
   }
 
@@ -1980,7 +2023,7 @@
       b.addEventListener('click', function () { setSideTab(b.getAttribute('data-side-tab')); });
     });
     document.querySelectorAll('[data-ai-mode]').forEach(function (b) {
-      b.addEventListener('click', function () { runAiReport(b.getAttribute('data-ai-mode'), null, '', null); });
+      b.addEventListener('click', function () { runAiReport(b.getAttribute('data-ai-mode'), null, ''); });
     });
 
     var q = document.getElementById('aiQuestion');
@@ -1993,7 +2036,7 @@
       var text = q.value.trim();
       if (!text) { q.focus(); return; }
       q.value = ''; autoGrow(q);
-      runAiReport('question', null, text, null);
+      runAiReport('question', null, text);
     });
 
     var ci = document.getElementById('aiChatInput');
@@ -2004,16 +2047,29 @@
     document.getElementById('aiChatForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var text = ci.value.trim();
-      if (!text || chatBusy) return;
+      if (!text || chatBusy()) return;
       ci.value = ''; autoGrow(ci);
       sendChat(text);
     });
     document.querySelectorAll('[data-chat-prompt]').forEach(function (b) {
       b.addEventListener('click', function () { sendChat(b.getAttribute('data-chat-prompt')); });
     });
-    document.getElementById('aiChatClear').addEventListener('click', function () {
-      if (chatBusy) return;
-      chatLog = []; saveChat(); renderChat(); ci.focus();
+    var clearArmed = null, clearBtn = document.getElementById('aiChatClear');
+    clearBtn.addEventListener('click', function () {
+      if (!currentMeta || chatBusy() || !chatLog.length) return;
+      if (!clearArmed) {
+        clearBtn.textContent = '한 번 더 누르면 대화 삭제';
+        clearArmed = setTimeout(function () { clearArmed = null; clearBtn.textContent = '새 대화'; }, 3000);
+        return;
+      }
+      clearTimeout(clearArmed); clearArmed = null; clearBtn.textContent = '새 대화';
+      railApi(projectApi('/ai-chat'), { method: 'DELETE' }).then(function () { chatLog = []; renderChat(); ci.focus(); })
+        .catch(function (err) { toast(err.message); });
+    });
+
+    // 탭으로 돌아오면 바로 최신 상태를 읽는다(다른 기기에서 시작한 작업 포함)
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && currentMeta) { schedulePoll(0); pollAiActivity(); }
     });
 
     // 왼쪽 가장자리를 끌어 너비 조절
@@ -2030,13 +2086,14 @@
         rz.classList.remove('active');
         document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
         lsSet(AI_SIDE_W_KEY, Math.round(side.getBoundingClientRect().width));
-        Object.keys(chartsById).forEach(function (k) { if (chartsById[k] && chartsById[k].resize) chartsById[k].resize(); });
+        resizeCharts();
       }
       document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
     });
 
     renderAiResults(); renderChat(); setSideTab(lsGet(AI_TAB_KEY));
     refreshModelLine();
+    pollAiActivity();
   }
 
   function bindEvents() {

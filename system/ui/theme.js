@@ -257,8 +257,27 @@
     });
   }
 
+  // 사이드바 아래 연결 상태 점(.sb-conn): 로그인 API를 주기적으로 확인한다.
+  function initConnStatus() {
+    var box = document.querySelector('.sb-conn');
+    if (!box || !window.fetch) return;
+    var label = box.querySelector('.conn-label');
+    function set(ok) {
+      box.classList.toggle('ok', ok); box.classList.toggle('bad', !ok);
+      if (label) label.textContent = ok ? '서버 연결됨' : '연결 끊김 · 재시도 중';
+    }
+    function ping() {
+      fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { set(r.ok || r.status === 401); })
+        .catch(function () { set(false); })
+        .then(function () { setTimeout(ping, document.hidden ? 60000 : 30000); });
+    }
+    ping();
+  }
+
   function init() {
     initLiquidGlass();
+    initConnStatus();
     var btn = document.getElementById('themeSettingsBtn');
     if (!btn) return;
 
@@ -268,6 +287,8 @@
     function close() { overlay.hidden = true; }
 
     btn.addEventListener('click', open);
+    // 사이드바 아래 줄의 테마 버튼 등, 같은 설정 창을 여는 다른 버튼들
+    document.querySelectorAll('[data-theme-settings]').forEach(function (b) { b.addEventListener('click', open); });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     overlay.querySelector('.theme-modal-close').addEventListener('click', close);
     overlay.querySelectorAll('.theme-option').forEach(function (opt) {

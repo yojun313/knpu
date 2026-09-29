@@ -530,70 +530,6 @@ html[data-ui-theme="mesh"] .rail-item.active { background: var(--overlay-hover) 
 html[data-ui-theme="mesh"] ::selection { background: var(--overlay-hover); }
 
 /* ============================================================================
-   떠 있는 패널 모양 통일 — glass / aurora / mesh / neu
-   ----------------------------------------------------------------------------
-   network·kemkim·statistics 뷰어는 모두 "왼쪽 레일 · 가운데 캔버스 · 오른쪽 #side"
-   세 장의 카드로 이루어진다. 테마마다 일부 패널에만 모서리를 줘서(레일·캔버스는
-   둥글고 #side·#netWrap은 각지고, 그래프 위 #top 오버레이는 네모난 띠) 모양이
-   제각각이었다. 여기서 세 장을 같은 반경·같은 테두리·같은 재질로 맞춘다.
-   ============================================================================ */
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"]) body { --panel-r: 18px; }
-html[data-ui-theme="neu"] body { --panel-r: 20px; }
-
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
-  :is(.rail, #main, #plotWrap, #netWrap, #side) {
-  border-radius: var(--panel-r) !important;
-}
-/* 한쪽 면에만 있던 구분선(border-left/right)을 네 면 모두로 — 카드는 사방이 같아야 한다 */
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"])
-  :is(.rail, #main, #plotWrap, #netWrap, #side) {
-  border: 1px solid var(--sidebar-border) !important;
-}
-/* network 캔버스(#netWrap)는 목록에서 빠져 있어 테마 배경 없이 흰 판으로 남았다 */
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"]) #netWrap {
-  background: var(--sidebar-bg) !important;
-  box-shadow: 0 8px 28px rgba(5, 10, 25, 0.16);
-}
-html[data-ui-theme="neu"] #netWrap {
-  background: var(--sidebar-bg) !important;
-  box-shadow: 8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light);
-}
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
-  :is(#plotWrap, #netWrap) { overflow: hidden; }
-/* network/kemkim의 #top은 캔버스 위에 떠 있는 투명 오버레이다. 여기에 패널 배경을
-   깔면 둥근 캔버스 위에 네모난 띠가 생기므로 비우고, 안의 알약들만 보이게 한다.
-   (statistics의 #top은 #main 안의 툴바라 해당하지 않는다.) */
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])
-  :is(#plotWrap, #netWrap) > #top {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-radius: 0 !important;
-}
-/* 캔버스 위에 떠 있는 알약(제목·검색·배지·KEM/KIM 탭·확대 버튼) 색. 각 사이트의 다크
-   배색은 "기본" 테마일 때만 적용돼서, 다크 모드의 테마들에서는 밝은 알약이 어두운
-   캔버스 위에 떠 있었다. 테마의 밝기에 맞춰 여기서 한 번에 정한다. */
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]):not([data-ui-theme-mode="dark"]) body {
-  --pill-bg: rgba(255, 255, 255, .8); --pill-border: rgba(15, 23, 42, .1);
-  --pill-text: #1c2530; --pill-muted: #64748b; --pill-shadow: 0 4px 16px rgba(15, 23, 42, .1);
-}
-html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"])[data-ui-theme-mode="dark"] body {
-  --pill-bg: rgba(22, 26, 38, .78); --pill-border: rgba(255, 255, 255, .1);
-  --pill-text: #f1f3f8; --pill-muted: #9aa5b8; --pill-shadow: 0 4px 16px rgba(0, 0, 0, .3);
-}
-/* 모바일에서는 레일/#side가 화면 가장자리에 붙는 서랍이 되므로 바깥쪽 모서리는 각지게 */
-@media (max-width: 1100px) {
-  html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]) .rail {
-    border-radius: 0 var(--panel-r) var(--panel-r) 0 !important;
-  }
-  html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"], [data-ui-theme="neu"]) #side {
-    border-radius: var(--panel-r) 0 0 var(--panel-r) !important;
-  }
-}
-
-/* ============================================================================
    애플 리퀴드 글래스 (Liquid Glass) — 애플 디자인 철학을 그대로 옮긴 전면 투명 테마
    ----------------------------------------------------------------------------
    기존 glass 테마와 무엇이 다른가:
@@ -1249,3 +1185,503 @@ button, a, [role="button"] {
   background: var(--accent, #2c3e50); color: #fff; }
 .llm-save:disabled { opacity: .6; cursor: default; }
 @media (max-width: 480px) { .llm-row { grid-template-columns: 1fr; } }
+
+/* ============================================================================
+   UnivDash 디자인 레이어 — 모든 KNPU 사이트 공통 (마지막에 두어 앞의 규칙을 덮는다)
+   ----------------------------------------------------------------------------
+   원칙 (UnivDash 와 동일)
+   1) 구조: 왼쪽 레일 · 가운데 작업 영역 · 오른쪽 패널이 화면 높이를 꽉 채우는 "붙은
+      기둥"이고 서로 1px 선으로만 나뉜다. 바깥 패널에는 모서리·그림자를 주지 않는다.
+      → 테마마다 떠 있는 카드/각진 패널이 섞여 보이던 문제를 구조적으로 없앤다.
+   2) 모서리 체계: 내용 카드 16px · 입력/버튼 12px · 아이콘 버튼 10px · 칩 999px.
+   3) 재질: 배경의 은은한 오로라 그라디언트 위에 반투명 유리(blur) 표면.
+   4) 강조: 파랑→보라 그라디언트 주 버튼, 선택 항목은 파란 틴트 + 얇은 테두리.
+   5) 글꼴: Inter(라틴) + Pretendard/시스템 한글, 작은 대문자 라벨은 넓은 자간.
+   색은 각 테마의 변수(--sidebar-*)를 그대로 쓰고, 기본 테마만 UnivDash 배색을 쓴다.
+   ============================================================================ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/* ── 디자인 토큰: 테마 공통 기본값(각 테마 변수에서 파생) ─────────────────── */
+html body {
+  --ud-font: 'Inter', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ud-r-card: 16px; --ud-r-ctl: 12px; --ud-r-icon: 10px; --ud-r-sm: 8px;
+  --ud-surface: var(--sidebar-bg);
+  --ud-surface-strong: var(--sidebar-bg);
+  --ud-surface-soft: var(--sidebar-panel);
+  --ud-canvas: var(--canvas-c2, var(--sidebar-panel));
+  --ud-line: var(--sidebar-border);
+  --ud-line-strong: var(--sidebar-border);
+  --ud-input: var(--sidebar-panel2);
+  --ud-hover: var(--overlay-hover);
+  --ud-blue: #3b82f6; --ud-violet: #8b5cf6;
+  --ud-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  --ud-primary-shadow: 0 8px 22px rgba(59, 130, 246, .28);
+  --ud-active-bg: rgba(59, 130, 246, .12);
+  --ud-active-fg: #1d4ed8;
+  --ud-active-line: rgba(37, 99, 235, .24);
+  --ud-card-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .06);
+  --ud-blur: blur(22px) saturate(140%);
+  --ud-label: #6b7490;
+  --ud-header-bg: rgba(8, 11, 22, .82);
+}
+html[data-ui-theme-mode="dark"] body {
+  --ud-active-bg: rgba(59, 130, 246, .16);
+  --ud-active-fg: #93c5fd;
+  --ud-active-line: rgba(96, 165, 250, .28);
+  --ud-card-shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 32px rgba(0, 0, 0, .28);
+  --ud-label: #7f889d;
+}
+
+/* ── 기본 테마 = UnivDash 배색 (라이트) ───────────────────────────────────── */
+html:not([data-ui-theme]) body {
+  --brand: #3b82f6; --brand-dark: #1d4ed8; --brand-light: #60a5fa;
+  --accent: #3b82f6; --accent-soft: #6366f1;
+  --sidebar-bg: #f8f9fd; --sidebar-panel: #f2f4fa; --sidebar-panel2: #e9ecf5;
+  --sidebar-border: #dde1ec; --sidebar-text: #253046; --sidebar-muted: #6b7490;
+  --text-strong: #101828;
+  --canvas-c1: #f6f7fc; --canvas-c2: #eef0f9;
+  --overlay-hover: rgba(15, 23, 42, .045);
+  --scrollbar-thumb: rgba(71, 85, 105, .3); --scrollbar-thumb-hover: rgba(71, 85, 105, .5);
+  --series-1: #3b82f6; --series-2: #f59e0b; --series-3: #10b981;
+  --pill-bg: rgba(255, 255, 255, .78); --pill-border: rgba(15, 23, 42, .09);
+  --pill-text: #101828; --pill-muted: #6b7490; --pill-shadow: 0 6px 20px rgba(15, 23, 42, .08);
+  --ud-surface: rgba(255, 255, 255, .6);
+  --ud-surface-strong: rgba(255, 255, 255, .74);
+  --ud-surface-soft: rgba(255, 255, 255, .45);
+  --ud-canvas: transparent;
+  --ud-line: rgba(15, 23, 42, .09);
+  --ud-line-strong: rgba(15, 23, 42, .13);
+  --ud-input: rgba(255, 255, 255, .72);
+  --ud-hover: rgba(15, 23, 42, .045);
+  color: #101828;
+  background: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, .14), transparent 35%),
+              radial-gradient(circle at 90% 0%, rgba(236, 72, 153, .10), transparent 40%),
+              radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .10), transparent 45%),
+              #eef0f9 !important;
+  background-attachment: fixed !important;
+}
+/* 기본 테마 (다크) */
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body {
+  --brand: #60a5fa; --brand-dark: #3b82f6; --brand-light: #93c5fd;
+  --accent: #3b82f6; --accent-soft: #6366f1;
+  --sidebar-bg: #0e111a; --sidebar-panel: #131722; --sidebar-panel2: #1a1f2c;
+  --sidebar-border: #262c3b; --sidebar-text: #cfd5e2; --sidebar-muted: #7f889d;
+  --text-strong: #f5f7fb;
+  --canvas-c1: #0b0e17; --canvas-c2: #080a12;
+  --overlay-hover: rgba(255, 255, 255, .05);
+  --scrollbar-thumb: rgba(148, 163, 184, .3); --scrollbar-thumb-hover: rgba(148, 163, 184, .5);
+  --series-1: #60a5fa; --series-2: #fbbf24; --series-3: #34d399;
+  --pill-bg: rgba(18, 22, 34, .78); --pill-border: rgba(255, 255, 255, .1);
+  --pill-text: #f5f7fb; --pill-muted: #8a93a8; --pill-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+  --ud-surface: rgba(255, 255, 255, .045);
+  --ud-surface-strong: rgba(255, 255, 255, .06);
+  --ud-surface-soft: rgba(255, 255, 255, .03);
+  --ud-canvas: transparent;
+  --ud-line: rgba(255, 255, 255, .085);
+  --ud-line-strong: rgba(255, 255, 255, .13);
+  --ud-input: rgba(255, 255, 255, .05);
+  --ud-hover: rgba(255, 255, 255, .05);
+  color: #e8ebf2;
+  background: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, .20), transparent 35%),
+              radial-gradient(circle at 90% 0%, rgba(168, 85, 247, .18), transparent 40%),
+              radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .10), transparent 45%),
+              #05070f !important;
+  background-attachment: fixed !important;
+}
+
+html body { font-family: var(--ud-font); }
+::selection { background: rgba(59, 130, 246, .25); }
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+
+/* ── 상단 사이트 바: 어두운 유리 바 + 알약형 메뉴 ────────────────────────── */
+html body .top-header {
+  background: var(--ud-header-bg) !important;
+  backdrop-filter: var(--ud-blur);
+  -webkit-backdrop-filter: var(--ud-blur);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: none !important;
+}
+html:not([data-ui-theme-mode="dark"]) body .top-header {
+  background: rgba(255, 255, 255, .72) !important;
+  border-bottom-color: rgba(15, 23, 42, .08);
+}
+/* 로고 PNG는 밝은 글자라 라이트 바에서는 반전(파란 엠블럼은 색상을 되돌려 유지) */
+html:not([data-ui-theme-mode="dark"]) body .top-header-logo { filter: invert(1) hue-rotate(180deg) saturate(1.3); }
+html body .top-nav { gap: 2px; }
+html body .top-nav-link {
+  border-radius: var(--ud-r-icon) !important;
+  border: 1px solid transparent;
+  font-weight: 700 !important; letter-spacing: .02em;
+  color: rgba(255, 255, 255, .58) !important;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+html body .top-nav-link:hover { background: rgba(255, 255, 255, .07) !important; color: #fff !important; }
+html body .top-nav-link.active {
+  background: rgba(59, 130, 246, .18) !important; color: #bfdbfe !important;
+  border-color: rgba(96, 165, 250, .3);
+}
+html:not([data-ui-theme-mode="dark"]) body .top-nav-link { color: #5a6781 !important; }
+html:not([data-ui-theme-mode="dark"]) body .top-nav-link:hover { background: rgba(15, 23, 42, .05) !important; color: #101828 !important; }
+html:not([data-ui-theme-mode="dark"]) body .top-nav-link.active {
+  background: rgba(59, 130, 246, .10) !important; color: #1d4ed8 !important; border-color: rgba(37, 99, 235, .22);
+}
+html body .theme-settings-btn { border-radius: var(--ud-r-icon); }
+html:not([data-ui-theme-mode="dark"]) body .theme-settings-btn {
+  border-color: rgba(15, 23, 42, .12); background: rgba(15, 23, 42, .04); color: #47536e;
+}
+html:not([data-ui-theme-mode="dark"]) body .theme-settings-btn:hover { background: rgba(15, 23, 42, .08); color: #101828; }
+
+/* ── 구조: 붙은 기둥 (모든 테마) ─────────────────────────────────────────── */
+html body #app { padding: 0 !important; gap: 0 !important; background: transparent; }
+html body .rail,
+html body #side {
+  background: var(--ud-surface-strong) !important;
+  backdrop-filter: var(--ud-blur) !important;
+  -webkit-backdrop-filter: var(--ud-blur) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html body .rail { border-right: 1px solid var(--ud-line) !important; }
+html body #side { border-left: 1px solid var(--ud-line) !important; }
+html body #main,
+html body #plotWrap,
+html body #netWrap {
+  background: var(--ud-canvas) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* statistics: 작업 영역 위 툴바 */
+html body #main > #top {
+  background: var(--ud-surface) !important;
+  backdrop-filter: var(--ud-blur) !important;
+  -webkit-backdrop-filter: var(--ud-blur) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--ud-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+/* network/kemkim: 캔버스 위 투명 오버레이 */
+html body :is(#plotWrap, #netWrap) > #top {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border-radius: 0 !important;
+}
+html body #content, html body #dashboard { background: transparent !important; }
+
+/* ── 왼쪽 레일 ──────────────────────────────────────────────────────────── */
+html body .rail-head { border-bottom: 1px solid var(--ud-line) !important; padding: 14px 14px 12px; }
+html body .rail-brand {
+  font-size: 10.5px !important; font-weight: 800 !important; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ud-label) !important;
+}
+html body .rail-toggle,
+html body .rail-logout,
+html body .rail-new-folder-btn {
+  border-radius: var(--ud-r-icon) !important;
+  border: 1px solid var(--ud-line-strong) !important;
+  background: var(--ud-surface-soft) !important;
+  color: var(--sidebar-muted) !important;
+  box-shadow: none !important;
+}
+html body :is(.rail-toggle, .rail-logout, .rail-new-folder-btn):hover {
+  background: var(--ud-hover) !important; color: var(--text-strong) !important; border-color: var(--ud-line-strong) !important;
+}
+html body .rail-upload {
+  border-radius: var(--ud-r-ctl) !important;
+  border: 1px solid rgba(96, 165, 250, .32) !important;
+  background: rgba(59, 130, 246, .12) !important;
+  color: var(--ud-active-fg) !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
+}
+html body .rail-upload .ru-icon { color: inherit !important; }
+html body .rail-upload:hover { background: rgba(59, 130, 246, .2) !important; color: var(--ud-active-fg) !important; }
+html body .rail-admin-toggle {
+  border-radius: var(--ud-r-ctl) !important; background: var(--ud-surface-soft) !important;
+  border: 1px solid var(--ud-line) !important;
+}
+html body .rail-item {
+  border-radius: var(--ud-r-ctl) !important;
+  border: 1px solid transparent;
+  background: transparent !important;
+  transition: background 150ms, border-color 150ms;
+}
+html body .rail-item:hover { background: var(--ud-hover) !important; }
+html body .rail-item.active {
+  background: var(--ud-active-bg) !important;
+  border-color: var(--ud-active-line);
+  box-shadow: none !important;
+}
+html body .rail-item.active::before { display: none !important; }
+html body .rail-item.active .ri-name { color: var(--ud-active-fg) !important; }
+html body .ri-dot { border-radius: 9px !important; }
+html body .folder-header { border-radius: var(--ud-r-icon) !important; }
+html body .folder-header:hover { background: var(--ud-hover) !important; }
+html body .rail-foot { border-top: 1px solid var(--ud-line) !important; }
+html body .gpu-widget { border-top: 1px solid var(--ud-line) !important; }
+
+/* ── 오른쪽 패널 (kemkim/network 인스펙터 · statistics AI) ─────────────── */
+html body #side .title-block,
+html body #side .side-head {
+  background: transparent !important;
+  border-bottom: 1px solid var(--ud-line) !important;
+}
+html body #side > details { border-bottom: 1px solid var(--ud-line) !important; }
+html body #side > details > summary {
+  font-size: 10.5px !important; font-weight: 800 !important; letter-spacing: .14em !important;
+  color: var(--ud-label) !important;
+}
+html body #side > details > summary:hover { background: var(--ud-hover) !important; color: var(--text-strong) !important; }
+html body #side .sec-body { background: transparent !important; border-radius: 0 !important; }
+html body .icon-btn,
+html body .side-icon-btn,
+html body .mobile-icon-btn {
+  border-radius: var(--ud-r-icon) !important;
+  border: 1px solid var(--ud-line-strong) !important;
+  background: var(--ud-surface-soft) !important;
+  color: var(--sidebar-muted) !important;
+  box-shadow: none !important;
+}
+html body :is(.icon-btn, .side-icon-btn, .mobile-icon-btn):hover {
+  background: var(--ud-hover) !important; color: var(--text-strong) !important;
+}
+
+/* ── 버튼 ───────────────────────────────────────────────────────────────── */
+html body .btn {
+  border-radius: var(--ud-r-ctl) !important;
+  border: 1px solid var(--ud-line-strong) !important;
+  background: var(--ud-surface-soft) !important;
+  color: var(--text-strong) !important;
+  font-weight: 700;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: background 150ms, border-color 150ms, box-shadow 150ms;
+}
+html body .btn:hover { background: var(--ud-hover) !important; border-color: var(--ud-line-strong) !important; color: var(--text-strong) !important; }
+html body .btn.primary,
+html body .ai-side-toggle[aria-expanded="true"],
+html body .ai-send {
+  background: var(--ud-primary) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: var(--ud-primary-shadow) !important;
+}
+html body .btn.primary:hover { box-shadow: 0 10px 28px rgba(139, 92, 246, .38) !important; }
+html body .btn:disabled, html body .ai-send:disabled { opacity: .45; box-shadow: none !important; }
+html body .option-btn, html body .modal-tab { border-radius: var(--ud-r-sm) !important; }
+html body .option-btn.active { background: var(--ud-active-bg) !important; color: var(--ud-active-fg) !important; border-color: var(--ud-active-line) !important; }
+
+/* ── 입력 ───────────────────────────────────────────────────────────────── */
+html body .search input,
+html body .field input,
+html body .field select,
+html body .wl-search,
+html body .crawl-search input,
+html body #side input[type="number"],
+html body #side input[type="text"],
+html body #side select {
+  border-radius: var(--ud-r-ctl) !important;
+  border: 1px solid var(--ud-line-strong) !important;
+  background: var(--ud-input) !important;
+  color: var(--text-strong) !important;
+  box-shadow: none;
+  transition: border-color 150ms, box-shadow 150ms, background 150ms;
+}
+html body :is(.search input, .field input, .field select, .wl-search, .crawl-search input, #side input[type="number"], #side input[type="text"], #side select):focus {
+  border-color: rgba(96, 165, 250, .65) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .16) !important;
+  outline: none;
+}
+html body :is(#plotWrap, #netWrap) .search input {
+  background: var(--pill-bg) !important; border-color: var(--pill-border) !important;
+  backdrop-filter: blur(10px); box-shadow: var(--pill-shadow);
+}
+
+/* ── 캔버스 위 알약 (network/kemkim) ───────────────────────────────────── */
+html body .brandmark,
+html body .badge,
+html body .netsel,
+html body #plotTabs,
+html body #zoombox {
+  border-radius: var(--ud-r-ctl) !important;
+  background: var(--pill-bg) !important;
+  border: 1px solid var(--pill-border) !important;
+  box-shadow: var(--pill-shadow) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+html body #plotTabs button { border-radius: 9px !important; }
+html body #plotTabs button.active { background: var(--ud-primary) !important; color: #fff !important; }
+html body #zoombox button { border-radius: 9px !important; }
+html body #zoombox button:hover { background: var(--ud-hover) !important; color: var(--text-strong) !important; }
+/* statistics 툴바 안 제목은 알약이 아니라 그냥 제목 */
+html body #main > #top .brandmark { background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; padding-left: 0; }
+
+/* ── 내용 카드 ──────────────────────────────────────────────────────────── */
+html body .table-card,
+html body .graph-card,
+html body .ai-card,
+html body .ai-mode,
+html body .ai-compose {
+  border-radius: var(--ud-r-card) !important;
+  border: 1px solid var(--ud-line) !important;
+  background: var(--ud-surface) !important;
+  backdrop-filter: var(--ud-blur);
+  -webkit-backdrop-filter: var(--ud-blur);
+}
+html body .table-card, html body .graph-card { box-shadow: var(--ud-card-shadow) !important; }
+html body .ai-mode, html body .ai-compose { border-radius: var(--ud-r-ctl) !important; }
+html body .ai-mode:hover { border-color: rgba(96, 165, 250, .5) !important; }
+html body .ai-compose:focus-within { border-color: rgba(96, 165, 250, .65) !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, .16) !important; }
+html body .tc-head { border-bottom: 1px solid var(--ud-line) !important; }
+html body .tc-table-wrap { border-top: 1px solid var(--ud-line) !important; }
+html body .section-title {
+  font-size: 10.5px !important; font-weight: 800 !important; letter-spacing: .16em !important;
+  color: var(--ud-label) !important; border-bottom: none !important; padding-bottom: 0 !important;
+}
+html body .badge-pill { border-radius: 999px !important; }
+html body .tc-ai-btn, html body .tc-png-btn { border-radius: var(--ud-r-sm) !important; border-color: var(--ud-line-strong) !important; background: var(--ud-surface-soft) !important; }
+html body .tc-ai-btn { color: var(--ud-active-fg) !important; }
+html body .tc-ai-btn:hover { background: var(--ud-active-bg) !important; border-color: var(--ud-active-line) !important; }
+
+/* ── 모달 · 메뉴 ────────────────────────────────────────────────────────── */
+html body .modal-overlay, html body .theme-modal-overlay {
+  background: rgba(5, 7, 15, .5) !important;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+html body .modal-card,
+html body .theme-modal,
+html body .ctx-menu {
+  border-radius: 18px !important;
+  border: 1px solid var(--ud-line-strong) !important;
+  background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent) !important;
+  backdrop-filter: blur(24px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  box-shadow: 0 24px 60px rgba(5, 7, 15, .35) !important;
+}
+html body .ctx-menu { border-radius: 14px !important; }
+
+/* ── 모바일 서랍: 붙은 기둥이 화면 가장자리에서 밀려 들어온다 ─────────────── */
+@media (max-width: 1100px) {
+  html body .rail,
+  html body #side {
+    background: color-mix(in srgb, var(--sidebar-bg) 94%, transparent) !important;
+    box-shadow: 0 0 40px rgba(5, 7, 15, .35) !important;
+    /* 사이트 상단 바(z 100)보다 위에 — 서랍 머리가 바에 가려지지 않게 */
+    z-index: 160 !important;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  html body #mobileBackdrop { z-index: 150 !important; }
+}
+
+/* ── UnivDash 사이드바 (network/kemkim/statistics 레일) ───────────────────
+   브랜드(그라디언트 아이콘+이름) · 사용자 카드 · 새 프로젝트 · Overview 통계 ·
+   프로젝트 목록 · 연결 상태와 아이콘 버튼 줄. 접으면 아이콘만 남는 좁은 막대. */
+html body .rail { display: flex; flex-direction: column; }
+html body .rail .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); flex-shrink: 0; }
+.sb-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; min-width: 0; }
+.sb-logo {
+  width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, .3);
+}
+.sb-label { min-width: 0; }
+.sb-title {
+  margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; white-space: nowrap;
+  background: linear-gradient(90deg, #60a5fa, #c084fc);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+html:not([data-ui-theme-mode="dark"]) .sb-title { background-image: linear-gradient(90deg, #2563eb, #9333ea); }
+.sb-sub { margin: 4px 0 0; font-size: 9.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--ud-label); white-space: nowrap; }
+.sb-user {
+  display: flex; align-items: center; gap: 10px; padding: 8px; margin-bottom: 10px;
+  border-radius: 12px; background: var(--ud-surface-soft); border: 1px solid var(--ud-line);
+}
+.sb-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #93c5fd; border: 1px solid rgba(96, 165, 250, .4); background: var(--ud-surface-soft);
+}
+html:not([data-ui-theme-mode="dark"]) .sb-avatar { color: #2563eb; }
+.sb-user-text { flex: 1; }
+.sb-welcome { margin: 0; font-size: 11px; color: var(--ud-label); }
+html body .rail .sb-username {
+  display: block !important; margin: 1px 0 0; padding: 0; font-size: 13.5px; font-weight: 800;
+  color: var(--text-strong) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: none;
+}
+html body .rail .rail-actions-row { display: flex; gap: 8px; margin: 0 !important; padding: 0 !important; }
+html body .rail .rail-upload.sb-new {
+  flex: 1; height: 38px; padding: 0 12px !important; display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 13px !important;
+}
+html body .rail .rail-upload .ru-icon { display: flex; font-size: 0 !important; }
+.sb-icon {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; padding: 0;
+  display: flex; align-items: center; justify-content: center; text-decoration: none;
+  color: var(--sidebar-muted); background: transparent; border: none; cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.sb-icon:hover { background: var(--ud-hover); color: var(--text-strong); }
+html body .rail .rail-new-folder-btn.sb-icon { width: 38px; height: 38px; font-size: 0 !important; }
+.sb-overview { padding: 12px 16px 2px; flex-shrink: 0; }
+.sb-section {
+  margin: 0; padding: 0 2px; font-size: 10px; font-weight: 800; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ud-label);
+}
+.sb-section-list { padding: 12px 18px 6px; flex-shrink: 0; }
+.sb-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.sb-stat { padding: 10px 12px; border-radius: 12px; background: var(--ud-surface-soft); border: 1px solid var(--ud-line); min-width: 0; }
+.sb-stat p { margin: 0; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ud-label); }
+.sb-stat b {
+  display: block; margin-top: 3px; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px; font-weight: 800; color: var(--text-strong); font-variant-numeric: tabular-nums;
+}
+.sb-stat b.c-violet { color: #a78bfa; }
+html:not([data-ui-theme-mode="dark"]) .sb-stat b.c-violet { color: #7c3aed; }
+html body .rail .rail-admin-toggle { margin: 0 12px 6px !important; }
+html body .rail .rail-list { flex: 1; min-height: 0; }
+.sb-bottom {
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--ud-line); flex-shrink: 0;
+}
+.sb-conn { display: flex; align-items: center; gap: 8px; padding: 2px 8px 8px; font-size: 11px; color: var(--ud-label); min-width: 0; }
+.sb-conn .conn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; transition: background 200ms; }
+.sb-conn.ok .conn-dot { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .18); }
+.sb-conn.bad .conn-dot { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, .18); }
+.sb-account { display: flex; align-items: center; gap: 2px; }
+.sb-logout {
+  flex: 1; min-width: 0; height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 10px;
+  border-radius: 11px; border: none; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; color: #f87171; transition: background 150ms;
+}
+html:not([data-ui-theme-mode="dark"]) .sb-logout { color: #dc2626; }
+.sb-logout:hover { background: rgba(239, 68, 68, .1); }
+.sb-collapse svg { transition: transform 200ms; }
+
+/* 접힌 사이드바: 아이콘만 남는 막대 */
+@media (min-width: 1101px) {
+  html body .rail.collapsed { width: 68px !important; min-width: 68px; }
+  html body .rail.collapsed :is(.sb-label, .sb-user, .sb-overview, .sb-section, .rail-admin-toggle, .rail-new-folder-btn) { display: none !important; }
+  html body .rail.collapsed .sb-top { padding: 14px 10px; }
+  html body .rail.collapsed .sb-brand { justify-content: center; margin-bottom: 12px; }
+  html body .rail.collapsed .rail-upload.sb-new { flex: none; width: 44px; padding: 0 !important; margin: 0 auto; }
+  html body .rail.collapsed .sb-bottom { padding: 10px 6px; }
+  html body .rail.collapsed .sb-conn { justify-content: center; padding: 6px 0; }
+  html body .rail.collapsed .sb-account { flex-direction: column; gap: 4px; }
+  html body .rail.collapsed .sb-logout { flex: none; width: 36px; padding: 0; justify-content: center; }
+  html body .rail.collapsed .sb-collapse svg { transform: rotate(180deg); }
+}

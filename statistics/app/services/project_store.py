@@ -1,6 +1,8 @@
 import io
 import json
 import os
+import re
+import threading
 import shutil
 import uuid
 import zipfile
@@ -666,3 +668,84 @@ def delete_ai_result(
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(kept, f, ensure_ascii=False)
     os.replace(tmp, path)
+
+
+# ---------------------------------------------------------------------------
+# AI 작업(진행 상황)·대화 보관 — 페이지를 떠나거나 다른 기기에서 접속해도 같은
+# 계정이면 진행 중인 작업과 대화가 그대로 보이도록 디스크에 남긴다.
+# ---------------------------------------------------------------------------
+
+MAX_AI_JOBS = 30
+MAX_AI_CHAT = 80
+_ai_file_lock = threading.Lock()
+
+
+def project_owner(uid: str, project_id: str, is_admin: bool = False) -> str:
+    """접근 권한을 확인하고 프로젝트 폴더 주인(uid)을 돌려준다."""
+    return _get_owned_doc(uid, project_id, is_admin)["uid"]
+
+
+def _read_list(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def _write_list(path: str, items: list) -> None:
+    tmp = f"{path}.{threading.get_ident()}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
+def _ai_jobs_file(owner_uid: str, project_id: str) -> str:
+    return os.path.join(_project_dir(owner_uid, project_id), "ai_jobs.json")
+
+
+def _ai_chat_file(owner_uid: str, project_id: str, uid: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", uid)[:80]
+    return os.path.join(_project_dir(owner_uid, project_id), f"ai_chat_{safe}.json")
+
+
+def read_ai_jobs(owner_uid: str, project_id: str) -> list:
+    return _read_list(_ai_jobs_file(owner_uid, project_id))
+
+
+def save_ai_job(owner_uid: str, project_id: str, job: dict) -> None:
+    """작업 하나를 id 기준으로 넣거나 갱신한다(최근 것이 앞)."""
+    path = _ai_jobs_file(owner_uid, project_id)
+    with _ai_file_lock:
+        items = [j for j in _read_list(path) if j.get("id") != job["id"]]
+        _write_list(path, ([job] + items)[:MAX_AI_JOBS])
+
+
+def update_ai_jobs(owner_uid: str, project_id: str, fn) -> list:
+    """fn(items) -> items 로 목록 전체를 고친다(오래된 진행 중 표시 정리 등)."""
+    path = _ai_jobs_file(owner_uid, project_id)
+    with _ai_file_lock:
+        items = fn(_read_list(path))
+        _write_list(path, items[:MAX_AI_JOBS])
+        return items
+
+
+def read_ai_chat(owner_uid: str, project_id: str, uid: str) -> list:
+    return _read_list(_ai_chat_file(owner_uid, project_id, uid))
+
+
+def update_ai_chat(owner_uid: str, project_id: str, uid: str, fn) -> list:
+    path = _ai_chat_file(owner_uid, project_id, uid)
+    with _ai_file_lock:
+        items = fn(_read_list(path))[-MAX_AI_CHAT:]
+        _write_list(path, items)
+        return items
+
+
+def read_ai_results_meta(owner_uid: str, project_id: str) -> str:
+    """저장된 결과 목록이 바뀌었는지 알기 위한 짧은 버전 문자열."""
+    items = _read_ai_results(_ai_results_path(owner_uid, project_id))
+    return f"{len(items)}:{items[0].get('id') if items else ''}"
