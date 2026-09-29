@@ -35,22 +35,46 @@
   <div id="app">
     <div id="railBackdrop" class="rail-backdrop" hidden></div>
     <div id="rail" class="rail">
-      <div class="rail-head">
-        <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
-        <span class="rail-brand">PolyDecision</span>
+      <div class="sb-top">
+        <div class="sb-brand">
+          <div class="sb-logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
+          <div class="sb-label">
+            <h1 class="sb-title">PolyDecision</h1>
+            <p class="sb-sub">Decision Analyzer</p>
+          </div>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="sb-label sb-user-text">
+            <p class="sb-welcome">Welcome,</p>
+            <p id="railUserName" class="rail-user sb-username">-</p>
+          </div>
+        </div>
+        <div class="rail-actions-row">
+          <button id="railNewProjectBtn" class="rail-upload sb-new" title="새 프로젝트">
+            <span class="ru-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="ru-text sb-label">새 프로젝트</span>
+          </button>
+        </div>
       </div>
-      <div class="rail-actions-row">
-        <button id="railNewProjectBtn" class="rail-upload" title="새 프로젝트">
-          <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트</span>
-        </button>
+      <div class="sb-overview">
+        <p class="sb-section">Overview</p>
+        <div class="sb-stats">
+          <div class="sb-stat"><p>프로젝트</p><b id="statProjects">—</b></div>
+          <div class="sb-stat"><p>진행 중</p><b id="statActive" class="c-violet">—</b></div>
+        </div>
       </div>
+      <p class="sb-section sb-section-list">Projects</p>
       <div id="railList" class="rail-list"></div>
       <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
       <nav id="railServices" class="rail-services"></nav>
-      <div class="rail-foot">
-        <span id="railUserName" class="rail-user"></span>
-        <div class="rail-foot-actions">
-          <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+      <div class="sb-bottom">
+        <div class="sb-conn" title="서버 연결 상태">
+          <span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중...</span>
+        </div>
+        <div class="sb-account">
+          <button id="railLogout" class="sb-logout" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
+          <button type="button" class="sb-icon" data-theme-settings title="테마 설정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.63 0-.43-.17-.8-.44-1.1-.26-.29-.43-.66-.43-1.1A1.64 1.64 0 0 1 14.27 16.5H16c3.05 0 5.56-2.5 5.56-5.56C21.56 6.01 17.06 2 12 2z"/></svg></button>
+          <button id="railToggle" class="sb-icon sb-collapse" type="button" title="사이드바 접기 / 펼치기"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
         </div>
       </div>
     </div>

@@ -490,6 +490,10 @@
   }
 
   function renderRail() {
+    // 사이드바 Overview 통계
+    var statP = document.getElementById('statProjects'), statF = document.getElementById('statFolders');
+    if (statP) statP.textContent = railProjects.length;
+    if (statF) statF.textContent = railFolders.length;
     var listEl = document.getElementById('railList');
     var emptyEl = document.getElementById('railEmpty');
     listEl.innerHTML = '';
@@ -2078,7 +2082,7 @@
   // ---------------------------------------------------------------
   // 모바일 드로어 / 우클릭 메뉴 / 레일 리사이즈
   // ---------------------------------------------------------------
-  var RAIL_MIN_WIDTH = 180, RAIL_MAX_WIDTH = 440, RAIL_DEFAULT_WIDTH = 236;
+  var RAIL_MIN_WIDTH = 220, RAIL_MAX_WIDTH = 440, RAIL_DEFAULT_WIDTH = 256;
   var mobileQuery = window.matchMedia('(max-width:1100px)');
 
   function closeMobileDrawers() {
@@ -2139,8 +2143,23 @@
     });
 
     document.getElementById('mobileRailBtn').addEventListener('click', function () { openMobileDrawer('rail'); });
-    document.getElementById('mobileSideBtn').addEventListener('click', function () { openMobileDrawer('side'); });
-    document.getElementById('sideCloseBtn').addEventListener('click', closeMobileDrawers);
+    // 오른쪽 패널: 휴대폰에서는 서랍, 데스크톱에서는 접기/펼치기(상태 기억)
+    var SIDE_KEY = 'kemkim_side_collapsed';
+    var sideMq = window.matchMedia('(max-width:1100px)');
+    function setSideCollapsed(on) {
+      document.getElementById('side').classList.toggle('collapsed', on);
+      document.body.classList.toggle('side-collapsed', on);
+      try { localStorage.setItem(SIDE_KEY, on ? '1' : '0'); } catch (e) { }
+      // 그래프 영역 너비가 바뀌었으니 다시 맞춘다
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
+    }
+    try { if (!sideMq.matches && localStorage.getItem(SIDE_KEY) === '1') setSideCollapsed(true); } catch (e) { }
+    document.getElementById('mobileSideBtn').addEventListener('click', function () {
+      if (sideMq.matches) openMobileDrawer('side'); else setSideCollapsed(false);
+    });
+    document.getElementById('sideCloseBtn').addEventListener('click', function () {
+      if (sideMq.matches) closeMobileDrawers(); else setSideCollapsed(true);
+    });
     document.getElementById('mobileBackdrop').addEventListener('click', closeMobileDrawers);
 
     var mqHandler = function () {

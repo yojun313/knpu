@@ -748,6 +748,45 @@
         :root[data-ui-theme="apple"] .empty-illust,
         :root[data-ui-theme="mesh"] .empty-illust,
         :root[data-ui-theme="neu"] .empty-illust { background: var(--bg); }
+
+        /* ── UnivDash 디자인 레이어와 맞춤 (모든 테마) ─────────────────────────
+           노트 목록과 본문을 화면 높이를 채우는 "붙은 기둥"으로 두고 1px 선으로만
+           나눈다(network/kemkim/statistics 와 같은 구조). 기본 테마는 UnivDash 배색. */
+        :root:not([data-ui-theme]):not([data-ui-theme-mode="dark"]) {
+            --bg: transparent; --surface: rgba(255,255,255,0.6); --ink: #101828; --muted: #6b7490;
+            --line: rgba(15,23,42,0.09); --blue: #3b82f6; --deep: #1e293b; --accent: #3b82f6;
+            --tone-neutral-bg: rgba(15,23,42,0.05); --tone-neutral-fg: #334155;
+        }
+        :root:not([data-ui-theme])[data-ui-theme-mode="dark"] {
+            --bg: transparent; --surface: rgba(255,255,255,0.045); --ink: #eef1f7; --muted: #8a93a8;
+            --line: rgba(255,255,255,0.085); --blue: #60a5fa; --deep: #e2e8f0; --accent: #60a5fa;
+        }
+        html body .app { padding: 0 !important; gap: 0 !important; height: calc(100vh - 58px); }
+        @supports (height: 100dvh) { html body .app { height: calc(100dvh - 58px); } }
+        html body .app > .panel {
+            border-radius: 0 !important; border: none !important; box-shadow: none !important;
+        }
+        html body .app > .panel.sidebar {
+            background: var(--ud-surface-strong, var(--surface)) !important;
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border-right: 1px solid var(--ud-line, var(--line)) !important;
+        }
+        html body .app > .panel.note-main { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        html body .panel-head { background: transparent !important; border-bottom: 1px solid var(--ud-line, var(--line)) !important; padding: 14px 16px; }
+        html body .panel-title { font-size: 10.5px !important; font-weight: 800 !important; letter-spacing: .16em; text-transform: uppercase; color: var(--ud-label, var(--muted)) !important; }
+        html body .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important; color: #fff !important;
+            border: none !important; box-shadow: 0 8px 22px rgba(59,130,246,.28) !important; border-radius: 12px !important;
+        }
+        html body .search-input { border-radius: 12px !important; }
+        @media (max-width: 860px) {
+            html body .app { padding: 0 !important; }
+            html body .app > .panel.sidebar {
+                top: 0 !important; bottom: 0 !important; left: 0 !important;
+                background: color-mix(in srgb, var(--sidebar-bg, #fff) 94%, transparent) !important;
+                box-shadow: 0 0 40px rgba(5,7,15,.35) !important;
+            }
+        }
     </style>
     <link rel="stylesheet" href="/shared-ui/theme.css">
     <script src="/shared-ui/services.js"></script>

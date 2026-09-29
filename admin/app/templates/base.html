@@ -446,6 +446,40 @@
         }
         .theme-mode-switch.on { background: var(--accent); }
         .theme-mode-switch.on::before { transform: translateX(18px); }
+
+        /* ── UnivDash 디자인 레이어와 맞춤 ──────────────────────────────────────
+           기본 테마는 UnivDash 배색(오로라 배경 위 유리 사이드바·카드), 선택된 메뉴는
+           모든 테마에서 파란 틴트 알약으로 통일한다. 배경 그라디언트는 공용 theme.css. */
+        :root:not([data-ui-theme]) {
+            --accent: #2563eb; --brand: #2563eb;
+            --panel: rgba(255,255,255,0.6); --panel2: rgba(255,255,255,0.8);
+            --line: rgba(15,23,42,0.09); --muted: #6b7490; --ink: #101828;
+        }
+        :root:not([data-ui-theme])[data-ui-theme-mode="dark"] {
+            --accent: #60a5fa; --brand: #93c5fd;
+            --panel: rgba(255,255,255,0.045); --panel2: rgba(255,255,255,0.08);
+            --line: rgba(255,255,255,0.085); --muted: #7f889d; --ink: #f5f7fb;
+        }
+        :root:not([data-ui-theme]) .sidebar,
+        :root:not([data-ui-theme]) .card,
+        :root:not([data-ui-theme]) :not(body)[class*="bg-zinc-900"],
+        :root:not([data-ui-theme]) :not(body)[class*="bg-zinc-950"],
+        :root:not([data-ui-theme]) :not(body)[class*="bg-\[\#09090b\]"],
+        :root:not([data-ui-theme]) :not(body)[class*="bg-black"]:not([class*="inset-0"]) {
+            background: var(--panel) !important;
+            backdrop-filter: blur(22px) saturate(140%);
+            -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border-color: var(--line) !important;
+        }
+        .card { border-radius: 16px !important; }
+        .nav-item { border: 1px solid transparent; border-radius: 12px !important; font-weight: 600; }
+        .nav-item.active,
+        :root[data-ui-theme] .nav-item.active {
+            background: var(--ud-active-bg, rgba(59,130,246,.12)) !important;
+            color: var(--ud-active-fg, #1d4ed8) !important;
+            border-color: var(--ud-active-line, rgba(37,99,235,.24)) !important;
+            box-shadow: none !important;
+        }
     </style>
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/shared-ui/apple-touch-icon.png">

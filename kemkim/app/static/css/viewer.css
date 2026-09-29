@@ -666,3 +666,11 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .sig-loading>div{flex:1}
 .sig-llm{margin-top:14px;font-size:12px;color:var(--sidebar-muted)}
 .sig-llm b{color:var(--sidebar-text)}
+
+/* 데스크톱에서 오른쪽 패널을 접었을 때: 패널을 숨기고 상단에 다시 여는 버튼을 띄운다 */
+@media (min-width:1101px){
+  #side.collapsed{display:none}
+  body.side-collapsed #mobileSideBtn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+    margin-left:auto;border-radius:11px;background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--pill-text);
+    box-shadow:var(--pill-shadow);backdrop-filter:blur(8px);cursor:pointer;pointer-events:auto;font-size:15px}
+}
