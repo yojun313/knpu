@@ -383,3 +383,10 @@ label.method-adv{display:flex;align-items:center;gap:8px;margin-top:10px;font-si
   background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px}
 .demo-opt-row .demo-opt-code{width:80px;padding:6px 9px;border-radius:6px;border:1px solid var(--sidebar-border);
   background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px}
+
+/* 사이드바 너비 조절 손잡이 (오른쪽 경계) — 다른 KNPU 뷰어와 같은 동작 */
+.rail{position:relative}
+.rail-resizer{position:absolute;top:0;right:-4px;bottom:0;width:8px;cursor:col-resize;z-index:6;background:transparent}
+.rail.collapsed .rail-resizer,.rail.resizing{transition:none}
+.rail.collapsed .rail-resizer{display:none}
+@media (max-width:860px){.rail-resizer,.rail-reset-btn{display:none!important}}

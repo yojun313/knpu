@@ -2124,6 +2124,7 @@
 
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');
+    var resizerDblReset = function () { };
 
     var collapsed = localStorage.getItem('kv_rail_collapsed') === '1';
     var savedWidth = parseInt(localStorage.getItem('kv_rail_width'), 10);
@@ -2142,24 +2143,28 @@
       setTimeout(onPlotResize, 200);
     });
 
+    // 사이드바 기본 폭으로 (UnivDash의 폭 초기화 버튼과 같은 동작)
+    document.getElementById('railReset').addEventListener('click', function () {
+      if (mobileQuery.matches) return;
+      savedWidth = RAIL_DEFAULT_WIDTH;
+      rail.classList.remove('collapsed');
+      rail.style.width = savedWidth + 'px';
+      localStorage.setItem('kv_rail_width', String(savedWidth));
+      localStorage.setItem('kv_rail_collapsed', '0');
+      setTimeout(onPlotResize, 200);
+    });
+    resizerDblReset = function () { document.getElementById('railReset').click(); };
+
     document.getElementById('mobileRailBtn').addEventListener('click', function () { openMobileDrawer('rail'); });
-    // 오른쪽 패널: 휴대폰에서는 서랍, 데스크톱에서는 접기/펼치기(상태 기억)
-    var SIDE_KEY = 'kemkim_side_collapsed';
-    var sideMq = window.matchMedia('(max-width:1100px)');
-    function setSideCollapsed(on) {
-      document.getElementById('side').classList.toggle('collapsed', on);
-      document.body.classList.toggle('side-collapsed', on);
-      try { localStorage.setItem(SIDE_KEY, on ? '1' : '0'); } catch (e) { }
-      // 그래프 영역 너비가 바뀌었으니 다시 맞춘다
-      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
+    // 오른쪽 패널: 휴대폰에서는 서랍, 데스크톱에서는 UnivDash처럼 접기(세로 막대)·너비 조절·기본 폭
+    if (window.KNPUSide) {
+      window.KNPUSide.right({
+        key: 'kemkim_side', defaultWidth: 360, min: 300, max: 640, label: 'KEMKIM 패널',
+        onChange: function () { setTimeout(onPlotResize, 60); },
+      });
     }
-    try { if (!sideMq.matches && localStorage.getItem(SIDE_KEY) === '1') setSideCollapsed(true); } catch (e) { }
-    document.getElementById('mobileSideBtn').addEventListener('click', function () {
-      if (sideMq.matches) openMobileDrawer('side'); else setSideCollapsed(false);
-    });
-    document.getElementById('sideCloseBtn').addEventListener('click', function () {
-      if (sideMq.matches) closeMobileDrawers(); else setSideCollapsed(true);
-    });
+    document.getElementById('mobileSideBtn').addEventListener('click', function () { openMobileDrawer('side'); });
+    document.getElementById('sideCloseBtn').addEventListener('click', closeMobileDrawers);
     document.getElementById('mobileBackdrop').addEventListener('click', closeMobileDrawers);
 
     var mqHandler = function () {
@@ -2172,6 +2177,8 @@
     else mobileQuery.addListener(mqHandler);
 
     var resizer = document.getElementById('railResizer');
+    resizer.title = '드래그해서 너비 조절 · 더블클릭하면 기본 폭';
+    resizer.addEventListener('dblclick', function () { resizerDblReset(); });
     var draggingRail = false;
     resizer.addEventListener('mousedown', function (e) {
       if (rail.classList.contains('collapsed') || mobileQuery.matches) return;

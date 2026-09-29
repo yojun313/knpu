@@ -1458,7 +1458,7 @@
   var AI_SIDE_KEY = 'sv_ai_side_open', AI_SIDE_W_KEY = 'sv_ai_side_width', AI_TAB_KEY = 'sv_ai_side_tab';
   var aiResults = [], aiJobs = [], chatLog = [], aiOpen = {}, aiEpoch = 0;
   var aiResultsVersion = null, aiPollTimer = null, aiTickTimer = null, aiActivityTimer = null;
-  var aiPromptCache = {}, aiActivity = [];
+  var aiPromptCache = {}, aiActivity = [], sideApi = null;
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
@@ -1511,7 +1511,7 @@
 
   function syncSideToggle() {
     var side = document.getElementById('side');
-    var open = isMobileLayout() ? side.classList.contains('mobile-open') : !side.classList.contains('collapsed');
+    var open = isMobileLayout() ? side.classList.contains('mobile-open') : !(sideApi && sideApi.isCollapsed());
     document.getElementById('aiSideBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
@@ -1522,7 +1522,7 @@
   function openAiSide(tab) {
     var side = document.getElementById('side');
     if (isMobileLayout()) openMobileDrawer('side');
-    else { side.classList.remove('collapsed'); lsSet(AI_SIDE_KEY, '1'); setTimeout(resizeCharts, 50); }
+    else if (sideApi) sideApi.collapse(false);
     if (tab) setSideTab(tab);
     syncSideToggle();
   }
@@ -1530,7 +1530,7 @@
   function closeAiSide() {
     var side = document.getElementById('side');
     if (isMobileLayout()) closeMobileDrawers();
-    else { side.classList.add('collapsed'); lsSet(AI_SIDE_KEY, '0'); setTimeout(resizeCharts, 50); }
+    else if (sideApi) sideApi.collapse(true);
     syncSideToggle();
   }
 
@@ -2006,10 +2006,13 @@
   function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; }
 
   function bindAiSide() {
-    var side = document.getElementById('side');
-    if (!isMobileLayout() && lsGet(AI_SIDE_KEY) === '0') side.classList.add('collapsed');
-    var w = parseInt(lsGet(AI_SIDE_W_KEY), 10);
-    if (w >= 320 && w <= 680) side.style.setProperty('--side-w', w + 'px');
+    // 데스크톱: UnivDash처럼 접기(세로 막대) · 너비 조절 · 기본 폭 (공용 sidepanel.js)
+    if (window.KNPUSide) {
+      sideApi = window.KNPUSide.right({
+        key: 'sv_ai_side', defaultWidth: 400, min: 320, max: 680, label: 'AI 분석', icon: '✦',
+        onChange: function () { resizeCharts(); syncSideToggle(); },
+      });
+    }
     syncSideToggle();
     mobileQuery.addEventListener('change', syncSideToggle);
 
@@ -2072,25 +2075,6 @@
       if (!document.hidden && currentMeta) { schedulePoll(0); pollAiActivity(); }
     });
 
-    // 왼쪽 가장자리를 끌어 너비 조절
-    var rz = document.getElementById('sideResizer');
-    rz.addEventListener('mousedown', function (e) {
-      e.preventDefault();
-      rz.classList.add('active');
-      var startX = e.clientX, startW = side.getBoundingClientRect().width;
-      function move(ev) {
-        var nw = Math.max(320, Math.min(680, startW + (startX - ev.clientX)));
-        side.style.setProperty('--side-w', nw + 'px');
-      }
-      function up() {
-        rz.classList.remove('active');
-        document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
-        lsSet(AI_SIDE_W_KEY, Math.round(side.getBoundingClientRect().width));
-        resizeCharts();
-      }
-      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
-    });
-
     renderAiResults(); renderChat(); setSideTab(lsGet(AI_TAB_KEY));
     refreshModelLine();
     pollAiActivity();
@@ -2103,6 +2087,7 @@
 
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');
+    var resizerDblReset = function () { };
 
     var collapsed = localStorage.getItem('sv_rail_collapsed') === '1';
     var savedWidth = parseInt(localStorage.getItem('sv_rail_width'), 10);
@@ -2120,6 +2105,18 @@
       if (!isCollapsed) rail.style.width = savedWidth + 'px';
     });
 
+    // 사이드바 기본 폭으로 (UnivDash의 폭 초기화 버튼과 같은 동작)
+    document.getElementById('railReset').addEventListener('click', function () {
+      if (mobileQuery.matches) return;
+      savedWidth = RAIL_DEFAULT_WIDTH;
+      rail.classList.remove('collapsed');
+      rail.style.width = savedWidth + 'px';
+      localStorage.setItem('sv_rail_width', String(savedWidth));
+      localStorage.setItem('sv_rail_collapsed', '0');
+      window.dispatchEvent(new Event('resize'));
+    });
+    resizerDblReset = function () { document.getElementById('railReset').click(); };
+
     document.getElementById('mobileRailBtn').addEventListener('click', function () { openMobileDrawer('rail'); });
     document.getElementById('mobileBackdrop').addEventListener('click', closeMobileDrawers);
 
@@ -2132,6 +2129,8 @@
     else mobileQuery.addListener(mqHandler);
 
     var resizer = document.getElementById('railResizer');
+    resizer.title = '드래그해서 너비 조절 · 더블클릭하면 기본 폭';
+    resizer.addEventListener('dblclick', function () { resizerDblReset(); });
     var draggingRail = false;
     resizer.addEventListener('mousedown', function (e) {
       if (rail.classList.contains('collapsed') || mobileQuery.matches) return;
