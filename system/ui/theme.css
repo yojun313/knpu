@@ -1552,27 +1552,43 @@ html body .ctx-menu { border-radius: 14px !important; }
    프로젝트 목록 · 연결 상태와 아이콘 버튼 줄. 접으면 아이콘만 남는 좁은 막대. */
 /* 서비스 공통 상단 네비게이션: 각 앱은 활성 탭만 다르게 표시한다. */
 html body .top-header.knpu-service-header {
-  display: flex; align-items: center; gap: 16px; height: 58px; min-height: 58px;
-  flex-shrink: 0; padding: 0 24px;
-  background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
-  box-shadow: 0 2px 12px rgba(11, 18, 38, .30);
-  position: sticky; top: 0; z-index: 100;
+  display: flex !important; align-items: center !important; gap: 16px !important;
+  height: 58px !important; min-height: 58px !important; flex-shrink: 0 !important;
+  padding: 0 24px !important;
+  background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%) !important;
+  box-shadow: 0 2px 12px rgba(11, 18, 38, .30) !important;
+  position: sticky !important; top: 0 !important; z-index: 100 !important;
 }
-html body .knpu-service-header > a:first-child { display: flex; align-items: center; flex-shrink: 0; }
-html body .knpu-service-header .top-header-logo { width: auto; height: 34px; display: block; object-fit: contain; flex-shrink: 0; }
-html body .knpu-service-header .top-nav { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+html body .knpu-service-header > a { display: flex !important; align-items: center !important; flex-shrink: 0 !important; }
+html body .knpu-service-header .top-header-logo { width: auto !important; height: 34px !important; display: block !important; object-fit: contain !important; flex-shrink: 0 !important; }
+html body .knpu-service-header .top-nav {
+  display: flex !important; align-items: center !important; flex: 1 1 auto !important;
+  gap: 4px !important; min-width: 0 !important; overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
 html body .knpu-service-header .top-nav::-webkit-scrollbar { display: none; }
 html body .knpu-service-header .top-nav-link {
-  flex-shrink: 0; padding: 7px 13px; border-radius: 7px; white-space: nowrap;
-  color: rgba(255,255,255,.72); text-decoration: none; font-size: 12.5px;
-  font-weight: 800; letter-spacing: .3px; transition: background 150ms, color 150ms;
+  display: inline-flex !important; align-items: center !important; flex-shrink: 0 !important;
+  margin: 0 !important; padding: 7px 13px !important; border-radius: 7px !important;
+  white-space: nowrap !important; line-height: 1.2 !important;
+  color: rgba(255,255,255,.72) !important; text-decoration: none !important;
+  font-family: -apple-system, 'Pretendard', 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif !important;
+  font-size: 12.5px !important; font-weight: 800 !important; letter-spacing: .3px !important;
+  transition: background 150ms, color 150ms;
 }
-html body .knpu-service-header .top-nav-link:hover { background: rgba(255,255,255,.12); color: #fff; }
-html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,255,.18); color: #fff; }
-html[data-ui-nav="autohide"] body .top-header.knpu-service-header { position: fixed; top: 0; left: 0; right: 0; }
+html body .knpu-service-header .top-nav-link[data-knpu-admin-link] {
+  margin-left: auto !important; position: sticky !important; right: 0 !important; z-index: 1;
+  background: #253b67 !important; color: #fff !important;
+}
+html body .knpu-service-header .top-nav-link[data-knpu-admin-link]:hover,
+html body .knpu-service-header .top-nav-link[data-knpu-admin-link].active {
+  background: #3d5b94 !important;
+}
+html body .knpu-service-header .top-nav-link:hover { background: rgba(255,255,255,.12) !important; color: #fff !important; }
+html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,255,.18) !important; color: #fff !important; }
+html[data-ui-nav="autohide"] body .top-header.knpu-service-header { position: fixed !important; top: 0; left: 0; right: 0; }
 @media (max-width: 600px) {
-  html body .top-header.knpu-service-header { gap: 10px; padding: 0 12px; }
-  html body .knpu-service-header .top-nav-link[data-knpu-admin-link] { order: -1; }
+  html body .top-header.knpu-service-header { gap: 10px !important; padding: 0 12px !important; }
 }
 html body .rail { display: flex; flex-direction: column; }
 html body .rail .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); flex-shrink: 0; }

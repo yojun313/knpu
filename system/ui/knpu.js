@@ -101,6 +101,32 @@
     });
   }
 
+  // 모든 서비스의 상단 메뉴는 여기서 같은 순서와 링크로 만든다.
+  var NAV_ITEMS = [
+    ['homepage', 'HOME'], ['manager', 'MANAGER'], ['crawler', 'CRAWLER'],
+    ['network', 'NETWORK'], ['kemkim', 'KEMKIM'],
+    ['statistics', 'STATISTICS'], ['mcdm', 'POLYDECISION'], ['whisper', 'WHISPER']
+  ];
+
+  function renderServiceNav() {
+    document.querySelectorAll('.knpu-service-header .top-nav').forEach(function (nav) {
+      var active = nav.getAttribute('data-knpu-active');
+      nav.replaceChildren();
+      NAV_ITEMS.forEach(function (item) {
+        var link = document.createElement('a');
+        link.className = 'top-nav-link' + (active === item[0] ? ' active' : '');
+        link.textContent = item[1];
+        link.href = url(item[0]);
+        link.setAttribute('data-knpu-service', item[0]);
+        if (active === item[0]) link.setAttribute('aria-current', 'page');
+        if (item[0] === 'manager' && nav.dataset.knpuManagerApp === 'true') {
+          link.addEventListener('click', function (event) { window.openManagerApp(event); });
+        }
+        nav.appendChild(link);
+      });
+    });
+  }
+
   function applyAdminNav() {
     var nav = document.querySelector('.knpu-service-header .top-nav');
     if (!nav || nav.querySelector('[data-knpu-admin-link]')) return;
@@ -112,7 +138,11 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
-      nav.insertBefore(link, nav.firstChild);
+      nav.appendChild(link);
+      if (nav.dataset.knpuActive === 'dashboard') {
+        link.classList.add('active');
+        link.setAttribute('aria-current', 'page');
+      }
     }
 
     if (document.body && document.body.dataset.isAdmin === 'true') {
@@ -126,8 +156,9 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { apply(); applyAdminNav(); });
+    document.addEventListener('DOMContentLoaded', function () { renderServiceNav(); apply(); applyAdminNav(); });
   } else {
+    renderServiceNav();
     apply();
     applyAdminNav();
   }
