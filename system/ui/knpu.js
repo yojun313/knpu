@@ -138,6 +138,7 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
+      nav.classList.add('has-admin');
       nav.appendChild(link);
       if (nav.dataset.knpuActive === 'dashboard') {
         link.classList.add('active');
