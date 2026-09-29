@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, Response
 from starlette.background import BackgroundTask
 
 from app.services import (
+    signal_ai,
     project_store,
     kemkim_analysis,
     analyze_service,
@@ -359,6 +360,46 @@ async def project_upload_source(
     return JSONResponse({"message": "원본 CSV가 저장되었습니다."})
 
 
+@router.post("/api/projects/{project_id}/source/from-crawl-db")
+async def project_source_from_crawl_db(project_id: str, request: Request):
+    """크롤링 DB의 원본(토큰화 전) 파일을 해석용 CSV로 바로 첨부한다."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    uid = _uid(request)
+    body = await request.json()
+    crawl_uid = str(body.get("uid") or "").strip()
+    name = os.path.basename(str(body.get("name") or "").strip())
+    if not crawl_uid or not name:
+        raise HTTPException(400, "크롤링 DB와 파일을 선택해주세요.")
+    if not name.endswith(".parquet") or name.startswith("token_"):
+        raise HTTPException(400, "해석에는 토큰화 전 원본 파일을 선택해야 합니다.")
+
+    # 소유권을 먼저 확인해 남의 프로젝트에 크롤러 요청을 보내지 않게 한다
+    _handle_store_error(project_store.get_project, uid, project_id)
+    content = _fetch_crawl_csv(crawl_uid, name, session_token)
+    source_ref = {
+        "uid": crawl_uid,
+        "name": name,
+        "csv_name": name.rsplit(".", 1)[0] + ".csv",
+        "db_name": str(body.get("db_name") or "")[:300],
+    }
+    _handle_store_error(
+        project_store.save_source_csv, uid, project_id, content, source_ref
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.source_from_crawl_db",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"crawl_uid": crawl_uid, "name": name},
+    )
+    return JSONResponse(
+        {"message": "크롤링 DB의 원본을 첨부했습니다.", "source_ref": source_ref}
+    )
+
+
 @router.post("/api/projects/{project_id}/interpret")
 async def project_interpret(project_id: str, request: Request):
     uid = _uid(request)
@@ -427,6 +468,103 @@ async def project_interpret(project_id: str, request: Request):
     return JSONResponse(saved)
 
 
+# ---------------------------------------------------------------------------
+# 신호 AI 해석: 단어별 신호 진화 / 신호군 종합
+# ---------------------------------------------------------------------------
+
+
+def _try_load_source(uid: str, project_id: str):
+    try:
+        return project_store.load_source_csv(uid, project_id)
+    except project_store.NotFound:
+        return None
+
+
+@router.get("/api/projects/{project_id}/signal-profile")
+async def project_signal_profile(project_id: str, word: str, request: Request):
+    """기간별 수치와 신호 단계만 빠르게 돌려준다(AI 호출 없음)."""
+    graph = _handle_store_error(
+        project_store.load_graph, _uid(request), project_id, _is_admin(request)
+    )
+    return JSONResponse(signal_ai.signal_profile(graph, word.strip()))
+
+
+@router.post("/api/projects/{project_id}/signal-ai")
+async def project_signal_ai(project_id: str, request: Request):
+    uid = _uid(request)
+    body = await request.json()
+    word = str(body.get("word") or "").strip()
+    if not word:
+        raise HTTPException(400, "해석할 단어를 선택해주세요.")
+    graph = _handle_store_error(project_store.load_graph, uid, project_id)
+    source_df = _try_load_source(uid, project_id)
+    try:
+        result = await signal_ai.analyze_word(graph, source_df, word)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    result.update(
+        {
+            "id": uuid.uuid4().hex,
+            "keywords": [word],
+            "match_mode": "signal",
+            "created_at": kemkim_analysis.now_iso(),
+        }
+    )
+    saved = _handle_store_error(
+        project_store.save_interpretation, uid, project_id, result
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.interpretation.signal_ai",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"word": word, "has_ai": bool(result.get("ai"))},
+    )
+    return JSONResponse(saved)
+
+
+@router.post("/api/projects/{project_id}/signal-group-ai")
+async def project_signal_group_ai(project_id: str, request: Request):
+    uid = _uid(request)
+    body = await request.json()
+    signal = body.get("signal") or "weak_signal"
+    basis = body.get("basis") or "final"
+    if signal not in signal_ai.SIGNAL_LABEL or basis not in ("final", "kem", "kim"):
+        raise HTTPException(400, "신호군 선택이 올바르지 않습니다.")
+    graph = _handle_store_error(project_store.load_graph, uid, project_id)
+    source_df = _handle_store_error(project_store.load_source_csv, uid, project_id)
+    try:
+        result = await signal_ai.analyze_group(graph, source_df, signal, basis)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    label = (
+        {"final": "최종", "kem": "KEM", "kim": "KIM"}[basis]
+        + " "
+        + signal_ai.SIGNAL_LABEL[signal]
+    )
+    result.update(
+        {
+            "id": uuid.uuid4().hex,
+            "keywords": [label],
+            "match_mode": "signal_group",
+            "created_at": kemkim_analysis.now_iso(),
+        }
+    )
+    saved = _handle_store_error(
+        project_store.save_interpretation, uid, project_id, result
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.interpretation.signal_group_ai",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"signal": signal, "basis": basis, "has_ai": bool(result.get("ai"))},
+    )
+    return JSONResponse(saved)
+
+
 @router.get("/api/projects/{project_id}/interpretations")
 async def project_interpretations(project_id: str, request: Request):
     interpretations = _handle_store_error(
@@ -472,6 +610,16 @@ async def project_interpretation_export(
         target={"type": "project", "id": project_id},
         metadata={"interpretation_id": interpretation_id},
     )
+
+    if interpretation.get("kind") in ("signal", "signal_group"):
+        report = signal_ai.markdown_report(interpretation)
+        return Response(
+            content=report.encode("utf-8"),
+            media_type="text/markdown; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="signal_report_{interpretation_id}.md"'
+            },
+        )
 
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -534,7 +682,7 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 
 @router.get("/api/crawl-dbs/{uid}/files")
-async def api_crawl_db_files(uid: str, request: Request):
+async def api_crawl_db_files(uid: str, request: Request, kind: str = "token"):
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -549,8 +697,26 @@ async def api_crawl_db_files(uid: str, request: Request):
     if resp.status_code != 200:
         raise HTTPException(resp.status_code, resp.text)
     data = resp.json()
-    data["files"] = [f for f in data.get("files", []) if f.get("type") == "token"]
+    # 분석에는 토큰 파일, 해석에는 토큰화 전 원본(raw) 파일이 필요하다
+    want = "raw" if kind == "raw" else "token"
+    data["files"] = [f for f in data.get("files", []) if f.get("type") == want]
     return JSONResponse(data)
+
+
+def _fetch_crawl_csv(uid: str, name: str, session_token: str) -> bytes:
+    """크롤러 DB의 parquet 파일을 CSV 바이트로 받아 온다."""
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
+            params={"name": name},
+            cookies={"session": session_token},
+            timeout=120,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.content
 
 
 @router.post("/api/crawl-dbs/{uid}/select")
@@ -563,20 +729,9 @@ async def api_crawl_db_select(uid: str, request: Request):
     if not name:
         raise HTTPException(400, "파일명이 필요합니다")
 
-    try:
-        resp = requests.get(
-            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
-            params={"name": name},
-            cookies={"session": session_token},
-            timeout=60,
-        )
-    except requests.RequestException as e:
-        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
-    if resp.status_code != 200:
-        raise HTTPException(resp.status_code, resp.text)
-
+    content = _fetch_crawl_csv(uid, name, session_token)
     filename = name.rsplit(".", 1)[0] + ".csv"
-    stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+    stage_id = upload_staging.stage(_uid(request), content, filename)
     suggested_start, suggested_end = _suggest_date_range(filename)
     insert_log(
         user_logs_db,
@@ -591,6 +746,8 @@ async def api_crawl_db_select(uid: str, request: Request):
             "suggested_name": os.path.splitext(filename)[0],
             "suggested_start_date": suggested_start,
             "suggested_end_date": suggested_end,
+            # 분석 시작 때 그대로 돌려받아 프로젝트에 출처로 저장한다(해석용 원본 자동 연결)
+            "crawl_source": {"uid": uid, "name": name},
         }
     )
 
@@ -629,8 +786,25 @@ async def api_analyze_start(request: Request):
     built_option = analyze_service.build_option(raw_option)
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
+    crawl_source = None
+    cs = body.get("crawl_source")
+    if (
+        isinstance(cs, dict)
+        and isinstance(cs.get("uid"), str)
+        and isinstance(cs.get("name"), str)
+    ):
+        crawl_source = {
+            "uid": cs["uid"][:100],
+            "name": os.path.basename(cs["name"])[:300],
+            "db_name": str(cs.get("db_name") or "")[:300],
+        }
     pid = analyze_service.start_job(
-        content, filename, built_option, uid, project_name=project_name
+        content,
+        filename,
+        built_option,
+        uid,
+        project_name=project_name,
+        crawl_source=crawl_source,
     )
     insert_log(
         user_logs_db,

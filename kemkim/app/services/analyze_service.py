@@ -59,6 +59,7 @@ def start_job(
     option: dict,
     uid: str,
     project_name: str | None = None,
+    crawl_source: dict | None = None,
 ) -> str:
     pid = uuid.uuid4().hex
     _jobs[pid] = {"status": "running", "project_id": None, "error": None}
@@ -90,7 +91,11 @@ def start_job(
 
             token_data = pd.read_csv(io.StringIO(content.decode("utf-8")))
             result = start_kemkim(
-                KemKimOption(**option), token_data, uid=uid, project_name=project_name
+                KemKimOption(**option),
+                token_data,
+                uid=uid,
+                project_name=project_name,
+                crawl_source=crawl_source,
             )
             if isinstance(result, JSONResponse):
                 body = json.loads(bytes(result.body))
