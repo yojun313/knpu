@@ -101,9 +101,34 @@
     });
   }
 
+  function applyAdminNav() {
+    var nav = document.querySelector('.knpu-service-header .top-nav');
+    if (!nav || nav.querySelector('[data-knpu-admin-link]')) return;
+
+    function showAdmin() {
+      if (nav.querySelector('[data-knpu-admin-link]')) return;
+      var link = document.createElement('a');
+      link.className = 'top-nav-link';
+      link.textContent = 'ADMIN';
+      link.href = url('dashboard');
+      link.setAttribute('data-knpu-admin-link', '');
+      nav.appendChild(link);
+    }
+
+    if (document.body && document.body.dataset.isAdmin === 'true') {
+      showAdmin();
+      return;
+    }
+    fetch('/api/me', { credentials: 'same-origin' })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (user) { if (user && user.role === 'admin') showAdmin(); })
+      .catch(function () {});
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', apply);
+    document.addEventListener('DOMContentLoaded', function () { apply(); applyAdminNav(); });
   } else {
     apply();
+    applyAdminNav();
   }
 })();

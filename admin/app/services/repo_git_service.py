@@ -148,6 +148,17 @@ class GitService:
     def _mask(text: str) -> str:
         return CREDENTIALS_IN_URL.sub(r"\1***@", text or "")
 
+    @staticmethod
+    def _search_paths(repository: Path) -> list[str]:
+        try:
+            return sorted(
+                entry.name
+                for entry in repository.iterdir()
+                if entry.is_dir() and not entry.name.startswith(".")
+            )
+        except OSError:
+            return []
+
     # ── 저장소 목록 ─────────────────────────────────────────────────────
     @classmethod
     def list_repositories(cls, include_status: bool = False) -> list[dict]:
@@ -179,7 +190,12 @@ class GitService:
 
         repositories.sort(key=lambda repository: repository.name.casefold())
         items = [
-            {"id": repository.id, "name": repository.name, "path": str(repository.path)}
+            {
+                "id": repository.id,
+                "name": repository.name,
+                "path": str(repository.path),
+                "search_paths": cls._search_paths(repository.path),
+            }
             for repository in repositories
         ]
         if include_status and items:

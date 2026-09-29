@@ -140,7 +140,8 @@
     if (state.filter === 'sync' && !(status && (status.ahead > 0 || status.behind > 0))) return false;
     const query = ($('gitRepositorySearch').value || '').trim().toLowerCase();
     if (!query) return true;
-    return [displayName(repo), repo.name, repo.path, status?.branch || ''].some((value) => value.toLowerCase().includes(query));
+    return [displayName(repo), repo.name, repo.path, status?.branch || '', ...(repo.search_paths || [])]
+      .some((value) => value.toLowerCase().includes(query));
   }
 
   function visible(repo) {
@@ -163,6 +164,8 @@
     const hidden = isHidden(repo.id);
     const dirty = repo.status && (repo.status.changes > 0 || repo.status.conflicts > 0);
     const dot = repo.status?.conflicts ? 'bg-red-400' : dirty ? 'bg-amber-400' : repo.status ? 'bg-emerald-500' : 'bg-white/20';
+    const query = ($('gitRepositorySearch').value || '').trim().toLowerCase();
+    const matchedFolder = query && (repo.search_paths || []).find((name) => name.toLowerCase().includes(query));
     return `
       <div class="git-repo-item group relative flex items-center gap-2 rounded-xl border px-2.5 py-2 transition cursor-pointer ${selected ? 'border-cyan-500/30 bg-cyan-500/10' : 'border-transparent hover:border-white/10 hover:bg-white/5'} ${hidden ? 'opacity-50' : ''}"
            data-repository-id="${escapeHtml(repo.id)}" ${draggable ? 'draggable="true"' : ''} role="button" tabindex="0" ${selected ? 'aria-current="true"' : ''}>
@@ -174,6 +177,7 @@
             ${hidden ? '<i class="fas fa-eye-slash text-[9px] text-white/40"></i>' : ''}
           </span>
           <span class="mt-0.5 flex min-w-0 items-center gap-1.5 text-[9px] text-white/40">${statusBadges(repo.status)}</span>
+          ${matchedFolder ? `<span class="mt-0.5 block truncate text-[10px] text-white/60">${escapeHtml(matchedFolder)}/ 폴더가 포함된 저장소</span>` : ''}
         </span>
         <button type="button" class="git-row-actions git-repo-menu-btn flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-white/40 hover:bg-white/10 hover:text-white" data-menu-for="${escapeHtml(repo.id)}" aria-label="${escapeHtml(displayName(repo))} 메뉴" aria-haspopup="menu"><i class="fas fa-ellipsis text-xs"></i></button>
       </div>`;
@@ -233,7 +237,14 @@
         <div class="space-y-1 min-h-[24px]" data-drop-folder="">${ungrouped.map((repo) => repoItem(repo)).join('')}</div>
       </div>`);
     const anyVisible = favorites.length || ungrouped.length || folders.length;
-    container.innerHTML = anyVisible ? parts.join('<div class="my-2 border-t border-white/5"></div>') : '<div class="rounded-xl border border-white/10 px-3 py-4 text-center text-xs text-white/35">조건에 맞는 저장소가 없습니다.</div>';
+    container.innerHTML = anyVisible ? parts.join('<div class="my-2 border-t border-white/5"></div>') : '<div class="rounded-xl border border-white/10 px-3 py-4 text-center text-xs text-white/70">조건에 맞는 저장소가 없습니다.<button type="button" id="gitClearSearch" class="mt-2 block w-full rounded-lg border border-white/20 px-2 py-1.5 font-bold">검색·필터 초기화</button></div>';
+    $('gitClearSearch')?.addEventListener('click', () => {
+      $('gitRepositorySearch').value = '';
+      state.filter = 'all';
+      state.showHidden = true;
+      $('gitToggleHidden').setAttribute('aria-pressed', 'true');
+      renderList();
+    });
   }
 
   // ── 저장소 메뉴 ─────────────────────────────────────────────────────
