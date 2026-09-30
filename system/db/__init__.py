@@ -89,6 +89,7 @@ free_board_db = manager_db["free-board"]
 # ── 서비스별 프로젝트 ──
 network_projects_db = network_db["projects"]
 network_folders_db = network_db["folders"]
+network_ai_jobs_db = network_db["ai-jobs"]
 kemkim_projects_db = kemkim_db["projects"]
 kemkim_folders_db = kemkim_db["folders"]
 statistics_projects_db = statistics_db["projects"]

@@ -185,6 +185,8 @@ def _doc_out(doc: dict) -> dict:
         "updated_at": _iso(doc["updated_at"]),
         "source": doc.get("source", "upload"),
         "analysis_options": doc.get("analysis_options"),
+        "has_source": bool(doc.get("has_source")),
+        "source_ref": doc.get("source_ref"),
         "folder_id": doc.get("folder_id"),
     }
 
@@ -367,3 +369,83 @@ def load_graph(
         raise NotFound("네트워크를 찾을 수 없습니다.")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def save_ai_report(
+    uid: str, project_id: str, report: dict, is_admin: bool = False
+) -> dict:
+    """KEMKIM 해석과 같이 본문은 프로젝트 파일로, 목록 정보는 DB에 저장한다."""
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    report_id = report["id"]
+    if not re.fullmatch(r"[0-9a-f]{32}", report_id):
+        raise ValueError("보고서 ID가 올바르지 않습니다.")
+    directory = os.path.join(_project_dir(doc["uid"], project_id), "ai_reports")
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, report_id + ".json")
+    temp_path = path + ".tmp"
+    # 외부 업로드 그래프의 비유한 수치를 JSON null로 바꿔 보고서 저장 실패를 막는다.
+    clean_report = json.loads(
+        json.dumps(report, ensure_ascii=False, default=str),
+        parse_constant=lambda _: None,
+    )
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(clean_report, f, ensure_ascii=False, allow_nan=False)
+    os.replace(temp_path, path)
+    summary = {
+        "id": report_id,
+        "mode": report["mode"],
+        "tag": report["tag"],
+        "title": report["title"],
+        "created_at": report["created_at"],
+        "has_ai": bool(report.get("report")),
+        "model": report.get("model"),
+    }
+    network_projects_db.update_one(
+        {"_id": project_id},
+        {
+            "$push": {"ai_reports": summary},
+            "$set": {"updated_at": datetime.now(timezone.utc)},
+        },
+    )
+    return clean_report
+
+
+def list_ai_reports(uid: str, project_id: str, is_admin: bool = False) -> list:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    return list(reversed(doc.get("ai_reports", [])))
+
+
+def load_ai_report(
+    uid: str, project_id: str, report_id: str, is_admin: bool = False
+) -> dict:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    if not re.fullmatch(r"[0-9a-f]{32}", report_id):
+        raise NotFound("보고서를 찾을 수 없습니다.")
+    path = os.path.join(
+        _project_dir(doc["uid"], project_id), "ai_reports", report_id + ".json"
+    )
+    if not os.path.isfile(path):
+        raise NotFound("보고서를 찾을 수 없습니다.")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_source_csv(
+    uid: str, project_id: str, content: bytes, source_ref: dict | None = None
+):
+    doc = _get_owned_doc(uid, project_id)
+    path = os.path.join(_project_dir(doc["uid"], project_id), "source.csv")
+    temp = path + ".tmp"
+    with open(temp, "wb") as f:
+        f.write(content)
+    os.replace(temp, path)
+    network_projects_db.update_one(
+        {"_id": project_id},
+        {
+            "$set": {
+                "has_source": True,
+                "source_ref": source_ref,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
