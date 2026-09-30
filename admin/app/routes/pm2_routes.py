@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import time
 from fastapi import (
     APIRouter,
@@ -15,8 +16,10 @@ from starlette.background import BackgroundTask
 import psutil
 from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
+from app.libs.jwt import decode_token
 from app.services import settings_service
-from app.db import user_logs_col
+from app.db import homepage_users_col, user_logs_col
+from system.auth.session import revalidate_session
 from system.logging.user_log import insert_log
 
 router = APIRouter(prefix="/process", tags=["process"])
@@ -24,6 +27,7 @@ templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 _prev_sample = {"ts": None, "net": None, "disk": None}
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def _get_cpu_temp():
@@ -48,7 +52,7 @@ def _rate_per_sec(prev_value, cur_value, dt):
 
 @router.get("/")
 async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
-    processes = PM2Service.get_processes()
+    processes = await asyncio.to_thread(PM2Service.get_processes)
     return templates.TemplateResponse(
         request=request,
         name="process.html",
@@ -108,7 +112,7 @@ async def control_process(action: str, name: str, user=Depends(get_current_user)
 
 @router.get("/status")
 async def get_pm2_status_api(user=Depends(get_current_user)):
-    return PM2Service.get_processes()
+    return await asyncio.to_thread(PM2Service.get_processes)
 
 
 @router.get("/server-stats")
@@ -179,6 +183,17 @@ async def get_server_stats(user=Depends(get_current_user)):
 
 @router.websocket("/ws/logs/{name}")
 async def websocket_endpoint(websocket: WebSocket, name: str):
+    token = websocket.cookies.get("session")
+    live = await asyncio.to_thread(
+        revalidate_session, decode_token(token) if token else None, homepage_users_col
+    )
+    if not live or live.get("role") != "admin":
+        await websocket.close(code=1008)
+        return
+    processes = await asyncio.to_thread(PM2Service.get_processes)
+    if name not in {proc.get("name") for proc in processes}:
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
 
     process = await asyncio.create_subprocess_exec(
@@ -192,19 +207,40 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
         stderr=asyncio.subprocess.STDOUT,
     )
 
+    disconnect_task = asyncio.create_task(websocket.receive_text())
     try:
         while True:
-            line = await process.stdout.readline()
+            line_task = asyncio.create_task(process.stdout.readline())
+            done, _ = await asyncio.wait(
+                {line_task, disconnect_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+            if disconnect_task in done:
+                try:
+                    disconnect_task.result()
+                except WebSocketDisconnect:
+                    pass
+                line_task.cancel()
+                await asyncio.gather(line_task, return_exceptions=True)
+                break
+            line = line_task.result()
             if not line:
                 break
-            await websocket.send_text(line.decode().strip())
+            clean_line = _ANSI_ESCAPE.sub("", line.decode(errors="replace")).rstrip("\r\n")
+            await websocket.send_text(clean_line)
     except WebSocketDisconnect:
-        process.terminate()
+        pass
     except Exception as e:
         print(f"Log Streaming Error: {e}")
     finally:
+        disconnect_task.cancel()
+        await asyncio.gather(disconnect_task, return_exceptions=True)
         if process.returncode is None:
             process.terminate()
+        try:
+            await asyncio.wait_for(process.wait(), timeout=2)
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.wait()
 
 
 @router.post("/toggle-watch/{name}")

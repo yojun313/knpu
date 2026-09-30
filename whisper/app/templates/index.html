@@ -777,6 +777,37 @@
             html body .app > .panel.sidebar > .rail-resizer:hover::after, html body .app > .panel.sidebar > .rail-resizer.active::after { background: rgba(96,165,250,.8); }
         }
         @media (max-width: 860px) { html body .app > .panel.sidebar :is(.rail-resizer, .rail-reset-btn, .sb-collapse) { display: none !important; } }
+        @media (max-width: 860px) {
+            html body .app > .panel.sidebar {
+                position: absolute !important;
+                top: 0 !important; bottom: 0 !important; left: 0 !important;
+                width: min(320px, 86vw) !important;
+                z-index: 60;
+                transform: translateX(-105%);
+            }
+            html body .app > .panel.sidebar.open { transform: translateX(0); }
+            html body .app > .panel.note-main { flex: 1 1 auto; min-width: 0; width: 100%; }
+            .empty-state { position: relative; padding: 64px 18px 18px; overflow-y: auto; gap: 10px; }
+            .empty-desc br { display: none; }
+            .empty-state .mobile-list-btn { position: absolute; top: 12px; left: 12px; }
+            .note-head { padding: 10px 12px; }
+            .note-actions { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; }
+            .note-actions > * { flex: 0 0 auto; }
+            .transcript-toolbar { padding: 8px 12px; gap: 8px; }
+            .transcript-toolbar .search-input { min-width: 0; max-width: none; flex-basis: 100%; order: 2; }
+            .transcript-toolbar .toggle-label { margin-left: auto; }
+            .player-bar { display: grid !important; grid-template-columns: 32px 40px 32px 1fr auto; gap: 8px; }
+            .player-bar[style*="display:none"], .player-bar[style*="display: none"] { display: none !important; }
+            .player-bar .seek-wrap { grid-column: 1 / 5; grid-row: 2; min-width: 0; }
+            .player-bar #time-current { justify-self: end; }
+            .player-bar #time-total { grid-column: 5; grid-row: 1; justify-self: start; }
+            .player-bar .speed-select { grid-column: 5; grid-row: 2; }
+        }
+        @media (max-width: 370px) {
+            .view-tab { padding: 6px 8px; }
+            .seg-row { gap: 7px; padding: 8px 4px; }
+            .seg-time { padding: 3px 5px; }
+        }
     </style>
     <link rel="stylesheet" href="/shared-ui/theme.css">
     <script src="/shared-ui/services.js"></script>
@@ -851,6 +882,7 @@
     <main class="panel note-main" id="note-main">
         <!-- 빈 상태 -->
         <div class="empty-state" id="empty-state">
+            <button class="btn btn-ghost btn-sm mobile-list-btn" type="button" onclick="toggleSidebar()">☰ 노트 목록</button>
             <div class="empty-illust">
                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </div>

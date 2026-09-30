@@ -1584,6 +1584,14 @@ html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,2
 html[data-ui-nav="autohide"] body .top-header.knpu-service-header { position: fixed !important; top: 0; left: 0; right: 0; }
 @media (max-width: 600px) {
   html body .top-header.knpu-service-header { gap: 10px !important; padding: 0 12px !important; }
+  html body .knpu-service-header > a[data-knpu-service="homepage"] {
+    width: 38px !important; max-width: 38px !important; flex: 0 0 38px !important;
+    overflow: hidden !important;
+  }
+  html body .knpu-service-header .top-header-logo {
+    width: auto !important; max-width: none !important; height: 34px !important;
+  }
+  html body .knpu-service-header .top-nav-link { padding: 7px 9px !important; }
 }
 html body .rail { display: flex; flex-direction: column; }
 html body .rail .sb-top { padding: 18px 16px 14px; border-bottom: 1px solid var(--ud-line); flex-shrink: 0; }

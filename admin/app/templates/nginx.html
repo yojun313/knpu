@@ -9,8 +9,9 @@
 
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
         <div class="relative w-full sm:w-64">
-            <input type="text" id="domainSearch" onkeyup="filterDomains()" placeholder="도메인 검색..." 
-                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition">
+            <input type="search" id="domainSearch" oninput="filterDomains()" placeholder="도메인 · 폴더 검색..."
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-4 pr-16 py-2 text-sm focus:border-blue-500 outline-none transition">
+            <button id="clearDomainSearch" type="button" onclick="clearDomainSearch()" class="hidden absolute right-9 top-1.5 px-1 text-zinc-400 hover:text-white" aria-label="검색어 지우기">×</button>
             <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
         <button onclick="openCreateFolderModal()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-5 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap border border-zinc-700">
@@ -117,6 +118,7 @@
             </thead>
             {% for g in groups %}
             {# 표시용 폴더 그룹. 미분류(g.id 없음)는 폴더가 하나도 없고 도메인만 있을 때는 머리글을 숨긴다. #}
+            {% if g.id or g.domains %}
             <tbody class="folder-group{% if not g.domains %} is-empty{% endif %}{% if g.id %} folder-collapsed{% endif %}" data-folder-id="{{ g.id or '' }}" data-folder-name="{{ g.name }}">
                 {% if g.id or folders %}
                 <tr class="folder-row bg-zinc-900/40 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800/30 transition-colors"
@@ -157,6 +159,7 @@
                 <tr class="domain-row{{ ' in-folder' if g.id else '' }} border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer"
                     draggable="true"
                     data-domain="{{ d.domain }}"
+                    data-search="{{ d.domain }} {{ d.filename }} {{ d.primary_port or '' }} {{ d.paths|map(attribute='path')|join(' ') }}{% if 'dashboard.' in d.domain %} admin{% endif %}"
                     data-ports="{{ d.paths|map(attribute='port')|select('ne', 'N/A')|unique|join(',') }}"
                     onclick="toggleDomainPaths('{{ d.domain }}')">
                     <td class="p-4 nginx-cell-domain" data-label="Domain Name">
@@ -237,7 +240,14 @@
                     </td>
                 </tr>
             </tbody>
+            {% endif %}
             {% endfor %}
+
+            {% if domains %}
+            <tbody id="domainNoMatches" style="display:none">
+                <tr><td colspan="5" class="p-10 text-center text-zinc-500 text-sm">일치하는 도메인이나 폴더가 없습니다. 검색어를 지우면 전체 목록이 다시 표시됩니다.</td></tr>
+            </tbody>
+            {% endif %}
 
             {% if not domains %}
             <tbody>
@@ -486,7 +496,17 @@ let moveFolderDomain = "";
 
 function toggleFolder(headerRow) {
     const body = headerRow.parentElement;
+    if (document.getElementById('domainSearch').value.trim()) {
+        clearDomainSearch();
+        setFolderCollapsed(body, false);
+        return;
+    }
     setFolderCollapsed(body, !body.classList.contains('folder-collapsed'));
+}
+
+function clearDomainSearch() {
+    document.getElementById('domainSearch').value = '';
+    filterDomains();
 }
 
 function setFolderCollapsed(group, collapsed) {
@@ -787,16 +807,27 @@ document.getElementById('editPathForm').onsubmit = async (e) => {
 };
 
 function filterDomains() {
-    const query = document.getElementById('domainSearch').value.toLowerCase();
+    const query = document.getElementById('domainSearch').value.trim().toLowerCase();
+    document.getElementById('clearDomainSearch').classList.toggle('hidden', !query);
+    let matches = 0;
 
     document.querySelectorAll('tbody.folder-group').forEach(function (group) {
-        // 검색 중에는 접힌 폴더도 결과를 보여줘야 하므로 접힘 상태를 푼다.
-        if (query) setFolderCollapsed(group, false);
+        // 검색 전 접힘 상태를 기억해 검색어를 지운 뒤 원래대로 돌린다.
+        if (query) {
+            if (group.dataset.beforeSearchCollapsed === undefined) {
+                group.dataset.beforeSearchCollapsed = group.classList.contains('folder-collapsed') ? 'true' : 'false';
+            }
+            setFolderCollapsed(group, false);
+        } else if (group.dataset.beforeSearchCollapsed !== undefined) {
+            setFolderCollapsed(group, group.dataset.beforeSearchCollapsed === 'true');
+            delete group.dataset.beforeSearchCollapsed;
+        }
 
+        const folderMatch = query && (group.getAttribute('data-folder-name') || '').toLowerCase().includes(query);
         let visible = 0;
         group.querySelectorAll('tr.domain-row').forEach(function (row) {
             const domain = row.getAttribute('data-domain');
-            const match = domain.toLowerCase().includes(query);
+            const match = folderMatch || (row.getAttribute('data-search') || domain).toLowerCase().includes(query);
             row.style.display = match ? "" : "none";
             if (match) visible += 1;
             const pathsRow = document.getElementById(`paths-row-${domain}`);
@@ -806,19 +837,14 @@ function filterDomains() {
             }
         });
 
-        // 폴더 이름으로도 찾을 수 있게 한다.
-        const header = group.querySelector('tr.folder-row');
-        const folderName = header ? (header.getAttribute('data-folder-name') || '') : '';
-        const folderMatch = query && folderName.toLowerCase().includes(query);
-        if (folderMatch) {
-            group.querySelectorAll('tr.domain-row').forEach(function (row) {
-                row.style.display = "";
-                visible += 1;
-            });
-        }
-
-        if (header) header.style.display = (!query || visible > 0) ? "" : "none";
+        group.style.display = (!query || folderMatch || visible > 0) ? '' : 'none';
+        group.querySelectorAll('tr.folder-empty-row').forEach(function (row) {
+            row.style.display = query ? 'none' : '';
+        });
+        matches += visible || (folderMatch ? 1 : 0);
     });
+    const empty = document.getElementById('domainNoMatches');
+    if (empty) empty.style.display = (query && matches === 0) ? '' : 'none';
 }
 
 function runConsoleTask(payload) {

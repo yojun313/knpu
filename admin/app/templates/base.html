@@ -6,7 +6,7 @@
     <title>KNPU Dashboard</title>
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/tailwind.css?v=dd83b26d">
     <script>
         // 라이트/다크를 포함한 모든 테마 상태는 다른 KNPU 사이트와 같은
         // domain=.knpu.re.kr 쿠키(ui_theme_style/ui_theme_mode)만 쓴다.
@@ -66,6 +66,14 @@
     </script>
     <link rel="stylesheet" href="/shared-ui/theme.css">
     <style>
+        /* 같은 출처의 관리자 페이지는 새 화면이 준비될 때 셸을 즉시 교체한다. */
+        @view-transition { navigation: auto; }
+        ::view-transition-old(root), ::view-transition-new(root),
+        ::view-transition-group(admin-header), ::view-transition-group(admin-sidebar) {
+            animation-duration: 0s;
+        }
+        .admin-header { view-transition-name: admin-header; }
+        #sidebar.admin-sidebar { view-transition-name: admin-sidebar; }
         /* 데스크톱 MANAGER 앱(kemkim/network 뷰어와 같은 뿌리) 배색 그대로 가져옴.
            라이트가 기본이고, 다크는 공유 쿠키가 세팅하는 data-ui-theme-mode="dark"
            로만 켠다 — 다른 KNPU 사이트와 같은 규칙. */
@@ -624,7 +632,7 @@
                     'versions': 'M4 5h16v14H4z M8 10h8 M8 14h5'
                 } %}
                 {% for item in get_nav_items() %}
-                <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item {% if active_page == item.id %}active{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ nav_icons.get(item.id, nav_icons.overview) }}"/></svg><span>{{ item.label }}</span></a>
+                <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item {% if active_page == item.id %}active{% endif %}" {% if active_page == item.id %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ nav_icons.get(item.id, nav_icons.overview) }}"/></svg><span>{{ item.label }}</span></a>
                 {% endfor %}
             </nav>
             <div class="sb-bottom">

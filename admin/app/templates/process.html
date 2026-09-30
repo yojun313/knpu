@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block head_extra %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css?v=69546819">
     <link rel="stylesheet" href="/static/ud/ud-compat.css">
 {% endblock %}
 {% block scripts %}
@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/vendor/chartjs/chart-4.4.4.umd.min.js?v=b3807676"></script>
 
 <div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
@@ -20,12 +20,6 @@
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
         <div id="startupBadge" class="px-3 py-2 rounded-lg text-[11px] font-bold border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all">
             STARTUP: CHECKING...
-        </div>
-
-        <div class="relative w-full sm:w-64">
-            <input type="text" id="procSearch" onkeyup="filterProcesses()" placeholder="프로세스 검색..." 
-                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner text-white">
-            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
 
         <button onclick="savePM2()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
@@ -137,6 +131,23 @@
 </div>
 
 <style>
+    /* 로그는 화면 오른쪽 패널에 표시해 서버 목록과 공통 네비게이션을 유지한다. */
+    #logModal { top: 58px; right: 0; bottom: 0; width: min(680px, 52vw); }
+    #logContainer {
+        background: #09090b !important;
+        color: #e4e4e7 !important;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    #logContainer > div:not(.log-line) { color: #a1a1aa !important; }
+    #logContainer .log-line {
+        background: transparent !important;
+        color: #e4e4e7 !important;
+        border-left: 2px solid #52525b !important;
+        padding: 4px 10px;
+    }
+    #logContainer .log-line:hover { background: #18181b !important; }
+    @media (max-width: 1023px) { #logModal { width: 100vw; } }
     /* 1024px 미만(모바일/태블릿 세로)에서는 테이블을 세로 카드형으로 재배치해서
        Actions(재시작 등) 버튼을 보려고 가로 스크롤할 필요가 없게 한다. */
     @media (max-width: 1023px) {
@@ -183,6 +194,7 @@
                     <td class="p-4 pm2-cell-name">
                         <div class="font-bold text-zinc-100 flex items-center gap-2">
                             {{ proc.name }}
+                            {% if proc.name == 'dashboard' %}<span class="text-[10px] font-medium text-zinc-500">Admin Dashboard</span>{% endif %}
                             <button onclick="toggleChart('{{ proc.name }}')" class="text-zinc-500 hover:text-zinc-300 p-0.5" title="자원 그래프 보기">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                             </button>
@@ -212,7 +224,7 @@
                     </td>
                     <td class="p-4 text-right pm2-cell-actions">
                         <div class="flex justify-end gap-2">
-                            <button onclick="openLogModal('{{ proc.name }}')" class="p-2 bg-blue-900/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition" title="Logs">
+                            <button type="button" onclick="openLogModal('{{ proc.name }}')" class="p-2 bg-blue-900/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition" title="Logs" aria-label="{{ proc.name }} 로그 보기">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 18 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
                             </button>
                             <button onclick="controlPM2('restart', '{{ proc.name }}')" class="p-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-100 hover:text-black rounded-lg transition" title="Restart">
@@ -254,8 +266,8 @@
     </div>
 </section>
 
-<div id="logModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-5xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl scale-up-animation">
+<div id="logModal" class="hidden fixed z-50 flex p-3" role="dialog" aria-modal="false" aria-labelledby="logTitle">
+    <div class="bg-zinc-900 border border-zinc-800 w-full h-full rounded-2xl flex flex-col overflow-hidden shadow-2xl scale-up-animation">
         <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
             <div class="flex items-center gap-2">
                 <div class="flex gap-1.5 mr-2">
@@ -506,21 +518,6 @@ async function updateStats() {
     }
 }
 
-function filterProcesses() {
-    const query = document.getElementById('procSearch').value.toLowerCase();
-    const rows = document.getElementsByClassName('proc-row');
-    for (let row of rows) {
-        const name = row.getAttribute('data-name').toLowerCase();
-        const chartRow = document.getElementById(`chart-row-${row.getAttribute('data-name')}`);
-        if (name.includes(query)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-            if (chartRow) chartRow.style.display = "none";
-        }
-    }
-}
-
 function formatUptime(ms) {
     if (!ms) return "-";
     const seconds = Math.floor((Date.now() - ms) / 1000);
@@ -588,26 +585,36 @@ function openLogModal(name) {
     const modal = document.getElementById('logModal');
     const container = document.getElementById('logContainer');
     const title = document.getElementById('logTitle');
-    
+
+    // main/admin-content는 자체 스크롤과 overflow:hidden을 사용한다. 모달을
+    // body 바로 아래로 옮겨 스크롤 위치와 테마별 stacking context의 영향을 없앤다.
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
     title.innerText = `REAL-TIME LOGS: ${name}`;
     container.innerHTML = '<div class="text-zinc-600 italic px-2">데이터를 불러오는 중입니다...</div>';
+    container.dataset.loading = '1';
 
     if (logSocket) logSocket.close();
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    logSocket = new WebSocket(`${protocol}//${window.location.host}/process/ws/logs/${name}`);
+    const socket = new WebSocket(`${protocol}//${window.location.host}/process/ws/logs/${encodeURIComponent(name)}`);
+    logSocket = socket;
 
-    logSocket.onmessage = function(event) {
+    socket.onmessage = function(event) {
+        if (logSocket !== socket) return;
+        if (container.dataset.loading) {
+            container.replaceChildren();
+            delete container.dataset.loading;
+        }
         const line = document.createElement('div');
-        line.className = 'border-l border-zinc-800 pl-3 py-0.5 hover:bg-zinc-800/40 transition-colors whitespace-pre-wrap break-all';
+        line.className = 'log-line whitespace-pre-wrap break-all';
         line.innerText = event.data;
         container.appendChild(line);
         container.scrollTop = container.scrollHeight;
     };
 
-    logSocket.onclose = function() {
+    socket.onclose = function() {
+        if (logSocket !== socket || modal.classList.contains('hidden')) return;
         const msg = document.createElement('div');
         msg.className = 'text-zinc-600 text-[10px] mt-4 text-center border-t border-zinc-800 pt-4 font-bold tracking-widest';
         msg.innerText = "로그 스트림 종료됨 (STREAM ENDED)";
@@ -621,11 +628,10 @@ function closeLogModal() {
         logSocket = null;
     }
     document.getElementById('logModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
 }
 
-setInterval(updateStats, 1000);
-setInterval(updateServerStats, 1000);
+setInterval(updateStats, 3000);
+setInterval(updateServerStats, 2000);
 updateStats();
 updateServerStats();
 checkStartupStatus();

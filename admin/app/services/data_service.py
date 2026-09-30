@@ -97,6 +97,26 @@ def get_dashboard_stats(date_str=None):
     }
 
 
+def get_overview_counts(date_str: str) -> dict:
+    kst = ZoneInfo("Asia/Seoul")
+    try:
+        start = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=kst)
+    except ValueError:
+        start = datetime.now(kst).replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+    return {
+        "pending_users": homepage_users_col.count_documents(
+            {"status": "pending_approval"}
+        ),
+        "running_crawls": db_list_col.count_documents({"status": "running"}),
+        "error_crawls": db_list_col.count_documents({"status": "error"}),
+        "total_crawls": db_list_col.count_documents({}),
+        "failed_events_today": user_logs_col.count_documents(
+            {"datetime": {"$gte": start, "$lt": end}, "outcome": "failure"}
+        ),
+    }
+
+
 def get_admin_uids():
     admins = homepage_users_col.find({"role": "admin"}, {"uid": 1})
     return [a["uid"] for a in admins]

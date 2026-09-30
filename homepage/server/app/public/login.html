@@ -333,6 +333,13 @@
           return;
         }
 
+        // 다른 서비스에서 다시 로그인하러 온 경우에는 성공 즉시 그 서비스로 복귀한다.
+        // 첫 패스키 등록 권유 화면이 이 필수 이동을 가로막지 않게 한다.
+        if (new URLSearchParams(window.location.search).has('redirect')) {
+          window.location.href = safeRedirectTarget();
+          return;
+        }
+
         // 로그인엔 성공했지만 이 계정에 등록된 패스키가 하나도 없으면, 리다이렉트
         // 하기 전에 지금 등록할지 물어본다. 목록 조회가 실패해도(네트워크 문제 등)
         // 로그인 자체를 막을 이유는 없으니 조용히 넘어가고 바로 이동한다.
