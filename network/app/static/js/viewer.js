@@ -1222,6 +1222,7 @@
       if (e.key !== 'Escape') return;
       if (!moveFolderMenu.hidden) closeMoveFolderMenu();
       else if (!ctxMenu.hidden) closeRailCtxMenu();
+      else if (!document.getElementById('aiReportModal').hidden) closeAiReportModal();
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
       else closeMobileDrawers();
@@ -1863,16 +1864,12 @@
   function renderAiHistory() {
     var box = document.getElementById('aiHistory');
     if (!aiHistory.length) { box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>'; return; }
-    var selected = aiHistory.findIndex(function (item) { return item.id === aiReportId; });
-    if (selected < 0) selected = 0;
-    box.innerHTML = '<div class="ai-history-nav">'
-      + '<button type="button" class="btn btn-sm" data-ai-history-step="-1" aria-label="이전 분석"' + (selected >= aiHistory.length - 1 ? ' disabled' : '') + '>‹</button>'
-      + '<select aria-label="저장된 분석 선택" data-ai-history-select>' + aiHistory.map(function (item, index) {
-        return '<option value="' + escAttr(item.id) + '"' + (index === selected ? ' selected' : '') + '>'
-          + esc(item.title || 'AI 분석') + ' · ' + esc(fmtAnalyzedAt(item.created_at)) + '</option>';
-      }).join('') + '</select>'
-      + '<button type="button" class="btn btn-sm" data-ai-history-step="1" aria-label="다음 분석"' + (selected <= 0 ? ' disabled' : '') + '>›</button>'
-      + '</div><div class="ai-history-count">' + (selected + 1) + ' / ' + aiHistory.length + '개 저장됨</div>';
+    box.innerHTML = aiHistory.map(function (item) {
+      return '<button type="button" class="ai-history-item' + (item.id === aiReportId ? ' active' : '') + '" data-ai-report="' + escAttr(item.id) + '">'
+        + '<span class="ai-history-title">' + esc(item.title || 'AI 분석') + '</span>'
+        + '<span class="ai-history-date">' + esc(fmtAnalyzedAt(item.created_at)) + '</span>'
+        + '<span class="ai-history-open">' + (item.id === aiReportId ? '열림' : '열기') + '</span></button>';
+    }).join('');
   }
 
   function openAiReport(reportId) {
@@ -1906,6 +1903,9 @@
     aiFollowingJob = jobId;
     aiReportId = null;
     aiPollingJobId = jobId;
+    document.getElementById('aiReportModalTitle').textContent = 'AI 네트워크 분석 진행 중';
+    document.getElementById('aiReportModal').hidden = false;
+    document.body.classList.add('ai-report-modal-open');
     document.getElementById('aiRun').disabled = true;
     var retries = 0;
     function tick() {
@@ -1969,7 +1969,12 @@
   function renderAiResult(data) {
     var p = data.profile;
     var s = p.summary || {};
-    var html = '<div class="ai-metrics"><span>노드 <b>' + esc(s.nodes || 0) + '</b></span><span>연결 <b>' + esc(s.edges || 0) + '</b></span>'
+    var title = data.title || (p.mode === 'overview' ? '전체 네트워크 AI 분석' : '네트워크 AI 분석');
+    var preview = (data.report || '요약과 상세 분석 결과를 보려면 펼치세요.').replace(/[#>*_`\n]/g, ' ').replace(/\s+/g, ' ').trim();
+    var html = '<details class="ai-result-card" open><summary><span class="ai-result-kind">AI 분석</span><b>' + esc(title) + '</b>'
+      + '<small>' + esc(fmtAnalyzedAt(data.created_at)) + '</small><i aria-hidden="true"></i></summary>'
+      + '<div class="ai-result-preview">' + esc(preview) + '</div><div class="ai-result-body">'
+      + '<div class="ai-metrics"><span>노드 <b>' + esc(s.nodes || 0) + '</b></span><span>연결 <b>' + esc(s.edges || 0) + '</b></span>'
       + '<span>밀도 <b>' + esc(s.density || 0) + '</b></span><span>평균 연결 <b>' + esc(s.avg_degree || 0) + '</b></span></div>';
     if (p.focus) html += '<p><b>' + esc(p.focus.word) + '</b> · 빈도 ' + esc(p.focus.frequency) + ' · 연결 ' + esc(p.focus.degree) + '</p>';
     if (p.direct_edge) html += '<p>직접 연결 · 가중치 ' + esc(p.direct_edge.weight) + ' · 공출현 ' + esc(p.direct_edge.cooccur == null ? '자료 없음' : p.direct_edge.cooccur) + '</p>';
@@ -1999,7 +2004,16 @@
       + (data.llm.provider === 'openai' ? ' · 추정 비용 $' + Number(data.llm.cost_usd || 0).toFixed(4) : '') + '</p>';
     else if (data.model) html += '<p class="hint">모델: ' + esc(data.model) + '</p>';
     html += aiPromptHtml(data.prompt);
+    html += '</div></details>';
+    document.getElementById('aiReportModalTitle').textContent = title;
     document.getElementById('aiResult').innerHTML = html;
+    document.getElementById('aiReportModal').hidden = false;
+    document.body.classList.add('ai-report-modal-open');
+  }
+
+  function closeAiReportModal() {
+    document.getElementById('aiReportModal').hidden = true;
+    document.body.classList.remove('ai-report-modal-open');
   }
 
   function runAiAnalysis() {
@@ -2021,6 +2035,9 @@
     var button = document.getElementById('aiRun');
     button.disabled = true;
     document.getElementById('aiResult').innerHTML = '<p class="hint">그래프와 근거 자료를 분석 중입니다…</p>';
+    document.getElementById('aiReportModalTitle').textContent = 'AI 네트워크 분석 진행 중';
+    document.getElementById('aiReportModal').hidden = false;
+    document.body.classList.add('ai-report-modal-open');
     var endpoint = aiEndpoint('ai-analysis');
     fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -2397,15 +2414,8 @@
     }
   });
   document.getElementById('aiHistory').addEventListener('click', function (event) {
-    var button = event.target.closest('[data-ai-history-step]');
-    if (!button) return;
-    var selected = aiHistory.findIndex(function (item) { return item.id === aiReportId; });
-    if (selected < 0) selected = 0;
-    var next = Math.max(0, Math.min(aiHistory.length - 1, selected - Number(button.getAttribute('data-ai-history-step'))));
-    if (aiHistory[next]) openAiReport(aiHistory[next].id);
-  });
-  document.getElementById('aiHistory').addEventListener('change', function (event) {
-    if (event.target.matches('[data-ai-history-select]')) openAiReport(event.target.value);
+    var button = event.target.closest('[data-ai-report]');
+    if (button && button.getAttribute('data-ai-report') !== aiReportId) openAiReport(button.getAttribute('data-ai-report'));
   });
   document.getElementById('aiProgress').addEventListener('click', function (event) {
     var button = event.target.closest('[data-ai-job]');
@@ -2417,6 +2427,10 @@
   });
   document.getElementById('aiResult').addEventListener('click', function (event) {
     if (event.target.closest('[data-ai-rerun]')) rerunSavedAiAnalysis();
+  });
+  document.getElementById('aiReportModalClose').addEventListener('click', closeAiReportModal);
+  document.getElementById('aiReportModal').addEventListener('click', function (event) {
+    if (event.target.id === 'aiReportModal') closeAiReportModal();
   });
   refreshActiveAiJobs();
   setInterval(refreshActiveAiJobs, 3000);
