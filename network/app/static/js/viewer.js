@@ -30,7 +30,11 @@
   // ---------------------------------------------------------------
   function api(path) {
     return fetch(path).then(function (res) {
-      if (!res.ok) return res.json().then(function (b) { throw new Error(b.detail || res.statusText); });
+      if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) {
+        var error = new Error(b.detail || res.statusText);
+        error.status = res.status;
+        throw error;
+      });
       return res.json();
     });
   }
@@ -1850,7 +1854,14 @@
           + '<span>' + esc(item.title || 'AI 분석') + '</span><small>' + esc(fmtAnalyzedAt(item.created_at)) + '</small></button>';
       }).join('');
     }).catch(function (err) {
-      if (pid === projectId) document.getElementById('aiHistory').textContent = '분석 기록을 불러오지 못했습니다: ' + err.message;
+      if (pid !== projectId) return;
+      var box = document.getElementById('aiHistory');
+      if (err.status === 404 || err.message === 'Not Found') {
+        aiHistory = [];
+        box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>';
+        return;
+      }
+      box.textContent = '분석 기록을 불러오지 못했습니다: ' + err.message;
     });
   }
 
