@@ -30,8 +30,8 @@ def homepage_api_base() -> str:
         return "https://knpu.re.kr"
 
 
-MAX_TURNS = int(os.getenv("CHATBOT_MAX_TURNS", "8"))
-TIME_BUDGET_S = float(os.getenv("CHATBOT_TIME_BUDGET_S", "170"))
+MAX_TURNS = int(os.getenv("CHATBOT_MAX_TURNS", "12"))
+TIME_BUDGET_S = float(os.getenv("CHATBOT_TIME_BUDGET_S", "200"))
 ANSWER_TOKENS = int(
     os.getenv("CHATBOT_MAX_TOKENS", "6000")
 )  # 추론 모델은 생각에도 토큰을 쓴다
