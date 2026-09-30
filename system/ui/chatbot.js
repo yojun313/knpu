@@ -370,17 +370,6 @@
       .catch(function (e) { var i = state.anon.indexOf(pending); if (i >= 0) state.anon[i] = { role: 'assistant', error: true, content: e.message }; saveAnon(); render(); });
   }
 
-  // ── 위치: 오른쪽 패널(#side)이 열려 있으면 그 왼쪽에 붙인다 ─────────────────
-  function place() {
-    var right = window.innerWidth <= 640 ? 14 : 22;
-    var side = document.getElementById('side');
-    if (side && window.innerWidth > 1100) {
-      var r = side.getBoundingClientRect();
-      if (r.width > 0 && r.left < window.innerWidth - 2 && getComputedStyle(side).display !== 'none') right = Math.round(window.innerWidth - r.left + 18);
-    }
-    root.style.setProperty('--kcb-right', right + 'px');
-  }
-
   function setOpen(open) {
     state.open = open;
     panel.hidden = !open;
@@ -412,9 +401,6 @@
   // ── 시작 ─────────────────────────────────────────────────────────────────
   function boot() {
     document.body.appendChild(root);
-    place();
-    window.addEventListener('resize', place);
-    setInterval(place, 1500); // 패널 접기 · 너비 조절을 따라간다
     fab.addEventListener('click', function () { setOpen(!state.open); });
     root.querySelector('[data-close]').addEventListener('click', function () { setOpen(false); });
     root.querySelector('[data-new]').addEventListener('click', function () { if (!isBusy() || loggedIn()) newConversation(); });
