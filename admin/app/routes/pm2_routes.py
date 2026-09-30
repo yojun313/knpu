@@ -225,7 +225,9 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
             line = line_task.result()
             if not line:
                 break
-            clean_line = _ANSI_ESCAPE.sub("", line.decode(errors="replace")).rstrip("\r\n")
+            clean_line = _ANSI_ESCAPE.sub("", line.decode(errors="replace")).rstrip(
+                "\r\n"
+            )
             await websocket.send_text(clean_line)
     except WebSocketDisconnect:
         pass

@@ -1,11 +1,15 @@
 # app/routes/project_routes.py
+import asyncio
 import os
+import time
+import uuid
 
 import requests
 from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 
-from app.services import project_store, graph_analysis, analyze_service
+from app.services import project_store, graph_analysis, analyze_service, network_ai
+from system.llm import LLMError
 from system import uploads as upload_staging
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
@@ -25,6 +29,30 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 MAX_EDGES_DEFAULT = 4000
 # 개발 중 자주 바뀌는 페이지라 브라우저가 옛 버전을 캐시해두는 일이 없도록 한다.
 _NO_CACHE = {"Cache-Control": "no-store, must-revalidate"}
+_ai_jobs = {}
+
+
+async def _finish_ai_job(job_id, uid, profile, examples, note):
+    try:
+        interpretation = await network_ai.interpret(uid, profile, examples, note)
+    except (LLMError, ValueError) as e:
+        interpretation = {"report": "", "error": str(e), "model": None, "cost_usd": 0}
+    except Exception:
+        interpretation = {
+            "report": "",
+            "error": "AI 분석 중 오류가 발생했습니다.",
+            "model": None,
+            "cost_usd": 0,
+        }
+    job = _ai_jobs.get(job_id)
+    if job:
+        job["status"] = "done"
+        job["result"] = {
+            "profile": profile,
+            "examples": examples,
+            "evidence_note": note,
+            **interpretation,
+        }
 
 
 def _page(filename: str) -> FileResponse:
@@ -319,6 +347,61 @@ async def project_data(
             "total_edges": len(graph["edges"]),
         }
     )
+
+
+@router.post("/api/projects/{project_id}/ai-analysis")
+async def project_ai_analysis(project_id: str, request: Request):
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(400, "분석 요청 형식이 올바르지 않습니다.")
+    mode = payload.get("mode", "overview")
+    tag = payload.get("tag", "")
+    word = payload.get("word")
+    other = payload.get("other")
+    try:
+        community = int(payload.get("community")) if mode == "community" else None
+    except (TypeError, ValueError):
+        raise HTTPException(400, "커뮤니티를 선택해주세요.")
+    uid, admin = _uid(request), _is_admin(request)
+    graph = _handle_store_error(project_store.load_graph, uid, project_id, tag, admin)
+    try:
+        series = network_ai.period_series(
+            uid, project_id, tag, mode, word, other, admin
+        )
+        profile = network_ai.build_profile(graph, mode, word, other, community, series)
+        meta = _handle_store_error(project_store.get_project, uid, project_id, admin)
+        settings = (meta.get("analysis_options") or {}).get("options", {})
+        profile["measure"] = settings.get("measure", "알 수 없음")
+        profile["cooccurrence_unit"] = settings.get("scope", "알 수 없음")
+        if settings.get("scope") == "window":
+            profile["window_size"] = settings.get("window")
+        examples, note = network_ai.source_examples(
+            uid, project_id, graph, mode, tag, word, other, community, admin
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    now = time.monotonic()
+    for key, old in list(_ai_jobs.items()):
+        if now - old["created"] > 3600:
+            _ai_jobs.pop(key, None)
+    job_id = uuid.uuid4().hex
+    _ai_jobs[job_id] = {
+        "uid": uid,
+        "project_id": project_id,
+        "created": now,
+        "status": "running",
+        "result": None,
+    }
+    asyncio.create_task(_finish_ai_job(job_id, uid, profile, examples, note))
+    return JSONResponse({"job_id": job_id, "status": "running"}, status_code=202)
+
+
+@router.get("/api/projects/{project_id}/ai-analysis/{job_id}")
+async def project_ai_analysis_status(project_id: str, job_id: str, request: Request):
+    job = _ai_jobs.get(job_id)
+    if not job or job["uid"] != _uid(request) or job["project_id"] != project_id:
+        raise HTTPException(404, "분석 작업을 찾을 수 없습니다.")
+    return JSONResponse({"status": job["status"], "result": job["result"]})
 
 
 @router.get("/api/progress-config")

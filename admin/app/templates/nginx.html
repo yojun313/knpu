@@ -9,7 +9,7 @@
 
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
         <div class="relative w-full sm:w-64">
-            <input type="search" id="domainSearch" oninput="filterDomains()" placeholder="도메인 · 폴더 검색..."
+            <input type="search" id="domainSearch" name="domain_filter" oninput="filterDomains()" placeholder="도메인 · 폴더 검색..." autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore
                    class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-4 pr-16 py-2 text-sm focus:border-blue-500 outline-none transition">
             <button id="clearDomainSearch" type="button" onclick="clearDomainSearch()" class="hidden absolute right-9 top-1.5 px-1 text-zinc-400 hover:text-white" aria-label="검색어 지우기">×</button>
             <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>

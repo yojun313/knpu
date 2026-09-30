@@ -900,6 +900,53 @@ def run_network_analysis(
 
         _write_viewer_readme(out_dir)
         _write_analysis_options(out_dir, option, project_name)
+        # AI 근거용 원본 행. 그래프만으로는 두 단어가 어떤 문맥에서 만났는지 복원할 수 없다.
+        # 입력 CSV의 모든 열을 보관하지 않고 분석에 쓰인 열과 문맥/출처 열만 보관한다.
+        context_names = {
+            "content",
+            "body",
+            "text",
+            "article",
+            "article text",
+            "본문",
+            "기사본문",
+            "원문",
+        }
+        title_names = {"title", "headline", "article title", "제목"}
+        url_names = {"url", "link", "article url", "기사url"}
+        date_names = {"date", "published_at", "pubdate", "article date", "날짜", "일자"}
+
+        def find_col(names):
+            return next(
+                (c for c in data.columns if c.lower() in names and c != text_col), None
+            )
+
+        context_col, title_col = find_col(context_names), find_col(title_names)
+        url_col, date_col = find_col(url_names), find_col(date_names)
+        with open(
+            os.path.join(out_dir, "source_records.jsonl"), "w", encoding="utf-8"
+        ) as source_file:
+            for row_no, (row_index, row) in enumerate(data.iterrows(), 1):
+
+                def cell(col, limit):
+                    value = row.get(col) if col else None
+                    if value is None or pd.isna(value):
+                        return ""
+                    value = str(value)
+                    return value[:limit] if limit else value
+
+                record = {
+                    "row": int(row_index) + 2
+                    if isinstance(row_index, (int, np.integer))
+                    else row_no,
+                    "tokens": cell(text_col, None),
+                    "context": cell(context_col, 6000),
+                    "title": cell(title_col, 300),
+                    "url": cell(url_col, 1000),
+                    "date": cell(date_col, 100),
+                    "tag": "_" + cell("_pk", 100) if period != "total" else "",
+                }
+                source_file.write(json.dumps(record, ensure_ascii=False) + "\n")
 
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
