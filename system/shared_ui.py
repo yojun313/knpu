@@ -143,6 +143,11 @@ def mount_shared_ui(
         except user_llm.SettingsError as e:
             raise HTTPException(400, str(e))
 
+    # 설정 창의 '내 계정' · '로컬 AI API' 섹션 API
+    from system.account import register as register_account
+
+    register_account(app)
+
     # 연구실 챗봇 API (오른쪽 아래 동그라미 버튼) — 정적 마운트보다 먼저 등록해야 한다
     if chatbot:
         from system.chatbot.routes import register as register_chatbot
