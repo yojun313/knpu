@@ -17,6 +17,7 @@
   var aiReportId = null;
   var aiSelectedReport = null;
   var aiHistory = [];
+  var aiModalOpen = false;
   var aiActiveJobs = [];
   var summary = null;
   var net = null;
@@ -1865,10 +1866,11 @@
     var box = document.getElementById('aiHistory');
     if (!aiHistory.length) { box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>'; return; }
     box.innerHTML = aiHistory.map(function (item) {
-      return '<button type="button" class="ai-history-item' + (item.id === aiReportId ? ' active' : '') + '" data-ai-report="' + escAttr(item.id) + '">'
+      var active = aiModalOpen && item.id === aiReportId;
+      return '<button type="button" class="ai-history-item' + (active ? ' active' : '') + '" data-ai-report="' + escAttr(item.id) + '">'
         + '<span class="ai-history-title">' + esc(item.title || 'AI 분석') + '</span>'
         + '<span class="ai-history-date">' + esc(fmtAnalyzedAt(item.created_at)) + '</span>'
-        + '<span class="ai-history-open">' + (item.id === aiReportId ? '열림' : '열기') + '</span></button>';
+        + '<span class="ai-history-open">' + (active ? '열림' : '열기') + '</span></button>';
     }).join('');
   }
 
@@ -1905,6 +1907,7 @@
     aiPollingJobId = jobId;
     document.getElementById('aiReportModalTitle').textContent = 'AI 네트워크 분석 진행 중';
     document.getElementById('aiReportModal').hidden = false;
+    aiModalOpen = true;
     document.body.classList.add('ai-report-modal-open');
     document.getElementById('aiRun').disabled = true;
     var retries = 0;
@@ -2008,12 +2011,16 @@
     document.getElementById('aiReportModalTitle').textContent = title;
     document.getElementById('aiResult').innerHTML = html;
     document.getElementById('aiReportModal').hidden = false;
+    aiModalOpen = true;
     document.body.classList.add('ai-report-modal-open');
+    renderAiHistory();
   }
 
   function closeAiReportModal() {
     document.getElementById('aiReportModal').hidden = true;
+    aiModalOpen = false;
     document.body.classList.remove('ai-report-modal-open');
+    renderAiHistory();
   }
 
   function runAiAnalysis() {
@@ -2037,6 +2044,7 @@
     document.getElementById('aiResult').innerHTML = '<p class="hint">그래프와 근거 자료를 분석 중입니다…</p>';
     document.getElementById('aiReportModalTitle').textContent = 'AI 네트워크 분석 진행 중';
     document.getElementById('aiReportModal').hidden = false;
+    aiModalOpen = true;
     document.body.classList.add('ai-report-modal-open');
     var endpoint = aiEndpoint('ai-analysis');
     fetch(endpoint, {
@@ -2415,7 +2423,7 @@
   });
   document.getElementById('aiHistory').addEventListener('click', function (event) {
     var button = event.target.closest('[data-ai-report]');
-    if (button && button.getAttribute('data-ai-report') !== aiReportId) openAiReport(button.getAttribute('data-ai-report'));
+    if (button && (!aiModalOpen || button.getAttribute('data-ai-report') !== aiReportId)) openAiReport(button.getAttribute('data-ai-report'));
   });
   document.getElementById('aiProgress').addEventListener('click', function (event) {
     var button = event.target.closest('[data-ai-job]');

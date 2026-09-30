@@ -1742,3 +1742,15 @@ html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"
   --pill-bg: rgba(18, 22, 34, .8); --pill-border: rgba(255, 255, 255, .1);
   --pill-text: #f1f3f8; --pill-muted: #9aa5b8; --pill-shadow: 0 6px 20px rgba(0, 0, 0, .35);
 }
+
+/* 투명 테마에서도 모달 내부 텍스트가 뒤 배경과 섞이지 않도록 표면을 불투명하게 유지 */
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"]):not([data-ui-theme-mode="dark"]) :is(.modal-card, .theme-modal, .ai-report-modal) {
+  background-color: rgba(250, 251, 255, .98) !important;
+}
+html[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(245, 248, 255, .98) !important; }
+html[data-ui-theme="aurora"]:not([data-ui-theme-mode="dark"]) :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(249, 247, 255, .98) !important; }
+html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"])[data-ui-theme-mode="dark"] :is(.modal-card, .theme-modal, .ai-report-modal) {
+  background-color: rgba(28, 30, 42, .985) !important;
+}
+html[data-ui-theme="aurora"][data-ui-theme-mode="dark"] :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(34, 27, 51, .985) !important; }
+html[data-ui-theme="mesh"][data-ui-theme-mode="dark"] :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(24, 26, 36, .985) !important; }
