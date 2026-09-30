@@ -14,6 +14,7 @@
   var COOKIE_KEY = 'ui_theme_style';
   var MODE_COOKIE_KEY = 'ui_theme_mode';
   var NAV_COOKIE_KEY = 'ui_nav_visibility';
+  var CHATBOT_COOKIE_KEY = 'ui_chatbot';
   var THEMES = [
     { id: 'default', label: '기본 테마' },
     { id: 'aurora', label: '오로라' },
@@ -98,6 +99,8 @@
       + '<button type="button" class="theme-mode-switch" id="themeModeSwitch" aria-label="다크 모드 전환"></button></div>'
       + '<div class="theme-nav-row"><span>상단 네비게이션 바 자동 숨김 (마우스를 올리면 표시)</span>'
       + '<button type="button" class="theme-mode-switch" id="themeNavSwitch" aria-label="네비게이션 바 자동 숨김 전환"></button></div>'
+      + '<div class="theme-nav-row"><span>AI 챗봇 버튼 표시 (오른쪽 아래)</span>'
+      + '<button type="button" class="theme-mode-switch" id="themeChatbotSwitch" aria-label="AI 챗봇 버튼 표시 전환"></button></div>'
       + '<section class="llm-settings" id="llmSettings" hidden>'
       + '<div class="llm-head"><h4>AI 모델</h4><span class="theme-modal-sub">AI 해석·요약 기능에 쓸 모델을 고릅니다. 모든 KNPU 사이트에 똑같이 적용됩니다.</span></div>'
       + '<div class="llm-modes" id="llmModes"></div>'
@@ -122,6 +125,7 @@
     });
     overlay.querySelector('#themeModeSwitch').classList.toggle('on', currentMode() === 'dark');
     overlay.querySelector('#themeNavSwitch').classList.toggle('on', currentNav() === 'autohide');
+    overlay.querySelector('#themeChatbotSwitch').classList.toggle('on', getCookie(CHATBOT_COOKIE_KEY) !== 'off');
   }
 
   // ── 리퀴드 글래스(애플 테마) 가장자리 굴절 필터 ──────────────────────────
@@ -285,6 +289,7 @@
   // 연구실 챗봇(오른쪽 아래 동그라미 버튼)을 불러온다. <meta name="knpu-chatbot" content="off"> 면 끈다.
   function loadChatbot() {
     if (window.__knpuChatbot || document.querySelector('meta[name="knpu-chatbot"][content="off"]')) return;
+    if (getCookie(CHATBOT_COOKIE_KEY) === 'off') return; // 설정에서 끈 경우
     if (!document.querySelector('link[href="/shared-ui/chatbot.css"]')) {
       var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/shared-ui/chatbot.css';
       document.head.appendChild(css);
@@ -325,6 +330,14 @@
     });
     overlay.querySelector('#themeNavSwitch').addEventListener('click', function () {
       applyNav(currentNav() === 'autohide' ? 'show' : 'autohide');
+      markSelected(overlay);
+    });
+    overlay.querySelector('#themeChatbotSwitch').addEventListener('click', function () {
+      // 모든 KNPU 사이트에 같이 적용되도록 공용 쿠키에 저장한다
+      var on = getCookie(CHATBOT_COOKIE_KEY) === 'off';
+      setCookie(CHATBOT_COOKIE_KEY, on ? 'on' : 'off');
+      if (on) loadChatbot();
+      window.dispatchEvent(new CustomEvent('knpu-chatbot-visibility', { detail: { visible: on } }));
       markSelected(overlay);
     });
     window.addEventListener('keydown', function (e) {

@@ -8,6 +8,8 @@
   if (window.__knpuChatbot) return;
   window.__knpuChatbot = true;
   var API = '/shared-ui/chatbot/api';
+  var FULL = !!window.KNPU_CHATBOT_FULL; // 브라우저 탭 전체로 여는 페이지(/shared-ui/chatbot.html)
+  var SIZE_KEY = 'knpu_chatbot_size', CHATBOT_COOKIE = 'ui_chatbot';
   var ANON_KEY = 'knpu_chatbot_public_v1', MODE_KEY = 'knpu_chatbot_mode', OPEN_KEY = 'knpu_chatbot_open', ACTIVE_KEY = 'knpu_chatbot_active_';
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -21,6 +23,9 @@
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+    expand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>',
+    shrink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>',
+    tab: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7M21 3l-9 9"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
   };
   var SUGGEST = {
@@ -46,7 +51,10 @@
         '<div class="kcb-title"><b data-title>FPEI AI 도우미</b><span data-sub></span></div>' +
         '<button type="button" class="kcb-hbtn" data-list title="대화 목록" aria-label="대화 목록">' + ICON.list + '</button>' +
         '<button type="button" class="kcb-hbtn" data-new title="새 대화" aria-label="새 대화">' + ICON.plus + '</button>' +
+        '<button type="button" class="kcb-hbtn" data-size title="크게 보기" aria-label="크게 보기">' + ICON.expand + '</button>' +
+        '<button type="button" class="kcb-hbtn" data-tab title="새 탭에서 열기" aria-label="새 탭에서 열기">' + ICON.tab + '</button>' +
         '<button type="button" class="kcb-hbtn" data-close title="닫기" aria-label="닫기">' + ICON.close + '</button></div>' +
+      '<div class="kcb-grip" title="끌어서 크기 조절" aria-hidden="true"></div>' +
       '<div class="kcb-modes" role="tablist" hidden><button type="button" data-mode="public">홈페이지 안내</button><button type="button" data-mode="member">구성원용</button></div>' +
       '<div class="kcb-log" aria-live="polite"></div>' +
       '<form class="kcb-compose"><textarea rows="1" maxlength="2000" placeholder="무엇이든 물어보세요" title="Enter 전송 · Shift+Enter 줄바꿈" aria-label="질문"></textarea>' +
@@ -69,8 +77,14 @@
   }
 
   // ── 간단한 마크다운 (먼저 전부 이스케이프하고 형식만 되살린다) ─────────────────
+  // 모델이 표 안 등에 쓴 간단한 HTML 태그(<br>, <ul><li>, <b> …)는 속성 없는 것만 되살리고, 나머지 태그는 지운다.
+  var SAFE_TAGS = /&lt;(\/?)(br|b|strong|i|em|u|code|ul|ol|li|p|sup|sub|small|mark|s)\s*\/?&gt;/gi;
+  function tags(s) {
+    return s.replace(SAFE_TAGS, function (m, slash, t) { return '<' + slash + t.toLowerCase() + '>'; })
+      .replace(/&lt;\/?[a-zA-Z][a-zA-Z0-9]*(\s[^<>\n]*?)?\/?&gt;/g, '');
+  }
   function inline(s) {
-    return s.replace(/`([^`]+)`/g, '<code>$1</code>')
+    return tags(s).replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
@@ -177,16 +191,16 @@
       : 'AI 답변은 홈페이지 정보를 바탕으로 하며 틀릴 수 있어요. 로그인하지 않으면 대화는 이 브라우저에만 저장돼요.';
     modes.hidden = !(cfg.public && cfg.member);
     modes.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === state.mode); });
-    listBtn.hidden = !loggedIn();
+    listBtn.hidden = !loggedIn() || (FULL && wide());
     root.querySelector('[data-new]').hidden = state.mode === 'member' && !loggedIn();
     listBtn.classList.toggle('on', state.view === 'list');
   }
 
-  function renderList() {
+  function renderList(host) {
     var add = el('button', 'kcb-newconv'); add.type = 'button'; add.innerHTML = ICON.plus + '<span>새 대화 시작</span>';
     add.addEventListener('click', function () { newConversation(); });
-    log.appendChild(add);
-    if (!state.convs.length) { log.appendChild(el('div', 'kcb-empty', '저장된 대화가 없어요.')); return; }
+    host.appendChild(add);
+    if (!state.convs.length) { host.appendChild(el('div', 'kcb-empty', '저장된 대화가 없어요.')); return; }
     state.convs.forEach(function (c) {
       var row = el('div', 'kcb-conv' + (state.active && state.active.id === c.id ? ' on' : ''));
       var main = el('button', 'kcb-conv-main'); main.type = 'button';
@@ -206,7 +220,7 @@
         }).catch(function (e) { flash(e.message); });
       });
       row.appendChild(main); row.appendChild(del);
-      log.appendChild(row);
+      host.appendChild(row);
     });
   }
 
@@ -215,7 +229,20 @@
     setTimeout(function () { n.remove(); }, 4000);
   }
 
+  function renderSide() {
+    if (!side) return;
+    side.innerHTML = '';
+    var head = el('div', 'kcb-side-head'); head.innerHTML = '<div class="kcb-avatar">' + ICON.spark + '</div><b>FPEI AI 도우미</b>';
+    side.appendChild(head);
+    if (!loggedIn()) {
+      side.appendChild(el('p', 'kcb-side-note', '로그인하면 대화가 계정에 저장되고 여기에서 지난 대화를 골라 이어갈 수 있어요. 지금 대화는 이 브라우저에만 남아요.'));
+      return;
+    }
+    var box = el('div', 'kcb-side-list'); renderList(box); side.appendChild(box);
+  }
+
   function render() {
+    if (FULL) renderSide();
     var atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
     renderHeader();
     log.innerHTML = '';
@@ -227,7 +254,7 @@
       form.style.display = 'none';
       return;
     }
-    if (state.view === 'list') { form.style.display = 'none'; renderList(); log.scrollTop = 0; fab.classList.toggle('busy', anyBusy()); return; }
+    if (state.view === 'list') { form.style.display = 'none'; renderList(log); log.scrollTop = 0; fab.classList.toggle('busy', anyBusy()); return; }
     form.style.display = '';
     var list = messages();
     if (!list.length) {
@@ -375,7 +402,7 @@
     panel.hidden = !open;
     fab.setAttribute('aria-expanded', open ? 'true' : 'false');
     fab.innerHTML = (open ? ICON.close : ICON.chat) + '<span class="kcb-dot"></span>';
-    lsSet(OPEN_KEY, open ? '1' : '0');
+    if (!FULL) lsSet(OPEN_KEY, open ? '1' : '0');
     if (open) {
       render();
       if (loggedIn()) { loadList(); loadActive(); }
@@ -398,9 +425,78 @@
     if (loggedIn()) { loadList(); loadActive(); }
   }
 
+
+  // ── 창 크기: 크게 보기 ↔ 원래 크기, 왼쪽 위 모서리를 끌어 자유롭게 ──────────────
+  function wide() { return window.innerWidth > 900; }
+  var sizeBtn = root.querySelector('[data-size]'), grip = root.querySelector('.kcb-grip');
+  function readSize() { try { return JSON.parse(lsGet(SIZE_KEY) || 'null'); } catch (e) { return null; } }
+  function applySize(sz) {
+    if (FULL) return;
+    if (sz && sz.w && sz.h) {
+      panel.style.width = Math.min(sz.w, window.innerWidth - 24) + 'px';
+      panel.style.height = Math.min(sz.h, window.innerHeight - 100) + 'px';
+    } else { panel.style.width = ''; panel.style.height = ''; }
+    var custom = !!(sz && sz.w);
+    root.classList.toggle('kcb-big', custom);
+    sizeBtn.innerHTML = custom ? ICON.shrink : ICON.expand;
+    sizeBtn.title = custom ? '원래 크기로' : '크게 보기';
+    sizeBtn.setAttribute('aria-label', sizeBtn.title);
+  }
+  sizeBtn.addEventListener('click', function () {
+    var sz = readSize();
+    if (sz && sz.w) { lsSet(SIZE_KEY, null); applySize(null); }  // 원래 크기로
+    else {
+      sz = { w: Math.min(920, window.innerWidth - 60), h: window.innerHeight - 120 };
+      lsSet(SIZE_KEY, JSON.stringify(sz)); applySize(sz);
+    }
+  });
+  grip.addEventListener('mousedown', function (e) {
+    if (FULL || window.innerWidth <= 640) return;
+    e.preventDefault();
+    var r = panel.getBoundingClientRect(), sx = e.clientX, sy = e.clientY;
+    document.documentElement.classList.add('kcb-resizing');
+    function move(ev) {
+      var w = Math.max(340, Math.min(window.innerWidth - 24, r.width + (sx - ev.clientX)));
+      var h = Math.max(420, Math.min(window.innerHeight - 100, r.height + (sy - ev.clientY)));
+      panel.style.width = w + 'px'; panel.style.height = h + 'px';
+    }
+    function up() {
+      document.documentElement.classList.remove('kcb-resizing');
+      document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+      var sz = { w: Math.round(panel.getBoundingClientRect().width), h: Math.round(panel.getBoundingClientRect().height) };
+      lsSet(SIZE_KEY, JSON.stringify(sz)); applySize(sz);
+    }
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+  });
+  grip.addEventListener('dblclick', function () { lsSet(SIZE_KEY, null); applySize(null); });
+
+  // ── 새 탭(브라우저 탭 전체)에서 열기 ────────────────────────────────────────
+  root.querySelector('[data-tab]').addEventListener('click', function () {
+    var q = '?mode=' + encodeURIComponent(state.mode) + (state.active && state.active.id ? '&c=' + encodeURIComponent(state.active.id) : '');
+    window.open('/shared-ui/chatbot.html' + q, '_blank', 'noopener');
+  });
+
+  // ── 설정의 "AI 챗봇 버튼 표시" 스위치 ───────────────────────────────────────
+  function cookieOff() { try { return /(?:^|; )ui_chatbot=off/.test(document.cookie); } catch (e) { return false; } }
+  window.addEventListener('knpu-chatbot-visibility', function (e) {
+    var visible = !!(e.detail && e.detail.visible);
+    root.hidden = !visible;
+    if (!visible && state.open) setOpen(false);
+  });
+
   // ── 시작 ─────────────────────────────────────────────────────────────────
+  var side = null;
   function boot() {
+    if (!FULL && cookieOff()) root.hidden = true; // 설정에서 끈 경우(홈페이지처럼 이 스크립트를 직접 싣는 곳 포함)
+    if (FULL) {
+      root.classList.add('kcb-full');
+      side = el('aside', 'kcb-side');
+      root.insertBefore(side, panel);
+      ['[data-close]', '[data-size]', '[data-tab]'].forEach(function (sel) { root.querySelector(sel).hidden = true; });
+      window.addEventListener('resize', function () { render(); });
+    }
     document.body.appendChild(root);
+    applySize(readSize());
     fab.addEventListener('click', function () { setOpen(!state.open); });
     root.querySelector('[data-close]').addEventListener('click', function () { setOpen(false); });
     root.querySelector('[data-new]').addEventListener('click', function () { if (!isBusy() || loggedIn()) newConversation(); });
@@ -413,14 +509,17 @@
     form.addEventListener('submit', function (e) { e.preventDefault(); var q = input.value; input.value = ''; input.style.height = ''; ask(q); });
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
     input.addEventListener('input', function () { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open) setOpen(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open && !FULL) setOpen(false); });
     document.addEventListener('visibilitychange', function () { if (!document.hidden && loggedIn()) { loadList(); loadActive(); } });
 
     api('/config').then(function (cfg) {
       state.cfg = cfg;
-      var saved = lsGet(MODE_KEY);
+      var params = new URLSearchParams(location.search);
+      var saved = (FULL && params.get('mode')) || lsGet(MODE_KEY);
+      if (FULL && params.get('c') && /^[a-f0-9]{8,40}$/.test(params.get('c'))) lsSet(ACTIVE_KEY + (saved === 'member' ? 'member' : 'public'), params.get('c'));
       setMode(cfg.public ? (saved === 'member' && cfg.member ? 'member' : 'public') : 'member');
-      if (lsGet(OPEN_KEY) === '1' && window.innerWidth > 640) setOpen(true);
+      if (FULL) setOpen(true);
+      else if (lsGet(OPEN_KEY) === '1' && window.innerWidth > 640) setOpen(true);
     }).catch(function () { root.remove(); }); // 챗봇 API 가 없는 사이트면 버튼을 숨긴다
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
