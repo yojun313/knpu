@@ -1796,10 +1796,9 @@
     head.appendChild(el('span', 'ai-card-kind', aiChip(r.mode)));
     head.appendChild(el('span', 'ai-card-title', r.mode === 'table' ? tableTitle(r.table_id) : r.mode === 'question' ? (r.question || '질문') : (AI_KIND[r.mode] || r.label)));
     head.appendChild(el('span', 'ai-card-time', fmtClock(r.created_at)));
-    var peek = el('div', 'ai-card-peek', rep.headline || rep.summary || '');
     head.setAttribute('role', 'button');
     head.tabIndex = 0;
-    card.appendChild(head); card.appendChild(peek);
+    card.appendChild(head);
 
     var body = el('div', 'ai-card-body');
     if (r.question && r.mode === 'question') body.appendChild(el('div', 'ai-q', 'Q. ' + r.question));
@@ -1874,7 +1873,6 @@
     card.appendChild(body);
     function show() { openAiResultModal(r, body, card); }
     head.addEventListener('click', show);
-    peek.addEventListener('click', show);
     head.addEventListener('keydown', function (event) {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); show(); }
     });

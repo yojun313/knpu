@@ -496,7 +496,7 @@ select{width:100%;appearance:none;
 /* 결과 카드 */
 .ai-card{border:1px solid var(--sidebar-border);border-radius:13px;background:var(--sidebar-bg);overflow:hidden}
 .ai-card-head{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 12px;cursor:pointer;background:var(--sidebar-panel)}
-.ai-card-head:hover,.ai-card-peek:hover{background:var(--sidebar-panel2)}
+.ai-card-head:hover{background:var(--sidebar-panel2)}
 .ai-card-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .ai-card.open .ai-card-head{border-bottom:1px solid var(--sidebar-border)}
 .ai-card-kind{font-size:10px;font-weight:800;color:var(--series-1);background:color-mix(in srgb,var(--series-1) 13%,transparent);
@@ -506,9 +506,6 @@ select{width:100%;appearance:none;
 .ai-card-caret{width:7px;height:7px;border-right:1.6px solid var(--sidebar-muted);border-bottom:1.6px solid var(--sidebar-muted);
   transform:rotate(45deg);transition:.18s;margin:0 4px 3px;flex-shrink:0}
 .ai-card.open .ai-card-caret{transform:rotate(225deg);margin-bottom:-2px}
-.ai-card-peek{padding:0 12px 10px;background:var(--sidebar-panel);font-size:11.5px;color:var(--sidebar-muted);line-height:1.5;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
-.ai-card.open .ai-card-peek{display:none}
 .ai-card-body{display:none;padding:13px 13px 12px}
 .ai-card.open .ai-card-body{display:block}
 .ai-q{font-size:11.5px;color:var(--sidebar-muted);border-left:3px solid var(--sidebar-border);padding:2px 0 2px 9px;margin-bottom:10px;line-height:1.5}
