@@ -1440,7 +1440,8 @@
   var AI_KIND = { overview: '전체 요약', findings: '핵심 발견', relationships: '변수 관계·가설', methods: '방법·한계 점검', table: '표 해석', question: '질문' };
   function aiChip(mode) { return mode === 'table' ? '표' : mode === 'question' ? '질문' : '리포트'; }
   var AI_SIDE_KEY = 'sv_ai_side_open', AI_SIDE_W_KEY = 'sv_ai_side_width', AI_TAB_KEY = 'sv_ai_side_tab';
-  var aiResults = [], aiJobs = [], chatLog = [], aiOpen = {}, aiEpoch = 0;
+  var aiResults = [], aiJobs = [], chatLog = [], aiEpoch = 0;
+  var aiModalCard = null;
   var aiResultsVersion = null, aiPollTimer = null, aiTickTimer = null, aiActivityTimer = null;
   var aiPromptCache = {}, aiActivity = [], sideApi = null;
 
@@ -1551,7 +1552,6 @@
     return railApi(projectApi('/ai-results')).then(function (r) {
       if (epoch !== aiEpoch) return;
       aiResults = r.results || [];
-      if (aiResults[0] && !Object.keys(aiOpen).length) aiOpen[aiResults[0].id] = true;
       renderAiResults();
     });
   }
@@ -1561,22 +1561,30 @@
     var before = {};
     aiJobs.forEach(function (j) { before[j.id] = j.status; });
     aiJobs = state.jobs || [];
-    // 방금 끝난 리포트는 펼쳐서 보여 준다
+    var completedReports = [];
     aiJobs.forEach(function (j) {
-      if (j.status === 'done' && before[j.id] === 'running' && j.result_id) aiOpen[j.result_id] = true;
+      if (j.status === 'done' && before[j.id] === 'running' && j.result_id) completedReports.push(j.result_id);
     });
     var chatChanged = JSON.stringify(state.chat || []) !== JSON.stringify(chatLog);
     chatLog = state.chat || [];
     if (state.results_version !== aiResultsVersion) {
       aiResultsVersion = state.results_version;
-      loadAiResults(epoch);
+      loadAiResults(epoch).then(function () { showJustCompletedReport(completedReports, epoch); });
     } else {
       renderAiResults();
+      showJustCompletedReport(completedReports, epoch);
     }
     if (chatChanged) renderChat(); else updateChatStage();
     var busy = chatBusy();
     document.getElementById('aiChatSend').disabled = busy;
     ensureTick();
+  }
+
+  function showJustCompletedReport(ids, epoch) {
+    if (epoch !== aiEpoch || !ids.length || !document.getElementById('aiResultModal').hidden) return;
+    var cards = Array.prototype.slice.call(document.querySelectorAll('[data-ai-result]'));
+    var card = cards.find(function (item) { return item.getAttribute('data-ai-result') === ids[ids.length - 1]; });
+    if (card) card.querySelector('.ai-card-head').click();
   }
 
   function pollAiState() {
@@ -1627,7 +1635,8 @@
   function aiSetProject(meta) {
     aiEpoch++;
     clearTimeout(aiPollTimer);
-    aiResults = []; aiJobs = []; chatLog = []; aiOpen = {}; aiResultsVersion = null;
+    if (!document.getElementById('aiResultModal').hidden) closeAiResultModal();
+    aiResults = []; aiJobs = []; chatLog = []; aiResultsVersion = null;
     renderChat(); renderAiResults(); setSideTab(lsGet(AI_TAB_KEY));
     if (!meta) return;
     document.getElementById('aiResults').innerHTML = '<div class="ai-results-empty">저장된 결과와 진행 중인 작업을 불러오는 중…</div>';
@@ -1760,17 +1769,36 @@
     return ul;
   }
 
+  function openAiResultModal(r, body, card) {
+    if (!document.getElementById('aiResultModal').hidden) closeAiResultModal();
+    var title = r.mode === 'table' ? tableTitle(r.table_id) : r.mode === 'question' ? (r.question || '질문') : (AI_KIND[r.mode] || r.label);
+    document.getElementById('aiResultModalTitle').textContent = title + ' · ' + fmtClock(r.created_at);
+    document.getElementById('aiResultModalBody').appendChild(body);
+    document.getElementById('aiResultModal').hidden = false;
+    document.body.classList.add('ai-result-modal-open');
+    aiModalCard = card;
+  }
+
+  function closeAiResultModal() {
+    var body = document.getElementById('aiResultModalBody');
+    if (aiModalCard && aiModalCard.isConnected && body.firstElementChild) aiModalCard.appendChild(body.firstElementChild);
+    body.innerHTML = '';
+    document.getElementById('aiResultModal').hidden = true;
+    document.body.classList.remove('ai-result-modal-open');
+    aiModalCard = null;
+  }
+
   function buildResultCard(r) {
     var rep = r.report || {};
-    var card = el('article', 'ai-card' + (aiOpen[r.id] ? ' open' : ''));
+    var card = el('article', 'ai-card');
+    card.setAttribute('data-ai-result', r.id);
     var head = el('div', 'ai-card-head');
     head.appendChild(el('span', 'ai-card-kind', aiChip(r.mode)));
     head.appendChild(el('span', 'ai-card-title', r.mode === 'table' ? tableTitle(r.table_id) : r.mode === 'question' ? (r.question || '질문') : (AI_KIND[r.mode] || r.label)));
     head.appendChild(el('span', 'ai-card-time', fmtClock(r.created_at)));
-    head.appendChild(el('span', 'ai-card-caret'));
     var peek = el('div', 'ai-card-peek', rep.headline || rep.summary || '');
-    function toggle() { aiOpen[r.id] = !aiOpen[r.id]; card.classList.toggle('open', !!aiOpen[r.id]); }
-    head.addEventListener('click', toggle); peek.addEventListener('click', toggle);
+    head.setAttribute('role', 'button');
+    head.tabIndex = 0;
     card.appendChild(head); card.appendChild(peek);
 
     var body = el('div', 'ai-card-body');
@@ -1835,12 +1863,21 @@
       }
       clearTimeout(armed);
       railApi(projectApi('/ai-results/' + encodeURIComponent(r.id)), { method: 'DELETE' })
-        .then(function () { aiResults = aiResults.filter(function (x) { return x.id !== r.id; }); aiResultsVersion = null; renderAiResults(); })
+        .then(function () {
+          if (aiModalCard === card) closeAiResultModal();
+          aiResults = aiResults.filter(function (x) { return x.id !== r.id; }); aiResultsVersion = null; renderAiResults();
+        })
         .catch(function (err) { toast(err.message || '삭제에 실패했습니다.'); });
     });
     foot.appendChild(del);
     body.appendChild(foot);
     card.appendChild(body);
+    function show() { openAiResultModal(r, body, card); }
+    head.addEventListener('click', show);
+    peek.addEventListener('click', show);
+    head.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); show(); }
+    });
     return card;
   }
 
@@ -2193,10 +2230,15 @@
       });
     });
 
+    document.getElementById('aiResultModalClose').addEventListener('click', closeAiResultModal);
+    document.getElementById('aiResultModal').addEventListener('click', function (e) {
+      if (e.target.id === 'aiResultModal') closeAiResultModal();
+    });
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (!moveFolderMenu.hidden) closeMoveFolderMenu();
       else if (!ctxMenu.hidden) closeRailCtxMenu();
+      else if (!document.getElementById('aiResultModal').hidden) closeAiResultModal();
       else if (!document.getElementById('exportModal').hidden) closeExportModal();
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
