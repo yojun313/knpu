@@ -282,9 +282,21 @@
     ping();
   }
 
+  // 연구실 챗봇(오른쪽 아래 동그라미 버튼)을 불러온다. <meta name="knpu-chatbot" content="off"> 면 끈다.
+  function loadChatbot() {
+    if (window.__knpuChatbot || document.querySelector('meta[name="knpu-chatbot"][content="off"]')) return;
+    if (!document.querySelector('link[href="/shared-ui/chatbot.css"]')) {
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/shared-ui/chatbot.css';
+      document.head.appendChild(css);
+    }
+    var js = document.createElement('script'); js.src = '/shared-ui/chatbot.js'; js.defer = true;
+    document.head.appendChild(js);
+  }
+
   function init() {
     initLiquidGlass();
     initConnStatus();
+    loadChatbot();
     var btn = document.getElementById('themeSettingsBtn');
     if (!btn) return;
 
