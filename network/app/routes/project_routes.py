@@ -1,15 +1,19 @@
 # app/routes/project_routes.py
-import asyncio
 import os
-import time
-import uuid
+import io
 
+import pandas as pd
 import requests
 from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPException
-from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, Response
 
-from app.services import project_store, graph_analysis, analyze_service, network_ai
-from system.llm import LLMError
+from app.services import (
+    project_store,
+    graph_analysis,
+    analyze_service,
+    network_ai,
+    network_ai_jobs,
+)
 from system import uploads as upload_staging
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
@@ -23,36 +27,37 @@ def _parse_csv_header(content: bytes) -> list[str]:
     return [c.strip().strip('"') for c in first_line.split(",") if c.strip()]
 
 
+def _check_source_csv(content: bytes):
+    if len(content) > 250 * 1024 * 1024:
+        raise HTTPException(413, "원본 CSV는 250MB 이하로 업로드해주세요.")
+    try:
+        columns = pd.read_csv(
+            io.BytesIO(content), nrows=0, encoding="utf-8-sig"
+        ).columns
+    except Exception:
+        raise HTTPException(400, "UTF-8 CSV 파일을 읽지 못했습니다.")
+    names = {str(c).strip().lower() for c in columns}
+    if not names & {
+        "article text",
+        "content",
+        "body",
+        "text",
+        "article",
+        "본문",
+        "기사본문",
+        "원문",
+    }:
+        raise HTTPException(
+            400, "원문 열(Article Text, Content, Text 등)이 있는 CSV가 필요합니다."
+        )
+
+
 router = APIRouter()
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 MAX_EDGES_DEFAULT = 4000
 # 개발 중 자주 바뀌는 페이지라 브라우저가 옛 버전을 캐시해두는 일이 없도록 한다.
 _NO_CACHE = {"Cache-Control": "no-store, must-revalidate"}
-_ai_jobs = {}
-
-
-async def _finish_ai_job(job_id, uid, profile, examples, note):
-    try:
-        interpretation = await network_ai.interpret(uid, profile, examples, note)
-    except (LLMError, ValueError) as e:
-        interpretation = {"report": "", "error": str(e), "model": None, "cost_usd": 0}
-    except Exception:
-        interpretation = {
-            "report": "",
-            "error": "AI 분석 중 오류가 발생했습니다.",
-            "model": None,
-            "cost_usd": 0,
-        }
-    job = _ai_jobs.get(job_id)
-    if job:
-        job["status"] = "done"
-        job["result"] = {
-            "profile": profile,
-            "examples": examples,
-            "evidence_note": note,
-            **interpretation,
-        }
 
 
 def _page(filename: str) -> FileResponse:
@@ -354,54 +359,157 @@ async def project_ai_analysis(project_id: str, request: Request):
     payload = await request.json()
     if not isinstance(payload, dict):
         raise HTTPException(400, "분석 요청 형식이 올바르지 않습니다.")
-    mode = payload.get("mode", "overview")
-    tag = payload.get("tag", "")
-    word = payload.get("word")
-    other = payload.get("other")
+    mode = str(payload.get("mode") or "overview")
+    if mode not in ("overview", "word", "pair", "community"):
+        raise HTTPException(400, "분석 범위가 올바르지 않습니다.")
+    tag = str(payload.get("tag") or "")
+    word = str(payload.get("word") or "").strip()
+    other = str(payload.get("other") or "").strip()
     try:
         community = int(payload.get("community")) if mode == "community" else None
     except (TypeError, ValueError):
         raise HTTPException(400, "커뮤니티를 선택해주세요.")
+    if mode in ("word", "pair") and not word:
+        raise HTTPException(400, "분석할 단어를 선택해주세요.")
+    if mode == "pair" and (not other or other == word):
+        raise HTTPException(400, "서로 다른 두 단어를 선택해주세요.")
     uid, admin = _uid(request), _is_admin(request)
-    graph = _handle_store_error(project_store.load_graph, uid, project_id, tag, admin)
-    try:
-        series = network_ai.period_series(
-            uid, project_id, tag, mode, word, other, admin
-        )
-        profile = network_ai.build_profile(graph, mode, word, other, community, series)
-        meta = _handle_store_error(project_store.get_project, uid, project_id, admin)
-        settings = (meta.get("analysis_options") or {}).get("options", {})
-        profile["measure"] = settings.get("measure", "알 수 없음")
-        profile["cooccurrence_unit"] = settings.get("scope", "알 수 없음")
-        if settings.get("scope") == "window":
-            profile["window_size"] = settings.get("window")
-        examples, note = network_ai.source_examples(
-            uid, project_id, graph, mode, tag, word, other, community, admin
-        )
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    now = time.monotonic()
-    for key, old in list(_ai_jobs.items()):
-        if now - old["created"] > 3600:
-            _ai_jobs.pop(key, None)
-    job_id = uuid.uuid4().hex
-    _ai_jobs[job_id] = {
-        "uid": uid,
-        "project_id": project_id,
-        "created": now,
-        "status": "running",
-        "result": None,
+    _handle_store_error(project_store.get_project, uid, project_id, admin)
+    normalized = {
+        "mode": mode,
+        "tag": tag,
+        "word": word,
+        "other": other,
+        "community": community,
     }
-    asyncio.create_task(_finish_ai_job(job_id, uid, profile, examples, note))
+    job_id = network_ai_jobs.start_job(uid, project_id, normalized, admin)
     return JSONResponse({"job_id": job_id, "status": "running"}, status_code=202)
 
 
 @router.get("/api/projects/{project_id}/ai-analysis/{job_id}")
 async def project_ai_analysis_status(project_id: str, job_id: str, request: Request):
-    job = _ai_jobs.get(job_id)
-    if not job or job["uid"] != _uid(request) or job["project_id"] != project_id:
-        raise HTTPException(404, "분석 작업을 찾을 수 없습니다.")
-    return JSONResponse({"status": job["status"], "result": job["result"]})
+    return JSONResponse(
+        _handle_store_error(network_ai_jobs.get_job, _uid(request), project_id, job_id)
+    )
+
+
+@router.get("/api/ai-jobs/active")
+async def active_ai_jobs(request: Request):
+    return JSONResponse({"jobs": network_ai_jobs.active_jobs(_uid(request))})
+
+
+@router.get("/api/projects/{project_id}/ai-reports")
+async def project_ai_reports(project_id: str, request: Request):
+    reports = _handle_store_error(
+        project_store.list_ai_reports, _uid(request), project_id, _is_admin(request)
+    )
+    return JSONResponse({"reports": reports})
+
+
+@router.get("/api/projects/{project_id}/ai-reports/{report_id}")
+async def project_ai_report(project_id: str, report_id: str, request: Request):
+    saved = _handle_store_error(
+        project_store.load_ai_report,
+        _uid(request),
+        project_id,
+        report_id,
+        _is_admin(request),
+    )
+    return JSONResponse(saved)
+
+
+@router.get("/api/projects/{project_id}/ai-reports/{report_id}/export")
+async def project_ai_report_export(project_id: str, report_id: str, request: Request):
+    uid = _uid(request)
+    saved = _handle_store_error(
+        project_store.load_ai_report, uid, project_id, report_id, _is_admin(request)
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.ai_report.export",
+        "network",
+        target={"type": "project", "id": project_id},
+        metadata={"report_id": report_id},
+    )
+    return Response(
+        content=network_ai.markdown_report(saved).encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="network_report_{report_id}.md"'
+        },
+    )
+
+
+@router.post("/api/projects/{project_id}/source")
+async def project_upload_source(
+    project_id: str, request: Request, file: UploadFile = File(...)
+):
+    if not (file.filename or "").lower().endswith(".csv"):
+        raise HTTPException(400, "원문 CSV 파일을 업로드해주세요.")
+    content = await file.read()
+    _check_source_csv(content)
+    uid = _uid(request)
+    _handle_store_error(project_store.save_source_csv, uid, project_id, content)
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.source_upload",
+        "network",
+        target={"type": "project", "id": project_id},
+        metadata={"filename": file.filename},
+    )
+    return JSONResponse({"message": "원문 CSV가 저장되었습니다."})
+
+
+@router.post("/api/projects/{project_id}/source/from-crawl-db")
+async def project_source_from_crawl_db(project_id: str, request: Request):
+    uid = _uid(request)
+    _handle_store_error(project_store.get_project, uid, project_id)
+    token = request.cookies.get("session")
+    if not token:
+        raise HTTPException(401, "인증이 필요합니다.")
+    body = await request.json()
+    crawl_uid = str(body.get("uid") or "").strip()
+    name = str(body.get("name") or "").strip()
+    if (
+        not crawl_uid
+        or os.path.basename(name) != name
+        or not name.endswith(".parquet")
+        or name.startswith("token_")
+    ):
+        raise HTTPException(400, "크롤링 DB의 원본 파일을 선택해주세요.")
+    try:
+        response = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{crawl_uid}/file",
+            params={"name": name},
+            cookies={"session": token},
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {exc}")
+    if response.status_code != 200:
+        raise HTTPException(response.status_code, response.text)
+    _check_source_csv(response.content)
+    source_ref = {
+        "uid": crawl_uid,
+        "name": name,
+        "db_name": str(body.get("db_name") or "")[:300],
+    }
+    _handle_store_error(
+        project_store.save_source_csv, uid, project_id, response.content, source_ref
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.source_from_crawl_db",
+        "network",
+        target={"type": "project", "id": project_id},
+        metadata={"crawl_uid": crawl_uid, "name": name},
+    )
+    return JSONResponse(
+        {"message": "크롤링 DB 원문을 첨부했습니다.", "source_ref": source_ref}
+    )
 
 
 @router.get("/api/progress-config")
@@ -434,7 +542,7 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 
 @router.get("/api/crawl-dbs/{uid}/files")
-async def api_crawl_db_files(uid: str, request: Request):
+async def api_crawl_db_files(uid: str, request: Request, kind: str = "token"):
     session_token = request.cookies.get("session")
     if not session_token:
         raise HTTPException(401, "인증이 필요합니다")
@@ -449,7 +557,9 @@ async def api_crawl_db_files(uid: str, request: Request):
     if resp.status_code != 200:
         raise HTTPException(resp.status_code, resp.text)
     data = resp.json()
-    data["files"] = [f for f in data.get("files", []) if f.get("type") == "token"]
+    if kind not in ("token", "raw"):
+        raise HTTPException(400, "파일 종류가 올바르지 않습니다.")
+    data["files"] = [f for f in data.get("files", []) if f.get("type") == kind]
     return JSONResponse(data)
 
 

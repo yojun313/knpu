@@ -6,6 +6,8 @@
   <script src="/shared-ui/knpu.js"></script>
   <script src="/shared-ui/sidepanel.js"></script>
   <script src="/js/vendor/vis-network-10.1.2.min.js"></script>
+  <script src="/js/vendor/marked-15.0.12.min.js"></script>
+  <script src="/js/vendor/purify-3.2.6.min.js"></script>
   <link rel="stylesheet" href="/css/viewer.css">
   <link rel="stylesheet" href="/shared-ui/theme.css">
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
@@ -49,6 +51,7 @@
           <div class="sb-stat"><p>폴더</p><b id="statFolders" class="c-violet">—</b></div>
         </div>
       </div>
+      <div id="aiGlobalProgress" class="ai-global-progress" hidden></div>
       <p class="sb-section sb-section-list">Projects</p>
       <label id="railAdminAllToggle" class="rail-admin-toggle" hidden>
         <input type="checkbox" id="railAdminAllChk"><span class="rat-text">모든 사용자 프로젝트 보기</span>
@@ -94,6 +97,7 @@
         <button id="btnZoomOut" title="축소">−</button>
         <button id="btnZoomReset" title="전체보기">⤢</button>
       </div>
+      <a id="aiFloatingProgress" class="ai-floating-progress" hidden></a>
       <div id="top">
         <button id="mobileRailBtn" class="mobile-icon-btn" title="프로젝트 목록">☰</button>
         <div class="brandmark" id="backLink"><span class="dot3"></span><span id="projectName">Network Analyzer</span></div>
@@ -146,7 +150,16 @@
           <div id="aiPairRow"><label for="aiOther">비교 단어</label><select id="aiOther"></select></div>
           <div id="aiCommunityRow"><label for="aiCommunity">커뮤니티</label><select id="aiCommunity"></select></div>
           <button type="button" id="aiRun" class="btn primary ai-run">AI 분석하기</button>
+          <div class="ai-source-tools">
+            <span id="aiSourceStatus" class="hint">원문 정보 확인 중...</span>
+            <input id="aiSourceInput" type="file" accept=".csv,text/csv" hidden>
+            <button type="button" id="aiSourceUpload" class="btn btn-sm">원문 CSV 첨부</button>
+            <button type="button" id="aiSourceCrawl" class="btn btn-sm">크롤링 DB 원문 선택</button>
+          </div>
+          <div id="aiProgress" class="ai-progress" hidden></div>
           <div id="aiResult" class="ai-result" aria-live="polite"><p class="hint">분석 범위를 고른 뒤 실행하세요. 노드나 연결선을 클릭하면 해당 범위가 자동 선택됩니다.</p></div>
+          <div class="ai-history-head">저장된 AI 분석</div>
+          <div id="aiHistory" class="ai-history"><p class="hint">프로젝트를 열면 이전 분석이 표시됩니다.</p></div>
         </div>
       </details>
 
@@ -330,7 +343,7 @@
   <div id="uploadModal" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-head">
-        <span>새 프로젝트</span>
+        <span id="uploadModalTitle">새 프로젝트</span>
         <button id="uploadModalClose" class="modal-close" title="닫기">×</button>
       </div>
       <div class="modal-tabs">

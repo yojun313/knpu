@@ -12,6 +12,12 @@
 
   var rawNodes = [], rawEdges = [];
   var aiRequestSerial = 0;
+  var aiFollowingJob = null;
+  var aiPollingJobId = null;
+  var aiReportId = null;
+  var aiSelectedReport = null;
+  var aiHistory = [];
+  var aiActiveJobs = [];
   var summary = null;
   var net = null;
   var nodes = new vis.DataSet([]);
@@ -31,6 +37,10 @@
 
   function loadNetwork(tag) {
     aiRequestSerial++;
+    aiFollowingJob = null;
+    aiPollingJobId = null;
+    aiReportId = null;
+    aiSelectedReport = null;
     document.getElementById('aiRun').disabled = false;
     document.getElementById('loading').classList.remove('hide');
     return Promise.all([
@@ -53,11 +63,14 @@
       localStorage.setItem(LAST_PROJECT_KEY, projectId);
       initNetworkSelect(meta);
       renderAnalysisOptions(meta.analysis_options);
+      setAiSourceStatus(meta);
       var warn = data.truncated
         ? '⚠ 전체 엣지 ' + data.total_edges.toLocaleString() + '개 중 상위 ' + data.edges.length.toLocaleString() + '개 표시'
         : '엣지 ' + data.edges.length.toLocaleString() + '개 · 노드 ' + rawNodes.length.toLocaleString() + '개';
       document.getElementById('totalBadge').innerHTML = '<span class="pulse"></span>' + warn;
       boot();
+      loadAiHistory();
+      refreshActiveAiJobs();
       document.getElementById('loading').classList.add('hide');
     }).catch(function (err) {
       document.getElementById('loading').innerHTML =
@@ -629,6 +642,8 @@
   var zipStage = null;
   var analyzeStage = null;
   var crawlAnalyzeStage = null;
+  var crawlDbMode = 'analyze';
+  var crawlCurrentDbName = '';
 
   function resetUploadModalState() {
     zipStage = null;
@@ -650,6 +665,9 @@
   }
 
   function openUploadModal() {
+    crawlDbMode = 'analyze';
+    document.getElementById('uploadModalTitle').textContent = '새 프로젝트';
+    document.querySelector('#uploadModal .modal-tabs').hidden = false;
     closeMobileDrawers();
     document.getElementById('uploadModal').hidden = false;
     resetUploadModalState();
@@ -657,6 +675,15 @@
   }
   function closeUploadModal() {
     document.getElementById('uploadModal').hidden = true;
+  }
+
+  function openSourceDbPicker() {
+    if (!projectId) return;
+    openUploadModal();
+    crawlDbMode = 'source';
+    document.getElementById('uploadModalTitle').textContent = '크롤링 DB 원문 선택';
+    document.querySelector('#uploadModal .modal-tabs').hidden = true;
+    switchModalTab('crawl');
   }
 
   // ---------------------------------------------------------------
@@ -854,14 +881,15 @@
   }
 
   function openCrawlDbFiles(uid, dbName, keyword) {
+    crawlCurrentDbName = keyword || dbName || '';
     document.getElementById('crawlDbStep').hidden = true;
     document.getElementById('crawlFileStep').hidden = false;
     document.getElementById('crawlFileDbName').textContent = keyword || dbName;
     var wrapEl = document.getElementById('crawlFileList');
     wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
-    railApi('/api/crawl-dbs/' + encodeURIComponent(uid) + '/files').then(function (data) {
+    railApi('/api/crawl-dbs/' + encodeURIComponent(uid) + '/files?kind=' + (crawlDbMode === 'source' ? 'raw' : 'token')).then(function (data) {
       var files = data.files || [];
-      if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">토큰화된 파일이 없습니다.</div>'; return; }
+      if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + (crawlDbMode === 'source' ? '원본' : '토큰화된') + ' 파일이 없습니다.</div>'; return; }
       var rows = files.map(function (f, i) {
         return '<tr data-idx="' + i + '">'
           + '<td class="ct-main" data-label="파일명">' + esc(f.csv_name) + '</td>'
@@ -881,6 +909,14 @@
   function selectCrawlFile(uid, file) {
     var statusEl = document.getElementById('crawlStatus');
     statusEl.textContent = '';
+    if (crawlDbMode === 'source') {
+      statusEl.textContent = '원본 파일을 첨부하는 중...';
+      postJson(aiEndpoint('source/from-crawl-db'), { uid: uid, name: file.name, db_name: crawlCurrentDbName }).then(function () {
+        closeUploadModal();
+        refreshAiSourceStatus();
+      }).catch(function (err) { statusEl.textContent = err.message || String(err); });
+      return;
+    }
     var progEl = document.getElementById('crawlProgress');
     var labelEl = document.getElementById('crawlProgressLabel');
     progEl.hidden = false; labelEl.textContent = '불러오는 중...';
@@ -1725,6 +1761,190 @@
     catch (err) { return ''; }
   }
 
+  // LecAI와 동일한 marked GFM/breaks 렌더링. 결과는 HTML 정화 후 DOM에 넣는다.
+  function aiMarkdown(text) {
+    if (!window.marked || !window.DOMPurify) return '<p>' + esc(text) + '</p>';
+    var parsed = window.marked.parse(String(text || ''), { gfm: true, breaks: true });
+    var clean = window.DOMPurify.sanitize(parsed, { FORBID_TAGS: ['img', 'iframe', 'style', 'form'], FORBID_ATTR: ['style'] });
+    var template = document.createElement('template');
+    template.innerHTML = clean;
+    template.content.querySelectorAll('a').forEach(function (link) {
+      var href = link.getAttribute('href') || '';
+      if (/^https?:\/\//i.test(href)) {
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+      } else if (!href.startsWith('#')) link.removeAttribute('href');
+    });
+    var walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+    var replace = [];
+    while (walker.nextNode()) {
+      var textNode = walker.currentNode;
+      if (/\[(?:S|R)\d+\]/.test(textNode.nodeValue) && (!textNode.parentElement || !textNode.parentElement.closest('a,pre,code'))) replace.push(textNode);
+    }
+    replace.forEach(function (textNode) {
+      var value = textNode.nodeValue, regex = /\[((?:S|R)\d+)\]/g, match, offset = 0;
+      var fragment = document.createDocumentFragment();
+      while ((match = regex.exec(value))) {
+        fragment.appendChild(document.createTextNode(value.slice(offset, match.index)));
+        var anchor = document.createElement('a');
+        anchor.href = '#ai-evidence-' + match[1];
+        anchor.className = 'ai-citation';
+        anchor.textContent = match[0];
+        fragment.appendChild(anchor);
+        offset = regex.lastIndex;
+      }
+      fragment.appendChild(document.createTextNode(value.slice(offset)));
+      textNode.replaceWith(fragment);
+    });
+    return template.innerHTML;
+  }
+
+  function aiPromptHtml(prompt) {
+    if (!prompt) return '';
+    return '<details class="ai-prompt"><summary>AI에게 보낸 프롬프트 보기</summary>'
+      + '<b>시스템 지시</b><pre>' + esc(prompt.system || '') + '</pre>'
+      + '<b>입력 데이터</b><pre>' + esc(prompt.user || '') + '</pre></details>';
+  }
+
+  function aiEndpoint(path) { return '/api/projects/' + encodeURIComponent(projectId) + '/' + path; }
+
+  function setAiSourceStatus(meta) {
+    var box = document.getElementById('aiSourceStatus');
+    if (meta.has_source) box.textContent = '원문 CSV 첨부됨' + (meta.source_ref && meta.source_ref.db_name ? ' · ' + meta.source_ref.db_name : '');
+    else box.textContent = '추가 원문 없음 · 분석 당시 보관한 입력 행이 있으면 근거로 사용합니다.';
+  }
+
+  function refreshAiSourceStatus() {
+    if (!projectId) return;
+    var pid = projectId;
+    api('/api/projects/' + encodeURIComponent(pid) + '/meta').then(function (meta) {
+      if (pid === projectId) setAiSourceStatus(meta);
+    }).catch(function (err) {
+      if (pid === projectId) document.getElementById('aiSourceStatus').textContent = '원문 상태 확인 실패: ' + err.message;
+    });
+  }
+
+  function uploadAiSource(file) {
+    if (!projectId || !file) return;
+    var box = document.getElementById('aiSourceStatus');
+    if (!/\.csv$/i.test(file.name)) { box.textContent = 'CSV 파일을 선택해주세요.'; return; }
+    var pid = projectId;
+    var form = new FormData(); form.append('file', file);
+    box.textContent = '원문 업로드 중...';
+    uploadWithProgress('/api/projects/' + encodeURIComponent(pid) + '/source', form, function (percent) {
+      if (pid === projectId) box.textContent = '원문 업로드 중... ' + percent + '%';
+    }).then(function () {
+      if (pid === projectId) refreshAiSourceStatus();
+    }).catch(function (err) { if (pid === projectId) box.textContent = '원문 첨부 실패: ' + (err.message || String(err)); });
+  }
+
+  function loadAiHistory() {
+    if (!projectId) return;
+    var pid = projectId;
+    api('/api/projects/' + encodeURIComponent(pid) + '/ai-reports').then(function (data) {
+      if (pid !== projectId) return;
+      aiHistory = data.reports || [];
+      var box = document.getElementById('aiHistory');
+      if (!aiHistory.length) { box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>'; return; }
+      box.innerHTML = aiHistory.map(function (item) {
+        return '<button type="button" class="ai-history-item' + (item.id === aiReportId ? ' active' : '') + '" data-ai-report="' + escAttr(item.id) + '">'
+          + '<span>' + esc(item.title || 'AI 분석') + '</span><small>' + esc(fmtAnalyzedAt(item.created_at)) + '</small></button>';
+      }).join('');
+    }).catch(function (err) {
+      if (pid === projectId) document.getElementById('aiHistory').textContent = '분석 기록을 불러오지 못했습니다: ' + err.message;
+    });
+  }
+
+  function openAiReport(reportId) {
+    if (!projectId) return;
+    var serial = aiRequestSerial;
+    api(aiEndpoint('ai-reports/' + encodeURIComponent(reportId))).then(function (saved) {
+      if (serial !== aiRequestSerial) return;
+      aiFollowingJob = null;
+      aiPollingJobId = null;
+      aiReportId = saved.id;
+      aiSelectedReport = saved;
+      document.getElementById('aiRun').disabled = false;
+      renderAiResult(saved);
+      loadAiHistory();
+      document.getElementById('aiSection').open = true;
+    }).catch(function (err) {
+      if (serial === aiRequestSerial) document.getElementById('aiResult').textContent = '저장된 분석을 불러오지 못했습니다: ' + err.message;
+    });
+  }
+
+  function aiProgressHtml(job) {
+    return '<div class="ai-progress-stage"><span class="ai-spinner" aria-hidden="true"></span><b>' + esc(job.title || 'AI 분석') + '</b><br>' + esc(job.stage || '분석 중')
+      + '<div class="hint">작업은 브라우저를 닫아도 계속됩니다. 다른 브라우저에서도 같은 계정으로 진행 상황을 볼 수 있습니다.</div></div>'
+      + aiPromptHtml(job.prompt);
+  }
+
+  function followAiJob(jobId) {
+    if (!projectId || aiPollingJobId === jobId) return;
+    var serial = aiRequestSerial;
+    var pid = projectId;
+    aiFollowingJob = jobId;
+    aiReportId = null;
+    aiPollingJobId = jobId;
+    document.getElementById('aiRun').disabled = true;
+    var retries = 0;
+    function tick() {
+      if (serial !== aiRequestSerial || aiFollowingJob !== jobId) return;
+      api('/api/projects/' + encodeURIComponent(pid) + '/ai-analysis/' + encodeURIComponent(jobId)).then(function (job) {
+        if (serial !== aiRequestSerial || aiFollowingJob !== jobId) return;
+        retries = 0;
+        if (job.status === 'done') {
+          aiPollingJobId = null;
+          openAiReport(job.result_id);
+          refreshActiveAiJobs();
+          return;
+        }
+        if (job.status === 'error') {
+          aiFollowingJob = null; aiPollingJobId = null;
+          document.getElementById('aiRun').disabled = false;
+          document.getElementById('aiResult').innerHTML = '<p class="hint">분석 실패: ' + esc(job.error || '알 수 없는 오류') + '</p>' + aiPromptHtml(job.prompt);
+          refreshActiveAiJobs();
+          return;
+        }
+        document.getElementById('aiResult').innerHTML = aiProgressHtml(job);
+        setTimeout(tick, 1800);
+      }).catch(function (err) {
+        if (serial !== aiRequestSerial || aiFollowingJob !== jobId) return;
+        if (++retries <= 4) { setTimeout(tick, 2500); return; }
+        aiFollowingJob = null; aiPollingJobId = null;
+        document.getElementById('aiRun').disabled = false;
+        document.getElementById('aiResult').textContent = '진행 상태 확인 실패: ' + err.message;
+      });
+    }
+    tick();
+  }
+
+  function refreshActiveAiJobs() {
+    api('/api/ai-jobs/active').then(function (data) {
+      var previouslyActive = aiActiveJobs.filter(function (job) { return job.project_id === projectId; }).map(function (job) { return job.id; });
+      aiActiveJobs = data.jobs || [];
+      var globalBox = document.getElementById('aiGlobalProgress');
+      globalBox.hidden = !aiActiveJobs.length;
+      globalBox.innerHTML = aiActiveJobs.length ? '<b>진행 중인 AI 분석</b>' + aiActiveJobs.map(function (job) {
+        return '<a href="/viewer/' + encodeURIComponent(job.project_id) + '" title="' + escAttr(job.stage || '') + '">● ' + esc(job.title)
+          + '<br><small>' + esc(job.stage || '준비 중') + '</small></a>';
+      }).join('') : '';
+      var floating = document.getElementById('aiFloatingProgress');
+      floating.hidden = !aiActiveJobs.length;
+      if (aiActiveJobs.length) {
+        floating.href = '/viewer/' + encodeURIComponent(aiActiveJobs[0].project_id);
+        floating.textContent = '◌ AI 분석 ' + aiActiveJobs.length + '건 진행 중 · ' + (aiActiveJobs[0].stage || '준비 중');
+      }
+      var box = document.getElementById('aiProgress');
+      var current = aiActiveJobs.filter(function (job) { return job.project_id === projectId; });
+      box.hidden = !current.length;
+      box.innerHTML = current.map(function (job) {
+        return '<button type="button" class="ai-progress-item" data-ai-job="' + escAttr(job.id) + '"><b>' + esc(job.title) + '</b><br>' + esc(job.stage || '준비 중') + '</button>';
+      }).join('');
+      if (previouslyActive.some(function (id) { return !current.some(function (job) { return job.id === id; }); })) loadAiHistory();
+      if (current.length && !aiFollowingJob && !aiReportId) followAiJob(current[0].id);
+    }).catch(function () { /* 연결이 돌아오면 다음 주기에 다시 확인 */ });
+  }
+
   function renderAiResult(data) {
     var p = data.profile;
     var s = p.summary || {};
@@ -1734,14 +1954,19 @@
     if (p.direct_edge) html += '<p>직접 연결 · 가중치 ' + esc(p.direct_edge.weight) + ' · 공출현 ' + esc(p.direct_edge.cooccur == null ? '자료 없음' : p.direct_edge.cooccur) + '</p>';
     if (p.mode === 'pair' && !p.direct_edge) html += '<p>저장된 그래프에 두 단어의 직접 연결은 없습니다.</p>';
     if (p.mode === 'community') html += '<p>내부 연결 ' + esc(p.internal_edges) + ' · 외부 연결 ' + esc(p.external_edges) + '</p>';
-    if (data.report) html += '<h3>AI 해석</h3><div class="ai-report">' + esc(data.report) + '</div>';
+    if (data.id) {
+      html += '<div class="ai-report-actions"><span class="hint">프로젝트에 저장됨 · ' + esc(fmtAnalyzedAt(data.created_at)) + '</span>'
+        + '<a class="btn btn-sm" href="' + aiEndpoint('ai-reports/' + encodeURIComponent(data.id) + '/export') + '">보고서(.md)</a>'
+        + '<button type="button" class="btn btn-sm" data-ai-rerun="1">같은 조건 재분석</button></div>';
+    }
+    if (data.report) html += '<h3>AI 해석</h3><div class="ai-report ai-markdown">' + aiMarkdown(data.report) + '</div>';
     if (data.error) html += '<p class="hint">AI 호출 실패: ' + esc(data.error) + '</p>';
     html += '<h3>근거와 자료 범위</h3><p class="hint">' + esc(data.evidence_note || '') + '</p>';
     if (data.examples && data.examples.length) {
       data.examples.forEach(function (item) {
         var url = safeEvidenceUrl(item.url);
-        html += '<div class="ai-evidence"><small>[' + esc(item.id) + '] ' + esc(item.kind) + ' · ' + esc(item.date || '날짜 없음')
-          + ' · 입력 행 ' + esc(item.row) + '</small>';
+        html += '<div class="ai-evidence" id="ai-evidence-' + escAttr(item.id) + '"><small>[' + esc(item.id) + '] ' + esc(item.kind) + ' · ' + esc(item.date || '날짜 없음')
+          + (item.row == null ? '' : ' · 입력 행 ' + esc(item.row)) + '</small>';
         if (item.title) html += '<b>' + esc(item.title) + '</b><br>';
         if (item.connected && item.connected.length) html += '<small>같은 공출현 단위의 연결어: ' + esc(item.connected.join(' · ')) + '</small>';
         html += esc(item.text || '');
@@ -1749,7 +1974,10 @@
         html += '</div>';
       });
     }
-    if (data.model) html += '<p class="hint">모델: ' + esc(data.model) + '</p>';
+    if (data.llm) html += '<p class="hint">해석 모델: ' + esc(data.llm.used || data.model || '-')
+      + (data.llm.provider === 'openai' ? ' · 추정 비용 $' + Number(data.llm.cost_usd || 0).toFixed(4) : '') + '</p>';
+    else if (data.model) html += '<p class="hint">모델: ' + esc(data.model) + '</p>';
+    html += aiPromptHtml(data.prompt);
     document.getElementById('aiResult').innerHTML = html;
   }
 
@@ -1765,39 +1993,46 @@
       return;
     }
     var serial = ++aiRequestSerial;
+    aiReportId = null;
+    aiSelectedReport = null;
+    aiFollowingJob = null;
+    aiPollingJobId = null;
     var button = document.getElementById('aiRun');
     button.disabled = true;
     document.getElementById('aiResult').innerHTML = '<p class="hint">그래프와 근거 자료를 분석 중입니다…</p>';
-    var endpoint = '/api/projects/' + encodeURIComponent(projectId) + '/ai-analysis';
-    function pollJob(jobId) {
-      if (serial !== aiRequestSerial) return;
-      api(endpoint + '/' + encodeURIComponent(jobId)).then(function (job) {
-        if (serial !== aiRequestSerial) return;
-        if (job.status === 'done') {
-          renderAiResult(job.result);
-          button.disabled = false;
-        } else {
-          setTimeout(function () { pollJob(jobId); }, 1400);
-        }
-      }).catch(function (err) {
-        if (serial === aiRequestSerial) {
-          document.getElementById('aiResult').textContent = '분석 상태 확인 실패: ' + err.message;
-          button.disabled = false;
-        }
-      });
-    }
+    var endpoint = aiEndpoint('ai-analysis');
     fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     }).then(function (response) {
       return response.json().then(function (body) { if (!response.ok) throw new Error(body.detail || body.message || response.statusText); return body; });
     }).then(function (job) {
-      if (serial === aiRequestSerial) pollJob(job.job_id);
+      if (serial === aiRequestSerial) {
+        followAiJob(job.job_id);
+        refreshActiveAiJobs();
+      }
     }).catch(function (err) {
       if (serial === aiRequestSerial) {
         document.getElementById('aiResult').textContent = '분석 실패: ' + err.message;
         button.disabled = false;
       }
     });
+  }
+
+  function rerunSavedAiAnalysis() {
+    if (!aiSelectedReport || !aiSelectedReport.selection) return;
+    var selection = aiSelectedReport.selection;
+    function applyAndRun() {
+      document.getElementById('aiMode').value = selection.mode;
+      document.getElementById('aiWord').value = selection.word || '';
+      document.getElementById('aiOther').value = selection.other || '';
+      document.getElementById('aiCommunity').value = selection.community == null ? '' : String(selection.community);
+      updateAiFields();
+      runAiAnalysis();
+    }
+    if (selection.tag !== currentTag) loadNetwork(selection.tag).then(function () {
+      if (currentTag === selection.tag) applyAndRun();
+    });
+    else applyAndRun();
   }
 
   function fallbackCopy(text, cb) {
@@ -2126,6 +2361,37 @@
   bindRailEvents();
   document.getElementById('aiMode').addEventListener('change', updateAiFields);
   document.getElementById('aiRun').addEventListener('click', runAiAnalysis);
+  document.getElementById('aiSourceUpload').addEventListener('click', function () { document.getElementById('aiSourceInput').click(); });
+  document.getElementById('aiSourceInput').addEventListener('change', function (event) {
+    uploadAiSource(event.target.files[0]); event.target.value = '';
+  });
+  document.getElementById('aiSourceCrawl').addEventListener('click', openSourceDbPicker);
+  document.getElementById('aiFloatingProgress').addEventListener('click', function (event) {
+    if (aiActiveJobs.length && aiActiveJobs[0].project_id === projectId) {
+      event.preventDefault();
+      document.getElementById('aiSection').open = true;
+      if (mobileQuery.matches) openMobileDrawer('side');
+      if (!aiFollowingJob) followAiJob(aiActiveJobs[0].id);
+      document.getElementById('aiSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+  document.getElementById('aiHistory').addEventListener('click', function (event) {
+    var button = event.target.closest('[data-ai-report]');
+    if (button) openAiReport(button.getAttribute('data-ai-report'));
+  });
+  document.getElementById('aiProgress').addEventListener('click', function (event) {
+    var button = event.target.closest('[data-ai-job]');
+    if (button) {
+      aiFollowingJob = null;
+      aiPollingJobId = null;
+      followAiJob(button.getAttribute('data-ai-job'));
+    }
+  });
+  document.getElementById('aiResult').addEventListener('click', function (event) {
+    if (event.target.closest('[data-ai-rerun]')) rerunSavedAiAnalysis();
+  });
+  refreshActiveAiJobs();
+  setInterval(refreshActiveAiJobs, 3000);
   var initialProjects = loadRailProjects();
   loadMe().then(function () {
     // 관리자 전체 보기 설정은 사용자 정보가 필요한 목록에만 반영한다.
