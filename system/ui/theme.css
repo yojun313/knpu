@@ -141,8 +141,10 @@
 }
 .theme-swatch > span { width: 15px; height: 15px; border-radius: 5px; flex-shrink: 0; }
 
-.theme-swatch-default { background: #eef2f8; }
-.theme-swatch-default > span { background: #ffffff; border: 1px solid #c8d6e5; }
+.theme-swatch-default { background: #f3f4f6; }
+.theme-swatch-default > span { background: #ffffff; border: 1px solid #d1d5db; }
+.theme-swatch-default > span:nth-child(2) { background: #e5e7eb; }
+.theme-swatch-default > span:nth-child(3) { background: #d1d5db; }
 
 .theme-swatch-glass {
   background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%);
@@ -349,6 +351,7 @@ html[data-ui-theme="aurora"][data-ui-theme-mode="dark"] body {
   --sidebar-border: rgba(255, 255, 255, 0.10);
   --sidebar-text: #e8e9ee; --sidebar-muted: #8f93a8;
   --text-strong: #f5f6fa;
+  --canvas-c1: rgba(5, 7, 15, .08); --canvas-c2: transparent;
   --overlay-hover: rgba(96, 165, 250, 0.12);
   --scrollbar-thumb: rgba(255, 255, 255, 0.2); --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
   background:
@@ -1194,7 +1197,7 @@ button, a, [role="button"] {
       기둥"이고 서로 1px 선으로만 나뉜다. 바깥 패널에는 모서리·그림자를 주지 않는다.
       → 테마마다 떠 있는 카드/각진 패널이 섞여 보이던 문제를 구조적으로 없앤다.
    2) 모서리 체계: 내용 카드 16px · 입력/버튼 12px · 아이콘 버튼 10px · 칩 999px.
-   3) 재질: 배경의 은은한 오로라 그라디언트 위에 반투명 유리(blur) 표면.
+   3) 기본 테마는 단색·무블러의 미니멀 플랫 표면이며, 나머지 테마는 각 재질을 유지한다.
    4) 강조: 파랑→보라 그라디언트 주 버튼, 선택 항목은 파란 틴트 + 얇은 테두리.
    5) 글꼴: Inter(라틴) + Pretendard/시스템 한글, 작은 대문자 라벨은 넓은 자간.
    색은 각 테마의 변수(--sidebar-*)를 그대로 쓰고, 기본 테마만 UnivDash 배색을 쓴다.
@@ -1238,61 +1241,59 @@ html[data-ui-theme-mode="dark"] body {
   --ud-label: #7f889d;
 }
 
-/* ── 기본 테마 = UnivDash 배색 (라이트) ───────────────────────────────────── */
+/* ── 기본 테마 = UnivDash 미니멀 플랫 (라이트) ────────────────────────────── */
 html:not([data-ui-theme]) body {
   --brand: #3b82f6; --brand-dark: #1d4ed8; --brand-light: #60a5fa;
   --accent: #3b82f6; --accent-soft: #6366f1;
-  --sidebar-bg: #f8f9fd; --sidebar-panel: #f2f4fa; --sidebar-panel2: #e9ecf5;
-  --sidebar-border: #dde1ec; --sidebar-text: #253046; --sidebar-muted: #6b7490;
+  --sidebar-bg: #ffffff; --sidebar-panel: #f8fafc; --sidebar-panel2: #f1f3f6;
+  --sidebar-border: #e1e5eb; --sidebar-text: #344054; --sidebar-muted: #667085;
   --text-strong: #101828;
-  --canvas-c1: #f6f7fc; --canvas-c2: #eef0f9;
+  --canvas-c1: #f3f4f6; --canvas-c2: #f3f4f6;
   --overlay-hover: rgba(15, 23, 42, .045);
   --scrollbar-thumb: rgba(71, 85, 105, .3); --scrollbar-thumb-hover: rgba(71, 85, 105, .5);
   --series-1: #3b82f6; --series-2: #f59e0b; --series-3: #10b981;
-  --pill-bg: rgba(255, 255, 255, .78); --pill-border: rgba(15, 23, 42, .09);
-  --pill-text: #101828; --pill-muted: #6b7490; --pill-shadow: 0 6px 20px rgba(15, 23, 42, .08);
-  --ud-surface: rgba(255, 255, 255, .6);
-  --ud-surface-strong: rgba(255, 255, 255, .74);
-  --ud-surface-soft: rgba(255, 255, 255, .45);
-  --ud-canvas: transparent;
+  --pill-bg: #ffffff; --pill-border: #e1e5eb;
+  --pill-text: #101828; --pill-muted: #667085; --pill-shadow: none;
+  --ud-surface: #ffffff;
+  --ud-surface-strong: #ffffff;
+  --ud-surface-soft: #f8fafc;
+  --ud-canvas: #f3f4f6;
+  --ud-blur: none;
+  --ud-r-card: 12px; --ud-r-ctl: 8px; --ud-r-icon: 8px; --ud-r-sm: 6px;
+  --ud-card-shadow: none;
   --ud-line: rgba(15, 23, 42, .09);
   --ud-line-strong: rgba(15, 23, 42, .13);
-  --ud-input: rgba(255, 255, 255, .72);
+  --ud-input: #ffffff;
   --ud-hover: rgba(15, 23, 42, .045);
   color: #101828;
-  background: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, .14), transparent 35%),
-              radial-gradient(circle at 90% 0%, rgba(236, 72, 153, .10), transparent 40%),
-              radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .10), transparent 45%),
-              #eef0f9 !important;
-  background-attachment: fixed !important;
+  background: #f3f4f6 !important;
 }
 /* 기본 테마 (다크) */
 html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body {
   --brand: #60a5fa; --brand-dark: #3b82f6; --brand-light: #93c5fd;
   --accent: #3b82f6; --accent-soft: #6366f1;
-  --sidebar-bg: #0e111a; --sidebar-panel: #131722; --sidebar-panel2: #1a1f2c;
-  --sidebar-border: #262c3b; --sidebar-text: #cfd5e2; --sidebar-muted: #7f889d;
+  --sidebar-bg: #12151d; --sidebar-panel: #151924; --sidebar-panel2: #1d2230;
+  --sidebar-border: #2b303b; --sidebar-text: #e5e7eb; --sidebar-muted: #9ca3af;
   --text-strong: #f5f7fb;
-  --canvas-c1: #0b0e17; --canvas-c2: #080a12;
+  --canvas-c1: #0b0e14; --canvas-c2: #0b0e14;
   --overlay-hover: rgba(255, 255, 255, .05);
   --scrollbar-thumb: rgba(148, 163, 184, .3); --scrollbar-thumb-hover: rgba(148, 163, 184, .5);
   --series-1: #60a5fa; --series-2: #fbbf24; --series-3: #34d399;
-  --pill-bg: rgba(18, 22, 34, .78); --pill-border: rgba(255, 255, 255, .1);
-  --pill-text: #f5f7fb; --pill-muted: #8a93a8; --pill-shadow: 0 6px 20px rgba(0, 0, 0, .35);
-  --ud-surface: rgba(255, 255, 255, .045);
-  --ud-surface-strong: rgba(255, 255, 255, .06);
-  --ud-surface-soft: rgba(255, 255, 255, .03);
-  --ud-canvas: transparent;
+  --pill-bg: #151924; --pill-border: #2b303b;
+  --pill-text: #f5f7fb; --pill-muted: #9ca3af; --pill-shadow: none;
+  --ud-surface: #151924;
+  --ud-surface-strong: #12151d;
+  --ud-surface-soft: #1d2230;
+  --ud-canvas: #0b0e14;
+  --ud-blur: none;
+  --ud-r-card: 12px; --ud-r-ctl: 8px; --ud-r-icon: 8px; --ud-r-sm: 6px;
+  --ud-card-shadow: none;
   --ud-line: rgba(255, 255, 255, .085);
   --ud-line-strong: rgba(255, 255, 255, .13);
-  --ud-input: rgba(255, 255, 255, .05);
+  --ud-input: #151924;
   --ud-hover: rgba(255, 255, 255, .05);
   color: #e8ebf2;
-  background: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, .20), transparent 35%),
-              radial-gradient(circle at 90% 0%, rgba(168, 85, 247, .18), transparent 40%),
-              radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .10), transparent 45%),
-              #05070f !important;
-  background-attachment: fixed !important;
+  background: #0b0e14 !important;
 }
 
 html body { font-family: var(--ud-font); }
@@ -1754,3 +1755,8 @@ html:is([data-ui-theme="glass"], [data-ui-theme="aurora"], [data-ui-theme="mesh"
 }
 html[data-ui-theme="aurora"][data-ui-theme-mode="dark"] :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(34, 27, 51, .985) !important; }
 html[data-ui-theme="mesh"][data-ui-theme-mode="dark"] :is(.modal-card, .theme-modal, .ai-report-modal) { background-color: rgba(24, 26, 36, .985) !important; }
+
+/* Aurora 다크 모드의 Network 그래프는 라이트 기본 캔버스를 덮고 테마 배경을 비춘다. */
+html[data-ui-theme="aurora"][data-ui-theme-mode="dark"] body #netWrap {
+  background: transparent !important;
+}

@@ -15,7 +15,7 @@
   var MODE_COOKIE_KEY = 'ui_theme_mode';
   var NAV_COOKIE_KEY = 'ui_nav_visibility';
   var THEMES = [
-    { id: 'default', label: '기본' },
+    { id: 'default', label: '기본 테마' },
     { id: 'aurora', label: '오로라' },
     { id: 'glass', label: '글래스모피즘' },
     { id: 'apple', label: '애플 리퀴드 글래스' },
