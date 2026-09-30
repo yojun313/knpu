@@ -151,15 +151,15 @@
           <div id="aiCommunityRow"><label for="aiCommunity">커뮤니티</label><select id="aiCommunity"></select></div>
           <button type="button" id="aiRun" class="btn primary ai-run">AI 분석하기</button>
           <div class="ai-source-tools">
-            <span id="aiSourceStatus" class="hint">원문 정보 확인 중...</span>
+            <div class="ai-source-heading"><b>분석 원문</b><span id="aiSourceStatus" class="hint">원문 정보 확인 중...</span></div>
             <input id="aiSourceInput" type="file" accept=".csv,text/csv" hidden>
             <button type="button" id="aiSourceUpload" class="btn btn-sm">원문 CSV 첨부</button>
             <button type="button" id="aiSourceCrawl" class="btn btn-sm">크롤링 DB 원문 선택</button>
           </div>
-          <div id="aiProgress" class="ai-progress" hidden></div>
-          <div id="aiResult" class="ai-result" aria-live="polite"><p class="hint">분석 범위를 고른 뒤 실행하세요. 노드나 연결선을 클릭하면 해당 범위가 자동 선택됩니다.</p></div>
           <div class="ai-history-head">저장된 AI 분석</div>
           <div id="aiHistory" class="ai-history"><p class="hint">프로젝트를 열면 이전 분석이 표시됩니다.</p></div>
+          <div id="aiProgress" class="ai-progress" hidden></div>
+          <div id="aiResult" class="ai-result" aria-live="polite"><p class="hint">분석 범위를 고른 뒤 실행하세요. 노드나 연결선을 클릭하면 해당 범위가 자동 선택됩니다.</p></div>
         </div>
       </details>
 

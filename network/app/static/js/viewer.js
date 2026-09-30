@@ -1847,22 +1847,32 @@
     api('/api/projects/' + encodeURIComponent(pid) + '/ai-reports').then(function (data) {
       if (pid !== projectId) return;
       aiHistory = data.reports || [];
-      var box = document.getElementById('aiHistory');
-      if (!aiHistory.length) { box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>'; return; }
-      box.innerHTML = aiHistory.map(function (item) {
-        return '<button type="button" class="ai-history-item' + (item.id === aiReportId ? ' active' : '') + '" data-ai-report="' + escAttr(item.id) + '">'
-          + '<span>' + esc(item.title || 'AI 분석') + '</span><small>' + esc(fmtAnalyzedAt(item.created_at)) + '</small></button>';
-      }).join('');
+      renderAiHistory();
     }).catch(function (err) {
       if (pid !== projectId) return;
       var box = document.getElementById('aiHistory');
       if (err.status === 404 || err.message === 'Not Found') {
         aiHistory = [];
-        box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>';
+        renderAiHistory();
         return;
       }
       box.textContent = '분석 기록을 불러오지 못했습니다: ' + err.message;
     });
+  }
+
+  function renderAiHistory() {
+    var box = document.getElementById('aiHistory');
+    if (!aiHistory.length) { box.innerHTML = '<p class="hint">저장된 분석이 없습니다.</p>'; return; }
+    var selected = aiHistory.findIndex(function (item) { return item.id === aiReportId; });
+    if (selected < 0) selected = 0;
+    box.innerHTML = '<div class="ai-history-nav">'
+      + '<button type="button" class="btn btn-sm" data-ai-history-step="-1" aria-label="이전 분석"' + (selected >= aiHistory.length - 1 ? ' disabled' : '') + '>‹</button>'
+      + '<select aria-label="저장된 분석 선택" data-ai-history-select>' + aiHistory.map(function (item, index) {
+        return '<option value="' + escAttr(item.id) + '"' + (index === selected ? ' selected' : '') + '>'
+          + esc(item.title || 'AI 분석') + ' · ' + esc(fmtAnalyzedAt(item.created_at)) + '</option>';
+      }).join('') + '</select>'
+      + '<button type="button" class="btn btn-sm" data-ai-history-step="1" aria-label="다음 분석"' + (selected <= 0 ? ' disabled' : '') + '>›</button>'
+      + '</div><div class="ai-history-count">' + (selected + 1) + ' / ' + aiHistory.length + '개 저장됨</div>';
   }
 
   function openAiReport(reportId) {
@@ -1966,7 +1976,7 @@
     if (p.mode === 'pair' && !p.direct_edge) html += '<p>저장된 그래프에 두 단어의 직접 연결은 없습니다.</p>';
     if (p.mode === 'community') html += '<p>내부 연결 ' + esc(p.internal_edges) + ' · 외부 연결 ' + esc(p.external_edges) + '</p>';
     if (data.id) {
-      html += '<div class="ai-report-actions"><span class="hint">프로젝트에 저장됨 · ' + esc(fmtAnalyzedAt(data.created_at)) + '</span>'
+      html += '<div class="ai-report-actions"><span class="ai-saved-at">프로젝트에 저장됨 · ' + esc(fmtAnalyzedAt(data.created_at)) + '</span>'
         + '<a class="btn btn-sm" href="' + aiEndpoint('ai-reports/' + encodeURIComponent(data.id) + '/export') + '">보고서(.md)</a>'
         + '<button type="button" class="btn btn-sm" data-ai-rerun="1">같은 조건 재분석</button></div>';
     }
@@ -2387,8 +2397,15 @@
     }
   });
   document.getElementById('aiHistory').addEventListener('click', function (event) {
-    var button = event.target.closest('[data-ai-report]');
-    if (button) openAiReport(button.getAttribute('data-ai-report'));
+    var button = event.target.closest('[data-ai-history-step]');
+    if (!button) return;
+    var selected = aiHistory.findIndex(function (item) { return item.id === aiReportId; });
+    if (selected < 0) selected = 0;
+    var next = Math.max(0, Math.min(aiHistory.length - 1, selected - Number(button.getAttribute('data-ai-history-step'))));
+    if (aiHistory[next]) openAiReport(aiHistory[next].id);
+  });
+  document.getElementById('aiHistory').addEventListener('change', function (event) {
+    if (event.target.matches('[data-ai-history-select]')) openAiReport(event.target.value);
   });
   document.getElementById('aiProgress').addEventListener('click', function (event) {
     var button = event.target.closest('[data-ai-job]');
