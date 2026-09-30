@@ -1160,6 +1160,8 @@
             padding: 12px 20px; min-height: 58px; border-bottom: 1px solid var(--ud-line, var(--line));
             background: var(--ud-surface-strong, var(--surface));
         }
+        /* 데스크톱에서는 제목 띠를 두지 않는다 — 휴대폰에서만 사이드바(☰) 버튼 자리로 쓴다 */
+        @media (min-width: 861px) { .crawler-page-head { display: none; } }
         .crawler-page-head strong { display: block; font-size: 14px; color: var(--ink); }
         .crawler-page-head span { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); }
         .crawler-mobile-rail-btn {
@@ -1248,7 +1250,7 @@
   </aside>
   <div id="crawlerRailBackdrop" class="crawler-rail-backdrop" hidden></div>
   <main class="crawler-main">
-    <div class="crawler-page-head"><button id="crawlerMobileRailBtn" class="crawler-mobile-rail-btn" type="button" aria-controls="crawlerSidebar" aria-expanded="false" aria-label="크롤러 메뉴 열기">☰</button><div><strong>크롤링 작업</strong><span>작업 생성과 데이터베이스 관리</span></div></div>
+    <div class="crawler-page-head"><button id="crawlerMobileRailBtn" class="crawler-mobile-rail-btn" type="button" aria-controls="crawlerSidebar" aria-expanded="false" aria-label="크롤러 메뉴 열기">☰</button></div>
 <div class="container">
   <div class="layout-grid">
     <div class="col-left">

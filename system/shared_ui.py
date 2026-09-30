@@ -85,8 +85,14 @@ def _manifest_json(app_name: str, theme_color: str) -> str:
 
 
 def mount_shared_ui(
-    app, *, app_name: str | None = None, theme_color: str = "#0B1226"
+    app,
+    *,
+    app_name: str | None = None,
+    theme_color: str = "#0B1226",
+    chatbot: str | None = "member",
 ) -> None:
+    """chatbot: "member"(구성원용만) · "public"(홈페이지: 외부인용 + 로그인하면 구성원용) · None(끔)."""
+
     @app.get("/shared-ui/services.js", include_in_schema=False)
     def shared_services_js():
         return Response(
@@ -136,6 +142,12 @@ def mount_shared_ui(
             )
         except user_llm.SettingsError as e:
             raise HTTPException(400, str(e))
+
+    # 연구실 챗봇 API (오른쪽 아래 동그라미 버튼) — 정적 마운트보다 먼저 등록해야 한다
+    if chatbot:
+        from system.chatbot.routes import register as register_chatbot
+
+        register_chatbot(app, public=(chatbot == "public"))
 
     app.mount(
         "/shared-ui",
