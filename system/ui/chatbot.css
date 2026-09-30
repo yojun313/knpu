@@ -147,3 +147,36 @@ a.kcb-ref:hover { border-color: var(--kcb-accent); }
   cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: .6; }
 .kcb-conv-del svg { width: 15px; height: 15px; }
 .kcb-conv-del:hover, .kcb-conv-del.armed { opacity: 1; color: #ef4444; background: rgba(239, 68, 68, .1); }
+
+/* 설정에서 끈 경우 */
+.kcb[hidden] { display: none !important; }
+
+/* 창 크기 조절: 왼쪽 위 모서리를 끈다 (버튼으로 크게 ↔ 원래 크기) */
+.kcb-grip { position: absolute; left: 0; top: 0; width: 18px; height: 18px; cursor: nwse-resize; z-index: 2; border-top-left-radius: 20px; }
+.kcb-grip::before { content: ''; position: absolute; left: 6px; top: 6px; width: 8px; height: 8px;
+  border-left: 2px solid var(--kcb-line); border-top: 2px solid var(--kcb-line); border-top-left-radius: 3px; opacity: 0; transition: opacity .15s; }
+.kcb-panel:hover .kcb-grip::before { opacity: 1; border-color: var(--kcb-muted); }
+html.kcb-resizing, html.kcb-resizing * { cursor: nwse-resize !important; user-select: none !important; }
+.kcb-big .kcb-msg { font-size: 13.5px; }
+.kcb-hbtn[hidden] { display: none !important; }
+@media (max-width: 640px) { .kcb-grip, .kcb [data-size] { display: none !important; } }
+
+/* 브라우저 탭 전체 (/shared-ui/chatbot.html) */
+.kcb-full .kcb-fab { display: none !important; }
+.kcb-full .kcb-panel { position: fixed; inset: 0 0 0 280px; width: auto !important; height: auto !important; border-radius: 0; border: 0;
+  border-left: 1px solid var(--kcb-line); box-shadow: none; animation: none; }
+.kcb-full .kcb-grip { display: none; }
+.kcb-full .kcb-log { padding: 24px max(24px, calc((100% - 860px) / 2)); }
+.kcb-full .kcb-compose { margin: 0 max(16px, calc((100% - 860px) / 2)); }
+.kcb-full .kcb-modes { margin: 12px max(16px, calc((100% - 860px) / 2)) 0; }
+.kcb-full .kcb-msg { font-size: 14px; }
+.kcb-side { position: fixed; left: 0; top: 0; bottom: 0; width: 280px; display: flex; flex-direction: column; gap: 8px; padding: 16px 12px;
+  background: var(--kcb-panel); color: var(--kcb-text); overflow-y: auto; }
+.kcb-side-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; }
+.kcb-side-head b { font-size: 15px; color: var(--kcb-strong); }
+.kcb-side-list { display: flex; flex-direction: column; gap: 6px; }
+.kcb-side-note { margin: 4px; font-size: 12px; line-height: 1.6; color: var(--kcb-muted); }
+@media (max-width: 900px) {
+  .kcb-full .kcb-panel { inset: 0; border-left: 0; }
+  .kcb-side { display: none; }
+}
