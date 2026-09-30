@@ -131,6 +131,25 @@
         </div></div>
       </details>
 
+      <details id="aiSection" open>
+        <summary>AI 네트워크 분석</summary>
+        <div class="sec-body ai-panel">
+          <p class="hint">전체 그래프의 지표와 저장된 원본 행을 바탕으로 구조·맥락·가설을 해석합니다.</p>
+          <label for="aiMode">분석 범위</label>
+          <select id="aiMode">
+            <option value="overview">전체 네트워크 · 허브 · 주제 · 시기</option>
+            <option value="word">단어 · 연결 · 교량</option>
+            <option value="pair">두 단어 · 공출현 맥락</option>
+            <option value="community">커뮤니티 · 내부 · 외부 연결</option>
+          </select>
+          <div id="aiWordRow"><label for="aiWord">중심 단어</label><select id="aiWord"></select></div>
+          <div id="aiPairRow"><label for="aiOther">비교 단어</label><select id="aiOther"></select></div>
+          <div id="aiCommunityRow"><label for="aiCommunity">커뮤니티</label><select id="aiCommunity"></select></div>
+          <button type="button" id="aiRun" class="btn primary ai-run">AI 분석하기</button>
+          <div id="aiResult" class="ai-result" aria-live="polite"><p class="hint">분석 범위를 고른 뒤 실행하세요. 노드나 연결선을 클릭하면 해당 범위가 자동 선택됩니다.</p></div>
+        </div>
+      </details>
+
       <details open>
         <summary>필터</summary>
         <div class="sec-body">

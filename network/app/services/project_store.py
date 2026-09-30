@@ -148,6 +148,9 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> tuple:
         )
 
     analysis_options = _read_analysis_options(search_root)
+    evidence_path = os.path.join(search_root, "source_records.jsonl")
+    if os.path.isfile(evidence_path):
+        shutil.copyfile(evidence_path, os.path.join(root, "source_records.jsonl"))
 
     networks = []
     for tag, nodes_csv, edges_csv in pairs:

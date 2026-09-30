@@ -11,6 +11,7 @@
   var currentTag = qs.get('tag') || '';
 
   var rawNodes = [], rawEdges = [];
+  var aiRequestSerial = 0;
   var summary = null;
   var net = null;
   var nodes = new vis.DataSet([]);
@@ -29,6 +30,8 @@
   }
 
   function loadNetwork(tag) {
+    aiRequestSerial++;
+    document.getElementById('aiRun').disabled = false;
     document.getElementById('loading').classList.remove('hide');
     return Promise.all([
       api('/api/projects/' + projectId + '/data?tag=' + encodeURIComponent(tag)),
@@ -40,6 +43,9 @@
       rawEdges = data.edges;
       summary = summ;
       currentTag = tag;
+      aiRequestSerial++;
+      document.getElementById('aiRun').disabled = false;
+      document.getElementById('aiResult').innerHTML = '<p class="hint">분석 범위를 고른 뒤 실행하세요.</p>';
       document.getElementById('projectName').textContent = meta.name || 'Network Analyzer';
       document.title = (meta.name || 'Network Analyzer') + ' · Network Analyzer';
       document.getElementById('emptyProject').hidden = true;
@@ -599,6 +605,8 @@
 
   function switchProject(id, replace) {
     if (!id || id === projectId) return;
+    aiRequestSerial++;
+    document.getElementById('aiRun').disabled = false;
     projectId = id;
     currentTag = '';
     if (replace) history.replaceState(null, '', '/viewer/' + encodeURIComponent(id));
@@ -1671,10 +1679,125 @@
       + '<button class="btn btn-sm" data-focusnode="' + n.id + '" style="width:100%">이 노드로 이동</button>';
     document.getElementById('detail').innerHTML = h;
     net.selectNodes([n.id]);
+    document.getElementById('aiMode').value = 'word';
+    document.getElementById('aiWord').value = n.label;
+    updateAiFields();
     // scale을 강제로 지정하면 클릭할 때마다 현재 확대/축소 배율이 바뀌어 노드가
     // 커졌다 작아졌다 하는 것처럼 보인다. scale을 생략하면 현재 배율을 유지한 채
     // 화면만 이동한다.
     net.focus(n.id, { animation: { duration: 400 } });
+  }
+
+  function updateAiFields() {
+    var mode = document.getElementById('aiMode').value;
+    document.getElementById('aiWordRow').hidden = mode !== 'word' && mode !== 'pair';
+    document.getElementById('aiPairRow').hidden = mode !== 'pair';
+    document.getElementById('aiCommunityRow').hidden = mode !== 'community';
+  }
+
+  function populateAiSelectors() {
+    var communityMode = document.querySelector('#aiMode option[value="community"]');
+    communityMode.disabled = !summary || !summary.has_community;
+    if (communityMode.disabled && document.getElementById('aiMode').value === 'community') document.getElementById('aiMode').value = 'overview';
+    var words = rawNodes.slice().sort(function (a, b) { return b.freq - a.freq; });
+    ['aiWord', 'aiOther'].forEach(function (id) {
+      var select = document.getElementById(id);
+      select.innerHTML = '';
+      words.forEach(function (node) {
+        var option = document.createElement('option');
+        option.value = node.label; option.textContent = node.label + ' (' + node.freq + ')';
+        select.appendChild(option);
+      });
+    });
+    if (words.length > 1) document.getElementById('aiOther').value = words[1].label;
+    var communitySelect = document.getElementById('aiCommunity');
+    communitySelect.innerHTML = '';
+    communityIds.forEach(function (id) {
+      var option = document.createElement('option');
+      option.value = id; option.textContent = (commNames[id] || '커뮤니티 ' + id) + ' · ' + communityCounts[id] + '개 단어';
+      communitySelect.appendChild(option);
+    });
+    updateAiFields();
+  }
+
+  function safeEvidenceUrl(url) {
+    try { var parsed = new URL(url); return /^https?:$/.test(parsed.protocol) ? parsed.href : ''; }
+    catch (err) { return ''; }
+  }
+
+  function renderAiResult(data) {
+    var p = data.profile;
+    var s = p.summary || {};
+    var html = '<div class="ai-metrics"><span>노드 <b>' + esc(s.nodes || 0) + '</b></span><span>연결 <b>' + esc(s.edges || 0) + '</b></span>'
+      + '<span>밀도 <b>' + esc(s.density || 0) + '</b></span><span>평균 연결 <b>' + esc(s.avg_degree || 0) + '</b></span></div>';
+    if (p.focus) html += '<p><b>' + esc(p.focus.word) + '</b> · 빈도 ' + esc(p.focus.frequency) + ' · 연결 ' + esc(p.focus.degree) + '</p>';
+    if (p.direct_edge) html += '<p>직접 연결 · 가중치 ' + esc(p.direct_edge.weight) + ' · 공출현 ' + esc(p.direct_edge.cooccur == null ? '자료 없음' : p.direct_edge.cooccur) + '</p>';
+    if (p.mode === 'pair' && !p.direct_edge) html += '<p>저장된 그래프에 두 단어의 직접 연결은 없습니다.</p>';
+    if (p.mode === 'community') html += '<p>내부 연결 ' + esc(p.internal_edges) + ' · 외부 연결 ' + esc(p.external_edges) + '</p>';
+    if (data.report) html += '<h3>AI 해석</h3><div class="ai-report">' + esc(data.report) + '</div>';
+    if (data.error) html += '<p class="hint">AI 호출 실패: ' + esc(data.error) + '</p>';
+    html += '<h3>근거와 자료 범위</h3><p class="hint">' + esc(data.evidence_note || '') + '</p>';
+    if (data.examples && data.examples.length) {
+      data.examples.forEach(function (item) {
+        var url = safeEvidenceUrl(item.url);
+        html += '<div class="ai-evidence"><small>[' + esc(item.id) + '] ' + esc(item.kind) + ' · ' + esc(item.date || '날짜 없음')
+          + ' · 입력 행 ' + esc(item.row) + '</small>';
+        if (item.title) html += '<b>' + esc(item.title) + '</b><br>';
+        if (item.connected && item.connected.length) html += '<small>같은 공출현 단위의 연결어: ' + esc(item.connected.join(' · ')) + '</small>';
+        html += esc(item.text || '');
+        if (url) html += '<br><a href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">출처 열기</a>';
+        html += '</div>';
+      });
+    }
+    if (data.model) html += '<p class="hint">모델: ' + esc(data.model) + '</p>';
+    document.getElementById('aiResult').innerHTML = html;
+  }
+
+  function runAiAnalysis() {
+    if (!projectId || !rawNodes.length) return;
+    var mode = document.getElementById('aiMode').value;
+    var payload = { mode: mode, tag: currentTag,
+      word: document.getElementById('aiWord').value,
+      other: document.getElementById('aiOther').value,
+      community: document.getElementById('aiCommunity').value };
+    if (mode === 'pair' && payload.word === payload.other) {
+      document.getElementById('aiResult').textContent = '서로 다른 두 단어를 선택해주세요.';
+      return;
+    }
+    var serial = ++aiRequestSerial;
+    var button = document.getElementById('aiRun');
+    button.disabled = true;
+    document.getElementById('aiResult').innerHTML = '<p class="hint">그래프와 근거 자료를 분석 중입니다…</p>';
+    var endpoint = '/api/projects/' + encodeURIComponent(projectId) + '/ai-analysis';
+    function pollJob(jobId) {
+      if (serial !== aiRequestSerial) return;
+      api(endpoint + '/' + encodeURIComponent(jobId)).then(function (job) {
+        if (serial !== aiRequestSerial) return;
+        if (job.status === 'done') {
+          renderAiResult(job.result);
+          button.disabled = false;
+        } else {
+          setTimeout(function () { pollJob(jobId); }, 1400);
+        }
+      }).catch(function (err) {
+        if (serial === aiRequestSerial) {
+          document.getElementById('aiResult').textContent = '분석 상태 확인 실패: ' + err.message;
+          button.disabled = false;
+        }
+      });
+    }
+    fetch(endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    }).then(function (response) {
+      return response.json().then(function (body) { if (!response.ok) throw new Error(body.detail || body.message || response.statusText); return body; });
+    }).then(function (job) {
+      if (serial === aiRequestSerial) pollJob(job.job_id);
+    }).catch(function (err) {
+      if (serial === aiRequestSerial) {
+        document.getElementById('aiResult').textContent = '분석 실패: ' + err.message;
+        button.disabled = false;
+      }
+    });
   }
 
   function fallbackCopy(text, cb) {
@@ -1917,6 +2040,16 @@
       if (p.nodes.length) {
         showDetail(nodeMap[p.nodes[0]]);
         if (mobileQuery.matches) openMobileDrawer('side');
+      } else if (p.edges.length) {
+        var edge = edges.get(p.edges[0]);
+        if (edge && nodeMap[edge.from] && nodeMap[edge.to]) {
+          document.getElementById('aiMode').value = 'pair';
+          document.getElementById('aiWord').value = nodeMap[edge.from].label;
+          document.getElementById('aiOther').value = nodeMap[edge.to].label;
+          updateAiFields();
+          document.getElementById('aiSection').open = true;
+          if (mobileQuery.matches) openMobileDrawer('side');
+        }
       } else {
         document.getElementById('detail').innerHTML = emptyDetailHtml;
       }
@@ -1935,6 +2068,7 @@
     rawNodes.forEach(function (n) { communityCounts[n.group] = (communityCounts[n.group] || 0) + 1; });
     communityIds = Object.keys(communityCounts).map(Number).sort(function (a, b) { return a - b; });
     initCommState();
+    populateAiSelectors();
     initWordSel();
 
     adj = {}; rawNodes.forEach(function (n) { adj[n.id] = []; });
@@ -1990,6 +2124,8 @@
   }
 
   bindRailEvents();
+  document.getElementById('aiMode').addEventListener('change', updateAiFields);
+  document.getElementById('aiRun').addEventListener('click', runAiAnalysis);
   var initialProjects = loadRailProjects();
   loadMe().then(function () {
     // 관리자 전체 보기 설정은 사용자 정보가 필요한 목록에만 반영한다.

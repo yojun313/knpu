@@ -359,6 +359,17 @@ details > summary::after{content:'';width:7px;height:7px;border-right:1.6px soli
 details[open] > summary::after{transform:rotate(225deg)}
 details > summary:hover{color:var(--text-strong);background:var(--overlay-hover)}
 .sec-body{padding:2px 20px 18px}
+.ai-panel>label,.ai-panel>div>label{display:block;margin:12px 0 5px;font-size:11px;font-weight:700;color:var(--sidebar-muted)}
+.ai-panel select{width:100%}
+.ai-panel .ai-run{width:100%;margin:14px 0 8px}
+.ai-result{font-size:12px;line-height:1.65;color:var(--sidebar-text);overflow-wrap:anywhere}
+.ai-result h3{font-size:12px;margin:14px 0 5px;color:var(--text-strong)}
+.ai-report{white-space:pre-wrap;padding:12px;background:var(--sidebar-panel);border:1px solid var(--sidebar-border);border-radius:10px}
+.ai-evidence{padding:10px;margin:8px 0;background:var(--sidebar-panel);border:1px solid var(--sidebar-border);border-radius:9px}
+.ai-evidence small{display:block;color:var(--sidebar-muted);margin-bottom:5px}
+.ai-evidence a{color:var(--brand);text-decoration:underline}
+.ai-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.ai-metrics span{padding:7px;background:var(--sidebar-panel2);border-radius:7px;font-size:11px}
 
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
 .row label{color:var(--sidebar-muted);flex-shrink:0}
