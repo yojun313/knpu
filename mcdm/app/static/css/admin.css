@@ -364,3 +364,34 @@ label.method-adv{display:flex;align-items:center;gap:8px;margin-top:10px;font-si
 .rail.collapsed .rail-resizer,.rail.resizing{transition:none}
 .rail.collapsed .rail-resizer{display:none}
 @media (max-width:860px){.rail-resizer,.rail-reset-btn{display:none!important}}
+@media (max-width:860px){
+  #app>.rail{position:fixed;top:58px;left:0;bottom:0;width:min(280px,82vw);
+    transform:translateX(-100%);z-index:95}
+  #app>.rail.rail-open{transform:translateX(0)}
+  #main{flex:1 1 auto;width:100%;min-width:0}
+}
+
+/* 작은 화면에서도 페이지별 작업 버튼과 단계 이동을 유지한다. */
+@media (max-width:640px){
+  #app,#main{min-width:0}
+  .page-body{padding:14px 12px 28px}
+  .page-head{align-items:stretch;gap:10px}
+  .page-head>div{min-width:0;max-width:100%}
+  .page-head>div:last-child{display:flex!important;flex-wrap:wrap!important;gap:7px!important;width:100%}
+  .page-head h1{font-size:17px;overflow-wrap:anywhere}
+  .page-head .btn{min-height:38px;justify-content:center}
+  .stage-tabs{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;
+    padding:6px 12px 0;gap:0;scrollbar-width:thin}
+  .stage-tab{flex:0 0 auto;padding:10px 12px}
+  .card-grid{grid-template-columns:minmax(0,1fr)}
+  .table-card{min-width:0;max-width:100%}
+  .tc-head{flex-wrap:wrap;padding:11px 12px}
+  .tc-head>span,.tc-head>div{min-width:0;max-width:100%}
+  .tc-head>span[style*="display:flex"],.tc-head>div[style*="display:flex"]{flex-wrap:wrap}
+  .modal-overlay{padding:12px;align-items:flex-end}
+  .modal-card{max-height:calc(100dvh - 24px);overflow-y:auto;padding:16px}
+  .settings-tabs{overflow-x:auto;white-space:nowrap}
+  .proj-card .pc-stepper{flex-wrap:wrap}
+  .proj-card .pc-actions{flex-wrap:wrap}
+  .proj-card .pc-actions button{min-height:36px}
+}

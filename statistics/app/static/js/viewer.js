@@ -84,23 +84,6 @@
     clearTimeout(t.__tm); t.__tm = setTimeout(function () { t.style.opacity = '0'; }, 1500);
   }
 
-  // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
-  // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
-  // 설치되어 있지 않으면(=페이지가 포커스를 잃지 않으면) 잠시 후 웹 버전으로 이동한다.
-  function openManagerApp(e) {
-    e.preventDefault();
-    var fallbackUrl = e.currentTarget.href;
-    var appOpened = false;
-    var onBlur = function () { appOpened = true; };
-    window.addEventListener('blur', onBlur, { once: true });
-    window.location.href = 'knpumanager://open';
-    setTimeout(function () {
-      window.removeEventListener('blur', onBlur);
-      if (!appOpened) window.location.href = fallbackUrl;
-    }, 1000);
-    return false;
-  }
-
   function fmtDate(iso) {
     try {
       var d = new Date(iso);
@@ -2082,8 +2065,6 @@
   }
 
   function bindEvents() {
-    document.getElementById('navManagerLink').addEventListener('click', openManagerApp);
-
     bindAiSide();
 
     var rail = document.getElementById('rail');
@@ -2338,25 +2319,21 @@
   // 초기화
   // ---------------------------------------------------------------
   bindEvents();
+  var initialProjects = loadRailProjects();
   loadMe().then(function () {
-    if (projectId) {
-      loadRailProjects();
-      loadProject(projectId);
+    if (isAdminAllMode()) initialProjects.then(loadRailProjects);
+  });
+  if (projectId) {
+    loadProject(projectId);
+  } else {
+    var lastId = localStorage.getItem(LAST_PROJECT_KEY);
+    if (lastId) {
+      switchProject(lastId, true);
     } else {
-      // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
-      // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
-      // 조용히 포기하고 빈 화면을 보여준다.
-      loadRailProjects().then(function () {
-        var lastId = localStorage.getItem(LAST_PROJECT_KEY);
-        var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
-        if (exists) {
-          switchProject(lastId, true);
-        } else {
-          if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
-          document.getElementById('loading').classList.add('hide');
-          document.getElementById('emptyProject').hidden = false;
-        }
+      initialProjects.then(function () {
+        document.getElementById('loading').classList.add('hide');
+        document.getElementById('emptyProject').hidden = false;
       });
     }
-  });
+  }
 })();

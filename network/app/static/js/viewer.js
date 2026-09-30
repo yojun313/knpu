@@ -1028,8 +1028,6 @@
   }
 
   function bindRailEvents() {
-    document.getElementById('navManagerLink').addEventListener('click', openManagerApp);
-
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');
     var resizerDblReset = function () { };
@@ -1223,7 +1221,8 @@
     document.getElementById('railLogout').addEventListener('click', function () {
       // 로그인은 knpu.re.kr 중앙 로그인이 전담하므로, 로그아웃도 그쪽 세션(쿠키)을 지운다
       fetch(KNPU.logoutUrl(), { method: 'POST', credentials: 'include' })
-        .then(function () { location.href = KNPU.loginUrl(); });
+        .catch(function (error) { console.warn('[NETWORK] 로그아웃 요청 실패', error); })
+        .finally(function () { location.href = KNPU.loginUrl(location.origin + '/'); });
     });
 
     window.addEventListener('popstate', function () {
@@ -1592,23 +1591,6 @@
     }
     t.innerText = msg; t.style.opacity = '1';
     clearTimeout(t.__tm); t.__tm = setTimeout(function () { t.style.opacity = '0'; }, 1500);
-  }
-
-  // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
-  // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
-  // 설치되어 있지 않으면(=페이지가 포커스를 잃지 않으면) 잠시 후 웹 버전으로 이동한다.
-  function openManagerApp(e) {
-    e.preventDefault();
-    var fallbackUrl = e.currentTarget.href;
-    var appOpened = false;
-    var onBlur = function () { appOpened = true; };
-    window.addEventListener('blur', onBlur, { once: true });
-    window.location.href = 'knpumanager://open';
-    setTimeout(function () {
-      window.removeEventListener('blur', onBlur);
-      if (!appOpened) window.location.href = fallbackUrl;
-    }, 1000);
-    return false;
   }
 
   function updateSelCount() {
@@ -2008,25 +1990,23 @@
   }
 
   bindRailEvents();
+  var initialProjects = loadRailProjects();
   loadMe().then(function () {
-    if (projectId) {
-      loadRailProjects();
-      loadNetwork(currentTag);
+    // 관리자 전체 보기 설정은 사용자 정보가 필요한 목록에만 반영한다.
+    if (isAdminAllMode()) initialProjects.then(loadRailProjects);
+  });
+  if (projectId) {
+    loadNetwork(currentTag);
+  } else {
+    // 마지막 분석은 목록/폴더 조회와 무관하게 바로 연다.
+    var lastId = localStorage.getItem(LAST_PROJECT_KEY);
+    if (lastId) {
+      switchProject(lastId, true);
     } else {
-      // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
-      // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
-      // 조용히 포기하고 빈 화면을 보여준다.
-      loadRailProjects().then(function () {
-        var lastId = localStorage.getItem(LAST_PROJECT_KEY);
-        var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
-        if (exists) {
-          switchProject(lastId, true);
-        } else {
-          if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
-          document.getElementById('loading').classList.add('hide');
-          document.getElementById('emptyProject').hidden = false;
-        }
+      initialProjects.then(function () {
+        document.getElementById('loading').classList.add('hide');
+        document.getElementById('emptyProject').hidden = false;
       });
     }
-  });
+  }
 })();

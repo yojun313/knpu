@@ -111,12 +111,25 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-class NoCacheStaticFiles(StaticFiles):
+class VersionedStaticFiles(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # 파일 내용이 바뀌면 템플릿의 v= 해시도 바뀐다. 버전이 있는 정적 자산만
+        # 브라우저에 오래 보관해 페이지 이동마다 스타일을 다시 받지 않도록 한다.
+        versioned = any(
+            part.startswith(b"v=") for part in scope.get("query_string", b"").split(b"&")
+        )
+        cache_control = (
+            b"public, max-age=31536000, immutable"
+            if versioned else b"no-store, must-revalidate"
+        )
+
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
-                headers.append((b"cache-control", b"no-store, must-revalidate"))
+                headers = [
+                    (key, value) for key, value in message.get("headers", [])
+                    if key.lower() != b"cache-control"
+                ]
+                headers.append((b"cache-control", cache_control))
                 message = {**message, "headers": headers}
             await send(message)
 
@@ -129,7 +142,7 @@ mount_shared_ui(app, app_name="ADMIN", theme_color="#0B1226")
 # UnivDash 에서 옮겨 온 Git · Server 화면의 스크립트/스타일
 app.mount(
     "/static",
-    NoCacheStaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
+    VersionedStaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
     name="static",
 )
 

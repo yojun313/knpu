@@ -140,6 +140,13 @@
         }
         nav.appendChild(link);
       });
+      // 좁은 화면에서도 현재 서비스가 메뉴의 화면 밖에 숨지 않도록 한다.
+      if (window.matchMedia('(max-width: 600px)').matches) {
+        var selected = nav.querySelector('.top-nav-link.active');
+        if (selected) requestAnimationFrame(function () {
+          nav.scrollLeft = selected.offsetLeft - nav.offsetLeft - 12;
+        });
+      }
     });
   }
 
