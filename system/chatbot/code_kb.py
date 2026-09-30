@@ -332,13 +332,20 @@ def read_file(
     start = max(1, int(start or 1))
     end = min(total, int(end) if end else start + max_lines - 1, start + max_lines - 1)
     body = "\n".join(f"{i:>5}  {lines[i - 1]}" for i in range(start, end + 1))
-    return {
+    out = {
         "path": str(path.relative_to(REPO_ROOT.resolve())),
         "lines": f"{start}-{end}",
         "total_lines": total,
         "truncated": end < total,
         "text": redact(body),
     }
+    if start == 1 and total > 300:
+        # 큰 화면 파일은 앞부분이 스타일(CSS)뿐인 경우가 많다 — 필요한 줄을 먼저 찾게 안내한다
+        out["note"] = (
+            f"전체 {total}줄 중 앞 {end}줄만 보냈습니다. 필요한 부분은 search_code/grep 결과의 줄 번호로 "
+            "start 를 지정해 읽으세요."
+        )
+    return out
 
 
 def list_dir(rel: str = "") -> dict:
