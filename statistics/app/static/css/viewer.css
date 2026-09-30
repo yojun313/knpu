@@ -194,6 +194,7 @@ body.ai-result-modal-open{overflow:hidden}
 .modal-card{width:min(440px,90vw);background:var(--sidebar-bg);border:1px solid var(--sidebar-border);
   border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden;animation:modalIn .16s ease;
   max-height:88vh;overflow-y:auto}
+#aiResultModal .ai-results-modal{width:min(1100px,94vw);max-height:92vh}
 @keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;
   border-bottom:1px solid var(--sidebar-border);font-size:13.5px;font-weight:700;color:var(--text-strong)}
