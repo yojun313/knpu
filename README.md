@@ -176,6 +176,6 @@ pm2 restart ecosystem.prod.config.js --update-env
 <div align="center">
 
 © 2026 **FPEI**. All rights reserved.
-Developed by [**Yojun Moon**](https://yojun313.github.io), [**Woochul Choi**](https://github.com/WCChoi0930)
+Developed by [**Yojun Moon**](https://www.yojun.dev), [**Woochul Choi**](https://github.com/WCChoi0930)
 
 </div>
