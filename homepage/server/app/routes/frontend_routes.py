@@ -15,7 +15,10 @@ DISCORD_LINK_EXPIRE_MINUTES = 10
 
 
 def _page(filename: str) -> FileResponse:
-    return FileResponse(os.path.join(PUBLIC_DIR, filename))
+    # HTML 페이지는 매번 재검증한다(옛 페이지 캐시로 새 스크립트와 어긋나지 않게).
+    return FileResponse(
+        os.path.join(PUBLIC_DIR, filename), headers={"cache-control": "no-cache"}
+    )
 
 
 @router.get("/")

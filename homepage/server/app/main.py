@@ -123,4 +123,17 @@ app.include_router(frontend_router, tags=["frontend"])
 # 마운트보다 먼저 등록해야 매치된다.
 mount_shared_ui(app, app_name="FPEI", theme_color="#002d56", chatbot="public")
 
-app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")
+
+class RevalidatedStaticFiles(StaticFiles):
+    """JS·CSS·HTML 은 매번 서버에 재검증(no-cache)하게 한다. Cache-Control 이 없으면 브라우저가
+    Last-Modified 로 '휴리스틱 캐시'를 해 배포 뒤에도 며칠씩 옛 스크립트를 쓴다 — 콘텐츠 관리
+    화면이 새 HTML + 옛 admin.js 로 깨져 보였던 원인. 바뀌지 않았으면 ETag 로 304 만 오가서 가볍다."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if path.endswith((".js", ".css", ".html", ".webmanifest")):
+            response.headers["cache-control"] = "no-cache"
+        return response
+
+
+app.mount("/", RevalidatedStaticFiles(directory=PUBLIC_DIR), name="public")
