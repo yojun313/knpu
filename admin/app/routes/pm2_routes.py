@@ -64,19 +64,31 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
 async def restart_all_processes(user=Depends(get_current_user)):
 
     def _run_and_log():
-        # 개별 재시작과 동일하게 --update-env 를 붙인다. 이게 없으면 pm2 가 프로세스를
-        # 처음 띄울 때 저장해 둔 환경 변수를 그대로 다시 쓰기 때문에, .env 나
-        # ecosystem 의 env 를 고치고 전체 재시작해도 반영되지 않는다.
-        success = PM2Service.run_command("restart", "all", ["--update-env"])
+        # 한 번에 'pm2 restart all' 을 돌리지 않는다. 대시보드 자신도 대상이라, 차례가 오면
+        # pm2 가 대시보드의 프로세스 트리(실행 중인 pm2 명령 포함)를 죽여 뒤 순서 앱들이
+        # 재시작되지 않는다. 다른 앱을 하나씩 재시작한 뒤 대시보드는 마지막에 떼어 내 재시작한다.
+        me = PM2Service.self_name()
+        names = [p.get("name") for p in PM2Service.get_processes() if p.get("name")]
+        names = list(dict.fromkeys(names))  # 클러스터 모드 중복 제거, 순서 유지
+        failed = []
+        for name in names:
+            if name == me:
+                continue
+            ok, _ = PM2Service.restart(name)
+            if not ok:
+                failed.append(name)
         insert_log(
             user_logs_col,
             user["sub"],
             "admin.pm2.restart_all",
             "admin",
-            message="pm2 restart all --update-env",
+            message="pm2 전체 재시작"
+            + (f" — 실패: {', '.join(failed)}" if failed else ""),
             target={"type": "pm2_process", "id": "all"},
-            outcome="success" if success else "failure",
+            outcome="failure" if failed else "success",
         )
+        if me and me in names:
+            PM2Service.restart_detached(me)
 
     return JSONResponse(
         {"status": "accepted"},
@@ -95,9 +107,14 @@ async def control_process(action: str, name: str, user=Depends(get_current_user)
     if name not in names:
         raise HTTPException(status_code=404, detail="Process not found")
 
-    # 재시작은 --update-env 로 환경 변수 변경을 반영한다 (UnivDash 와 같은 동작)
-    extra = ["--update-env"] if action == "restart" else None
-    success = await asyncio.to_thread(PM2Service.run_command, action, name, extra)
+    if action == "restart" and name == PM2Service.self_name():
+        # 대시보드 자신: 응답을 먼저 보내고 떼어 낸 프로세스로 재시작한다.
+        success = await asyncio.to_thread(PM2Service.restart_detached, name)
+    elif action == "restart":
+        # ecosystem 파일의 env 를 다시 적용해 재시작한다(대시보드 환경은 섞지 않는다).
+        success, _ = await asyncio.to_thread(PM2Service.restart, name)
+    else:
+        success = await asyncio.to_thread(PM2Service.run_command, action, name)
     insert_log(
         user_logs_col,
         user["sub"],
@@ -258,9 +275,8 @@ async def toggle_watch(name: str, user=Depends(get_current_user)):
 
     current_watch = target_proc.get("pm2_env", {}).get("watch", False)
 
+    # --update-env 는 붙이지 않는다: 대시보드의 환경(PORT 등)이 대상 앱에 덮어써진다.
     new_flag = ["--watch", "false"] if current_watch else ["--watch"]
-
-    new_flag.append("--update-env")
 
     success = PM2Service.run_command("restart", name, new_flag)
     insert_log(

@@ -50,16 +50,37 @@ def ecosystem_path() -> Path:
     )
 
 
-def child_env() -> dict[str, str]:
-    """node / pm2 를 띄울 때 쓸 환경 변수.
+# pm2 · node 자식 프로세스에 물려줄 환경 변수(이 목록만 넘긴다).
+_KEEP_ENV = {
+    "PATH",
+    "HOME",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+    "LANG",
+    "LANGUAGE",
+    "TZ",
+    "TERM",
+    "PM2_HOME",
+    "XDG_RUNTIME_DIR",
+    "NVM_DIR",
+    "NVM_BIN",
+}
 
-    이 서버가 pm2 로 실행되면 pm2 의 IPC 채널 변수(NODE_CHANNEL_FD 등)를 물려받는다. 그대로 넘기면
-    자식 node 가 자기 프로세스에 없는 파일 디스크립터를 IPC 채널로 열려다 abort(-6) 로 죽는다.
+
+def child_env() -> dict[str, str]:
+    """node / pm2 를 띄울 때 쓸 깨끗한 환경 변수.
+
+    이 대시보드의 환경을 통째로 넘기면 안 된다.
+    * pm2 의 IPC 채널 변수(NODE_CHANNEL_FD 등)를 받은 자식 node 는 없는 파일 디스크립터를 열려다 abort(-6) 로 죽는다.
+    * pm2 는 start / restart --update-env 때 CLI 의 환경을 앱 환경에 덮어쓴다. 대시보드의 PORT=8009 ·
+      MODE · .env 값이 다른 앱에 저장되어, 그 앱들이 모두 같은 포트를 잡으려다 죽는다
+      ('전체 재시작'하면 일부 프로세스가 죽던 원인).
+    그래서 실행에 꼭 필요한 기본 변수만 넘긴다.
     """
-    env = dict(os.environ)
-    for key in ("NODE_CHANNEL_FD", "NODE_CHANNEL_SERIALIZATION_MODE", "NODE_UNIQUE_ID"):
-        env.pop(key, None)
-    return env
+    return {
+        k: v for k, v in os.environ.items() if k in _KEEP_ENV or k.startswith("LC_")
+    }
 
 
 def _node() -> str:
