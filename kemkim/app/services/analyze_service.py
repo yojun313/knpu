@@ -1,11 +1,7 @@
-import io
 import json
 import os
-import threading
-import uuid
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 
@@ -41,9 +37,6 @@ _DEFAULT_OPTION = {
     "exception_filename": "N",
 }
 
-# 메모리 내 작업 상태 추적: pid -> {"status": "running"|"done"|"error", "project_id": ..., "error": ...}
-_jobs: dict[str, dict] = {}
-
 
 def build_option(overrides: dict) -> dict:
     option = dict(_DEFAULT_OPTION)
@@ -53,73 +46,41 @@ def build_option(overrides: dict) -> dict:
     return option
 
 
-def start_job(
-    content: bytes,
-    filename: str,
-    option: dict,
-    uid: str,
-    project_name: str | None = None,
-    crawl_source: dict | None = None,
-) -> str:
-    pid = uuid.uuid4().hex
-    _jobs[pid] = {"status": "running", "project_id": None, "error": None}
+def run_job(ctx) -> dict:
+    """작업 워커 프로세스에서 실행된다(system.jobs.worker). pid = 작업 id."""
+    from system.jobs.errors import JobError
 
-    try:
-        requests.post(
-            f"{PROGRESS_SERVER_URL}/process",
-            json={"title": "KEMKIM 분석", "process_id": pid},
-            timeout=10,
-        ).raise_for_status()
-    except Exception as e:
-        _jobs[pid] = {
-            "status": "error",
-            "project_id": None,
-            "error": f"진행 상황 서버 등록 실패: {e}",
-        }
-        return pid
+    from app.models.analysis_model import KemKimOption
+    from app.services.analysis_service import start_kemkim
 
-    option = dict(option)
-    option["pid"] = pid
+    params = dict(ctx.params)
+    crawl_source = params.pop("_crawl_source", None)
+    option = dict(params)
+    option["pid"] = ctx.id
     # tokenfile_name은 kemkim 내부 폴더명 생성("token_" 접두어 제거)에 쓰이므로 실제
     # 업로드된 토큰 CSV 파일명을 그대로 넘긴다.
-    option["tokenfile_name"] = filename
+    option["tokenfile_name"] = ctx.input_filename
 
-    def _run():
-        try:
-            from app.models.analysis_model import KemKimOption
-            from app.services.analysis_service import start_kemkim
-
-            token_data = pd.read_csv(io.StringIO(content.decode("utf-8")))
-            result = start_kemkim(
-                KemKimOption(**option),
-                token_data,
-                uid=uid,
-                project_name=project_name,
-                crawl_source=crawl_source,
-            )
-            if isinstance(result, JSONResponse):
-                body = json.loads(bytes(result.body))
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": body.get("message") or body.get("error") or "분석 실패",
-                }
-                return
-            project_id = result.headers.get("X-Kemkim-Project-Id")
-            if not project_id:
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": "분석은 끝났지만 프로젝트로 저장하지 못했습니다.",
-                }
-                return
-            _jobs[pid] = {"status": "done", "project_id": project_id, "error": None}
-        except Exception as e:
-            _jobs[pid] = {"status": "error", "project_id": None, "error": str(e)}
-
-    threading.Thread(target=_run, daemon=True).start()
-    return pid
-
-
-def get_job(pid: str) -> dict:
-    return _jobs.get(pid, {"status": "unknown", "project_id": None, "error": None})
+    ctx.log(f"토큰 파일 읽는 중: {ctx.input_filename}")
+    token_data = pd.read_csv(ctx.input_path, encoding="utf-8")
+    ctx.log(
+        f"데이터 {len(token_data):,}행 · 기간 {option.get('startdate')}~{option.get('enddate')}"
+    )
+    result = start_kemkim(
+        KemKimOption(**option),
+        token_data,
+        uid=ctx.uid,
+        project_name=ctx.title,
+        crawl_source=crawl_source,
+    )
+    if result is None:
+        raise JobError(
+            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주세요."
+        )
+    if isinstance(result, JSONResponse):
+        body = json.loads(bytes(result.body))
+        raise JobError(body.get("message") or body.get("error") or "분석 실패")
+    project_id = result.headers.get("X-Kemkim-Project-Id")
+    if not project_id:
+        raise JobError("분석은 끝났지만 프로젝트로 저장하지 못했습니다.")
+    return {"project_id": project_id, "summary": f"프로젝트 '{ctx.title}' 생성"}

@@ -4,9 +4,11 @@
   <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');var mn=document.cookie.match(/(?:^|; )ui_nav_visibility=([^;]*)/);if(mn&&decodeURIComponent(mn[1])==='autohide')document.documentElement.setAttribute('data-ui-nav','autohide');}catch(e){}})();</script>
   <link rel="stylesheet" href="/css/viewer.css">
   <link rel="stylesheet" href="/shared-ui/theme.css">
+  <link rel="stylesheet" href="/shared-ui/jobs.css">
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
   <script src="/shared-ui/sidepanel.js"></script>
+  <script src="/shared-ui/jobs.js"></script>
   <script src="/js/vendor/chart-4.4.4.umd.min.js"></script>
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/shared-ui/apple-touch-icon.png">
@@ -321,19 +323,6 @@
           <button class="btn primary" id="btnCrawlStartAnalyze">분석 시작</button>
         </div>
         <div id="crawlStatus" class="modal-status"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="progressModal" class="modal-overlay" hidden>
-    <div class="modal-card progress-card">
-      <div class="modal-head">
-        <span>통계 분석 진행 중</span>
-        <button id="progressModalClose" class="modal-close" title="닫기" hidden>×</button>
-      </div>
-      <div class="progress-body">
-        <div class="spin progress-spin" id="progressSpin"></div>
-        <div id="progressLog" class="progress-log"></div>
       </div>
     </div>
   </div>

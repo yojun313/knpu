@@ -1,4 +1,5 @@
 # app/routes/project_routes.py
+import asyncio
 import os
 import io
 
@@ -15,6 +16,8 @@ from app.services import (
     network_ai_jobs,
 )
 from system import uploads as upload_staging
+from system.jobs import submit as submit_job
+from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
 
@@ -629,21 +632,35 @@ async def api_analyze_start(request: Request):
         raise HTTPException(400, "분석할 열(대상 열)을 선택해주세요.")
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
-    pid = analyze_service.start_job(
-        content, filename, built_option, uid, project_name=project_name
+    scheduled = parse_schedule(body.get("scheduled_at"))
+    job = await asyncio.to_thread(
+        submit_job,
+        service="network",
+        kind="network",
+        kind_label="네트워크 분석",
+        user=_user(request),
+        title=project_name,
+        params=built_option,
+        content=content,
+        filename=filename,
+        scheduled_ts=scheduled,
     )
     insert_log(
         user_logs_db,
         uid,
         "network.project.analyze_start",
         "network",
-        target={"type": "project", "id": pid, "name": project_name},
-        metadata={"text_col": built_option.get("text_col")},
+        target={"type": "job", "id": job["_id"], "name": project_name},
+        metadata={
+            "text_col": built_option.get("text_col"),
+            "scheduled_ts": job.get("scheduled_ts"),
+        },
     )
-    return JSONResponse({"pid": pid})
+    return JSONResponse(
+        {"pid": job["_id"], "job_id": job["_id"], "status": job["status"]}
+    )
 
 
 @router.get("/api/projects/analyze/{pid}/status")
 async def api_analyze_status(pid: str, request: Request):
-    _uid(request)
-    return JSONResponse(analyze_service.get_job(pid))
+    return JSONResponse(job_status_compat(_uid(request), pid))

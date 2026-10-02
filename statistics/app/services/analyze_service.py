@@ -1,7 +1,5 @@
 import json
 import os
-import threading
-import uuid
 from io import StringIO
 
 import pandas as pd
@@ -51,9 +49,6 @@ HATE_LABEL_COLS = {
     "clean",
 }
 
-# 메모리 내 작업 상태 추적: pid -> {"status": "running"|"done"|"error", "project_id": ..., "error": ...}
-_jobs: dict[str, dict] = {}
-
 
 def validate_option(category: str, platform: str) -> None:
     if category in COMMON_CATEGORIES:
@@ -84,7 +79,7 @@ def _needs_hate_measurement(df: pd.DataFrame) -> bool:
     return len(present) < 8
 
 
-def _measure_hate_via_gpu(df: pd.DataFrame, pid: str) -> pd.DataFrame:
+def _measure_hate_via_gpu(df: pd.DataFrame, pid: str, log=None) -> pd.DataFrame:
     """GPU 서버의 kor-unsmile 모델로 혐오도 레이블 점수(option_num=2)를 측정해
     점수 열이 붙은 DataFrame을 돌려준다. 진행 메시지는 GPU가 같은 pid로 쏜다."""
     if not GPU_SERVER_URL:
@@ -97,7 +92,9 @@ def _measure_hate_via_gpu(df: pd.DataFrame, pid: str) -> pd.DataFrame:
             "혐오도 측정에는 'Text' 열이 필요합니다 (원본 크롤링 CSV를 사용해 주세요)."
         )
 
-    _send_progress(pid, f"[혐오도 분석] GPU 서버로 전송 중... (총 {len(df):,}행)")
+    (log or (lambda t: _send_progress(pid, t)))(
+        f"[혐오도 분석] GPU 서버로 전송 중... (총 {len(df):,}행)"
+    )
 
     buf = StringIO()
     df.to_csv(buf, index=False)
@@ -115,82 +112,58 @@ def _measure_hate_via_gpu(df: pd.DataFrame, pid: str) -> pd.DataFrame:
     return pd.read_csv(StringIO(resp.content.decode("utf-8")))
 
 
-def start_job(
-    content: bytes,
-    filename: str,
-    category: str,
-    platform: str,
-    uid: str,
-    project_name: str | None = None,
-    extra_options: dict | None = None,
-) -> str:
+def job_kind_label(category: str) -> str:
+    return f"통계 분석 · {category}" if category else "통계 분석"
+
+
+def build_job_params(category: str, platform: str, extra_options: dict | None) -> dict:
     validate_option(category, platform)
-
-    pid = uuid.uuid4().hex
-    _jobs[pid] = {"status": "running", "project_id": None, "error": None}
-
-    try:
-        requests.post(
-            f"{PROGRESS_SERVER_URL}/process",
-            json={"title": "통계 분석", "process_id": pid},
-            timeout=10,
-        ).raise_for_status()
-    except Exception as e:
-        _jobs[pid] = {
-            "status": "error",
-            "project_id": None,
-            "error": f"진행 상황 서버 등록 실패: {e}",
-        }
-        return pid
-
-    option = {"pid": pid, "category": category, "platform": platform}
+    params = {"category": category, "platform": platform}
     if extra_options:
         # 워드클라우드 옵션만 통과시킨다 (임의 필드 주입 방지)
         for key in ("wc_period", "wc_max_words", "wc_exclude"):
             if key in extra_options:
-                option[key] = extra_options[key]
+                params[key] = extra_options[key]
+    return params
 
-    def _run():
+
+def run_job(ctx) -> dict:
+    """작업 워커 프로세스에서 실행된다(system.jobs.worker). pid = 작업 id."""
+    from system.jobs.errors import JobError
+
+    from app.models.analysis_model import StatisticsOption
+    from app.services.statistics_service import run_statistics_analysis
+
+    pid = ctx.id
+    params = ctx.params
+    category = params.get("category") or ""
+    option = {"pid": pid, **params}
+
+    ctx.log(f"입력 파일 읽는 중: {ctx.input_filename}")
+    df = pd.read_csv(ctx.input_path, encoding="utf-8")
+    ctx.log(f"데이터 {len(df):,}행 · {len(df.columns)}열")
+
+    # 혐오도 분석: 점수 열이 없는 원본 CSV면 GPU에서 먼저 측정한 뒤
+    # 곧바로 통계 분석까지 이어서 진행한다.
+    if category == HATE_CATEGORY and _needs_hate_measurement(df):
+        ctx.stage("GPU 혐오도 측정 중")
         try:
-            from app.models.analysis_model import StatisticsOption
-            from app.services.statistics_service import run_statistics_analysis
+            df = _measure_hate_via_gpu(df, pid, log=ctx.log)
+        except ValueError as e:
+            raise JobError(str(e))
+        ctx.log("[혐오도 분석] 측정 완료 — 통계 분석 시작")
 
-            df = pd.read_csv(StringIO(content.decode("utf-8")))
-
-            # 혐오도 분석: 점수 열이 없는 원본 CSV면 GPU에서 먼저 측정한 뒤
-            # 곧바로 통계 분석까지 이어서 진행한다.
-            if category == HATE_CATEGORY and _needs_hate_measurement(df):
-                df = _measure_hate_via_gpu(df, pid)
-                _send_progress(pid, "[혐오도 분석] 측정 완료 — 통계 분석 시작")
-
-            result = run_statistics_analysis(
-                StatisticsOption(**option), df, uid=uid, project_name=project_name
-            )
-            if isinstance(result, JSONResponse):
-                import json as _json
-
-                body = _json.loads(bytes(result.body))
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": body.get("message") or body.get("error") or "분석 실패",
-                }
-                return
-            project_id = result.headers.get("X-Statistics-Project-Id")
-            if not project_id:
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": "분석은 끝났지만 프로젝트로 저장하지 못했습니다.",
-                }
-                return
-            _jobs[pid] = {"status": "done", "project_id": project_id, "error": None}
-        except Exception as e:
-            _jobs[pid] = {"status": "error", "project_id": None, "error": str(e)}
-
-    threading.Thread(target=_run, daemon=True).start()
-    return pid
-
-
-def get_job(pid: str) -> dict:
-    return _jobs.get(pid, {"status": "unknown", "project_id": None, "error": None})
+    result = run_statistics_analysis(
+        StatisticsOption(**option), df, uid=ctx.uid, project_name=ctx.title
+    )
+    if result is None:
+        raise JobError(
+            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주세요."
+        )
+    if isinstance(result, JSONResponse):
+        body = json.loads(bytes(result.body))
+        raise JobError(body.get("message") or body.get("error") or "분석 실패")
+    project_id = result.headers.get("X-Statistics-Project-Id")
+    if not project_id:
+        raise JobError("분석은 끝났지만 프로젝트로 저장하지 못했습니다.")
+    return {"project_id": project_id, "summary": f"프로젝트 '{ctx.title}' 생성"}
