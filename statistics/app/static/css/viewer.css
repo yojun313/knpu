@@ -379,7 +379,7 @@ select{width:100%;appearance:none;
 .table-card.hidden-by-search{display:none}
 .tc-head{padding:13px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;
   justify-content:space-between;gap:8px}
-.tc-head-main{min-width:0}
+.tc-head-main{min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:10px;row-gap:2px}
 .tc-title{font-size:13px;font-weight:700;color:var(--text-strong)}
 .tc-meta{font-size:10.5px;color:var(--sidebar-muted);font-variant-numeric:tabular-nums}
 .tc-head-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
