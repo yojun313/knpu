@@ -21,7 +21,7 @@ Research System for **FPEI** at **Korea National Police University**
 
 ## MANAGER
 
-<img src="homepage/server/app/public/assets/imgs/systems/manager.png" alt="Manager Service" width="700">
+<img src="homepage/server/app/public/assets/imgs/manager/database.png" alt="Manager Service" width="700">
 
 [![Open MANAGER](https://img.shields.io/badge/Open-manager.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://manager.knpu.re.kr)
 
