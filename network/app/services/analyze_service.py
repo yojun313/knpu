@@ -1,10 +1,7 @@
-import io
+import json
 import os
-import threading
-import uuid
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 
@@ -48,9 +45,6 @@ _DEFAULT_OPTION = {
     "ego_top": 5,
 }
 
-# 메모리 내 작업 상태 추적: pid -> {"status": "running"|"done"|"error", "project_id": ..., "error": ...}
-_jobs: dict[str, dict] = {}
-
 
 def build_option(overrides: dict) -> dict:
     option = dict(_DEFAULT_OPTION)
@@ -60,66 +54,28 @@ def build_option(overrides: dict) -> dict:
     return option
 
 
-def start_job(
-    content: bytes,
-    filename: str,
-    option: dict,
-    uid: str,
-    project_name: str | None = None,
-) -> str:
-    pid = uuid.uuid4().hex
-    _jobs[pid] = {"status": "running", "project_id": None, "error": None}
+def run_job(ctx) -> dict:
+    """작업 워커 프로세스에서 실행된다(system.jobs.worker). pid = 작업 id."""
+    from system.jobs.errors import JobError
 
-    try:
-        requests.post(
-            f"{PROGRESS_SERVER_URL}/process",
-            json={"title": "네트워크 분석", "process_id": pid},
-            timeout=10,
-        ).raise_for_status()
-    except Exception as e:
-        _jobs[pid] = {
-            "status": "error",
-            "project_id": None,
-            "error": f"진행 상황 서버 등록 실패: {e}",
-        }
-        return pid
+    from app.services.network_service import run_network_analysis
 
-    option = dict(option)
-    option["pid"] = pid
-
-    def _run():
-        try:
-            from app.services.network_service import run_network_analysis
-
-            df = pd.read_csv(io.StringIO(content.decode("utf-8")))
-            result = run_network_analysis(
-                pid, df, option, uid=uid, project_name=project_name
-            )
-            if isinstance(result, JSONResponse):
-                import json as _json
-
-                body = _json.loads(bytes(result.body))
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": body.get("message") or body.get("error") or "분석 실패",
-                }
-                return
-            project_id = result.headers.get("X-Network-Project-Id")
-            if not project_id:
-                _jobs[pid] = {
-                    "status": "error",
-                    "project_id": None,
-                    "error": "분석은 끝났지만 프로젝트로 저장하지 못했습니다.",
-                }
-                return
-            _jobs[pid] = {"status": "done", "project_id": project_id, "error": None}
-        except Exception as e:
-            _jobs[pid] = {"status": "error", "project_id": None, "error": str(e)}
-
-    threading.Thread(target=_run, daemon=True).start()
-    return pid
-
-
-def get_job(pid: str) -> dict:
-    return _jobs.get(pid, {"status": "unknown", "project_id": None, "error": None})
+    option = dict(ctx.params)
+    option["pid"] = ctx.id
+    ctx.log(f"입력 파일 읽는 중: {ctx.input_filename}")
+    df = pd.read_csv(ctx.input_path, encoding="utf-8")
+    ctx.log(f"데이터 {len(df):,}행 · 대상 열 '{option.get('text_col')}'")
+    result = run_network_analysis(
+        ctx.id, df, option, uid=ctx.uid, project_name=ctx.title
+    )
+    if result is None:
+        raise JobError(
+            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주세요."
+        )
+    if isinstance(result, JSONResponse):
+        body = json.loads(bytes(result.body))
+        raise JobError(body.get("message") or body.get("error") or "분석 실패")
+    project_id = result.headers.get("X-Network-Project-Id")
+    if not project_id:
+        raise JobError("분석은 끝났지만 프로젝트로 저장하지 못했습니다.")
+    return {"project_id": project_id, "summary": f"프로젝트 '{ctx.title}' 생성"}

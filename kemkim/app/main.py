@@ -80,6 +80,16 @@ app.mount(
 
 mount_shared_ui(app, app_name="KEMKIM", theme_color="#0B1226")
 
+# 오래 걸리는 분석은 '작업'으로: 별도 프로세스 그룹에서 실행·예약·중단(/api/jobs)
+from system.jobs import install_jobs  # noqa: E402
+
+install_jobs(
+    app,
+    service="kemkim",
+    entry="app.services.analyze_service:run_job",
+    cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+)
+
 app.include_router(api_router)
 
 print("KemKim viewer server is running...")

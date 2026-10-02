@@ -11,6 +11,8 @@ from starlette.background import BackgroundTask
 
 from app.services import project_store, analyze_service, ai_analysis
 from system import uploads as upload_staging
+from system.jobs import submit as submit_job
+from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
 
@@ -870,29 +872,39 @@ async def api_analyze_start(request: Request):
         body.get("options") if isinstance(body.get("options"), dict) else None
     )
     try:
-        pid = analyze_service.start_job(
-            content,
-            filename,
-            category,
-            platform,
-            uid,
-            project_name=project_name,
-            extra_options=extra_options,
-        )
+        params = analyze_service.build_job_params(category, platform, extra_options)
     except ValueError as e:
         raise HTTPException(400, str(e))
+    scheduled = parse_schedule(body.get("scheduled_at"))
+    job = await asyncio.to_thread(
+        submit_job,
+        service="statistics",
+        kind="statistics",
+        kind_label=analyze_service.job_kind_label(category),
+        user=_user(request),
+        title=project_name,
+        params=params,
+        content=content,
+        filename=filename,
+        scheduled_ts=scheduled,
+    )
     insert_log(
         user_logs_db,
         uid,
         "statistics.project.analyze_start",
         "statistics",
-        target={"type": "project", "id": pid, "name": project_name},
-        metadata={"category": category, "platform": platform},
+        target={"type": "job", "id": job["_id"], "name": project_name},
+        metadata={
+            "category": category,
+            "platform": platform,
+            "scheduled_ts": job.get("scheduled_ts"),
+        },
     )
-    return JSONResponse({"pid": pid})
+    return JSONResponse(
+        {"pid": job["_id"], "job_id": job["_id"], "status": job["status"]}
+    )
 
 
 @router.get("/api/projects/analyze/{pid}/status")
 async def api_analyze_status(pid: str, request: Request):
-    _uid(request)
-    return JSONResponse(analyze_service.get_job(pid))
+    return JSONResponse(job_status_compat(_uid(request), pid))

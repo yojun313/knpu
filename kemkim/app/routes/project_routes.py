@@ -17,6 +17,8 @@ from app.services import (
     analyze_service,
 )
 from system import uploads as upload_staging
+from system.jobs import submit as submit_job
+from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
 from system.logging.user_log import insert_log
 
@@ -873,29 +875,39 @@ async def api_analyze_start(request: Request):
             "name": os.path.basename(cs["name"])[:300],
             "db_name": str(cs.get("db_name") or "")[:300],
         }
-    pid = analyze_service.start_job(
-        content,
-        filename,
-        built_option,
-        uid,
-        project_name=project_name,
-        crawl_source=crawl_source,
+    params = dict(built_option)
+    if crawl_source:
+        params["_crawl_source"] = crawl_source
+    scheduled = parse_schedule(body.get("scheduled_at"))
+    job = await asyncio.to_thread(
+        submit_job,
+        service="kemkim",
+        kind="kemkim",
+        kind_label="KEMKIM 분석",
+        user=_user(request),
+        title=project_name,
+        params=params,
+        content=content,
+        filename=filename,
+        scheduled_ts=scheduled,
     )
     insert_log(
         user_logs_db,
         uid,
         "kemkim.project.analyze_start",
         "kemkim",
-        target={"type": "project", "id": pid, "name": project_name},
+        target={"type": "job", "id": job["_id"], "name": project_name},
         metadata={
             "startdate": raw_option.get("startdate"),
             "enddate": raw_option.get("enddate"),
+            "scheduled_ts": job.get("scheduled_ts"),
         },
     )
-    return JSONResponse({"pid": pid})
+    return JSONResponse(
+        {"pid": job["_id"], "job_id": job["_id"], "status": job["status"]}
+    )
 
 
 @router.get("/api/projects/analyze/{pid}/status")
 async def api_analyze_status(pid: str, request: Request):
-    _uid(request)
-    return JSONResponse(analyze_service.get_job(pid))
+    return JSONResponse(job_status_compat(_uid(request), pid))

@@ -5,11 +5,13 @@
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
   <script src="/shared-ui/sidepanel.js"></script>
+  <script src="/shared-ui/jobs.js"></script>
   <script src="/js/vendor/vis-network-10.1.2.min.js"></script>
   <script src="/js/vendor/marked-15.0.12.min.js"></script>
   <script src="/js/vendor/purify-3.2.6.min.js"></script>
   <link rel="stylesheet" href="/css/viewer.css">
   <link rel="stylesheet" href="/shared-ui/theme.css">
+  <link rel="stylesheet" href="/shared-ui/jobs.css">
   <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/shared-ui/apple-touch-icon.png">
   <link rel="manifest" href="/shared-ui/manifest.webmanifest">
@@ -516,19 +518,6 @@
         <button type="button" id="aiReportModalClose" aria-label="분석 결과 닫기">×</button></header>
       <div id="aiResult" class="ai-result" aria-live="polite"><p class="hint">분석 결과가 여기에 표시됩니다.</p></div>
     </section>
-  </div>
-
-  <div id="progressModal" class="modal-overlay" hidden>
-    <div class="modal-card progress-card">
-      <div class="modal-head">
-        <span>네트워크 분석 진행 중</span>
-        <button id="progressModalClose" class="modal-close" title="닫기" hidden>×</button>
-      </div>
-      <div class="progress-body">
-        <div class="spin progress-spin" id="progressSpin"></div>
-        <div id="progressLog" class="progress-log"></div>
-      </div>
-    </div>
   </div>
 
   <script src="/js/viewer.js"></script>

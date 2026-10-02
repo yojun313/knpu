@@ -33,13 +33,17 @@ const app = (name, dir, service, extra = {}) => {
   };
 };
 
+// 분석 서비스: 종료 신호 → uvicorn 정리(최대 5초) → 작업 러너가 분석 프로세스 그룹을
+// SIGTERM/SIGKILL 로 정리할 시간을 준다. 기본 1.6초면 그 전에 SIGKILL 돼 손자 프로세스가 남는다.
+const ANALYSIS = { kill_timeout: 20000, treekill: true };
+
 module.exports = {
   apps: [
     app("homepage", "homepage/server", "homepage", { watch: true }),
     app("manager", "manager/server", "manager"),
-    app("network", "network", "network"),
-    app("kemkim", "kemkim", "kemkim"),
-    app("statistics", "statistics", "statistics"),
+    app("network", "network", "network", ANALYSIS),
+    app("kemkim", "kemkim", "kemkim", ANALYSIS),
+    app("statistics", "statistics", "statistics", ANALYSIS),
     app("manager_web", "manager/web", "progress", { watch: true }),
     app("mcdm", "mcdm", "mcdm"),
     // storage/(사건·문서)는 요청마다 쓰이므로 감시하면 채팅·생성 도중 재시작된다

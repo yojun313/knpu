@@ -807,13 +807,15 @@
     var name = document.getElementById('analyzeProjectName').value.trim();
     var statusEl = document.getElementById('analyzeStatus');
     var btn = document.getElementById('btnStartAnalyze');
+    var schedErr = scheduleError('upload');
+    if (schedErr) { statusEl.textContent = schedErr; return; }
     statusEl.textContent = '';
     btn.disabled = true;
-    postJson('/api/projects/analyze/start', { stage_id: analyzeStage, name: name, option: overrides }).then(function (res) {
+    postJson('/api/projects/analyze/start', withSchedule({ stage_id: analyzeStage, name: name, option: overrides }, 'upload')).then(function (res) {
       btn.disabled = false;
       analyzeStage = null;
       closeUploadModal();
-      openProgressModal(res.pid);
+      afterSubmit('upload', res);
     }).catch(function (err) {
       btn.disabled = false;
       statusEl.textContent = err.message || String(err);
@@ -958,82 +960,56 @@
     var name = document.getElementById('crawlProjectName').value.trim();
     var statusEl = document.getElementById('crawlStatus');
     var btn = document.getElementById('btnCrawlStartAnalyze');
+    var schedErr = scheduleError('crawl');
+    if (schedErr) { statusEl.textContent = schedErr; return; }
     statusEl.textContent = '';
     btn.disabled = true;
-    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, option: overrides }).then(function (res) {
+    postJson('/api/projects/analyze/start', withSchedule({ stage_id: crawlAnalyzeStage, name: name, option: overrides }, 'crawl')).then(function (res) {
       btn.disabled = false;
       crawlAnalyzeStage = null;
       closeUploadModal();
-      openProgressModal(res.pid);
+      afterSubmit('crawl', res);
     }).catch(function (err) {
       btn.disabled = false;
       statusEl.textContent = err.message || String(err);
     });
   }
 
-  var progressWs = null;
-  var progressPollTimer = null;
-
-  function appendProgressLine(text, cls) {
-    var log = document.getElementById('progressLog');
-    var div = document.createElement('div');
-    div.className = 'pl-line' + (cls ? ' ' + cls : '');
-    div.textContent = text;
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
+  // 분석은 서버의 '작업'으로 실행된다 — 진행 상황 창·작업 목록·예약·중단은 공통 UI
+  // (/shared-ui/jobs.js, 서버 system/jobs). 상태가 서버에 있어 새로고침·다른 기기에서도 이어진다.
+  var jobPickers = {};
+  function openProgressModal(jobId) {
+    if (window.KNPUJobs) KNPUJobs.open(jobId, { autoOpenResult: true });
   }
-
-  function closeProgressWs() {
-    if (progressWs) { try { progressWs.close(); } catch (e) { /* noop */ } progressWs = null; }
+  function scheduleError(key) {
+    return jobPickers[key] ? jobPickers[key].validate() : '';
   }
-
-  function closeProgressModal() {
-    document.getElementById('progressModal').hidden = true;
-    closeProgressWs();
-    if (progressPollTimer) { clearInterval(progressPollTimer); progressPollTimer = null; }
+  function withSchedule(payload, key) {
+    var at = jobPickers[key] ? jobPickers[key].value() : null;
+    if (at) payload.scheduled_at = at;
+    return payload;
   }
-
-  function openProgressModal(pid) {
-    document.getElementById('progressLog').innerHTML = '';
-    document.getElementById('progressModalClose').hidden = true;
-    document.getElementById('progressSpin').style.display = '';
-    document.getElementById('progressModal').hidden = false;
-    appendProgressLine('분석을 시작합니다...');
-
-    railApi('/api/progress-config').then(function (cfg) {
-      try {
-        progressWs = new WebSocket(cfg.ws_url + '/ws/' + pid);
-        progressWs.onmessage = function (ev) {
-          try {
-            var msg = JSON.parse(ev.data);
-            if (msg.type === 'message' && msg.text) appendProgressLine(msg.text);
-          } catch (e) { /* noop */ }
-        };
-      } catch (e) { /* WebSocket 연결 실패해도 상태 폴링으로 계속 진행 */ }
-    }).catch(function () { /* noop */ });
-
-    progressPollTimer = setInterval(function () {
-      railApi('/api/projects/analyze/' + pid + '/status').then(function (job) {
-        if (job.status === 'done') {
-          clearInterval(progressPollTimer); progressPollTimer = null;
-          appendProgressLine('완료! 프로젝트로 저장했습니다.', 'pl-ok');
-          closeProgressWs();
-          document.getElementById('progressSpin').style.display = 'none';
-          document.getElementById('progressModalClose').hidden = false;
-          loadRailProjects();
-          setTimeout(function () {
-            closeProgressModal();
-            if (job.project_id) switchProject(job.project_id);
-          }, 900);
-        } else if (job.status === 'error') {
-          clearInterval(progressPollTimer); progressPollTimer = null;
-          appendProgressLine('오류: ' + (job.error || '알 수 없는 오류'), 'pl-err');
-          closeProgressWs();
-          document.getElementById('progressSpin').style.display = 'none';
-          document.getElementById('progressModalClose').hidden = false;
-        }
-      }).catch(function () { /* 다음 폴링에서 재시도 */ });
-    }, 2000);
+  function afterSubmit(key, res) {
+    if (jobPickers[key]) jobPickers[key].reset();
+    if (res.status === 'scheduled' && window.KNPUJobs) KNPUJobs.toast('예약을 등록했습니다. 작업 목록에서 확인·변경할 수 있습니다.', 'ok');
+    if (window.KNPUJobs) KNPUJobs.refresh();
+    openProgressModal(res.job_id || res.pid);
+  }
+  function initJobs() {
+    if (!window.KNPUJobs) return;
+    KNPUJobs.init({
+      service: 'network',
+      anchor: document.querySelector('#rail .sb-overview') || document.querySelector('.sb-overview'),
+      onOpenResult: function (job) {
+        loadRailProjects();
+        if (job.result && job.result.project_id) switchProject(job.result.project_id);
+      },
+      onJobDone: function () { loadRailProjects(); }
+    });
+    var b1 = document.getElementById('btnStartAnalyze');
+    if (b1) jobPickers.upload = KNPUJobs.schedulePicker(b1.parentNode, { button: b1 });
+    var b2 = document.getElementById('btnCrawlStartAnalyze');
+    if (b2) jobPickers.crawl = KNPUJobs.schedulePicker(b2.parentNode, { button: b2 });
   }
 
   var RAIL_MIN_WIDTH = 220;
@@ -1266,7 +1242,6 @@
     document.getElementById('btnCrawlStartAnalyze').addEventListener('click', startCrawlAnalyze);
 
     // ---- 진행 상황 모달 ----
-    document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);
 
     document.getElementById('railLogout').addEventListener('click', function () {
       // 로그인은 knpu.re.kr 중앙 로그인이 전담하므로, 로그아웃도 그쪽 세션(쿠키)을 지운다
@@ -2442,6 +2417,7 @@
   });
   refreshActiveAiJobs();
   setInterval(refreshActiveAiJobs, 3000);
+  initJobs();
   var initialProjects = loadRailProjects();
   loadMe().then(function () {
     // 관리자 전체 보기 설정은 사용자 정보가 필요한 목록에만 반영한다.

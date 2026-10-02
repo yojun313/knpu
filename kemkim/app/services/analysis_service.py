@@ -120,7 +120,7 @@ def start_kemkim(
                     "message": "시간 가중치 오류가 발생했습니다",
                 },
             )
-        elif result_path == 3:
+        elif result_path in (0, 3):  # 0: make_kemkim 의 "키워드 없음 종료"
             # 예외 상황 메시지 응답
             return JSONResponse(
                 status_code=400,
