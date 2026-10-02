@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import time
 import uuid
 from datetime import datetime
 
@@ -137,6 +138,8 @@ def _add_hour_dow_heatmap(data, csv_dir: str) -> None:
 # StatisticsOption.category / .platform 조합 -> StatisticsAnalysis 메서드
 def _dispatch(option: StatisticsOption, data, output_dir: str) -> None:
     category, platform = option.category, option.platform
+    # 그래프 단계에서도 진행 로그를 보낼 수 있게 pid 를 넘긴다
+    statistics_analysis.pid = option.pid
     match (category, platform):
         case ("article 분석", "Naver News"):
             statistics_analysis.NaverNewsArticleAnalysis(data, output_dir)
@@ -190,15 +193,31 @@ def run_statistics_analysis(
     os.makedirs(output_dir, exist_ok=True)
 
     row_count = len(data)
+    pid = option.pid
+
+    def phase(text: str) -> None:
+        try:
+            send_message(pid, f"[단계] {text}")
+        except Exception:
+            pass
+
+    phase(f"{option.category} 그래프·표 생성 중 ({row_count:,}행)")
+    t0 = time.time()
     _dispatch(option, data, output_dir)
+    phase(f"그래프·표 생성 완료 ({time.time() - t0:.1f}초)")
 
     csv_dir = os.path.join(output_dir, "csv_files")
+    phase("시간대·요일 집계표 생성 중")
     _add_hour_dow_heatmap(data, csv_dir)
     _add_derived_time_series_tables(csv_dir)
-    spss_analysis.run(data, csv_dir)
+
+    spss_analysis.run(data, csv_dir, pid=pid)
 
     graph_dir = os.path.join(output_dir, "graphs")
-    fill_missing_graphs(csv_dir, graph_dir)
+    phase("표에서 누락된 그래프 생성 중")
+    t0 = time.time()
+    fill_missing_graphs(csv_dir, graph_dir, pid=pid)
+    phase(f"그래프 생성 완료 ({time.time() - t0:.1f}초)")
 
     metadata = {
         "category": option.category,
@@ -211,13 +230,20 @@ def run_statistics_analysis(
         json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     zip_path = f"{output_dir}.zip"
+    phase("결과 압축 중")
+    t0 = time.time()
     fast_zip(output_dir, zip_path)
+    phase(
+        f"압축 완료 — {os.path.getsize(zip_path) / 1e6:,.1f} MB "
+        f"({time.time() - t0:.1f}초)"
+    )
     filename = os.path.basename(zip_path)
 
     background_task = BackgroundTask(cleanup_folder_and_zip, output_dir, zip_path)
 
     response_headers = {}
     if uid:
+        phase("뷰어 프로젝트로 저장 중")
         project_id = _save_as_project(zip_path, uid, project_name, option.pid)
         if project_id:
             response_headers["X-Statistics-Project-Id"] = project_id

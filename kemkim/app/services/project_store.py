@@ -505,6 +505,27 @@ def save_source_csv(
     )
 
 
+def source_csv_dest(uid: str, project_id: str) -> str:
+    """원본 CSV를 바로 써 넣을 경로. 큰 파일을 메모리에 올리지 않고 흘려 쓸 때 쓴다."""
+    _get_owned_doc(uid, project_id)
+    return _source_csv_path(uid, project_id)
+
+
+def mark_source_saved(uid: str, project_id: str, source_ref: dict | None = None):
+    """source_csv_dest() 에 파일을 직접 쓴 뒤 호출해 메타데이터를 갱신한다."""
+    _get_owned_doc(uid, project_id)
+    kemkim_projects_db.update_one(
+        {"_id": project_id},
+        {
+            "$set": {
+                "has_source": True,
+                "source_ref": source_ref,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+
 def load_source_csv(uid: str, project_id: str, is_admin: bool = False) -> pd.DataFrame:
     doc = _get_owned_doc(uid, project_id, is_admin)
     path = _source_csv_path(doc["uid"], project_id)

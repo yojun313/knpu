@@ -1621,6 +1621,10 @@ html:not([data-ui-theme-mode="dark"]) .sb-title { background-image: linear-gradi
   color: #93c5fd; border: 1px solid rgba(96, 165, 250, .4); background: var(--ud-surface-soft);
 }
 html:not([data-ui-theme-mode="dark"]) .sb-avatar { color: #2563eb; }
+/* 홈페이지 구성원 사진이 로드되면 아이콘 대신 사진이 원을 꽉 채운다 */
+.sb-avatar { overflow: hidden; position: relative; }
+.sb-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.sb-avatar.has-photo { border-color: transparent; background: transparent; }
 .sb-user-text { flex: 1; }
 .sb-welcome { margin: 0; font-size: 11px; color: var(--ud-label); }
 html body .rail .sb-username {
@@ -1825,6 +1829,9 @@ pre.st-code[hidden] { display: none; }
   background: linear-gradient(135deg, rgba(59,130,246,.10), rgba(139,92,246,.10)); border: 1px solid var(--ud-line, var(--sidebar-border)); }
 .st-avatar { width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   font-size: 22px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+/* 홈페이지 구성원 사진이 있으면 이니셜 대신 사진을 채운다 */
+.st-avatar { overflow: hidden; position: relative; }
+.st-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .st-profile b { display: block; font-size: 16px; color: var(--text-strong, #101828); }
 .st-profile span { display: block; font-size: 12px; color: var(--sidebar-muted, #7c8896); margin-top: 2px; }
 .st-tags { display: flex !important; flex-wrap: wrap; gap: 5px; margin-top: 6px !important; }

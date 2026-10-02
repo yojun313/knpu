@@ -1,15 +1,3 @@
-"""OpenAI 호환 LLM 클라이언트 — 전역 공용.
-
-사용 예:
-
-    from system.llm import complete
-    text = complete("한 문장으로 요약해줘: ...")
-
-    from system.llm import chat
-    res = chat([{"role": "user", "content": "안녕"}])
-    print(res.text, res.model)
-"""
-
 import logging
 import re
 from dataclasses import dataclass, field

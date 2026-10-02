@@ -1,9 +1,3 @@
-"""작업 API — 각 분석 서비스의 /api/jobs/*.
-
-목록은 기본으로 '이 서비스' 작업만, scope=all 이면 내 모든 서비스 작업을 보여 준다.
-중단·다시 실행은 DB 플래그/문서로 전달되므로, 다른 서비스 작업도 그 서비스의 러너가 처리한다.
-"""
-
 import asyncio
 import os
 import time

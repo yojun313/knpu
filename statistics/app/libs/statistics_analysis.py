@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from app.libs.path import safe_path
+from system.progress import send_message
+
+# 산점도에 찍을 최대 점 개수. 610만 점을 그대로 그리면 2분 넘게 걸리는데
+# 점이 완전히 겹쳐서 그림으로서의 정보도 더 늘지 않는다.
+MAX_SCATTER_POINTS = 50_000
 
 warnings.filterwarnings("ignore")
 
@@ -18,6 +23,24 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 class StatisticsAnalysis:
+    # 분석 시작 전에 statistics_service 가 채워 준다. 없으면 로그를 보내지 않는다.
+    pid = None
+
+    def log(self, text: str) -> None:
+        if not self.pid:
+            return
+        try:
+            send_message(self.pid, f"[그래프] {text}")
+        except Exception:
+            pass
+
+    def sample_for_plot(self, df, n: int = MAX_SCATTER_POINTS):
+        """점이 너무 많은 그림은 표본만 그린다. (실제로 쓴 수, 전체 수)도 함께 돌려준다."""
+        total = len(df)
+        if total <= n:
+            return df, total, total
+        return df.sample(n, random_state=42), n, total
+
     def checkColumns(self, required_columns, columns):
         missing_columns = [col for col in required_columns if col not in columns]
 
@@ -923,10 +946,20 @@ class StatisticsAnalysis:
         plt.close()
 
         plt.figure(figsize=(10, 6))
+        scatter_data, used, total = self.sample_for_plot(data)
+        if used < total:
+            self.log(f"like_bad_scatter — {total:,}점 중 {used:,}점 표본으로 렌더링")
         sns.scatterplot(
-            data=data, x="Reply Like", y="Reply Bad", hue="Reply Sentiment", alpha=0.5
+            data=scatter_data,
+            x="Reply Like",
+            y="Reply Bad",
+            hue="Reply Sentiment",
+            alpha=0.5,
         )
-        plt.title("Reply Like vs Bad Correlation")
+        plt.title(
+            "Reply Like vs Bad Correlation"
+            + (f" (표본 {used:,}/{total:,})" if used < total else "")
+        )
         plt.xlabel("Likes")
         plt.ylabel("Dislikes (Bad)")
         plt.tight_layout()

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from app.libs.path import safe_path
+from system.progress import send_message, send_progress
 
 plt.rcParams["font.family"] = "NanumGothic"
 plt.rcParams["axes.unicode_minus"] = False
@@ -135,7 +136,7 @@ def _render_bar(df: pd.DataFrame, plan: dict, stem: str, out_path: str) -> None:
     plt.close()
 
 
-def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
+def fill_missing_graphs(csv_dir: str, graph_dir: str, pid: str | None = None) -> None:
     if not os.path.isdir(csv_dir):
         return
     os.makedirs(graph_dir, exist_ok=True)
@@ -146,12 +147,31 @@ def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
         if f.lower().endswith(".png")
     }
 
-    for fname in sorted(os.listdir(csv_dir)):
-        if not fname.lower().endswith(".csv"):
-            continue
+    def log(text: str) -> None:
+        if not pid:
+            return
+        try:
+            send_message(pid, f"[그래프] {text}")
+        except Exception:
+            pass
+
+    targets = [
+        f
+        for f in sorted(os.listdir(csv_dir))
+        if f.lower().endswith(".csv") and os.path.splitext(f)[0] not in existing
+    ]
+    if targets:
+        log(f"표 {len(targets)}개에서 그래프 생성 시작")
+    made = 0
+
+    for idx, fname in enumerate(targets, start=1):
         stem = os.path.splitext(fname)[0]
-        if stem in existing:
-            continue
+        log(f"({idx}/{len(targets)}) {stem}")
+        if pid:
+            try:
+                send_progress(pid, idx, len(targets))
+            except Exception:
+                pass
 
         try:
             df = pd.read_csv(os.path.join(csv_dir, fname), encoding="utf-8-sig")
@@ -164,6 +184,7 @@ def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
         try:
             if _is_heatmap_table(stem, df):
                 _render_heatmap(df, stem, out_path)
+                made += 1
                 continue
             plan = _plan_chart(stem, df)
             if not plan:
@@ -172,6 +193,11 @@ def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
                 _render_line(df, plan, stem, out_path)
             else:
                 _render_bar(df, plan, stem, out_path)
-        except Exception:
+            made += 1
+        except Exception as e:
             plt.close("all")
+            log(f"{stem} 건너뜀 — {type(e).__name__}: {e}")
             continue
+
+    if targets:
+        log(f"그래프 {made}개 생성 완료")

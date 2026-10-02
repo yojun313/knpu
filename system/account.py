@@ -62,19 +62,35 @@ def _fmt(value) -> str | None:
     )
 
 
-def _profile(user: dict) -> dict:
+_MEMBER_FIELDS = {"_id": 0, "name": 1, "section": 1, "position": 1, "image": 1}
+
+
+def _find_member(user: dict) -> dict | None:
+    """계정에 연결된 홈페이지 구성원. 연결이 없으면 이름이 같은 구성원을 찾는다.
+
+    구성원 연결(member_uid)이 안 된 계정도 홈페이지에 올린 사진을 쓸 수 있게 한다.
+    다만 동명이인이 있으면 엉뚱한 사람의 사진이 뜨므로, 이름으로 찾을 때는
+    정확히 한 명일 때만 쓴다.
+    """
     from system.db import members_db
 
-    member = None
-    if user.get("member_uid"):
-        try:
-            m = members_db.find_one(
-                {"uid": user["member_uid"]},
-                {"_id": 0, "name": 1, "section": 1, "position": 1, "image": 1},
-            )
-            member = m or None
-        except Exception:
-            member = None
+    try:
+        if user.get("member_uid"):
+            found = members_db.find_one({"uid": user["member_uid"]}, _MEMBER_FIELDS)
+            if found:
+                return found
+
+        name = (user.get("name") or "").strip()
+        if not name:
+            return None
+        matches = list(members_db.find({"name": name}, _MEMBER_FIELDS).limit(2))
+        return matches[0] if len(matches) == 1 else None
+    except Exception:
+        return None
+
+
+def _profile(user: dict) -> dict:
+    member = _find_member(user)
     return {
         "uid": user["uid"],
         "username": user.get("username"),

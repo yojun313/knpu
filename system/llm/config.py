@@ -1,19 +1,3 @@
-"""전역 LLM 설정 — .env 하나로 프로젝트 전체가 같은 LLM을 쓴다.
-
-OpenAI 호환 엔드포인트면 무엇이든 붙는다(vLLM, Ollama, LM Studio, LiteLLM,
-OpenAI 공식 API, manager 서버의 /llm 프록시 등).
-
-    LLM_BASE_URL   : OpenAI 호환 base URL (…/v1 까지)
-    LLM_API_KEY    : API 키 (없으면 OPENAI_API_KEY를 재사용)
-    모델 이름은 매 요청 전에 /models 에서 자동 조회한다(LLM_MODEL은 사용하지 않음).
-    LLM_TIMEOUT    : 요청 타임아웃(초)
-    LLM_MAX_RETRIES: 엔드포인트별 재시도 횟수(기본 1)
-
-주 엔드포인트가 죽었을 때 쓸 폴백(기존 코드가 모두 이 구조였다):
-
-    LLM_FALLBACK_BASE_URL / LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL
-"""
-
 import os
 
 from dotenv import load_dotenv

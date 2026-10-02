@@ -1,17 +1,3 @@
-"""분석 작업 실행 프로세스.
-
-러너(웹 서버 안의 스레드)는 작업마다 이 모듈을 '감독' 모드로 새 세션(=새 프로세스 그룹)에서 띄운다.
-
-  웹 서버 ─ 감독(supervise, 그룹 리더, 가벼움) ─ 실행(run, 실제 분석) ─ 풀 워커·resource_tracker …
-
-* 감독은 표준 라이브러리만 쓰고 대부분 child.wait() 에서 쉬므로 시그널에 즉시 반응한다.
-  SIGTERM/SIGINT/SIGHUP 을 받거나 웹 서버(부모)가 사라지면 그룹 전체를 SIGTERM → SIGKILL 로 정리한다.
-  분석이 정상 종료돼도 남은 손자 프로세스(ProcessPoolExecutor·loky 워커 등)를 마지막에 걷어 낸다.
-* 감독·실행 모두 PR_SET_PDEATHSIG 를 걸어, 웹 서버가 SIGKILL 로 죽어도 고아로 남지 않는다.
-* 실행은 서비스 폴더(cwd)에서 진입 함수(예: app.services.analyze_service:run_job)를 불러 분석하고,
-  system.progress 로 보내던 진행 메시지를 작업 문서의 로그로도 남긴다.
-"""
-
 import os
 import signal
 import subprocess
