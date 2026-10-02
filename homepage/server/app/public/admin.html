@@ -18,17 +18,41 @@
   <link rel="stylesheet" href="/shared-ui/webapp.css">
   <link href="css/styles.css" rel="stylesheet" />
   <style>
-    body {
-      background-color: #f4f5f7;
-      min-height: 100vh;
+    /* 관리 화면은 읽고 고치는 화면이라 본문 글꼴을 산세리프로 바꾸고 화면 폭을 꽉 채운다. */
+    :root {
+      --adm-bg: #f3f5f8;
+      --adm-surface: #ffffff;
+      --adm-soft: #f8f9fb;
+      --adm-line: #e4e7ec;
+      --adm-line-soft: #eef0f3;
+      --adm-text: #1d2433;
+      --adm-sub: #5d6778;
+      --adm-muted: #8a93a3;
+      --adm-accent: #1f5eb8;
+      --adm-accent-soft: #e9f1fc;
+      --adm-danger: #d63a3a;
+      --adm-radius: 12px;
+      --adm-gutter: clamp(12px, 2vw, 28px);
+      --adm-font: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
 
-    /* ---------------- 상단 바 ---------------- */
+    body {
+      background-color: var(--adm-bg);
+      min-height: 100vh;
+      font-family: var(--adm-font);
+      color: var(--adm-text);
+    }
+
+    .modal,
+    .adm-toasts {
+      font-family: var(--adm-font);
+    }
+
+    /* ---------------- 상단 머리 ---------------- */
     .admin-topbar {
-      padding-top: 6.5rem;
-      padding-bottom: 1.5rem;
+      padding: 6.4rem var(--adm-gutter) 1.1rem;
       color: #fff;
-      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
+      background: linear-gradient(120deg, #0f1b2d 0%, #1d3557 100%);
     }
 
     .admin-topbar-inner {
@@ -36,185 +60,369 @@
       align-items: flex-end;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 0.75rem;
+      gap: 0.75rem 1.5rem;
     }
 
     .admin-eyebrow {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
       color: var(--bs-primary);
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
     }
 
     .admin-topbar h1 {
-      font-family: "Montserrat", sans-serif;
-      font-weight: 700;
-      font-size: 1.75rem;
+      font-weight: 800;
+      font-size: 1.6rem;
+      letter-spacing: -0.01em;
       margin: 0;
     }
 
-    .admin-back-link {
-      color: rgba(255, 255, 255, 0.75);
-      font-size: 0.85rem;
+    .admin-topbar p {
+      margin: 0.3rem 0 0;
+      font-size: 0.86rem;
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    .admin-top-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-top-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 0.82rem;
+      font-weight: 600;
       text-decoration: none;
+      padding: 0.45rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
       white-space: nowrap;
     }
 
-    .admin-back-link:hover {
+    .admin-top-links a:hover {
       color: #fff;
+      background: rgba(255, 255, 255, 0.14);
     }
 
-    /* ---------------- 탭 바 ---------------- */
-    .admin-tabbar {
-      background: #fff;
-      border-bottom: 1px solid #e3e6ea;
+    /* ---------------- 본문 레이아웃: 왼쪽 섹션 목록 + 오른쪽 작업 영역 ---------------- */
+    .adm-shell {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px var(--adm-gutter) 4rem;
+      align-items: start;
+    }
+
+    .adm-side {
       position: sticky;
-      top: 0;
-      z-index: 20;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      top: 84px;
+      background: var(--adm-surface);
+      border: 1px solid var(--adm-line);
+      border-radius: var(--adm-radius);
+      padding: 10px;
+    }
+
+    .adm-side-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--adm-muted);
+      text-transform: uppercase;
+      padding: 6px 10px 8px;
+      margin: 0;
     }
 
     .admin-tabs {
       display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      gap: 0.25rem;
+      flex-direction: column;
+      gap: 2px;
       border: none;
-      padding: 0.35rem 0;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    .admin-tabs::-webkit-scrollbar {
-      display: none;
+      padding: 0;
+      margin: 0;
+      list-style: none;
     }
 
     .admin-tabs .nav-link {
+      width: 100%;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-family: "Montserrat", sans-serif;
+      gap: 0.65rem;
       font-weight: 600;
-      font-size: 0.85rem;
-      color: #5b6570;
+      font-size: 0.92rem;
+      color: var(--adm-sub);
       border: none;
-      border-radius: 8px;
-      padding: 0.55rem 0.9rem;
+      border-radius: 9px;
+      padding: 0.62rem 0.75rem;
       white-space: nowrap;
+      background: transparent;
+      text-align: left;
     }
 
-    .admin-tabs .nav-link i {
+    .admin-tabs .nav-link .tab-ico {
+      width: 30px;
+      height: 30px;
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--adm-soft);
+      color: var(--adm-muted);
       font-size: 0.85rem;
-      color: #9aa4af;
-      width: 1rem;
-      text-align: center;
+    }
+
+    .admin-tabs .nav-link .tab-label {
+      flex: 1;
+      min-width: 0;
     }
 
     .admin-tabs .nav-link:hover {
-      background: #f4f5f7;
-      color: #212529;
+      background: var(--adm-soft);
+      color: var(--adm-text);
     }
 
     .admin-tabs .nav-link.active {
-      background: #212529;
+      background: var(--adm-accent-soft);
+      color: var(--adm-accent);
+    }
+
+    .admin-tabs .nav-link.active .tab-ico {
+      background: var(--adm-accent);
       color: #fff;
     }
 
-    .admin-tabs .nav-link.active i {
-      color: var(--bs-primary);
-    }
-
     .tab-count {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      background: rgba(0, 0, 0, 0.08);
-      color: inherit;
+      background: var(--adm-soft);
+      color: var(--adm-sub);
+      border: 1px solid var(--adm-line);
       border-radius: 20px;
-      padding: 0.05rem 0.45rem;
-      min-width: 1.4em;
+      padding: 0.05rem 0.5rem;
+      min-width: 1.9em;
       text-align: center;
     }
 
     .admin-tabs .nav-link.active .tab-count {
-      background: rgba(255, 255, 255, 0.18);
+      background: #fff;
+      border-color: #cfe0f7;
+      color: var(--adm-accent);
     }
 
-    /* ---------------- 본문 ---------------- */
-    .admin-wrap {
-      max-width: 1180px;
-      margin: 1.75rem auto 5rem;
+    .adm-side-foot {
+      margin: 10px 4px 2px;
+      padding: 10px 6px 2px;
+      border-top: 1px solid var(--adm-line-soft);
+      font-size: 0.76rem;
+      color: var(--adm-muted);
+      line-height: 1.5;
     }
 
+    /* ---------------- 패널 ---------------- */
     .admin-panel {
-      border: none;
-      border-radius: 14px;
-      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
-      background-color: #fff;
-      margin-bottom: 1.5rem;
-      overflow: hidden;
+      background: var(--adm-surface);
+      border: 1px solid var(--adm-line);
+      border-radius: var(--adm-radius);
+      margin-bottom: 18px;
     }
 
     .admin-panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid #eef0f2;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--adm-line-soft);
     }
 
     .admin-panel-head h2 {
-      font-family: "Montserrat", sans-serif;
-      font-weight: 700;
-      font-size: 1.05rem;
+      font-weight: 800;
+      font-size: 1.12rem;
       margin: 0;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
+      color: var(--adm-text);
     }
 
     .admin-panel-head h2 i {
-      color: var(--bs-primary);
+      color: var(--adm-accent);
       font-size: 0.95rem;
     }
 
-    .admin-panel-body {
-      padding: 0.25rem 1.5rem 1.25rem;
+    .admin-panel-desc {
+      margin: 0.25rem 0 0;
+      font-size: 0.82rem;
+      color: var(--adm-muted);
+    }
+
+    .admin-panel-head > div:first-child {
+      flex: 1 1 260px;
+      min-width: 0;
+    }
+
+    .admin-panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .adm-search {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .adm-search > i,
+    .adm-search > svg {
+      position: absolute;
+      left: 11px;
+      color: var(--adm-muted);
+      font-size: 0.8rem;
+      pointer-events: none;
+    }
+
+    .adm-search input {
+      width: 260px;
+      padding: 0.5rem 0.75rem 0.5rem 2rem;
+      border: 1px solid var(--adm-line);
+      border-radius: 9px;
+      background: var(--adm-soft);
+      font-size: 0.88rem;
+      color: var(--adm-text);
+    }
+
+    .adm-search input:focus,
+    .adm-filter:focus {
+      outline: none;
+      background: #fff;
+      border-color: #9dbcec;
+      box-shadow: 0 0 0 3px rgba(31, 94, 184, 0.12);
+    }
+
+    .adm-filter {
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      border: 1px solid var(--adm-line);
+      border-radius: 9px;
+      background-color: var(--adm-soft);
+      font-size: 0.88rem;
+      color: var(--adm-text);
+      width: auto;
+      max-width: 220px;
+    }
+
+    .adm-result {
+      font-size: 0.8rem;
+      color: var(--adm-muted);
+      white-space: nowrap;
+      min-width: 3.5em;
+      text-align: right;
     }
 
     .btn-admin-add {
-      font-family: "Montserrat", sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
-      border-radius: 8px;
-      padding: 0.45rem 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 700;
+      font-size: 0.86rem;
+      border-radius: 9px;
+      padding: 0.5rem 0.95rem;
+      background: var(--adm-accent);
+      border-color: var(--adm-accent);
+      color: #fff;
+    }
+
+    .btn-admin-add:hover,
+    .btn-admin-add:focus {
+      background: #174d9b;
+      border-color: #174d9b;
+      color: #fff;
+    }
+
+    .admin-panel-body {
+      padding: 0;
+    }
+
+    .admin-note {
+      margin: 0;
+      padding: 0.7rem 1.25rem;
+      font-size: 0.82rem;
+      color: var(--adm-sub);
+      background: var(--adm-soft);
+      border-bottom: 1px solid var(--adm-line-soft);
+    }
+
+    .admin-note i {
+      color: var(--adm-accent);
+      margin-right: 0.35rem;
+    }
+
+    /* ---------------- 표 ---------------- */
+    .admin-table-wrap {
+      overflow-x: auto;
     }
 
     .admin-table {
-      margin-bottom: 0;
+      width: 100%;
+      margin: 0;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
     .admin-table thead th {
-      font-size: 0.72rem;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--adm-soft);
+      font-size: 0.74rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #8b95a1;
-      border-bottom-width: 1px;
-      padding-top: 0.85rem;
-      padding-bottom: 0.85rem;
+      letter-spacing: 0.02em;
+      color: var(--adm-muted);
+      border-bottom: 1px solid var(--adm-line);
+      padding: 0.65rem 0.9rem;
       white-space: nowrap;
+      text-align: left;
     }
 
     .admin-table td {
+      padding: 0.75rem 0.9rem;
       vertical-align: middle;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      border-bottom: 1px solid var(--adm-line-soft);
+      color: var(--adm-text);
     }
 
-    .admin-table tbody tr:hover {
-      background-color: #fbfbfc;
+    .admin-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .admin-table tbody tr.row-click {
+      cursor: pointer;
+    }
+
+    .admin-table tbody tr.row-click:hover td {
+      background: #f6f9fe;
+    }
+
+    .admin-table th:first-child,
+    .admin-table td:first-child {
+      padding-left: 1.25rem;
+    }
+
+    .admin-table th:last-child,
+    .admin-table td:last-child {
+      padding-right: 1.25rem;
     }
 
     .admin-table .col-actions {
@@ -223,22 +431,81 @@
       text-align: right;
     }
 
+    .admin-table .col-narrow {
+      width: 1%;
+      white-space: nowrap;
+    }
+
+    .admin-table .col-num {
+      width: 1%;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      color: var(--adm-sub);
+    }
+
+    .cell-main {
+      font-weight: 650;
+      color: var(--adm-text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .cell-sub {
+      margin-top: 2px;
+      font-size: 0.82rem;
+      color: var(--adm-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .cell-muted {
+      color: var(--adm-sub);
+    }
+
+    .cell-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--adm-accent);
+      text-decoration: none;
+      font-size: 0.84rem;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cell-link:hover {
+      text-decoration: underline;
+    }
+
     .row-thumb {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      border-radius: 9px;
       object-fit: cover;
-      background: #f1f3f5;
-      border: 1px solid #eceef1;
+      background: var(--adm-soft);
+      border: 1px solid var(--adm-line);
       flex-shrink: 0;
+      display: block;
+    }
+
+    .row-thumb.round {
+      border-radius: 50%;
     }
 
     .row-thumb-placeholder {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-      background: #f1f3f5;
-      border: 1px solid #eceef1;
+      width: 44px;
+      height: 44px;
+      border-radius: 9px;
+      background: var(--adm-soft);
+      border: 1px dashed #d3d8e0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -247,101 +514,283 @@
       flex-shrink: 0;
     }
 
-    .cell-truncate {
-      max-width: 260px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .row-thumb-placeholder.round {
+      border-radius: 50%;
     }
 
     .icon-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
-      border: 1px solid #e3e6ea;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--adm-line);
       background: #fff;
-      color: #6c757d;
+      color: var(--adm-sub);
       font-size: 0.8rem;
       margin-left: 4px;
       transition: all .12s ease;
     }
 
-    .icon-btn:hover {
-      background: #f4f5f7;
-      color: #212529;
+    .icon-btn:hover:not(:disabled) {
+      background: var(--adm-accent-soft);
+      border-color: #cfe0f7;
+      color: var(--adm-accent);
     }
 
-    .icon-btn.danger:hover {
+    .icon-btn.danger:hover:not(:disabled) {
       background: #fdecea;
       border-color: #f5c6c0;
-      color: #dc3545;
+      color: var(--adm-danger);
     }
 
-    .status-pill {
+    .icon-btn:disabled {
+      opacity: .35;
+    }
+
+    .badge-soft {
+      display: inline-block;
       font-size: 0.72rem;
       font-weight: 700;
-      padding: 0.15rem 0.55rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 6px;
+      background: var(--adm-soft);
+      color: var(--adm-sub);
+      border: 1px solid var(--adm-line);
+      white-space: nowrap;
+    }
+
+    .badge-soft.sci { background: #eef4ff; color: #1f5eb8; border-color: #d4e2fa; }
+    .badge-soft.scopus { background: #f3efff; color: #6a43c9; border-color: #e1d8fb; }
+    .badge-soft.kci { background: #ecf8f1; color: #1d8050; border-color: #cdebd9; }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
       border-radius: 20px;
+      white-space: nowrap;
     }
 
-    .status-pill.on {
-      background: #e6f6ed;
-      color: #1a8a4a;
+    .status-pill::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
     }
 
-    .status-pill.off {
-      background: #f1f3f5;
-      color: #8b95a1;
+    .status-pill.on { background: #e6f6ed; color: #1a8a4a; }
+    .status-pill.wait { background: #fff5e0; color: #b7791f; }
+    .status-pill.off { background: #f1f3f5; color: #8b95a1; }
+
+    .group-row td {
+      background: #f5f7fa;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--adm-sub);
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--adm-line);
     }
 
     .admin-empty {
       text-align: center;
-      color: #9aa4af;
-      padding: 2.5rem 1rem;
-      font-size: 0.9rem;
+      color: var(--adm-muted);
+      padding: 3rem 1rem;
+      font-size: 0.92rem;
     }
 
     .admin-empty i {
       display: block;
       font-size: 1.6rem;
-      margin-bottom: 0.5rem;
-      color: #d7dbe0;
+      margin-bottom: 0.6rem;
+      color: #d0d5dc;
     }
 
-    /* ---------------- 모달 ---------------- */
+    /* ---------------- 모달(편집 폼) ---------------- */
     .modal-content {
       border: none;
       border-radius: 14px;
       overflow: hidden;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
     }
 
     .modal-header {
-      border-bottom: 1px solid #eef0f2;
-      padding: 1.1rem 1.4rem;
-    }
-
-    .modal-title {
-      font-family: "Montserrat", sans-serif;
-      font-weight: 700;
-      font-size: 1.05rem;
-    }
-
-    .modal-body {
-      padding: 1.4rem;
-    }
-
-    .modal-footer {
-      border-top: 1px solid #eef0f2;
+      border-bottom: 1px solid var(--adm-line-soft);
       padding: 1rem 1.4rem;
     }
 
+    .modal-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .modal-body {
+      padding: 1.3rem 1.4rem 0.6rem;
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--adm-line-soft);
+      padding: 0.85rem 1.4rem;
+      background: var(--adm-soft);
+      justify-content: space-between;
+    }
+
+    .modal-footer .kbd-hint {
+      font-size: 0.76rem;
+      color: var(--adm-muted);
+    }
+
+    .modal-footer .btn {
+      border-radius: 9px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.5rem 1.1rem;
+    }
+
+    .modal-footer .btn-save {
+      background: var(--adm-accent);
+      border-color: var(--adm-accent);
+      color: #fff;
+      min-width: 92px;
+    }
+
+    .modal-footer .btn-save:hover {
+      background: #174d9b;
+      border-color: #174d9b;
+      color: #fff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-grid .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .form-section {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--adm-muted);
+      margin: 0.4rem 0 0.6rem;
+      padding-top: 0.9rem;
+      border-top: 1px dashed var(--adm-line);
+    }
+
     .form-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #3a4352;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-label .req {
+      color: var(--adm-danger);
+      margin-left: 2px;
+    }
+
+    .form-label .opt {
+      color: var(--adm-muted);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .form-control,
+    .form-select {
+      border-radius: 9px;
+      border-color: #d6dbe3;
+      font-size: 0.93rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .form-select,
+    .form-select.adm-filter {
+      padding-right: 2.25rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: #8fb3e8;
+      box-shadow: 0 0 0 3px rgba(31, 94, 184, 0.13);
+    }
+
+    textarea.form-control {
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .form-text {
+      font-size: 0.78rem;
+      color: var(--adm-muted);
+    }
+
+    /* 이미지 필드: 미리보기 + 파일 선택 + 제거 */
+    .img-field {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.75rem;
+      border: 1px dashed #cfd5de;
+      border-radius: 12px;
+      background: var(--adm-soft);
+    }
+
+    .img-preview {
+      width: 96px;
+      height: 96px;
+      flex: none;
+      border-radius: 10px;
+      background: #fff center / cover no-repeat;
+      border: 1px solid var(--adm-line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c3c9d0;
+      font-size: 1.4rem;
+    }
+
+    .img-preview.round {
+      border-radius: 50%;
+    }
+
+    .img-preview.has-img i {
+      display: none;
+    }
+
+    .img-field-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .img-field-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .img-field-btns .btn {
       font-size: 0.82rem;
       font-weight: 600;
-      color: #495057;
+      border-radius: 8px;
+      padding: 0.35rem 0.75rem;
+    }
+
+    .img-field input[type=file] {
+      display: none;
     }
 
     .photo-thumb-grid {
@@ -353,12 +802,12 @@
 
     .photo-thumb {
       position: relative;
-      width: 92px;
-      height: 92px;
-      border-radius: 8px;
+      width: 104px;
+      height: 104px;
+      border-radius: 10px;
       overflow: hidden;
-      border: 1px solid #dee2e6;
-      background: #f8f9fa;
+      border: 1px solid var(--adm-line);
+      background: var(--adm-soft);
     }
 
     .photo-thumb img {
@@ -367,19 +816,57 @@
       object-fit: cover;
     }
 
+    .photo-thumb .cover-tag {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(31, 94, 184, 0.92);
+      border-radius: 5px;
+      padding: 1px 6px;
+    }
+
     .photo-thumb .remove-btn {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      background: rgba(0, 0, 0, 0.6);
+      top: 5px;
+      right: 5px;
+      background: rgba(0, 0, 0, 0.62);
       color: #fff;
       border: none;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 11px;
+      width: 24px;
+      height: 24px;
+      font-size: 13px;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .photo-drop {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.9rem;
+      border: 1.5px dashed #c5cdd8;
+      border-radius: 12px;
+      color: var(--adm-sub);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--adm-soft);
+    }
+
+    .photo-drop:hover,
+    .photo-drop.drag {
+      border-color: var(--adm-accent);
+      color: var(--adm-accent);
+      background: var(--adm-accent-soft);
+    }
+
+    .photo-drop input {
+      display: none;
     }
 
     .admin-loading {
@@ -392,7 +879,7 @@
       font-size: 1.4rem;
       margin-bottom: 0.5rem;
       display: block;
-      color: var(--bs-primary);
+      color: var(--adm-accent);
     }
 
     #admin-content {
@@ -401,47 +888,140 @@
 
     .auth-alert {
       display: none;
+      font-size: 0.88rem;
+      border-radius: 10px;
     }
 
-    /* ---------------- 모바일 ---------------- */
+    /* ---------------- 알림 ---------------- */
+    .adm-toasts {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: min(380px, calc(100vw - 36px));
+    }
+
+    .adm-toast {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      border-radius: 11px;
+      background: #1d2433;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.3);
+      animation: admToastIn .18s ease;
+      transition: opacity .3s ease, transform .3s ease;
+    }
+
+    .adm-toast.ok i { color: #4ade80; }
+    .adm-toast.err i { color: #f87171; }
+    .adm-toast.out { opacity: 0; transform: translateY(6px); }
+
+    @keyframes admToastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    footer.footer {
+      background: transparent;
+      color: var(--adm-muted);
+      font-size: 0.82rem;
+    }
+
+    /* ---------------- 좁은 화면 ---------------- */
+    @media (max-width: 991px) {
+      .adm-shell {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        padding-top: 12px;
+      }
+
+      .adm-side {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        padding: 6px;
+        border-radius: 0;
+        margin: -12px calc(-1 * var(--adm-gutter)) 0;
+        border-width: 0 0 1px;
+      }
+
+      .adm-side-label,
+      .adm-side-foot {
+        display: none;
+      }
+
+      .admin-tabs {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .admin-tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .admin-tabs .nav-link {
+        width: auto;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.86rem;
+      }
+
+      .admin-tabs .nav-link .tab-ico {
+        width: 26px;
+        height: 26px;
+      }
+
+      .adm-search input {
+        width: 200px;
+      }
+    }
+
     @media (max-width: 576px) {
       .admin-topbar {
         /* 모바일에서는 고정 네비게이션 바(로고+MENU 버튼)가 세로로 쌓여 데스크톱보다 높아지므로
            padding-top을 줄이지 말고 오히려 더 여유 있게 잡아야 제목이 가려지지 않는다. */
         padding-top: 8.5rem;
-        padding-bottom: 1.1rem;
+        padding-bottom: 1rem;
       }
 
       .admin-topbar h1 {
-        font-size: 1.4rem;
+        font-size: 1.35rem;
       }
 
-      .admin-tabs .nav-link span:not(.tab-count) {
+      .admin-topbar p {
         display: none;
       }
 
-      .admin-tabs .nav-link {
-        padding: 0.6rem 0.7rem;
-      }
-
-      .admin-tabs .nav-link i {
-        font-size: 1rem;
-      }
-
-      .admin-wrap {
-        margin-top: 1rem;
-      }
-
       .admin-panel-head {
-        padding: 1rem 1.1rem;
+        padding: 0.9rem 1rem;
       }
 
-      .admin-panel-body {
-        padding: 0.25rem 0.6rem 1rem;
+      .admin-panel-actions {
+        width: 100%;
       }
 
-      .admin-panel-head h2 {
-        font-size: 0.95rem;
+      .adm-search {
+        flex: 1;
+      }
+
+      .adm-search input {
+        width: 100%;
+      }
+
+      .adm-filter {
+        max-width: 42%;
+      }
+
+      .adm-result {
+        display: none;
       }
 
       .btn-admin-add span {
@@ -449,11 +1029,21 @@
       }
 
       .btn-admin-add {
-        padding: 0.5rem 0.65rem;
+        padding: 0.5rem 0.7rem;
       }
 
-      .btn-admin-add i {
-        margin: 0 !important;
+      .admin-table .hide-sm {
+        display: none;
+      }
+
+      .admin-table th:first-child,
+      .admin-table td:first-child {
+        padding-left: 0.9rem;
+      }
+
+      .admin-table th:last-child,
+      .admin-table td:last-child {
+        padding-right: 0.9rem;
       }
 
       .icon-btn {
@@ -462,18 +1052,43 @@
         font-size: 0.85rem;
       }
 
+      .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
       .modal-body {
         padding: 1.1rem;
       }
 
-      .modal-body .row.g-2 > [class^="col-"] {
-        flex: 0 0 100%;
-        max-width: 100%;
-        margin-bottom: 0.6rem;
+      .modal-footer .kbd-hint {
+        display: none;
       }
 
       .modal-dialog {
         margin: 0.6rem;
+      }
+
+      .img-preview {
+        width: 72px;
+        height: 72px;
+      }
+
+      .row-thumb,
+      .row-thumb-placeholder {
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    @media (max-width: 991px) and (min-width: 577px) {
+      .admin-table .hide-md {
+        display: none;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .admin-table .hide-md {
+        display: none;
       }
     }
   </style>
@@ -484,68 +1099,82 @@
 
   <div id="admin-content">
     <header class="admin-topbar">
-      <div class="container admin-topbar-inner">
+      <div class="admin-topbar-inner">
         <div>
-          <span class="admin-eyebrow">KNPU FPEI</span>
+          <span class="admin-eyebrow">KNPU FPEI · ADMIN</span>
           <h1>콘텐츠 관리</h1>
+          <p>홈페이지에 보이는 논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 여기서 추가하고 고칩니다. 행을 누르면 바로 편집할 수 있습니다.</p>
         </div>
-        <a href="/account" class="admin-back-link"><i class="fa-solid fa-arrow-left"></i> 마이페이지로</a>
+        <div class="admin-top-links">
+          <a href="/" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i>홈페이지 보기</a>
+          <a href="/account"><i class="fa-solid fa-arrow-left"></i>마이페이지로</a>
+        </div>
       </div>
     </header>
 
-    <div class="admin-tabbar">
-      <div class="container">
+    <div class="adm-shell">
+      <aside class="adm-side">
+        <p class="adm-side-label">콘텐츠</p>
         <ul class="nav admin-tabs" id="adminTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-papers" type="button">
-              <i class="fa-solid fa-file-lines"></i><span>논문</span><span class="tab-count" id="count-papers">0</span>
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-papers" data-tab="papers" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-file-lines"></i></span><span class="tab-label">논문</span><span class="tab-count" id="count-papers">0</span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">
-              <i class="fa-solid fa-users"></i><span>멤버</span><span class="tab-count" id="count-members">0</span>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" data-tab="members" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-users"></i></span><span class="tab-label">멤버</span><span class="tab-count" id="count-members">0</span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-news" type="button">
-              <i class="fa-solid fa-newspaper"></i><span>뉴스</span><span class="tab-count" id="count-news">0</span>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-news" data-tab="news" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-newspaper"></i></span><span class="tab-label">뉴스</span><span class="tab-count" id="count-news">0</span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gallery" type="button">
-              <i class="fa-solid fa-images"></i><span>갤러리</span><span class="tab-count" id="count-gallery">0</span>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gallery" data-tab="gallery" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-images"></i></span><span class="tab-label">갤러리</span><span class="tab-count" id="count-gallery">0</span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-popups" type="button">
-              <i class="fa-solid fa-bullhorn"></i><span>팝업</span><span class="tab-count" id="count-popups">0</span>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-popups" data-tab="popups" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-bullhorn"></i></span><span class="tab-label">팝업</span><span class="tab-count" id="count-popups">0</span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-faq" type="button">
-              <i class="fa-solid fa-circle-question"></i><span>입시 FAQ</span><span class="tab-count" id="count-faq">0</span>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-faq" data-tab="faq" type="button">
+              <span class="tab-ico"><i class="fa-solid fa-circle-question"></i></span><span class="tab-label">입시 FAQ</span><span class="tab-count" id="count-faq">0</span>
             </button>
           </li>
         </ul>
-      </div>
-    </div>
+        <div class="adm-side-foot">
+          <i class="fa-regular fa-lightbulb me-1"></i>행을 누르면 편집, <b>/</b> 키로 검색, 편집 창에서 <b>Ctrl+Enter</b>로 저장합니다.
+        </div>
+      </aside>
 
-    <div class="container">
-      <div class="admin-wrap">
+      <main class="adm-main">
         <div class="tab-content">
 
           <!-- 논문 -->
           <div class="tab-pane fade show active" id="tab-papers">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="papers">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-file-lines"></i>논문 목록</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openPaperModal()"><i class="fa-solid fa-plus me-1"></i><span>논문 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-file-lines"></i>논문</h2>
+                  <p class="admin-panel-desc">Publications 페이지에 연도별로 표시됩니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="제목·저자·학회 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="연도"><option value="">전체 연도</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openPaperModal()"><i class="fa-solid fa-plus"></i><span>논문 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th>연도</th><th>제목</th><th>저자</th><th>학회/저널</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-num">연도</th><th>논문 (제목 · 저자)</th><th class="hide-md">학회/저널</th><th class="col-narrow hide-sm">등재</th><th class="col-narrow hide-md">링크</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="papers-tbody"></tbody>
                   </table>
@@ -556,16 +1185,24 @@
 
           <!-- 멤버 -->
           <div class="tab-pane fade" id="tab-members">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="members">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-users"></i>멤버 목록</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openMemberModal()"><i class="fa-solid fa-plus me-1"></i><span>멤버 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-users"></i>멤버</h2>
+                  <p class="admin-panel-desc">People 페이지에 구분별로 표시됩니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="이름·이메일·소속 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="구분"><option value="">전체 구분</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openMemberModal()"><i class="fa-solid fa-plus"></i><span>멤버 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th></th><th>이름</th><th>구분</th><th>직책</th><th>이메일</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>이름</th><th>구분</th><th class="hide-sm">직책</th><th class="hide-md">소속</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="members-tbody"></tbody>
                   </table>
@@ -576,16 +1213,24 @@
 
           <!-- 뉴스 -->
           <div class="tab-pane fade" id="tab-news">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="news">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-newspaper"></i>뉴스 목록</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openNewsModal()"><i class="fa-solid fa-plus me-1"></i><span>뉴스 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-newspaper"></i>뉴스</h2>
+                  <p class="admin-panel-desc">News 페이지에 날짜순으로 표시됩니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="제목·내용 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="연도"><option value="">전체 연도</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openNewsModal()"><i class="fa-solid fa-plus"></i><span>뉴스 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th></th><th>제목</th><th>날짜</th><th>URL</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-num hide-sm">날짜</th><th class="hide-md">원본 기사</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="news-tbody"></tbody>
                   </table>
@@ -596,16 +1241,24 @@
 
           <!-- 갤러리 -->
           <div class="tab-pane fade" id="tab-gallery">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="gallery">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-images"></i>갤러리 게시글</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openGalleryModal()"><i class="fa-solid fa-plus me-1"></i><span>게시글 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-images"></i>갤러리</h2>
+                  <p class="admin-panel-desc">Gallery 페이지의 게시글입니다. 첫 번째 사진이 대표 이미지가 됩니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="제목·본문 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="연도"><option value="">전체 연도</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openGalleryModal()"><i class="fa-solid fa-plus"></i><span>게시글 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th></th><th>제목</th><th>날짜</th><th>사진 수</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-num">날짜</th><th class="col-num">사진</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="gallery-tbody"></tbody>
                   </table>
@@ -616,16 +1269,24 @@
 
           <!-- 팝업 -->
           <div class="tab-pane fade" id="tab-popups">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="popups">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-bullhorn"></i>팝업 목록</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openPopupModal()"><i class="fa-solid fa-plus me-1"></i><span>팝업 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-bullhorn"></i>팝업</h2>
+                  <p class="admin-panel-desc">활성화되어 있고 게시 기간 안에 있는 팝업만 홈페이지 첫 화면에 뜹니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="제목·내용 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="상태"><option value="">전체 상태</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openPopupModal()"><i class="fa-solid fa-plus"></i><span>팝업 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th></th><th>제목</th><th>시작일</th><th>종료일</th><th>활성</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="hide-sm">게시 기간</th><th class="col-narrow">상태</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="popups-tbody"></tbody>
                   </table>
@@ -636,17 +1297,21 @@
 
           <!-- 입시 FAQ -->
           <div class="tab-pane fade" id="tab-faq">
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="faq-category">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-folder-tree"></i>FAQ 카테고리</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openFaqCategoryModal()"><i class="fa-solid fa-plus me-1"></i><span>카테고리 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-folder-tree"></i>FAQ 카테고리</h2>
+                  <p class="admin-panel-desc">이 순서대로 Admission 페이지의 FAQ 그룹이 표시됩니다. 이름을 바꾸면 소속 FAQ의 분류도 함께 바뀝니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <button class="btn btn-admin-add" onclick="openFaqCategoryModal()"><i class="fa-solid fa-plus"></i><span>카테고리 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <p class="text-muted small mb-2">카테고리 순서(order)대로 admission 페이지의 FAQ 그룹이 표시됩니다. 이름을 바꾸면 그 카테고리에 속한 FAQ 항목의 분류도 함께 바뀝니다.</p>
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th>순서</th><th>이름</th><th>FAQ 수</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-num">순서</th><th>이름</th><th class="col-num">FAQ 수</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="faq-category-tbody"></tbody>
                   </table>
@@ -654,17 +1319,24 @@
               </div>
             </div>
 
-            <div class="admin-panel">
+            <div class="admin-panel" data-panel="faq">
               <div class="admin-panel-head">
-                <h2><i class="fa-solid fa-circle-question"></i>입시 FAQ (admission 페이지)</h2>
-                <button class="btn btn-dark btn-admin-add" onclick="openFaqModal()"><i class="fa-solid fa-plus me-1"></i><span>FAQ 추가</span></button>
+                <div>
+                  <h2><i class="fa-solid fa-circle-question"></i>입시 FAQ</h2>
+                  <p class="admin-panel-desc">카테고리 순서 → 항목 순서로 정렬됩니다. 질문 앞의 "Q1." 번호는 자동으로 붙습니다.</p>
+                </div>
+                <div class="admin-panel-actions">
+                  <label class="adm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search placeholder="질문·답변 검색"></label>
+                  <select class="form-select adm-filter" data-filter aria-label="분류"><option value="">전체 분류</option></select>
+                  <span class="adm-result" data-result></span>
+                  <button class="btn btn-admin-add" onclick="openFaqModal()"><i class="fa-solid fa-plus"></i><span>FAQ 추가</span></button>
+                </div>
               </div>
               <div class="admin-panel-body">
-                <p class="text-muted small mb-2">카테고리 순서 → 항목 순서(order)로 정렬되어 표시됩니다. 질문 앞의 "Q1." 번호는 자동으로 매겨집니다.</p>
-                <div class="table-responsive">
-                  <table class="table admin-table">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
                     <thead>
-                      <tr><th>순서</th><th>분류</th><th>질문</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-num">순서</th><th>질문 · 답변</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="faq-tbody"></tbody>
                   </table>
@@ -674,7 +1346,7 @@
           </div>
 
         </div>
-      </div>
+      </main>
     </div>
   </div>
 
@@ -683,8 +1355,8 @@
   </div>
 
   <!-- ===================== 논문 모달 ===================== -->
-  <div class="modal fade" id="paperModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="paperModal" tabindex="-1" data-save="savePaper">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="paperModalTitle">논문 추가</h5>
@@ -692,51 +1364,52 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="paper-error"></div>
-          <div class="mb-3">
-            <label class="form-label">제목</label>
-            <input type="text" class="form-control" id="paper-title">
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label">등재 종류</label>
+          <div class="form-grid">
+            <div class="span-2">
+              <label class="form-label" for="paper-title">제목<span class="req">*</span></label>
+              <input type="text" class="form-control" id="paper-title" placeholder="논문 제목을 입력하고 '메타데이터 가져오기'를 누르면 나머지가 채워집니다">
+            </div>
+            <div>
+              <label class="form-label" for="paper-journal-type">등재 종류</label>
               <select class="form-select" id="paper-journal-type">
                 <option value="KCI">KCI</option>
                 <option value="SCI">SCI</option>
                 <option value="SCOPUS">SCOPUS</option>
               </select>
             </div>
-            <div class="col-6 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-secondary w-100" onclick="crawlPaperMetadata()"><i class="fa-solid fa-magnifying-glass me-1"></i>메타데이터 가져오기</button>
+            <div class="d-flex align-items-end">
+              <button type="button" class="btn btn-outline-primary w-100" id="paper-crawl-btn" onclick="crawlPaperMetadata()"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>메타데이터 가져오기</button>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">연도</label>
-            <input type="number" class="form-control" id="paper-year">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">저자 (쉼표로 구분)</label>
-            <input type="text" class="form-control" id="paper-authors">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">학회/저널</label>
-            <input type="text" class="form-control" id="paper-venue">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">논문 링크 (URL)</label>
-            <input type="text" class="form-control" id="paper-url">
+            <div>
+              <label class="form-label" for="paper-year">연도<span class="req">*</span></label>
+              <input type="number" class="form-control" id="paper-year" placeholder="예: 2026">
+            </div>
+            <div>
+              <label class="form-label" for="paper-venue">학회/저널</label>
+              <input type="text" class="form-control" id="paper-venue">
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="paper-authors">저자 <span class="opt">쉼표로 구분</span></label>
+              <input type="text" class="form-control" id="paper-authors" placeholder="예: 홍길동, 김철수">
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="paper-url">논문 링크 <span class="opt">URL</span></label>
+              <input type="url" class="form-control" id="paper-url" placeholder="https://">
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="savePaper()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="savePaper()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== 멤버 모달 ===================== -->
-  <div class="modal fade" id="memberModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="memberModal" tabindex="-1" data-save="saveMember">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="memberModalTitle">멤버 추가</h5>
@@ -744,65 +1417,75 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="member-error"></div>
-          <div class="mb-3">
-            <label class="form-label">이름</label>
-            <input type="text" class="form-control" id="member-name">
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label">포지션</label>
-              <select class="form-select" id="member-position"></select>
+          <div class="img-field mb-3">
+            <div class="img-preview round" id="member-image-preview"><i class="fa-solid fa-user"></i></div>
+            <div class="img-field-main">
+              <label class="form-label mb-0">프로필 이미지</label>
+              <div class="img-field-btns">
+                <label class="btn btn-outline-secondary mb-0"><i class="fa-solid fa-upload me-1"></i>이미지 선택<input type="file" id="member-image-input" accept="image/*" onchange="uploadMemberImage(this.files[0])"></label>
+                <button type="button" class="btn btn-outline-danger" id="member-image-remove" onclick="removeMemberImage()">제거</button>
+              </div>
+              <div class="form-text mt-0" id="member-image-status">이미지 없음</div>
             </div>
-            <div class="col-6">
-              <label class="form-label">구분</label>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label class="form-label" for="member-name">이름<span class="req">*</span></label>
+              <input type="text" class="form-control" id="member-name">
+            </div>
+            <div>
+              <label class="form-label" for="member-email">이메일</label>
+              <input type="email" class="form-control" id="member-email">
+            </div>
+            <div>
+              <label class="form-label" for="member-section">구분</label>
               <select class="form-select" id="member-section"></select>
             </div>
+            <div>
+              <label class="form-label" for="member-position">포지션</label>
+              <select class="form-select" id="member-position"></select>
+            </div>
+            <div>
+              <label class="form-label" for="member-affiliation">소속</label>
+              <input type="text" class="form-control" id="member-affiliation">
+            </div>
+            <div>
+              <label class="form-label" for="member-homepage">개인 홈페이지 <span class="opt">선택</span></label>
+              <input type="url" class="form-control" id="member-homepage" placeholder="https://">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">소속</label>
-            <input type="text" class="form-control" id="member-affiliation">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">이메일</label>
-            <input type="text" class="form-control" id="member-email">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">개인 홈페이지 URL (선택)</label>
-            <input type="text" class="form-control" id="member-homepage" placeholder="예: https://www.yojun.dev">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">학력 (줄바꿈으로 구분)</label>
-            <textarea class="form-control" id="member-school" rows="3"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">경력 (줄바꿈으로 구분)</label>
-            <textarea class="form-control" id="member-career" rows="3"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">연구 (줄바꿈으로 구분)</label>
-            <textarea class="form-control" id="member-research" rows="3"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">수상 (줄바꿈으로 구분)</label>
-            <textarea class="form-control" id="member-awards" rows="3"></textarea>
-          </div>
-          <div class="mb-2">
-            <label class="form-label d-block">프로필 이미지</label>
-            <input type="file" class="form-control" id="member-image-input" accept="image/*" onchange="uploadMemberImage(this.files[0])">
-            <div class="form-text" id="member-image-status">이미지 없음</div>
+          <p class="form-section">이력 — 한 줄에 하나씩</p>
+          <div class="form-grid">
+            <div>
+              <label class="form-label" for="member-school">학력</label>
+              <textarea class="form-control" id="member-school" rows="4"></textarea>
+            </div>
+            <div>
+              <label class="form-label" for="member-career">경력</label>
+              <textarea class="form-control" id="member-career" rows="4"></textarea>
+            </div>
+            <div>
+              <label class="form-label" for="member-research">연구</label>
+              <textarea class="form-control" id="member-research" rows="4"></textarea>
+            </div>
+            <div>
+              <label class="form-label" for="member-awards">수상</label>
+              <textarea class="form-control" id="member-awards" rows="4"></textarea>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="saveMember()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="saveMember()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== 뉴스 모달 ===================== -->
-  <div class="modal fade" id="newsModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="newsModal" tabindex="-1" data-save="saveNews">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="newsModalTitle">뉴스 추가</h5>
@@ -810,39 +1493,48 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="news-error"></div>
-          <div class="mb-3">
-            <label class="form-label">제목</label>
-            <input type="text" class="form-control" id="news-title">
+          <div class="form-grid">
+            <div class="span-2">
+              <label class="form-label" for="news-title">제목<span class="req">*</span></label>
+              <input type="text" class="form-control" id="news-title">
+            </div>
+            <div>
+              <label class="form-label" for="news-date">날짜 <span class="opt">YYYY.MM 또는 YYYY.MM.DD</span></label>
+              <input type="text" class="form-control" id="news-date" placeholder="예: 2026.10.03">
+            </div>
+            <div>
+              <label class="form-label" for="news-url">원본 기사 URL</label>
+              <input type="url" class="form-control" id="news-url" placeholder="https://">
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="news-content">내용</label>
+              <textarea class="form-control" id="news-content" rows="6"></textarea>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">내용</label>
-            <textarea class="form-control" id="news-content" rows="4"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">날짜 (YYYY.MM 또는 YYYY.MM.DD)</label>
-            <input type="text" class="form-control" id="news-date">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">원본 기사 URL</label>
-            <input type="text" class="form-control" id="news-url">
-          </div>
-          <div class="mb-2">
-            <label class="form-label d-block">썸네일 이미지</label>
-            <input type="file" class="form-control" id="news-image-input" accept="image/*" onchange="uploadNewsImage(this.files[0])">
-            <div class="form-text" id="news-image-status">이미지 없음</div>
+          <div class="img-field mb-3">
+            <div class="img-preview" id="news-image-preview"><i class="fa-solid fa-image"></i></div>
+            <div class="img-field-main">
+              <label class="form-label mb-0">썸네일 이미지</label>
+              <div class="img-field-btns">
+                <label class="btn btn-outline-secondary mb-0"><i class="fa-solid fa-upload me-1"></i>이미지 선택<input type="file" id="news-image-input" accept="image/*" onchange="uploadNewsImage(this.files[0])"></label>
+                <button type="button" class="btn btn-outline-danger" id="news-image-remove" onclick="removeNewsImage()">제거</button>
+              </div>
+              <div class="form-text mt-0" id="news-image-status">이미지 없음</div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="saveNews()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="saveNews()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== 갤러리 모달 ===================== -->
-  <div class="modal fade" id="galleryModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="galleryModal" tabindex="-1" data-save="saveGallery">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="galleryModalTitle">갤러리 게시글 추가</h5>
@@ -850,35 +1542,38 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="gallery-error"></div>
-          <div class="mb-3">
-            <label class="form-label">제목</label>
-            <input type="text" class="form-control" id="gallery-title">
+          <div class="form-grid">
+            <div>
+              <label class="form-label" for="gallery-title">제목<span class="req">*</span></label>
+              <input type="text" class="form-control" id="gallery-title">
+            </div>
+            <div>
+              <label class="form-label" for="gallery-date">날짜 <span class="opt">YYYY.MM.DD</span></label>
+              <input type="text" class="form-control" id="gallery-date">
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="gallery-content">본문</label>
+              <textarea class="form-control" id="gallery-content" rows="4"></textarea>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">본문</label>
-            <textarea class="form-control" id="gallery-content" rows="3"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">날짜 (YYYY.MM.DD)</label>
-            <input type="text" class="form-control" id="gallery-date">
-          </div>
-          <div class="mb-2">
-            <label class="form-label d-block"><strong>사진</strong> (첫 번째 사진이 대표 이미지로 사용됩니다)</label>
-            <div class="photo-thumb-grid" id="gallery-photo-grid"></div>
-            <input type="file" class="form-control" id="gallery-image-input" accept="image/*" multiple onchange="addGalleryPhotos(this.files)">
-          </div>
+          <label class="form-label">사진<span class="req">*</span> <span class="opt">첫 번째 사진이 대표 이미지 · 최소 1장</span></label>
+          <div class="photo-thumb-grid" id="gallery-photo-grid"></div>
+          <label class="photo-drop mb-3" id="gallery-drop"><i class="fa-solid fa-cloud-arrow-up"></i>사진을 끌어다 놓거나 눌러서 추가 (여러 장 가능)
+            <input type="file" id="gallery-image-input" accept="image/*" multiple onchange="addGalleryPhotos(this.files)">
+          </label>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="saveGallery()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="saveGallery()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== 팝업 모달 ===================== -->
-  <div class="modal fade" id="popupModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="popupModal" tabindex="-1" data-save="savePopup">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="popupModalTitle">팝업 추가</h5>
@@ -886,49 +1581,58 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="popup-error"></div>
-          <div class="mb-3">
-            <label class="form-label">제목</label>
-            <input type="text" class="form-control" id="popup-title">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">내용</label>
-            <textarea class="form-control" id="popup-content" rows="3"></textarea>
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label">시작일 (YYYY-MM-DD)</label>
-              <input type="text" class="form-control" id="popup-start">
+          <div class="form-grid">
+            <div class="span-2">
+              <label class="form-label" for="popup-title">제목<span class="req">*</span></label>
+              <input type="text" class="form-control" id="popup-title">
             </div>
-            <div class="col-6">
-              <label class="form-label">종료일 (YYYY-MM-DD)</label>
-              <input type="text" class="form-control" id="popup-end">
+            <div>
+              <label class="form-label" for="popup-start">게시 시작일</label>
+              <input type="date" class="form-control" id="popup-start">
+            </div>
+            <div>
+              <label class="form-label" for="popup-end">게시 종료일</label>
+              <input type="date" class="form-control" id="popup-end">
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="popup-content">내용</label>
+              <textarea class="form-control" id="popup-content" rows="4"></textarea>
+            </div>
+            <div>
+              <label class="form-label" for="popup-link">링크 URL <span class="opt">선택</span></label>
+              <input type="url" class="form-control" id="popup-link" placeholder="https://">
+            </div>
+            <div class="d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="popup-active" checked>
+                <label class="form-check-label" for="popup-active">활성화 (게시 기간 안이면 홈페이지에 표시)</label>
+              </div>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">링크 URL (옵션)</label>
-            <input type="text" class="form-control" id="popup-link">
-          </div>
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="popup-active" checked>
-            <label class="form-check-label" for="popup-active">활성화</label>
-          </div>
-          <div class="mb-2">
-            <label class="form-label d-block">이미지</label>
-            <input type="file" class="form-control" id="popup-image-input" accept="image/*" onchange="uploadPopupImage(this.files[0])">
-            <div class="form-text" id="popup-image-status">이미지 없음</div>
+          <div class="img-field mb-3">
+            <div class="img-preview" id="popup-image-preview"><i class="fa-solid fa-image"></i></div>
+            <div class="img-field-main">
+              <label class="form-label mb-0">이미지</label>
+              <div class="img-field-btns">
+                <label class="btn btn-outline-secondary mb-0"><i class="fa-solid fa-upload me-1"></i>이미지 선택<input type="file" id="popup-image-input" accept="image/*" onchange="uploadPopupImage(this.files[0])"></label>
+                <button type="button" class="btn btn-outline-danger" id="popup-image-remove" onclick="removePopupImage()">제거</button>
+              </div>
+              <div class="form-text mt-0" id="popup-image-status">이미지 없음</div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="savePopup()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="savePopup()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== 입시 FAQ 모달 ===================== -->
-  <div class="modal fade" id="faqModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+  <div class="modal fade" id="faqModal" tabindex="-1" data-save="saveFaq">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="faqModalTitle">FAQ 추가</h5>
@@ -936,37 +1640,40 @@
         </div>
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="faq-error"></div>
-          <div class="mb-3">
-            <label class="form-label">분류 (그룹)</label>
-            <select class="form-select" id="faq-category">
-              <option value="">(분류 없음)</option>
-            </select>
-            <div class="form-text">분류 목록은 위쪽 <strong>FAQ 카테고리</strong>에서 추가·수정합니다.</div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">질문 <span class="text-muted fw-normal">(앞의 "Q1." 번호는 자동으로 붙습니다)</span></label>
-            <textarea class="form-control" id="faq-question" rows="2"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">답변 <span class="text-muted fw-normal">(줄바꿈은 그대로 반영되고, 빈 줄로 문단을 나눕니다)</span></label>
-            <textarea class="form-control" id="faq-answer" rows="7"></textarea>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">순서 (숫자, 오름차순)</label>
-            <input type="number" class="form-control" id="faq-order">
-            <div class="form-text">10, 20, 30 … 처럼 간격을 두면 나중에 사이에 끼워 넣기 편합니다.</div>
+          <div class="form-grid">
+            <div>
+              <label class="form-label" for="faq-category">분류 (그룹)</label>
+              <select class="form-select" id="faq-category">
+                <option value="">(분류 없음)</option>
+              </select>
+              <div class="form-text">분류 목록은 <strong>FAQ 카테고리</strong>에서 추가·수정합니다.</div>
+            </div>
+            <div>
+              <label class="form-label" for="faq-order">순서 <span class="opt">숫자, 오름차순</span></label>
+              <input type="number" class="form-control" id="faq-order">
+              <div class="form-text">10, 20, 30 … 처럼 간격을 두면 사이에 끼워 넣기 편합니다.</div>
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="faq-question">질문<span class="req">*</span> <span class="opt">앞의 "Q1." 번호는 자동으로 붙습니다</span></label>
+              <textarea class="form-control" id="faq-question" rows="2"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="form-label" for="faq-answer">답변 <span class="opt">줄바꿈은 그대로, 빈 줄로 문단 구분</span></label>
+              <textarea class="form-control" id="faq-answer" rows="9"></textarea>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="saveFaq()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장 · Esc 닫기</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="saveFaq()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================== FAQ 카테고리 모달 ===================== -->
-  <div class="modal fade" id="faqCategoryModal" tabindex="-1">
+  <div class="modal fade" id="faqCategoryModal" tabindex="-1" data-save="saveFaqCategory">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -976,26 +1683,29 @@
         <div class="modal-body">
           <div class="alert alert-danger auth-alert" id="faq-category-error"></div>
           <div class="mb-3">
-            <label class="form-label">이름 (그룹 제목)</label>
+            <label class="form-label" for="faq-category-name">이름 (그룹 제목)<span class="req">*</span></label>
             <input type="text" class="form-control" id="faq-category-name" placeholder="예: 01 · 지원 · 선발">
-            <div class="form-text">이 문구가 admission 페이지에서 그룹 제목으로 그대로 표시됩니다. 이름을 바꾸면 소속 FAQ 항목의 분류도 함께 변경됩니다.</div>
+            <div class="form-text">Admission 페이지에서 그룹 제목으로 그대로 표시됩니다. 이름을 바꾸면 소속 FAQ 항목의 분류도 함께 바뀝니다.</div>
           </div>
-          <div class="mb-2">
-            <label class="form-label">순서 (숫자, 오름차순)</label>
+          <div class="mb-3">
+            <label class="form-label" for="faq-category-order">순서 <span class="opt">숫자, 오름차순</span></label>
             <input type="number" class="form-control" id="faq-category-order">
             <div class="form-text">10, 20, 30 … 처럼 간격을 두면 사이에 끼워 넣기 편합니다.</div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-dark" onclick="saveFaqCategory()">저장</button>
+          <span class="kbd-hint">Ctrl+Enter 저장</span>
+          <div><button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-save" onclick="saveFaqCategory()">저장</button></div>
         </div>
       </div>
     </div>
   </div>
 
+  <div class="adm-toasts" id="adm-toasts"></div>
+
   <footer class="footer py-4">
-    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+    <div class="text-center">Copyright &copy; KNPU FPEI</div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
