@@ -1,20 +1,7 @@
 /* KNPU 분석 작업 UI (jobs.js) — theme.css 의 UnivDash 토큰(--ud-*)을 따른다. */
 
-/* ── 사이드바 '작업 목록' 버튼 ───────────────────────────────────────────── */
-.kj-nav {
-  display: flex; align-items: center; gap: 10px;
-  width: calc(100% - 24px); margin: 4px 12px 8px; padding: 9px 12px;
-  border-radius: var(--ud-r-ctl, 12px);
-  border: 1px solid var(--ud-line, rgba(15, 23, 42, .09));
-  background: var(--ud-surface-soft, #f8fafc);
-  color: var(--sidebar-text, #344054);
-  font: 600 13px/1.2 var(--ud-font, system-ui, sans-serif);
-  cursor: pointer; text-align: left;
-  transition: background .15s ease, border-color .15s ease;
-}
-.kj-nav:hover { background: var(--ud-hover, rgba(15, 23, 42, .045)); border-color: var(--ud-active-line, rgba(37, 99, 235, .24)); }
+/* ── 사이드바 작업 패널 ─────────────────────────────────────────────────── */
 .kj-nav-icon { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: var(--ud-r-icon, 8px); background: var(--ud-active-bg, rgba(59, 130, 246, .12)); color: var(--ud-active-fg, #1d4ed8); flex: none; }
-.kj-nav-text { flex: 1; min-width: 0; }
 .kj-badge {
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -24,16 +11,17 @@
 .kj-badge.kj-badge-live { background: var(--ud-primary, #3b82f6); animation: kjPulse 1.6s ease-in-out infinite; }
 @keyframes kjPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, .45); } 50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); } }
 /* 접힌 사이드바(아이콘만) */
-.rail.collapsed .kj-nav { width: 44px; margin: 4px auto 8px; padding: 9px 0; justify-content: center; position: relative; }
-.rail.collapsed .kj-nav .kj-nav-text { display: none; }
-.rail.collapsed .kj-nav .kj-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; font-size: 10px; }
 
 /* ── 모달 공통 ─────────────────────────────────────────────────────────── */
 .kj-overlay {
   position: fixed; inset: 0; z-index: 420;
-  background: rgba(8, 12, 20, .5);
+  background: rgba(6, 9, 16, .74);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
+/* 진행 상황 창은 보통 사이드바에서 바로 열리므로 전체 틴트를 쓴다.
+   목록 모달 위에 겹쳐 열릴 때만 두 겹이 되지 않게 낮춘다. */
+#kjDetail.kj-over-list { background: rgba(6, 9, 16, .34); }
 .kj-overlay[hidden] { display: none; }
 #kjDetail { z-index: 430; }
 .kj-modal {
@@ -225,3 +213,68 @@ html[data-ui-theme-mode="dark"] .kj-btn.kj-danger { color: #fca5a5; }
   .kj-row-when { display: none; }
   .kj-foot-hint { flex-basis: 100%; margin-left: 0; }
 }
+
+/* ── 사이드바 작업 목록(패널) ───────────────────────────────────────────── */
+.kj-rail { margin: 4px 12px 10px; }
+.kj-rail-head {
+  display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px;
+  color: var(--sidebar-muted, #667085);
+  font: 700 10.5px/1.2 var(--ud-font, system-ui, sans-serif);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.kj-rail-head .kj-rail-title { flex: 1; min-width: 0; }
+.kj-rail-all {
+  border: 0; background: transparent; cursor: pointer; padding: 2px 4px;
+  border-radius: 6px; color: var(--ud-active-fg, #1d4ed8);
+  font: 700 10.5px/1.2 var(--ud-font, system-ui, sans-serif); letter-spacing: .04em;
+}
+.kj-rail-all:hover { background: var(--ud-hover, rgba(15, 23, 42, .06)); }
+.kj-rail-list { display: flex; flex-direction: column; gap: 3px; }
+.kj-rail-empty { padding: 6px 4px 2px; font-size: 11.5px; color: var(--sidebar-muted, #667085); line-height: 1.45; }
+
+.kj-rail-item {
+  display: grid; grid-template-columns: 8px 1fr; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 9px; text-align: left; cursor: pointer;
+  border-radius: var(--ud-r-ctl, 10px);
+  border: 1px solid transparent; background: transparent;
+  color: var(--sidebar-text, #344054);
+  font-family: var(--ud-font, system-ui, sans-serif);
+  transition: background .14s ease, border-color .14s ease;
+}
+.kj-rail-item:hover { background: var(--ud-hover, rgba(15, 23, 42, .05)); border-color: var(--ud-line, rgba(15, 23, 42, .09)); }
+.kj-rail-item.on { background: var(--ud-active-bg, rgba(59, 130, 246, .12)); border-color: var(--ud-active-line, rgba(37, 99, 235, .24)); }
+.kj-rail-dot { width: 8px; height: 8px; border-radius: 999px; background: #94a3b8; flex: none; }
+.kj-rail-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kj-rail-name {
+  font-size: 12.5px; font-weight: 650; color: var(--text-strong, #101828);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kj-rail-meta {
+  font-size: 10.5px; color: var(--sidebar-muted, #667085);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kj-rail-bar { position: relative; grid-column: 2; height: 3px; border-radius: 999px; background: var(--ud-line, rgba(15, 23, 42, .1)); overflow: hidden; margin-top: 1px; }
+.kj-rail-bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: var(--ud-primary, #3b82f6); transition: width .3s ease; }
+.kj-rail-bar.kj-indet > i { width: 35% !important; animation: kjIndet 1.4s ease-in-out infinite; }
+
+/* 상태별 점 색 */
+.kj-rail-item.kj-st-running  .kj-rail-dot,
+.kj-rail-item.kj-st-starting .kj-rail-dot { background: var(--ud-primary, #3b82f6); animation: kjPulse 1.6s ease-in-out infinite; }
+.kj-rail-item.kj-st-queued     .kj-rail-dot { background: #94a3b8; }
+.kj-rail-item.kj-st-scheduled  .kj-rail-dot { background: #8b5cf6; }
+.kj-rail-item.kj-st-cancelling .kj-rail-dot { background: #f59e0b; }
+.kj-rail-item.kj-st-done       .kj-rail-dot { background: #10b981; }
+.kj-rail-item.kj-st-error      .kj-rail-dot { background: #ef4444; }
+.kj-rail-item.kj-st-interrupted .kj-rail-dot { background: #f59e0b; }
+.kj-rail-item.kj-st-cancelled  .kj-rail-dot { background: #cbd5e1; }
+
+/* 접힌 사이드바: 제목·진행바는 감추고 상태 점만 남긴다 */
+.rail.collapsed .kj-rail { margin: 4px 6px 10px; }
+.rail.collapsed .kj-rail-head { justify-content: center; padding: 2px 0 6px; position: relative; }
+.rail.collapsed .kj-rail-head .kj-rail-title,
+.rail.collapsed .kj-rail-all,
+.rail.collapsed .kj-rail-main,
+.rail.collapsed .kj-rail-bar,
+.rail.collapsed .kj-rail-empty { display: none; }
+.rail.collapsed .kj-rail-head .kj-badge { position: static; min-width: 18px; height: 18px; font-size: 10px; }
+.rail.collapsed .kj-rail-item { grid-template-columns: 1fr; justify-items: center; padding: 7px 0; }

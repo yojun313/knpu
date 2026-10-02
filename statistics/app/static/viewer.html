@@ -327,6 +327,28 @@
     </div>
   </div>
 
+  <!-- 그래프 크게 보기 — 카드의 ⤢ 버튼으로 열린다. 여기서 바로 PNG/CSV 저장 가능 -->
+  <div id="zoomModal" class="modal-overlay" hidden>
+    <div class="modal-card zoom-card">
+      <div class="modal-head">
+        <span id="zoomTitle"></span>
+        <button id="zoomModalClose" class="modal-close" title="닫기">&times;</button>
+      </div>
+      <div class="zoom-body">
+        <div class="zoom-canvas-wrap"><canvas id="zoomCanvas"></canvas></div>
+        <p class="zoom-desc" id="zoomDesc"></p>
+      </div>
+      <div class="zoom-foot">
+        <span class="zoom-meta" id="zoomMeta"></span>
+        <span class="zoom-actions">
+          <button type="button" class="btn" id="btnZoomCsv">수치 데이터 (CSV)</button>
+          <button type="button" class="btn" id="btnZoomPngQuick">이미지 (PNG)</button>
+          <button type="button" class="btn primary" id="btnZoomExport">저장 옵션…</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
   <div id="exportModal" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-head">

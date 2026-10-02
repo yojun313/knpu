@@ -1,5 +1,3 @@
-"""프로세스 그룹 관리 유틸(리눅스 /proc 기반). 표준 라이브러리만 쓴다 — 감독 프로세스가 가볍게 import 한다."""
-
 import ctypes
 import os
 import signal

@@ -4,6 +4,7 @@ import os
 from urllib.parse import quote
 
 import pandas as pd
+import pyarrow.parquet as pq
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -19,6 +20,9 @@ from app.services.crawls_service import (
 from config import CRAWL_DATA_PATH
 
 router = APIRouter()
+
+# CSV 스트리밍 한 조각의 행 수. 크면 메모리, 작으면 오버헤드가 늘어난다.
+CSV_STREAM_ROWS = 50_000
 
 crawlList_db = crawler_db["db-list"]
 crawlLog_db = crawler_db["log-list"]
@@ -141,19 +145,27 @@ def get_db_file(uid: str, name: str, user=Depends(get_current_user)):
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
 
+    # 1GB 넘는 parquet도 있다. 전체를 DataFrame + CSV 버퍼로 메모리에 올리면
+    # 수 GB를 먹고, 변환이 끝날 때까지 첫 바이트도 못 보내 호출부가 타임아웃된다.
+    # row group 단위로 읽어 CSV 조각을 바로 흘려보낸다(메모리 일정, 첫 바이트 즉시).
     try:
-        df = pd.read_parquet(file_path)
+        parquet_file = pq.ParquetFile(file_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"파일을 읽지 못했습니다: {e}")
 
-    buf = io.BytesIO()
-    df.to_csv(buf, index=False, encoding="utf-8-sig")
-    buf.seek(0)
+    def csv_chunks():
+        yield b"\xef\xbb\xbf"  # utf-8-sig BOM (엑셀 호환) — 맨 앞에 한 번만
+        first = True
+        for batch in parquet_file.iter_batches(batch_size=CSV_STREAM_ROWS):
+            buf = io.StringIO()
+            batch.to_pandas().to_csv(buf, index=False, header=first)
+            yield buf.getvalue().encode("utf-8")
+            first = False
 
     csv_name = safe_name.rsplit(".", 1)[0] + ".csv"
     # 파일명에 한글이 포함되므로 RFC 5987 filename*으로 인코딩 (ASCII 헤더 제약 회피)
     return StreamingResponse(
-        buf,
+        csv_chunks(),
         media_type="text/csv",
         headers={
             "Content-Disposition": (

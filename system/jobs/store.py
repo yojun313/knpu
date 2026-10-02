@@ -1,14 +1,3 @@
-"""분석 작업 저장소 — systems.analysis_jobs 컬렉션과 작업별 파일 폴더.
-
-작업 하나 = 문서 하나. 어느 브라우저·기기에서 들어와도 같은 목록과 진행 상황을 보도록
-상태·진행 로그를 모두 DB에 둔다. 입력 CSV 는 작업 폴더(KNPU_JOBS_DIR, 기본 ~/.knpu_jobs)에
-저장해 두고, 워커 프로세스가 그 파일을 읽어 분석한다(실패·중단 작업을 다시 실행할 때도 쓴다).
-
-상태 흐름:
-  scheduled ─(예약 시각)→ queued ─(러너가 집어감)→ starting → running → done | error
-  어느 단계에서든 → cancelled(사용자 중단) · interrupted(서버 재시작/종료로 끊김)
-"""
-
 import os
 import shutil
 import socket

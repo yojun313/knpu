@@ -16,7 +16,7 @@ from app.services import (
     kemkim_analysis,
     analyze_service,
 )
-from system import uploads as upload_staging
+from system import crawldata, uploads as upload_staging
 from system.jobs import submit as submit_job
 from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
@@ -359,9 +359,6 @@ async def project_upload_source(
 @router.post("/api/projects/{project_id}/source/from-crawl-db")
 async def project_source_from_crawl_db(project_id: str, request: Request):
     """크롤링 DB의 원본(토큰화 전) 파일을 해석용 CSV로 바로 첨부한다."""
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
     uid = _uid(request)
     body = await request.json()
     crawl_uid = str(body.get("uid") or "").strip()
@@ -373,16 +370,31 @@ async def project_source_from_crawl_db(project_id: str, request: Request):
 
     # 소유권을 먼저 확인해 남의 프로젝트에 크롤러 요청을 보내지 않게 한다
     _handle_store_error(project_store.get_project, uid, project_id)
-    content = _fetch_crawl_csv(crawl_uid, name, session_token)
     source_ref = {
         "uid": crawl_uid,
         "name": name,
         "csv_name": name.rsplit(".", 1)[0] + ".csv",
         "db_name": str(body.get("db_name") or "")[:300],
     }
-    _handle_store_error(
-        project_store.save_source_csv, uid, project_id, content, source_ref
-    )
+    # 원본(raw) parquet 은 1GB 가 넘는 것도 있다. 같은 서버이므로 HTTP 로 CSV 전체를
+    # 받아 메모리에 담지 않고, 프로젝트 폴더에 바로 흘려 쓴다.
+    if crawldata.available():
+        dest = _handle_store_error(project_store.source_csv_dest, uid, project_id)
+        try:
+            await asyncio.to_thread(crawldata.write_csv, crawl_uid, name, dest)
+        except crawldata.CrawlDataError as e:
+            raise HTTPException(404, str(e))
+        _handle_store_error(
+            project_store.mark_source_saved, uid, project_id, source_ref
+        )
+    else:
+        session_token = request.cookies.get("session")
+        if not session_token:
+            raise HTTPException(401, "인증이 필요합니다")
+        content = _fetch_crawl_csv(crawl_uid, name, session_token)
+        _handle_store_error(
+            project_store.save_source_csv, uid, project_id, content, source_ref
+        )
     insert_log(
         user_logs_db,
         uid,
@@ -760,20 +772,27 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 @router.get("/api/crawl-dbs/{uid}/files")
 async def api_crawl_db_files(uid: str, request: Request, kind: str = "token"):
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
-    try:
-        resp = requests.get(
-            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
-            cookies={"session": session_token},
-            timeout=15,
-        )
-    except requests.RequestException as e:
-        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
-    if resp.status_code != 200:
-        raise HTTPException(resp.status_code, resp.text)
-    data = resp.json()
+    # 크롤러와 같은 서버·같은 디스크이므로 HTTP 왕복 없이 바로 읽는다.
+    if crawldata.available():
+        try:
+            data = crawldata.list_files(uid)
+        except crawldata.CrawlDataError as e:
+            raise HTTPException(404, str(e))
+    else:
+        session_token = request.cookies.get("session")
+        if not session_token:
+            raise HTTPException(401, "인증이 필요합니다")
+        try:
+            resp = requests.get(
+                f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
+                cookies={"session": session_token},
+                timeout=15,
+            )
+        except requests.RequestException as e:
+            raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+        if resp.status_code != 200:
+            raise HTTPException(resp.status_code, resp.text)
+        data = resp.json()
     # 분석에는 토큰 파일, 해석에는 토큰화 전 원본(raw) 파일이 필요하다
     want = "raw" if kind == "raw" else "token"
     data["files"] = [f for f in data.get("files", []) if f.get("type") == want]
@@ -798,17 +817,29 @@ def _fetch_crawl_csv(uid: str, name: str, session_token: str) -> bytes:
 
 @router.post("/api/crawl-dbs/{uid}/select")
 async def api_crawl_db_select(uid: str, request: Request):
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
     body = await request.json()
     name = (body.get("name") or "").strip()
     if not name:
         raise HTTPException(400, "파일명이 필요합니다")
 
-    content = _fetch_crawl_csv(uid, name, session_token)
     filename = name.rsplit(".", 1)[0] + ".csv"
-    stage_id = upload_staging.stage(_uid(request), content, filename)
+    # 예전에는 여기서 크롤러 HTTP API 로 CSV 전체(큰 건 2.5GB)를 받아 메모리에 담았다.
+    # 1GB parquet 하나로 수십 초가 걸리고 타임아웃(120s)까지 났다. 같은 서버이므로
+    # 여기서는 파일이 있는지만 확인하고, 실제 변환은 작업 워커가 진행률과 함께 한다.
+    if crawldata.available():
+        try:
+            crawldata.parquet_path(uid, name)
+        except crawldata.CrawlDataError as e:
+            raise HTTPException(404, str(e))
+        stage_id = upload_staging.stage_ref(
+            _uid(request), {"uid": uid, "name": name, "csv_name": filename}, filename
+        )
+    else:
+        session_token = request.cookies.get("session")
+        if not session_token:
+            raise HTTPException(401, "인증이 필요합니다")
+        content = _fetch_crawl_csv(uid, name, session_token)
+        stage_id = upload_staging.stage(_uid(request), content, filename)
     suggested_start, suggested_end = _suggest_date_range(filename)
     insert_log(
         user_logs_db,
@@ -852,9 +883,11 @@ async def api_analyze_start(request: Request):
 
     body = await request.json()
     try:
-        content, filename = upload_staging.pop(uid, body.get("stage_id", ""))
+        staged = upload_staging.pop_any(uid, body.get("stage_id", ""))
     except ValueError as e:
         raise HTTPException(400, str(e))
+    content, filename = staged["content"], staged["filename"]
+    crawl_file = staged["ref"] if staged["kind"] == "ref" else None
 
     raw_option = body.get("option") or {}
     if not raw_option.get("startdate") or not raw_option.get("enddate"):
@@ -878,6 +911,9 @@ async def api_analyze_start(request: Request):
     params = dict(built_option)
     if crawl_source:
         params["_crawl_source"] = crawl_source
+    if crawl_file:
+        # 워커가 크롤 parquet 을 직접 읽어 CSV 로 변환한다(입력 사본을 만들지 않는다).
+        params["_crawl_file"] = crawl_file
     scheduled = parse_schedule(body.get("scheduled_at"))
     job = await asyncio.to_thread(
         submit_job,

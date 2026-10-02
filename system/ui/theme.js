@@ -407,8 +407,13 @@
     var host = document.getElementById('stAccount');
     stFetch('/shared-ui/account/api/me').then(function (me) {
       var initial = (me.name || '?').trim().charAt(0);
+      // 홈페이지 구성원 사진이 있으면 이니셜 대신 사진. 이미지가 깨지면 이니셜로 되돌린다.
+      var photo = me.member && me.member.image;
+      var avatar = photo
+        ? '<img src="' + stEsc(photo) + '" alt="' + stEsc(me.name || '') + '" loading="lazy">'
+        : stEsc(initial);
       host.innerHTML =
-        '<div class="st-profile"><div class="st-avatar">' + stEsc(initial) + '</div><div><b>' + stEsc(me.name) + '</b>'
+        '<div class="st-profile"><div class="st-avatar">' + avatar + '</div><div><b>' + stEsc(me.name) + '</b>'
         + '<span>' + stEsc(me.username || '') + (me.email ? ' · ' + stEsc(me.email) : '') + (me.email_verified ? ' ✓' : '') + '</span>'
         + '<span class="st-tags"><em>' + stEsc(ROLE_LABEL[me.role] || me.role || '') + '</em>'
         + (me.member ? '<em>' + stEsc([me.member.section, me.member.position].filter(Boolean).join(' · ') || '홈페이지 구성원 연결됨') + '</em>' : '')
@@ -427,6 +432,13 @@
         + '<div class="st-group"><div class="st-group-title">로그인</div>'
         + '<div class="st-row"><div><b>모든 기기에서 로그아웃</b><span>분실한 기기나 공용 PC에 남은 로그인을 모두 끊어요. 이 기기도 로그아웃됩니다.</span></div><button type="button" class="st-btn danger" id="accLogoutAll">모두 로그아웃</button></div>'
         + '<div class="st-row"><div><b>이 기기에서 로그아웃</b></div><button type="button" class="st-btn" id="accLogout">로그아웃</button></div></div>';
+      var avatarImg = host.querySelector('.st-avatar img');
+      if (avatarImg) {
+        avatarImg.addEventListener('error', function () {
+          var box = this.parentNode;
+          if (box) { box.textContent = initial; }
+        });
+      }
       document.getElementById('accNameSave').addEventListener('click', function (e) {
         var btn = e.currentTarget, name = document.getElementById('accName').value.trim();
         if (!name) return;
@@ -539,10 +551,66 @@
     document.head.appendChild(js);
   }
 
+  // ── 사이드바 'Welcome, 000' 아바타에 홈페이지 구성원 사진 넣기 ──────────────
+  // 서비스 7곳이 같은 .sb-avatar 마크업을 쓰므로 공용 스크립트에서 한 번에 처리한다.
+  var AVATAR_CACHE_KEY = 'knpu_member_photo';
+  var AVATAR_TTL_MS = 10 * 60 * 1000;
+
+  function cachedPhoto() {
+    try {
+      var raw = sessionStorage.getItem(AVATAR_CACHE_KEY);
+      if (!raw) return null;
+      var c = JSON.parse(raw);
+      if (!c || Date.now() - c.t > AVATAR_TTL_MS) return null;
+      return c;                       // { t, url, name }
+    } catch (e) { return null; }
+  }
+
+  function paintAvatars(url, name) {
+    if (!url) return;
+    var boxes = document.querySelectorAll('.sb-avatar');
+    Array.prototype.forEach.call(boxes, function (box) {
+      if (box.querySelector('img')) return;
+      var img = document.createElement('img');
+      img.alt = name || '';
+      img.loading = 'lazy';
+      // 사진이 깨지면 원래 아이콘이 그대로 남도록, 먼저 숨겨 두고 성공했을 때만 보여 준다
+      var icon = box.querySelector('svg');
+      img.addEventListener('load', function () {
+        if (icon) icon.style.display = 'none';
+        box.classList.add('has-photo');
+      });
+      img.addEventListener('error', function () { img.remove(); });
+      img.src = url;
+      box.appendChild(img);
+    });
+  }
+
+  function initUserAvatar() {
+    if (!document.querySelector('.sb-avatar')) return;   // 해당 없는 페이지는 요청도 않는다
+
+    var cached = cachedPhoto();
+    if (cached) { paintAvatars(cached.url, cached.name); return; }
+
+    fetch('/shared-ui/account/api/me', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (me) {
+        if (!me) return;
+        var url = me.member && me.member.image;
+        try {
+          sessionStorage.setItem(AVATAR_CACHE_KEY,
+            JSON.stringify({ t: Date.now(), url: url || '', name: me.name || '' }));
+        } catch (e) { }
+        paintAvatars(url, me.name);
+      })
+      .catch(function () { /* 비로그인·오류면 기본 아이콘 그대로 */ });
+  }
+
   function init() {
     initLiquidGlass();
     initConnStatus();
     loadChatbot();
+    initUserAvatar();
     var btn = document.getElementById('themeSettingsBtn');
     if (!btn) return;
 

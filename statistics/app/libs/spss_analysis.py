@@ -1,6 +1,7 @@
 import itertools
 import os
 import re
+import time
 import warnings
 
 import numpy as np
@@ -15,10 +16,16 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 from app.libs.path import safe_path
+from system.progress import send_message, send_progress
 
 warnings.filterwarnings("ignore")
 
 MIN_ROWS = 10
+# 군집분석 표본 상한. silhouette_score 는 표본 쌍거리를 모두 계산해 O(n^2) 이므로
+# 610만 행이면 한 번에 수십 시간이 걸린다(k 를 여러 개 보면 며칠). 군집 구조를
+# 파악하는 데 수만 행이면 충분하므로 표본으로 모델을 고르고 결과에 표본 수를 적는다.
+MAX_CLUSTER_ROWS = 50_000
+MAX_SILHOUETTE_ROWS = 10_000
 MAX_NUMERIC_COLUMNS = 10
 MAX_CATEGORICAL_COLUMNS = 6
 MAX_DETAIL_TABLES = (
@@ -593,6 +600,11 @@ def _cluster_analysis(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> N
     sub = data[numeric_cols].apply(pd.to_numeric, errors="coerce").dropna()
     if len(sub) < 30:
         return
+
+    total_rows = len(sub)
+    if total_rows > MAX_CLUSTER_ROWS:
+        sub = sub.sample(MAX_CLUSTER_ROWS, random_state=42)
+    sampled = len(sub) < total_rows
     X = StandardScaler().fit_transform(sub)
 
     max_k = min(6, len(sub) // 10)
@@ -602,7 +614,13 @@ def _cluster_analysis(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> N
     for k in range(2, max_k + 1):
         try:
             labels = KMeans(n_clusters=k, n_init=10, random_state=42).fit_predict(X)
-            score = silhouette_score(X, labels)
+            # sample_size 를 주면 실루엣 계수를 표본으로 추정한다(O(n^2) 회피)
+            score = silhouette_score(
+                X,
+                labels,
+                sample_size=min(MAX_SILHOUETTE_ROWS, len(X)),
+                random_state=42,
+            )
         except Exception:
             continue
         if score > best_score:
@@ -624,6 +642,12 @@ def _cluster_analysis(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> N
                     "최적 군집 수(k)": best_k,
                     "실루엣 계수": round(best_score, 3),
                     "N": len(sub),
+                    "전체 N": total_rows,
+                    "비고": (
+                        f"전체 {total_rows:,}행 중 {len(sub):,}행 무작위 표본으로 분석"
+                        if sampled
+                        else "전체 행으로 분석"
+                    ),
                 }
             ]
         ),
@@ -633,36 +657,119 @@ def _cluster_analysis(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> N
 
 
 # ---------------------------------------------------------------------------
+# 진행 보고
+# ---------------------------------------------------------------------------
+
+
+class _Progress:
+    """단계마다 웹 진행 로그로 '지금 무엇을 하는지' 내보낸다.
+
+    pid 가 없으면(단독 실행·테스트) 아무것도 하지 않는다.
+    """
+
+    PREFIX = "[통계분석]"
+
+    def __init__(self, pid: str | None):
+        self.pid = pid
+        self.total = 0
+        self.i = 0
+        self.t0 = time.time()
+
+    def _emit(self, text: str) -> None:
+        if not self.pid:
+            return
+        try:
+            send_message(self.pid, text)
+        except Exception:
+            pass
+
+    def plan(self, numeric_cols: list, categorical_cols: list) -> None:
+        n, c = len(numeric_cols), len(categorical_cols)
+        total = 0
+        if n:
+            total += 2  # 기술통계, 정규성
+        total += c  # 빈도분석
+        if n >= 2:
+            total += 4  # 상관 2 + 회귀 + 군집
+        if n >= 3:
+            total += 2  # PCA + 신뢰도
+        if c >= 2:
+            total += 1  # 교차분석
+        if n and c:
+            total += 1  # 평균비교
+        self.total = total
+        self._emit(f"{self.PREFIX} 통계 분석 시작 — 총 {total}단계")
+
+    def note(self, text: str) -> None:
+        self._emit(f"{self.PREFIX} {text}")
+
+    def step(self, label: str) -> None:
+        self.i += 1
+        self._step_t0 = time.time()
+        self._emit(f"{self.PREFIX} ({self.i}/{self.total}) {label} …")
+        if self.pid and self.total:
+            try:
+                send_progress(self.pid, self.i, self.total)
+            except Exception:
+                pass
+
+    def failed(self, label: str, exc: Exception) -> None:
+        self._emit(f"{self.PREFIX} {label} 건너뜀 — {type(exc).__name__}: {exc}")
+
+    def done(self) -> None:
+        self._emit(
+            f"{self.PREFIX} 통계 분석 완료 — {self.total}단계, "
+            f"{time.time() - self.t0:.1f}초"
+        )
+
+
+# ---------------------------------------------------------------------------
 # 진입점
 # ---------------------------------------------------------------------------
 
 
-def run(data: pd.DataFrame, csv_dir: str) -> None:
+def run(data: pd.DataFrame, csv_dir: str, pid: str | None = None) -> None:
+    """SPSS 형식 통계 분석. pid 를 주면 각 단계를 진행 로그로 내보낸다."""
     os.makedirs(csv_dir, exist_ok=True)
     if len(data) < MIN_ROWS:
         return
 
     numeric_cols, categorical_cols = _select_columns(data)
+    progress = _Progress(pid)
+    progress.plan(numeric_cols, categorical_cols)
+    progress.note(
+        f"분석 대상 열 — 수치형 {len(numeric_cols)}개"
+        + (f"({', '.join(map(str, numeric_cols))})" if numeric_cols else "")
+        + f", 범주형 {len(categorical_cols)}개"
+        + (f"({', '.join(map(str, categorical_cols))})" if categorical_cols else "")
+    )
 
-    def safe(fn, *args):
+    def safe(label, fn, *args):
+        progress.step(label)
         try:
             fn(*args)
-        except Exception:
-            pass
+        except Exception as e:
+            # 예전에는 예외를 조용히 삼켜 무엇이 빠졌는지 알 수 없었다.
+            progress.failed(label, e)
 
     if numeric_cols:
         safe(
+            "기술통계",
             lambda: _save(
                 _descriptives(data, numeric_cols), csv_dir, "spss_descriptives"
-            )
+            ),
         )
-        safe(lambda: _save(_normality(data, numeric_cols), csv_dir, "spss_normality"))
+        safe(
+            "정규성 검정",
+            lambda: _save(_normality(data, numeric_cols), csv_dir, "spss_normality"),
+        )
 
     for col in categorical_cols:
         safe(
+            f"빈도분석 ({col})",
             lambda c=col: _save(
                 _frequency_table(data, c), csv_dir, f"spss_frequencies_{_sanitize(c)}"
-            )
+            ),
         )
 
     if len(numeric_cols) >= 2:
@@ -672,17 +779,26 @@ def run(data: pd.DataFrame, csv_dir: str) -> None:
             _save(corr_out, csv_dir, stem)
             _save(pval_out, csv_dir, f"{stem}_pvalues")
 
-        safe(_corr, "pearson", "spss_correlation_pearson")
-        safe(_corr, "spearman", "spss_correlation_spearman")
-        safe(_regression, data, numeric_cols, csv_dir)
-        safe(_cluster_analysis, data, numeric_cols, csv_dir)
+        safe("상관분석 (Pearson)", _corr, "pearson", "spss_correlation_pearson")
+        safe("상관분석 (Spearman)", _corr, "spearman", "spss_correlation_spearman")
+        safe("회귀분석", _regression, data, numeric_cols, csv_dir)
+        safe("군집분석 (K-means)", _cluster_analysis, data, numeric_cols, csv_dir)
 
     if len(numeric_cols) >= 3:
-        safe(_pca, data, numeric_cols, csv_dir)
-        safe(_reliability, data, numeric_cols, csv_dir)
+        safe("요인분석 (PCA)", _pca, data, numeric_cols, csv_dir)
+        safe("신뢰도분석 (Cronbach α)", _reliability, data, numeric_cols, csv_dir)
 
     if len(categorical_cols) >= 2:
-        safe(_crosstabs, data, categorical_cols, csv_dir)
+        safe("교차분석 (카이제곱)", _crosstabs, data, categorical_cols, csv_dir)
 
     if numeric_cols and categorical_cols:
-        safe(_mean_comparisons, data, numeric_cols, categorical_cols, csv_dir)
+        safe(
+            "집단간 평균비교 (t/ANOVA)",
+            _mean_comparisons,
+            data,
+            numeric_cols,
+            categorical_cols,
+            csv_dir,
+        )
+
+    progress.done()

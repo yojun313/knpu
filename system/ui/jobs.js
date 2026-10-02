@@ -45,7 +45,8 @@
     summaryTimer: null,
     detail: null, // { id, since, timer, auto, job }
     seen: null,   // 이미 알림을 띄운(또는 페이지를 열 때 이미 끝나 있던) 작업 id
-    badge: null
+    badge: null,
+    navHost: null
   };
 
   // ------------------------------------------------------------ 유틸 ---
@@ -154,7 +155,7 @@
     var el = document.getElementById(id);
     if (el) el.hidden = true;
     if (id === 'kjList' && S.listTimer) { clearInterval(S.listTimer); S.listTimer = null; }
-    if (id === 'kjDetail' && S.detail) { clearTimeout(S.detail.timer); S.detail = null; }
+    if (id === 'kjDetail' && S.detail) { clearTimeout(S.detail.timer); S.detail = null; renderNav(); }
   }
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
@@ -257,10 +258,13 @@
     opt = opt || {};
     if (S.detail) clearTimeout(S.detail.timer);
     var el = overlay('kjDetail');
+    var listEl = document.getElementById('kjList');
+    var overList = !!(listEl && !listEl.hidden);
+    el.classList.toggle('kj-over-list', overList);
     el.innerHTML =
       '<div class="kj-modal kj-detail-modal" role="dialog" aria-label="작업 진행 상황">' +
       '<div class="kj-head"><div class="kj-head-main">' +
-      (document.getElementById('kjList') && !document.getElementById('kjList').hidden ? '<button type="button" class="kj-back" data-back title="목록으로">' + icon('back') + '</button>' : '') +
+      (overList ? '<button type="button" class="kj-back" data-back title="목록으로">' + icon('back') + '</button>' : '') +
       '<div><div class="kj-title-row"><span data-pill></span><h3 data-title>불러오는 중…</h3></div><p class="kj-sub" data-kind></p></div></div>' +
       '<button class="kj-x" type="button" data-close title="닫기 (작업은 계속 실행됩니다)">×</button></div>' +
       '<div class="kj-detail-body">' +
@@ -279,6 +283,7 @@
     var back = el.querySelector('[data-back]');
     if (back) back.onclick = function () { close('kjDetail'); loadList(); };
     S.detail = { id: id, since: 0, timer: null, auto: !!opt.autoOpenResult, job: null, lastStatus: null };
+    renderNav();   // 사이드바에서 지금 보고 있는 작업을 바로 강조
     pollDetail();
   }
 
@@ -493,12 +498,13 @@
     b.hidden = !n;
     b.textContent = n > 99 ? '99+' : String(n);
     b.classList.toggle('kj-badge-live', !!running);
-    var host = b.closest('.kj-nav');
-    if (host) host.title = '작업 목록' + (n ? ' — 실행·대기 ' + (running || 0) + '개, 예약 ' + (scheduled || 0) + '개' : '');
+    var host = b.closest('.kj-rail-head');
+    if (host) host.title = '작업' + (n ? ' — 실행·대기 ' + (running || 0) + '개, 예약 ' + (scheduled || 0) + '개' : '');
   }
   function scheduleSummary() {
     if (S.summaryTimer) clearTimeout(S.summaryTimer);
     S.summaryTimer = setTimeout(function () {
+      refreshNav();
       refreshSummary().then(scheduleSummary);
     }, document.hidden ? 30000 : 5000);
   }
@@ -591,24 +597,107 @@
     };
   }
 
-  // ------------------------------------------------------------ 사이드바 버튼 ---
-  function mountButton(anchor) {
-    if (!anchor || document.querySelector('.kj-nav')) return;
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'kj-nav';
-    b.title = '작업 목록';
-    b.innerHTML = '<span class="kj-nav-icon">' + icon('list') + '</span><span class="kj-nav-text sb-label">작업 목록</span><span class="kj-badge" hidden></span>';
-    b.onclick = openList;
-    anchor.parentNode.insertBefore(b, anchor.nextSibling);
-    S.badge = b.querySelector('.kj-badge');
+  // ------------------------------------------------------------ 사이드바 작업 목록 ---
+  // 모달을 열지 않고 사이드바에 바로 보여 준다. 항목을 누르면 진행 상황 창이 바로 열린다.
+  var NAV_LIMIT = 8;
+  var navData = null;
+
+  function mountRail(anchor) {
+    if (!anchor || document.querySelector('.kj-rail')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'kj-rail';
+    wrap.innerHTML =
+      '<div class="kj-rail-head">' +
+      '<span class="kj-nav-icon">' + icon('list') + '</span>' +
+      '<span class="kj-rail-title sb-label">작업</span>' +
+      '<span class="kj-badge" hidden></span>' +
+      '<button type="button" class="kj-rail-all sb-label" data-all title="작업 목록 전체 보기">전체</button>' +
+      '</div>' +
+      '<div class="kj-rail-list" data-nav></div>';
+    anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+    wrap.querySelector('[data-all]').onclick = openList;
+    S.badge = wrap.querySelector('.kj-badge');
+    S.navHost = wrap;
+    renderNav();
+  }
+
+  // 진행·대기·예약을 먼저, 그 다음 최근 끝난 것 — 사이드바는 좁으니 NAV_LIMIT 개까지만
+  function navItems() {
+    var all = (navData && navData.items) || [];
+    var rank = function (j) {
+      if (j.status in RUNNING) return 0;
+      if (j.status === 'queued') return 1;
+      if (j.status === 'scheduled') return 2;
+      return 3;
+    };
+    return all.slice().sort(function (a, b) {
+      var d = rank(a) - rank(b);
+      if (d) return d;
+      return (b.finished_ts || b.created_ts || 0) - (a.finished_ts || a.created_ts || 0);
+    }).slice(0, NAV_LIMIT);
+  }
+
+  function navMeta(j, now) {
+    var label = (STATUS[j.status] || [j.status])[0];
+    if (j.status === 'scheduled') return label + ' · ' + fmtTime(j.scheduled_ts, true);
+    if (j.status in RUNNING) {
+      var p = pct(j);
+      return (j.stage || label) + (p != null ? ' · ' + p + '%' : '');
+    }
+    if (j.status === 'queued') return j.stage || label;
+    if (j.status === 'error' || j.status === 'interrupted') {
+      return label + ' · ' + ((j.error || '').split('\n')[0] || '');
+    }
+    return label + (j.finished_ts ? ' · ' + fmtTime(j.finished_ts) : '');
+  }
+
+  function renderNav() {
+    if (!S.navHost) return;
+    var body = S.navHost.querySelector('[data-nav]');
+    if (!body) return;
+    var items = navItems();
+    if (!items.length) {
+      body.innerHTML = '<div class="kj-rail-empty">' +
+        (navData ? '진행 중인 작업이 없습니다.' : '불러오는 중…') + '</div>';
+      return;
+    }
+    var now = (navData && navData.now) || Date.now() / 1000;
+    var openId = S.detail && S.detail.id;
+    body.innerHTML = items.map(function (j) {
+      var p = pct(j);
+      var bar = '';
+      if (j.status in RUNNING) {
+        bar = '<span class="kj-rail-bar' + (p == null ? ' kj-indet' : '') +
+          '"><i style="width:' + (p == null ? 35 : p) + '%"></i></span>';
+      }
+      return '<button type="button" class="kj-rail-item kj-st-' + esc(j.status) +
+        (openId === j.id ? ' on' : '') + '" data-id="' + esc(j.id) + '"' +
+        ' title="' + esc((j.title || '') + ' — ' + navMeta(j, now)) + '">' +
+        '<span class="kj-rail-dot"></span>' +
+        '<span class="kj-rail-main">' +
+        '<span class="kj-rail-name">' + esc(j.title || '(이름 없음)') + '</span>' +
+        '<span class="kj-rail-meta">' + esc(navMeta(j, now)) + '</span>' +
+        '</span>' + bar + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(body.querySelectorAll('.kj-rail-item'), function (row) {
+      // 바로 진행 상황 창으로 — 목록 모달을 거치지 않는다
+      row.onclick = function () { open(row.getAttribute('data-id'), { autoOpenResult: false }); };
+    });
+  }
+
+  function refreshNav() {
+    return api('?scope=service&limit=' + NAV_LIMIT * 3).then(function (data) {
+      navData = data;
+      renderNav();
+    }).catch(function () { });
   }
 
   function init(opts) {
     S.opts = opts || {};
     S.service = S.opts.service;
-    mountButton(S.opts.anchor);
+    mountRail(S.opts.anchor);
     refreshSummary().then(scheduleSummary);
+    refreshNav();
     document.addEventListener('visibilitychange', function () { if (!document.hidden) { refreshSummary(); scheduleSummary(); } });
   }
 
@@ -617,7 +706,7 @@
     open: open,
     openList: openList,
     schedulePicker: schedulePicker,
-    refresh: refreshSummary,
+    refresh: function () { refreshNav(); return refreshSummary(); },
     toast: toast
   };
 })();

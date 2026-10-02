@@ -15,7 +15,7 @@ from app.services import (
     network_ai,
     network_ai_jobs,
 )
-from system import uploads as upload_staging
+from system import crawldata, uploads as upload_staging
 from system.jobs import submit as submit_job
 from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
@@ -546,20 +546,27 @@ async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
 
 @router.get("/api/crawl-dbs/{uid}/files")
 async def api_crawl_db_files(uid: str, request: Request, kind: str = "token"):
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
-    try:
-        resp = requests.get(
-            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
-            cookies={"session": session_token},
-            timeout=15,
-        )
-    except requests.RequestException as e:
-        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
-    if resp.status_code != 200:
-        raise HTTPException(resp.status_code, resp.text)
-    data = resp.json()
+    # 크롤러와 같은 서버·같은 디스크이므로 HTTP 왕복 없이 바로 읽는다.
+    if crawldata.available():
+        try:
+            data = crawldata.list_files(uid)
+        except crawldata.CrawlDataError as e:
+            raise HTTPException(404, str(e))
+    else:
+        session_token = request.cookies.get("session")
+        if not session_token:
+            raise HTTPException(401, "인증이 필요합니다")
+        try:
+            resp = requests.get(
+                f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
+                cookies={"session": session_token},
+                timeout=15,
+            )
+        except requests.RequestException as e:
+            raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+        if resp.status_code != 200:
+            raise HTTPException(resp.status_code, resp.text)
+        data = resp.json()
     if kind not in ("token", "raw"):
         raise HTTPException(400, "파일 종류가 올바르지 않습니다.")
     data["files"] = [f for f in data.get("files", []) if f.get("type") == kind]
@@ -568,28 +575,39 @@ async def api_crawl_db_files(uid: str, request: Request, kind: str = "token"):
 
 @router.post("/api/crawl-dbs/{uid}/select")
 async def api_crawl_db_select(uid: str, request: Request):
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
     body = await request.json()
     name = (body.get("name") or "").strip()
     if not name:
         raise HTTPException(400, "파일명이 필요합니다")
 
-    try:
-        resp = requests.get(
-            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
-            params={"name": name},
-            cookies={"session": session_token},
-            timeout=60,
-        )
-    except requests.RequestException as e:
-        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
-    if resp.status_code != 200:
-        raise HTTPException(resp.status_code, resp.text)
-
     filename = name.rsplit(".", 1)[0] + ".csv"
-    stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+    # 예전에는 여기서 크롤러 HTTP API 로 CSV 전체(큰 건 2.5GB)를 받아 메모리에 담았다.
+    # 1GB parquet 하나로 수십 초가 걸리고 타임아웃까지 났다. 같은 서버이므로 여기서는
+    # 파일이 있는지만 확인하고, 실제 변환은 작업 워커가 진행률과 함께 한다.
+    if crawldata.available():
+        try:
+            crawldata.parquet_path(uid, name)
+        except crawldata.CrawlDataError as e:
+            raise HTTPException(404, str(e))
+        stage_id = upload_staging.stage_ref(
+            _uid(request), {"uid": uid, "name": name, "csv_name": filename}, filename
+        )
+    else:
+        session_token = request.cookies.get("session")
+        if not session_token:
+            raise HTTPException(401, "인증이 필요합니다")
+        try:
+            resp = requests.get(
+                f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
+                params={"name": name},
+                cookies={"session": session_token},
+                timeout=600,
+            )
+        except requests.RequestException as e:
+            raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+        if resp.status_code != 200:
+            raise HTTPException(resp.status_code, resp.text)
+        stage_id = upload_staging.stage(_uid(request), resp.content, filename)
     insert_log(
         user_logs_db,
         _uid(request),
@@ -623,13 +641,18 @@ async def api_analyze_start(request: Request):
 
     body = await request.json()
     try:
-        content, filename = upload_staging.pop(uid, body.get("stage_id", ""))
+        staged = upload_staging.pop_any(uid, body.get("stage_id", ""))
     except ValueError as e:
         raise HTTPException(400, str(e))
+    content, filename = staged["content"], staged["filename"]
+    crawl_file = staged["ref"] if staged["kind"] == "ref" else None
 
     built_option = analyze_service.build_option(body.get("option") or {})
     if not built_option.get("text_col"):
         raise HTTPException(400, "분석할 열(대상 열)을 선택해주세요.")
+    if crawl_file:
+        # 워커가 크롤 parquet 을 직접 읽어 CSV 로 변환한다(입력 사본을 만들지 않는다).
+        built_option = {**built_option, "_crawl_file": crawl_file}
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
     scheduled = parse_schedule(body.get("scheduled_at"))

@@ -1,16 +1,3 @@
-"""서비스별 작업 러너 — 웹 서버 안에서 도는 스레드 하나.
-
-1초마다:
-  1) 예약 시각이 된 scheduled 작업 → queued
-  2) 중단 요청된 실행 중 작업 → 감독 프로세스에 SIGTERM, 시간이 지나도 그룹이 남으면 SIGKILL
-  3) 끝난 감독 프로세스 거두기 → 최종 상태 확정(작업이 직접 못 남긴 경우 error/cancelled)
-  4) 동시 실행 한도 안에서 queued 작업을 원자적으로 집어 새 프로세스 그룹으로 실행
-
-웹 서버가 종료될 때(PM2 stop/restart) 실행 중인 그룹을 모두 정리하고 'interrupted' 로 남긴다.
-웹 서버가 SIGKILL 로 죽으면 감독 프로세스의 PDEATHSIG 가 그룹을 정리하고, 다음 기동 때
-recover() 가 남은 문서를 'interrupted' 로 바꾼다(혹시 살아남은 그룹이 있으면 여기서 죽인다).
-"""
-
 import atexit
 import logging
 import os

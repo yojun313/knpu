@@ -135,12 +135,16 @@ def run_job(ctx) -> dict:
     from app.services.statistics_service import run_statistics_analysis
 
     pid = ctx.id
-    params = ctx.params
+    params = dict(ctx.params)
+    crawl_file = params.pop("_crawl_file", None)
     category = params.get("category") or ""
     option = {"pid": pid, **params}
 
-    ctx.log(f"입력 파일 읽는 중: {ctx.input_filename}")
-    df = pd.read_csv(ctx.input_path, encoding="utf-8")
+    input_path, input_filename = ctx.input_path, ctx.input_filename
+    if crawl_file:
+        input_path, input_filename = _materialize_crawl_input(ctx, crawl_file)
+    ctx.log(f"입력 파일 읽는 중: {input_filename}")
+    df = pd.read_csv(input_path, encoding="utf-8")
     ctx.log(f"데이터 {len(df):,}행 · {len(df.columns)}열")
 
     # 혐오도 분석: 점수 열이 없는 원본 CSV면 GPU에서 먼저 측정한 뒤
@@ -167,3 +171,25 @@ def run_job(ctx) -> dict:
     if not project_id:
         raise JobError("분석은 끝났지만 프로젝트로 저장하지 못했습니다.")
     return {"project_id": project_id, "summary": f"프로젝트 '{ctx.title}' 생성"}
+
+
+def _materialize_crawl_input(ctx, crawl_file: dict) -> tuple[str, str]:
+    """크롤링 DB의 parquet을 이 작업 폴더에 CSV로 풀어 둔다.
+
+    parquet을 row group 단위로 읽어 바로 파일에 쓰므로, 1GB가 넘는 원본이어도
+    메모리 사용량이 일정하다.
+    """
+    from system import crawldata
+    from system.jobs import store as job_store
+    from system.jobs.errors import JobError
+
+    name = crawl_file.get("name") or ""
+    dest = os.path.join(job_store.job_dir(ctx.id), "input.csv")
+    ctx.stage("크롤링 데이터 불러오는 중")
+    ctx.log(f"크롤링 DB에서 불러오는 중: {name}")
+    try:
+        written = crawldata.write_csv(crawl_file["uid"], name, dest)
+    except crawldata.CrawlDataError as e:
+        raise JobError(f"크롤링 데이터를 읽지 못했습니다: {e}")
+    ctx.log(f"불러오기 완료 — {written / 1e6:,.1f} MB")
+    return dest, crawl_file.get("csv_name") or os.path.basename(dest)

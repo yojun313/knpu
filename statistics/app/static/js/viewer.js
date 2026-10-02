@@ -107,6 +107,8 @@
     });
     chartsById = {};
     heatmapTables = {};
+    tablesById = {};
+    if (zoomChart) { zoomChart.destroy(); zoomChart = null; }
   }
 
   function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
@@ -114,6 +116,27 @@
   function hexToRgb(hex) {
     var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
     return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 44, g: 127, b: 184 };
+  }
+
+  // 히트맵 셀에 넣을 짧은 숫자 표기. 칸 너비에 맞을 때까지 자릿수를 줄이고,
+  // 그래도 넘치면 빈 문자열(생략)을 돌려준다.
+  function heatCellLabel(v, maxWidth, ctx) {
+    if (v === null || v === undefined || isNaN(v)) return '';
+    var candidates;
+    if (Number.isInteger(v)) {
+      candidates = [String(v)];
+      if (Math.abs(v) >= 10000) candidates.unshift(Math.round(v / 1000) + 'k');
+    } else if (Math.abs(v) < 1) {
+      // 상관계수 등: .12 / -.57 처럼 앞의 0 을 떼면 두 글자를 번다
+      var two = v.toFixed(2);
+      candidates = [two.replace(/^(-?)0\./, '$1.'), v.toFixed(1).replace(/^(-?)0\./, '$1.')];
+    } else {
+      candidates = [v.toFixed(2), v.toFixed(1), String(Math.round(v))];
+    }
+    for (var i = 0; i < candidates.length; i++) {
+      if (ctx.measureText(candidates[i]).width <= maxWidth) return candidates[i];
+    }
+    return '';
   }
 
   // 요일×시간대(또는 상관행렬) 히트맵을 캔버스에 직접 그린다. 온스크린 렌더와 PNG
@@ -130,8 +153,17 @@
     var values = table.rows.map(function (r) {
       return r.slice(1).map(function (v) { return typeof v === 'number' ? v : 0; });
     });
-    var maxVal = 1;
-    values.forEach(function (row) { row.forEach(function (v) { if (v > maxVal) maxVal = v; }); });
+    // 상관행렬은 -1~1 범위라 음수가 섞인다. 예전에는 양수 최댓값만 봐서 음수 셀의
+    // 농도가 0 이하로 계산돼 전부 빈 칸처럼 보였다. 절댓값 기준으로 정규화한다.
+    var diverging = false;
+    var maxAbs = 0;
+    values.forEach(function (row) {
+      row.forEach(function (v) {
+        if (v < 0) diverging = true;
+        if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
+      });
+    });
+    var maxVal = maxAbs || 1;
 
     var labelW = Math.min(70, cssWidth * 0.14);
     var headerH = 20;
@@ -173,15 +205,24 @@
       ctx.fillText(rowLabel, labelW - 6, headerH + ri * cellH + cellH / 2);
 
       values[ri].forEach(function (v, ci) {
-        var t = maxVal > 0 ? v / maxVal : 0;
+        var t = maxVal > 0 ? Math.abs(v) / maxVal : 0;
         var x = labelW + ci * cellW, y = headerH + ri * cellH;
-        ctx.fillStyle = 'rgba(' + accent.r + ',' + accent.g + ',' + accent.b + ',' + (0.08 + t * 0.85) + ')';
+        // 음수가 있는 표(상관행렬)는 양수=파랑 / 음수=빨강으로 갈라 보여 준다.
+        var rgb = (diverging && v < 0) ? { r: 214, g: 69, b: 69 } : accent;
+        ctx.fillStyle = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + (0.08 + t * 0.85) + ')';
         ctx.fillRect(x + 1, y + 1, Math.max(0, cellW - 2), Math.max(0, cellH - 2));
+
+        // 예전에는 String(v) 를 그대로 찍어 0.011994375557191… 처럼 18자리가 들어가
+        // 옆 칸까지 침범했다. 자릿수를 줄이고, 그래도 안 들어가면 아예 생략한다.
         if (cellW > 26 && cellH > 16) {
-          ctx.fillStyle = t > 0.55 ? '#ffffff' : textColor;
-          ctx.font = Math.max(8, Math.round(cellH * 0.32)) + 'px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(String(v), x + cellW / 2, y + cellH / 2);
+          var fontPx = Math.max(8, Math.round(Math.min(cellH * 0.34, cellW * 0.26)));
+          ctx.font = fontPx + 'px sans-serif';
+          var label = heatCellLabel(v, cellW - 6, ctx);
+          if (label) {
+            ctx.fillStyle = t > 0.55 ? '#ffffff' : textColor;
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x + cellW / 2, y + cellH / 2);
+          }
         }
       });
     });
@@ -277,6 +318,7 @@
 
     var head = document.createElement('div');
     head.className = 'tc-head';
+    tablesById[table.id] = table;
     head.innerHTML = '<span class="tc-head-main"><span class="tc-title">' + esc(table.title) + '</span>'
       + '<span class="tc-meta">' + table.row_count + '행 · ' + table.columns.length + '열</span></span>';
     card.appendChild(head);
@@ -285,6 +327,14 @@
       var actions = document.createElement('span');
       actions.className = 'tc-head-actions';
       if (table.is_heatmap || planChart(table)) {
+        var zoomBtn = document.createElement('button');
+        zoomBtn.className = 'tc-zoom-btn';
+        zoomBtn.type = 'button';
+        zoomBtn.title = '크게 보기';
+        zoomBtn.innerHTML = '&#9974;';
+        zoomBtn.addEventListener('click', function () { openZoomModal(table.id); });
+        actions.appendChild(zoomBtn);
+
         var pngBtn = document.createElement('button');
         pngBtn.className = 'tc-png-btn';
         pngBtn.title = 'PNG로 저장';
@@ -397,9 +447,12 @@
     out.height = src.height + titleH;
     var ctx = out.getContext('2d');
 
-    if (titleH && background !== 'transparent') {
+    // Chart.js 캔버스는 배경을 칠하지 않는다(투명). 예전에는 제목 띠 영역만 칠하고
+    // 차트 본체는 그대로 얹어서, "흰색"을 골라도 받은 PNG가 투명하게 나왔다.
+    // 캔버스 전체를 먼저 칠한 뒤 차트를 올린다.
+    if (background !== 'transparent') {
       ctx.fillStyle = background === 'white' ? '#ffffff' : cssVar('--sidebar-bg');
-      ctx.fillRect(0, 0, out.width, titleH);
+      ctx.fillRect(0, 0, out.width, out.height);
     }
     if (showTitleCaption) {
       ctx.fillStyle = background === 'white' ? '#111111' : cssVar('--text-strong');
@@ -418,6 +471,107 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
+  }
+
+  // ── 그래프 크게 보기 ───────────────────────────────────────────────
+  var zoomTableId = null;     // 지금 모달에 띄운 표 id
+  var zoomChart = null;       // 모달 전용 Chart.js 인스턴스(카드 것과 분리)
+  var tablesById = {};        // id -> table (CSV 저장·모달 렌더에 필요)
+
+  function openZoomModal(tableId) {
+    var table = tablesById[tableId];
+    if (!table) return;
+    zoomTableId = tableId;
+
+    document.getElementById('zoomTitle').textContent = table.title;
+    document.getElementById('zoomDesc').textContent = table.description || '';
+    document.getElementById('zoomMeta').textContent =
+      table.row_count + '행 · ' + table.columns.length + '열';
+
+    var modal = document.getElementById('zoomModal');
+    modal.hidden = false;
+
+    // 모달이 보이고 나서 실제 폭을 읽어야 캔버스 크기가 맞는다
+    requestAnimationFrame(function () { renderZoom(table); });
+  }
+
+  function renderZoom(table) {
+    var canvas = document.getElementById('zoomCanvas');
+    var wrap = canvas.parentNode;
+    var w = Math.max(320, wrap.clientWidth - 28);
+    var h = Math.max(260, Math.min(Math.round(window.innerHeight * 0.52), 620));
+
+    if (zoomChart) { zoomChart.destroy(); zoomChart = null; }
+    // 캔버스를 갈아끼워 이전 렌더 상태(크기·컨텍스트)를 확실히 비운다
+    var fresh = canvas.cloneNode(false);
+    canvas.parentNode.replaceChild(fresh, canvas);
+    canvas = fresh;
+
+    if (table.is_heatmap) {
+      canvas.style.height = h + 'px';
+      drawHeatmap(canvas, table, { width: w, height: h });
+    } else {
+      var plan = planChart(table);
+      if (!plan) return;
+      canvas.style.height = h + 'px';
+      zoomChart = buildChart(canvas, table, plan);
+    }
+  }
+
+  function closeZoomModal() {
+    document.getElementById('zoomModal').hidden = true;
+    if (zoomChart) { zoomChart.destroy(); zoomChart = null; }
+    zoomTableId = null;
+  }
+
+  // 표 데이터를 CSV로 — 엑셀에서 한글이 깨지지 않도록 BOM을 붙인다
+  function tableToCsv(table) {
+    function cell(v) {
+      if (v === null || v === undefined) return '';
+      var str = String(v);
+      return /[",\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+    }
+    var lines = [table.columns.map(cell).join(',')];
+    table.rows.forEach(function (r) { lines.push(r.map(cell).join(',')); });
+    return '﻿' + lines.join('\r\n');
+  }
+
+  function downloadZoomCsv() {
+    var table = tablesById[zoomTableId];
+    if (!table) return;
+    var blob = new Blob([tableToCsv(table)], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    triggerDownload(url, zoomTableId + '.csv');
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('수치 데이터를 CSV로 저장했습니다.');
+  }
+
+  // 모달에서 바로 PNG 저장 — 옵션 없이 2배율·흰 배경(인쇄/문서 삽입용 기본값)
+  function downloadZoomPng() {
+    var table = tablesById[zoomTableId];
+    if (!table) return;
+    var scale = 2, background = 'white';
+    var src;
+    if (table.is_heatmap) {
+      src = document.createElement('canvas');
+      drawHeatmap(src, table, { scale: scale, background: background, width: 900, height: 420 });
+    } else {
+      var chart = zoomChart;
+      if (!chart) return;
+      var origRatio = chart.options.devicePixelRatio;
+      chart.options.devicePixelRatio = scale;
+      chart.resize(); chart.update('none');
+      src = chart.canvas;
+      var url = compositeWithTitle(src, scale, background, true, table.title);
+      chart.options.devicePixelRatio = origRatio;
+      chart.resize(); chart.update('none');
+      triggerDownload(url, zoomTableId + '.png');
+      toast('그래프를 PNG로 저장했습니다.');
+      return;
+    }
+    triggerDownload(compositeWithTitle(src, scale, background, true, table.title),
+                    zoomTableId + '.png');
+    toast('그래프를 PNG로 저장했습니다.');
   }
 
   function downloadChartPng() {
@@ -2200,6 +2354,22 @@
     document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
     document.getElementById('exportModal').addEventListener('click', function (e) { if (e.target.id === 'exportModal') closeExportModal(); });
     document.getElementById('btnDownloadPng').addEventListener('click', downloadChartPng);
+    document.getElementById('zoomModalClose').addEventListener('click', closeZoomModal);
+    document.getElementById('zoomModal').addEventListener('click', function (e) {
+      if (e.target === this) closeZoomModal();   // 바깥 클릭으로 닫기
+    });
+    document.getElementById('btnZoomCsv').addEventListener('click', downloadZoomCsv);
+    document.getElementById('btnZoomPngQuick').addEventListener('click', downloadZoomPng);
+    document.getElementById('btnZoomExport').addEventListener('click', function () {
+      var t = tablesById[zoomTableId];
+      if (!t) return;
+      closeZoomModal();
+      openExportModal(t.id, t.title);           // 배율·배경 등 세부 옵션은 기존 모달 재사용
+    });
+    window.addEventListener('resize', function () {
+      var m = document.getElementById('zoomModal');
+      if (m && !m.hidden && zoomTableId) renderZoom(tablesById[zoomTableId]);
+    });
     ['exportScaleRow', 'exportBgRow'].forEach(function (rowId) {
       document.getElementById(rowId).addEventListener('click', function (e) {
         var btn = e.target.closest('.option-btn');
@@ -2219,6 +2389,7 @@
       else if (!ctxMenu.hidden) closeRailCtxMenu();
       else if (!document.getElementById('aiResultModal').hidden) closeAiResultModal();
       else if (!document.getElementById('exportModal').hidden) closeExportModal();
+      else if (!document.getElementById('zoomModal').hidden) closeZoomModal();
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
       else closeMobileDrawers();

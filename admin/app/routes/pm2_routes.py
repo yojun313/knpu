@@ -64,13 +64,16 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
 async def restart_all_processes(user=Depends(get_current_user)):
 
     def _run_and_log():
-        success = PM2Service.run_command("restart", "all")
+        # 개별 재시작과 동일하게 --update-env 를 붙인다. 이게 없으면 pm2 가 프로세스를
+        # 처음 띄울 때 저장해 둔 환경 변수를 그대로 다시 쓰기 때문에, .env 나
+        # ecosystem 의 env 를 고치고 전체 재시작해도 반영되지 않는다.
+        success = PM2Service.run_command("restart", "all", ["--update-env"])
         insert_log(
             user_logs_col,
             user["sub"],
             "admin.pm2.restart_all",
             "admin",
-            message="pm2 restart all",
+            message="pm2 restart all --update-env",
             target={"type": "pm2_process", "id": "all"},
             outcome="success" if success else "failure",
         )
