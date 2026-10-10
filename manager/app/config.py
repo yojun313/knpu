@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VERSION = "3.3.4"
+VERSION = "3.3.5"
 
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
 
