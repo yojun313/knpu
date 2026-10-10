@@ -832,7 +832,7 @@ class ViewVersionDialog(BaseDialog):
         super().__init__(parent)
         self.version_data = version_data  # [num, date, changelog, features, detail]
         if not title:
-            self.setWindowTitle(f"Version {version_data['versionName']} Details")
+            self.setWindowTitle(f"MANAGER 패치노트 · {version_data['versionName']}")
         else:
             self.setWindowTitle(title)
         self.resize(500, 500)
@@ -849,9 +849,13 @@ class ViewVersionDialog(BaseDialog):
         self.add_label(
             self.layout, "Detail", self.version_data["details"], multiline=True
         )
-        is_full = self.version_data.get("fullUpdate", False)
-        full_update_text = "N" if is_full else "Y"
-        self.add_label(self.layout, "Fast Update", full_update_text)
+        if getattr(self.parent(), "user_role", None) == "admin":
+            update_type = (
+                "전체 업데이트"
+                if self.version_data.get("fullUpdate", False)
+                else "업데이트"
+            )
+            self.add_label(self.layout, "업데이트 종류", update_type)
 
     def add_buttons(self, *buttons):
         button_layout = QHBoxLayout()

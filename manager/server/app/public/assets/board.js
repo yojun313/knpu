@@ -3,7 +3,7 @@
 const $ = id => document.getElementById(id);
 const escape = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const config = {
- version: {title:'패치 노트', description:'매니저 업데이트와 변경 사항을 확인하세요.', create:'＋ 패치 노트 추가'},
+ version: {title:'MANAGER 패치노트', description:'매니저 업데이트와 변경 사항을 확인하세요.', create:'＋ MANAGER 패치노트 추가'},
  bug: {title:'버그리포트', description:'문제를 알려주시고 관리자 답변을 확인하세요.', create:'＋ 버그리포트 작성'},
  post: {title:'자유게시판', description:'연구 이야기와 소식을 함께 나누세요.', create:'＋ 글 작성'}
 };
@@ -31,7 +31,7 @@ function selectTab(next) {
  if(!config[next])next='post';if(dialog.open)closeDialog();tab=next;page=1;
  document.querySelectorAll('[data-tab]').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);b.setAttribute('aria-current',active?'page':'false');});
  $('board-title').textContent=config[tab].title;$('board-description').textContent=config[tab].description;$('board-create').textContent=config[tab].create;$('board-create').hidden=tab==='version'&&user.role!=='admin';
- $('board-filter').innerHTML=tab==='post'?'<option value="all">전체 게시글</option><option value="mine">내가 작성한 글</option><option value="unread">읽지 않은 글</option>':tab==='bug'?'<option value="all">전체 리포트</option><option value="mine">내가 작성한 리포트</option><option value="waiting">답변 대기</option><option value="answered">답변 있음</option>':'<option value="all">전체 패치 노트</option>';
+ $('board-filter').innerHTML=tab==='post'?'<option value="all">전체 게시글</option><option value="mine">내가 작성한 글</option><option value="unread">읽지 않은 글</option>':tab==='bug'?'<option value="all">전체 리포트</option><option value="mine">내가 작성한 리포트</option><option value="waiting">답변 대기</option><option value="answered">답변 있음</option>':'<option value="all">전체 MANAGER 패치노트</option>';
  updateLocation(null);renderList();
 }
 function filtered() {
@@ -51,7 +51,7 @@ function renderList() {
  $('board-total').textContent=docs.length+'개';$('board-page').textContent=page+' / '+pages;$('board-prev').disabled=page<=1;$('board-next').disabled=page>=pages;
  $('board-list').innerHTML=docs.length?docs.slice((page-1)*20,page*20).map(d=>{
   const title=tab==='version'?'Version '+d.versionName:tab==='bug'?d.bugTitle:d.title;
-  const tag=tab==='bug'?(d.replyCount?'답변 '+d.replyCount:'답변 대기'):tab==='version'?(d.fullUpdate?'전체 업데이트':'업데이트'):(!d.readByMe&&d.writerUid!==user.uid?'NEW':'');
+  const tag=tab==='bug'?(d.replyCount?'답변 '+d.replyCount:'답변 대기'):tab==='version'?(user.role==='admin'?(d.fullUpdate?'전체 업데이트':'업데이트'):''):(!d.readByMe&&d.writerUid!==user.uid?'NEW':'');
   const meta=tab==='version'?[d.releaseDate,d.publisher]:tab==='bug'?[d.writerName,'v'+(d.versionName||'—'),date(d.datetime)]:[d.writerName,date(d.datetime),'조회 '+(d.viewCnt||0),'댓글 '+(d.commentCount||0)];
   return '<button type="button" class="board-row" data-open="'+escape(key(d))+'"><span class="board-row-main"><span class="board-row-title"><strong>'+escape(title)+'</strong>'+(tag?'<span class="board-tag">'+escape(tag)+'</span>':'')+'</span><span class="board-row-meta">'+meta.filter(Boolean).map(v=>'<span>'+escape(v)+'</span>').join('')+'</span></span><span class="board-chevron" aria-hidden="true">›</span></button>';
  }).join(''):'<div class="board-empty">'+($('board-search').value?'검색 조건에 맞는 글이 없습니다.':'게시글이 없습니다. 첫 글을 작성해보세요.')+'</div>';
@@ -73,7 +73,7 @@ function renderDetail(doc) {
  $('board-dialog-title').textContent=config[tab].title;
  let html='<div class="board-detail-meta"><span>'+escape(version?doc.publisher:doc.writerName)+'</span><span>'+escape(date(version?doc.releaseDate:doc.datetime))+'</span>'+(bug?'<span>Version '+escape(doc.versionName)+'</span>':'')+'</div><h2 class="board-detail-title">'+escape(title)+'</h2>';
  if(version?user.role==='admin':canEdit(doc))html+='<div class="board-actions"><button type="button" class="board-btn" data-action="edit">수정</button><button type="button" class="board-btn danger" data-action="delete">삭제</button></div>';
- if(version)html+=section('변경 사항',doc.changeLog)+section('주요 기능',doc.features)+section('상세 내용',doc.details)+'<span class="board-tag">'+(doc.fullUpdate?'전체 업데이트':'일반 업데이트')+'</span>';
+ if(version)html+=section('변경 사항',doc.changeLog)+section('주요 기능',doc.features)+section('상세 내용',doc.details)+(user.role==='admin'?'<span class="board-tag">'+(doc.fullUpdate?'전체 업데이트':'업데이트')+'</span>':'');
  else if(bug){html+='<div class="board-prose">'+escape(doc.bugText)+'</div>';if(doc.programLog)html+='<details><summary>프로그램 로그</summary><pre class="board-log">'+escape(doc.programLog)+'</pre></details>';}
  else html+='<div class="board-prose">'+escape(doc.text)+'</div>';
  if(!version){const items=bug?(doc.replies||[]):(doc.comments||[]);html+='<section class="board-discussion"><h3 class="board-section-title">'+(bug?'관리자 답변':'댓글')+' · '+items.length+'</h3>';
@@ -88,7 +88,7 @@ function editorField(name,label,value='',multiline=false) {return '<label>'+esca
 function openEditor(doc=null) {
  modalGeneration++;const version=tab==='version',bug=tab==='bug';showDialog(config[tab].title+' '+(doc?'수정':'작성'));
  let html='<form id="board-editor" class="board-editor">';
- if(version)html+=editorField('versionName','버전',doc?.versionName||'')+editorField('changeLog','변경 사항',doc?.changeLog||'',true)+editorField('features','주요 기능',doc?.features||'',true)+editorField('details','상세 내용',doc?.details||'',true)+'<label class="board-checkbox"><input name="fullUpdate" type="checkbox" '+(doc?.fullUpdate?'checked':'')+'>전체 업데이트</label><p class="board-detail-meta">새 패치 노트를 등록하면 업데이트 공지가 발송됩니다.</p>';
+ if(version)html+=editorField('versionName','버전',doc?.versionName||'')+editorField('changeLog','변경 사항',doc?.changeLog||'',true)+editorField('features','주요 기능',doc?.features||'',true)+editorField('details','상세 내용',doc?.details||'',true)+'<label class="board-checkbox"><input name="fullUpdate" type="checkbox" '+(doc?.fullUpdate?'checked':'')+'>전체 업데이트</label><p class="board-detail-meta">새 MANAGER 패치노트를 등록하면 업데이트 공지가 발송됩니다.</p>';
  else if(bug)html+=editorField('versionName','발생 버전',doc?.versionName||lists.version[0]?.versionName||'')+editorField('bugTitle','제목',doc?.bugTitle||'')+editorField('bugText','문제 내용과 재현 방법',doc?.bugText||'',true);
  else html+=editorField('title','제목',doc?.title||'')+editorField('text','내용',doc?.text||'',true)+(doc?'':'<label class="board-checkbox"><input type="checkbox" name="broadcastNotify">전체 공지 알림 보내기</label>');
  html+='<div class="board-form-error" role="alert"></div><div class="board-form-actions"><button type="button" class="board-btn" data-action="cancel-edit">취소</button><button type="submit" class="board-btn primary">저장</button></div></form>';
