@@ -102,10 +102,17 @@ class Manager_Web:
     def refreshPaperBoard(self):
         printStatus(self.main, "새로고침 중...")
         self.origin_paper_data = Request("get", "/papers/", HOMEPAGE_EDIT_API).json()
+        self.origin_paper_data.sort(
+            key=lambda group: int(group.get("year") or 0), reverse=True
+        )
 
         self.paper_data = []
         for year_group in self.origin_paper_data:
+            year_group.setdefault("papers", []).sort(
+                key=lambda paper: paper.get("published_date") or "", reverse=True
+            )
             for paper in year_group.get("papers", []):
+                paper["year"] = year_group["year"]
                 self.paper_data.append(paper)
 
         self.paper_data_for_table = [
@@ -126,6 +133,22 @@ class Manager_Web:
             self.paper_table_column,
         )
         printStatus(self.main, "https://knpu.re.kr/publications")
+
+    def _selected_paper(self, require_uid=False):
+        row = self.main.web_papers_tableWidget.currentRow()
+        if row < 0 or row >= len(self.paper_data):
+            return None
+        paper = self.paper_data[row]
+        if require_uid and not paper.get("uid"):
+            QMessageBox.warning(
+                self.main,
+                "논문 식별자 누락",
+                "이 논문의 식별자가 없습니다. 목록을 새로고침합니다. "
+                "논문을 다시 선택해주세요. 계속되면 홈페이지 서버 업데이트가 필요합니다.",
+            )
+            self.refreshPaperBoard()
+            return None
+        return paper
 
     def refreshMemberBoard(self):
         printStatus(self.main, "새로고침 중...")
@@ -306,12 +329,12 @@ class Manager_Web:
 
     def deleteHomePaper(self):
         try:
-            selectedRow = self.main.web_papers_tableWidget.currentRow()
-            if selectedRow < 0:
+            paper = self._selected_paper(require_uid=True)
+            if paper is None:
                 return
-            selectedUid = self.paper_data[selectedRow]["uid"]
-            if not self._can_manage(self.paper_data[selectedRow]):
+            if not self._can_manage(paper):
                 return
+            selectedUid = paper["uid"]
             reply = QMessageBox.question(
                 self.main,
                 "Confirm Delete",
@@ -326,7 +349,7 @@ class Manager_Web:
                     HOMEPAGE_EDIT_API,
                     params={"uid": selectedUid},
                 )
-                userLogging(f"WEB: 논문 삭제 - {self.paper_data[selectedRow]['title']}")
+                userLogging(f"WEB: 논문 삭제 - {paper['title']}")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -443,23 +466,12 @@ class Manager_Web:
 
     def editHomePaper(self):
         try:
-            selectedRow = self.main.web_papers_tableWidget.currentRow()
-            if selectedRow < 0:
+            origin = self._selected_paper(require_uid=True)
+            if origin is None:
                 return
-            selectedUid = self.paper_data[selectedRow]["uid"]
-            if not self._can_manage(self.paper_data[selectedRow]):
+            if not self._can_manage(origin):
                 return
-
-            origin = None
-            for year_group in self.origin_paper_data:
-                for p in year_group["papers"]:
-                    if p.get("uid") == selectedUid:
-                        origin = p
-                        origin["year"] = year_group["year"]
-                        break
-            if not origin:
-                QMessageBox.warning(self.main, "오류", "논문 정보를 찾을 수 없습니다.")
-                return
+            selectedUid = origin["uid"]
 
             dialog = EditHomePaperDialog(data=origin, parent=self.main)
             if dialog.exec():
@@ -587,19 +599,8 @@ class Manager_Web:
 
     def viewPaper(self):
         try:
-            selectedRow = self.main.web_papers_tableWidget.currentRow()
-            if selectedRow < 0:
-                return
-            selectedUid = self.paper_data[selectedRow]["uid"]
-            origin = None
-            for year_group in self.origin_paper_data:
-                for p in year_group["papers"]:
-                    if p.get("uid") == selectedUid:
-                        origin = p
-                        origin["year"] = year_group["year"]
-                        break
-            if not origin:
-                QMessageBox.warning(self.main, "오류", "논문 정보를 찾을 수 없습니다.")
+            origin = self._selected_paper()
+            if origin is None:
                 return
             dialog = ViewHomePaperDialog(data=origin, parent=self.main)
             dialog.exec()
