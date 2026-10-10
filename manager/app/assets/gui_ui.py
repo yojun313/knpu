@@ -666,7 +666,7 @@ class Ui_MainWindow(object):
         )
         self.tabWidget_board.setTabText(
             self.tabWidget_board.indexOf(self.tab_version),
-            QCoreApplication.translate("MainWindow", "\ud328\uce58 \ub178\ud2b8", None),
+            QCoreApplication.translate("MainWindow", "MANAGER 패치노트", None),
         )
         self.board_addbug_button.setText(
             QCoreApplication.translate("MainWindow", "\ucd94\uac00", None)
