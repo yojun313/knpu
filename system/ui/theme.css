@@ -1580,6 +1580,12 @@ html body .knpu-service-header .top-nav-link {
 html body .knpu-service-header .top-nav-link[data-knpu-admin-link] {
   margin-left: auto !important;
 }
+html body .knpu-service-header .top-nav-link[data-knpu-board-link] {
+  margin-left: auto !important;
+}
+html body .knpu-service-header .top-nav-link[data-knpu-admin-link] ~ [data-knpu-board-link] {
+  margin-left: 0 !important;
+}
 html body .knpu-service-header .top-nav-link:hover { background: rgba(255,255,255,.12) !important; color: #fff !important; }
 html body .knpu-service-header .top-nav-link.active { background: rgba(255,255,255,.18) !important; color: #fff !important; }
 html[data-ui-nav="autohide"] body .top-header.knpu-service-header { position: fixed !important; top: 0; left: 0; right: 0; }

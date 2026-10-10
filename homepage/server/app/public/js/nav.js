@@ -9,13 +9,15 @@
         { page: 'gallery', label: 'GALLERY', href: '/gallery' },
         { page: 'systems', label: 'SYSTEMS', href: '/systems' },
         { page: 'account', label: 'LOGIN', href: '/login' },
+        { page: 'board', label: 'BOARD', href: window.KNPU ? KNPU.url('manager', '/board') : '#' },
     ];
 
     const currentPage = document.body.dataset.page || '';
 
     const navItemsHtml = NAV_ITEMS.map(item => {
         const activeClass = item.page === currentPage ? ' active' : '';
-        return `<li class="nav-item"><a class="nav-link${activeClass}" href="${item.href}">${item.label}</a></li>`;
+        const boardAttrs = item.page === 'board' ? ' data-knpu-board-link data-knpu-service="manager" data-knpu-path="/board"' : '';
+        return `<li class="nav-item"><a class="nav-link${activeClass}" href="${item.href}"${boardAttrs}>${item.label}</a></li>`;
     }).join('');
 
     // 스크롤 위치를 삽입 시점에 미리 반영해, scripts.js의 scroll 리스너가
@@ -43,6 +45,19 @@
     const placeholder = document.getElementById('nav-placeholder');
     if (placeholder) {
         placeholder.outerHTML = navHtml;
+    }
+
+    // Public homepage pages use this navigation too; load the same board notification code.
+    if (!window.KNPU) {
+        const loadSharedScript = (src, done) => {
+            const script = document.createElement('script');
+            script.src = src;
+            if (done) script.onload = done;
+            document.head.appendChild(script);
+        };
+        const loadKnpu = () => loadSharedScript('/shared-ui/knpu.js');
+        if (window.KNPU_SERVICES) loadKnpu();
+        else loadSharedScript('/shared-ui/services.js', loadKnpu);
     }
 
     // 일부 모바일 브라우저에서 position:fixed 요소가 세로 스크롤바 유무에 따라
@@ -80,7 +95,8 @@
                     link.href = 'https://' + (location.hostname.startsWith('dev.') ? 'dev.' : '') + 'dashboard.knpu.re.kr';
                     link.setAttribute('data-admin-dashboard', '');
                     item.appendChild(link);
-                    navList.appendChild(item);
+                    const boardLink = navList.querySelector('[data-knpu-board-link]');
+                    navList.insertBefore(item, boardLink ? boardLink.parentElement : null);
                 }
             }
         })

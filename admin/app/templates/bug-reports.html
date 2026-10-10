@@ -59,6 +59,12 @@
                 {{ bug.bugText }}
             </p>
 
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <span class="text-xs text-zinc-500">관리자 답변 {{ (bug.replies or []) | length }}개</span>
+                <a class="st-btn sm" data-knpu-service="manager"
+                   data-knpu-path="/board?tab=bug&amp;uid={{ bug.uid | urlencode }}" href="#">게시판에서 답변하기 →</a>
+            </div>
+
             <div class="space-y-2">
                 <button onclick="toggleLog('log-{{ loop.index }}')" 
                         class="text-xs font-medium text-zinc-500 hover:text-zinc-200 flex items-center gap-1.5 transition-colors">

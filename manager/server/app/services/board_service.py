@@ -9,6 +9,49 @@ from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 from app.services.user_service import log_user
 import re
+from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
+
+
+def _require_admin(uid: str):
+    user = user_db.find_one({"uid": uid}, {"role": 1, "name": 1})
+    if not user or user.get("role") != "admin":
+        raise HTTPException(403, "관리자만 이 작업을 수행할 수 있습니다.")
+    return user
+
+
+def _editable_document(collection, query: dict, uid: str) -> dict:
+    doc = collection.find_one(query, {"_id": 0})
+    if not doc:
+        raise NotFoundException("게시물을 찾을 수 없습니다.")
+    user = user_db.find_one({"uid": uid}, {"role": 1})
+    if doc.get("writerUid") != uid and (not user or user.get("role") != "admin"):
+        raise HTTPException(403, "작성자 또는 관리자만 수정·삭제할 수 있습니다.")
+    return doc
+
+
+def _bug_for_user(
+    doc: dict, uid: str, *, detail: bool = False, admin: bool | None = None
+) -> dict:
+    doc = dict(doc)
+    if admin is None:
+        user = user_db.find_one({"uid": uid}, {"role": 1})
+        admin = bool(user and user.get("role") == "admin")
+    if not detail or (not admin and doc.get("writerUid") != uid):
+        doc.pop("programLog", None)
+    doc["replies"] = [
+        {
+            **{k: v for k, v in reply.items() if k != "mail"},
+            **(
+                {"mailStatus": (reply.get("mail") or {}).get("status")} if admin else {}
+            ),
+        }
+        for reply in doc.get("replies", [])
+    ]
+    doc["replyCount"] = len(doc["replies"])
+    doc["datetime"] = doc.get("datetime_kst") or doc.get("datetime", "")
+    return jsonable_encoder(doc)
+
 
 load_dotenv()
 
@@ -23,6 +66,9 @@ def _version_key(doc):
 
 
 def add_version(data: AddVersionDto, userUid: str):
+    _require_admin(userUid)
+    if version_board_db.find_one({"versionName": data.versionName}):
+        raise HTTPException(409, "같은 버전의 패치 노트가 이미 있습니다.")
     log_user(
         userUid,
         "manager.version.create",
@@ -112,6 +158,11 @@ def get_version(versionName: str):
 
 
 def edit_version(versionName: str, data: AddVersionDto, userUid: str):
+    _require_admin(userUid)
+    if data.versionName != versionName and version_board_db.find_one(
+        {"versionName": data.versionName}
+    ):
+        raise HTTPException(409, "같은 버전의 패치 노트가 이미 있습니다.")
     log_user(
         userUid,
         "manager.version.update",
@@ -123,7 +174,11 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
         "%Y-%m-%d"
     )
 
-    version_board_db.update_one({"versionName": versionName}, {"$set": update_fields})
+    result = version_board_db.update_one(
+        {"versionName": versionName}, {"$set": update_fields}
+    )
+    if not result.matched_count:
+        raise NotFoundException("Version not found")
 
     return JSONResponse(
         status_code=200,
@@ -148,6 +203,7 @@ def get_version_list():
 
 
 def delete_version(versionName: str, userUid: str):
+    _require_admin(userUid)
     log_user(
         userUid,
         "manager.version.delete",
@@ -183,6 +239,7 @@ def add_bug(data: AddBugDto, userUid: str):
         target={"type": "bug", "id": data.bugTitle},
     )
     doc = data.model_dump()
+    doc["writerUid"] = userUid
     writer = user_db.find_one({"uid": doc["writerUid"]}, {"_id": 0})
 
     now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
@@ -203,6 +260,7 @@ def add_bug(data: AddBugDto, userUid: str):
     doc["datetime_kst"] = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     doc["writerName"] = writer["name"] if writer else "Unknown"
     doc["notified"] = False
+    doc["replies"] = []
 
     if bug_logs:
         messages = [
@@ -230,7 +288,11 @@ def add_bug(data: AddBugDto, userUid: str):
     notify_discord("system_error", msg)
 
     return JSONResponse(
-        status_code=201, content={"message": "Bug post created", "data": doc}
+        status_code=201,
+        content={
+            "message": "Bug post created",
+            "data": _bug_for_user(doc, userUid, detail=True),
+        },
     )
 
 
@@ -248,22 +310,35 @@ def get_bug(uid: str, userUid: str):
     )
 
     return JSONResponse(
-        status_code=200, content={"message": "Bug post retrieved", "data": doc}
+        status_code=200,
+        content={
+            "message": "Bug post retrieved",
+            "data": _bug_for_user(doc, userUid, detail=True),
+        },
     )
 
 
-def get_bug_list():
+def get_bug_list(userUid: str):
     docs = list(bug_board_db.find({}, {"_id": 0}).sort("datetime", -1))
 
     for doc in docs:
         doc["datetime"] = doc.get("datetime_kst", "")
 
+    user = user_db.find_one({"uid": userUid}, {"role": 1}) or {}
     return JSONResponse(
-        status_code=200, content={"message": "Bug list retrieved", "data": docs}
+        status_code=200,
+        content={
+            "message": "Bug list retrieved",
+            "data": [
+                _bug_for_user(doc, userUid, admin=user.get("role") == "admin")
+                for doc in docs
+            ],
+        },
     )
 
 
 def delete_bug(uid: str, userUid: str):
+    _editable_document(bug_board_db, {"uid": uid}, userUid)
     log_user(
         userUid,
         "manager.bug.delete",
@@ -278,6 +353,7 @@ def delete_bug(uid: str, userUid: str):
 
 def add_post(data: AddPostDto, userUid: str):
     doc = data.model_dump()
+    doc["writerUid"] = userUid
     doc["notified"] = False
     now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
     doc["uid"] = str(uuid.uuid4())
@@ -337,10 +413,12 @@ def get_post(uid: str, userUid: str):
     )
 
 
-def get_post_list():
+def get_post_list(userUid: str):
     docs = list(free_board_db.find({}, {"_id": 0}).sort("datetime", -1))
 
     for doc in docs:
+        doc["readByMe"] = userUid in doc.get("viewCnt", [])
+        doc["commentCount"] = len(doc.get("comments", []))
         doc["viewCnt"] = len(doc.get("viewCnt", []))
         doc["datetime"] = doc.get("datetime_kst", "")
 
@@ -350,6 +428,7 @@ def get_post_list():
 
 
 def delete_post(uid: str, userUid: str):
+    _editable_document(free_board_db, {"uid": uid}, userUid)
     log_user(
         userUid,
         "manager.post.delete",
@@ -363,6 +442,7 @@ def delete_post(uid: str, userUid: str):
 
 
 def edit_post(postUid: str, data: AddPostDto, userUid: str):
+    _editable_document(free_board_db, {"uid": postUid}, userUid)
     log_user(
         userUid,
         "manager.post.update",
@@ -370,6 +450,7 @@ def edit_post(postUid: str, data: AddPostDto, userUid: str):
         target={"type": "post", "id": postUid},
     )
     update_fields = data.model_dump()
+    update_fields.pop("writerUid", None)
 
     result = free_board_db.update_one({"uid": postUid}, {"$set": update_fields})
 
@@ -383,3 +464,116 @@ def edit_post(postUid: str, data: AddPostDto, userUid: str):
         status_code=200,
         content={"message": "Post updated", "data": updated_doc},
     )
+
+
+def edit_bug(uid: str, data: AddBugDto, userUid: str):
+    _editable_document(bug_board_db, {"uid": uid}, userUid)
+    fields = {key: getattr(data, key) for key in ("versionName", "bugTitle", "bugText")}
+    result = bug_board_db.update_one({"uid": uid}, {"$set": fields})
+    if not result.matched_count:
+        raise NotFoundException("Bug post not found")
+    log_user(userUid, "manager.bug.update", f"Edited bug: {uid}")
+    return get_bug(uid, userUid)
+
+
+def add_bug_reply(uid: str, data, userUid: str):
+    admin = _require_admin(userUid)
+    now = datetime.now(timezone.utc)
+    reply = {
+        "uid": str(data.requestId),
+        "writerUid": userUid,
+        "writerName": admin.get("name") or "관리자",
+        "text": data.text,
+        "datetime": now.isoformat(),
+        # Mail state is stored in the same atomic write as the reply.
+        "mail": {"status": "pending", "attempts": 0, "next_attempt": now},
+    }
+    result = bug_board_db.update_one(
+        {"uid": uid, "replies.uid": {"$ne": reply["uid"]}},
+        {"$push": {"replies": reply}},
+    )
+    if not result.matched_count:
+        existing = bug_board_db.find_one({"uid": uid}, {"replies": 1})
+        if not existing:
+            raise NotFoundException("Bug post not found")
+        if not any(
+            r.get("uid") == reply["uid"]
+            and r.get("writerUid") == userUid
+            and r.get("text") == data.text
+            for r in existing.get("replies", [])
+        ):
+            raise HTTPException(409, "답변 요청이 충돌했습니다. 다시 시도해주세요.")
+    else:
+        log_user(userUid, "manager.bug.reply", f"Replied to bug: {uid}")
+    return get_bug(uid, userUid)
+
+
+def add_comment(uid: str, data, userUid: str):
+    writer = user_db.find_one({"uid": userUid}, {"name": 1}) or {}
+    comment = {
+        "uid": str(data.requestId),
+        "writerUid": userUid,
+        "writerName": writer.get("name") or "사용자",
+        "text": data.text,
+        "datetime": datetime.now(timezone.utc).isoformat(),
+    }
+    result = free_board_db.update_one(
+        {"uid": uid, "comments.uid": {"$ne": comment["uid"]}},
+        {"$push": {"comments": comment}},
+    )
+    if not result.matched_count:
+        existing = free_board_db.find_one({"uid": uid}, {"comments": 1})
+        if not existing:
+            raise NotFoundException("Post not found")
+        if not any(
+            c.get("uid") == comment["uid"]
+            and c.get("writerUid") == userUid
+            and c.get("text") == data.text
+            for c in existing.get("comments", [])
+        ):
+            raise HTTPException(409, "댓글 요청이 충돌했습니다. 다시 시도해주세요.")
+    else:
+        log_user(userUid, "manager.post.comment.create", f"Commented on post: {uid}")
+    return get_post(uid, userUid)
+
+
+def _require_comment(uid: str, comment_uid: str, userUid: str):
+    doc = free_board_db.find_one({"uid": uid}, {"comments": 1})
+    comment = next(
+        (c for c in (doc or {}).get("comments", []) if c.get("uid") == comment_uid),
+        None,
+    )
+    if not comment:
+        raise NotFoundException("댓글을 찾을 수 없습니다.")
+    user = user_db.find_one({"uid": userUid}, {"role": 1}) or {}
+    if comment.get("writerUid") != userUid and user.get("role") != "admin":
+        raise HTTPException(403, "댓글 작성자 또는 관리자만 수정·삭제할 수 있습니다.")
+
+
+def edit_comment(uid: str, comment_uid: str, data, userUid: str):
+    _require_comment(uid, comment_uid, userUid)
+    result = free_board_db.update_one(
+        {"uid": uid, "comments.uid": comment_uid},
+        {
+            "$set": {
+                "comments.$.text": data.text,
+                "comments.$.editedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+    )
+    if not result.matched_count:
+        raise NotFoundException("댓글을 찾을 수 없습니다.")
+    log_user(userUid, "manager.post.comment.update", f"Edited comment: {comment_uid}")
+    return get_post(uid, userUid)
+
+
+def delete_comment(uid: str, comment_uid: str, userUid: str):
+    _require_comment(uid, comment_uid, userUid)
+    result = free_board_db.update_one(
+        {"uid": uid, "comments.uid": comment_uid},
+        {"$pull": {"comments": {"uid": comment_uid}}},
+    )
+    if not result.matched_count:
+        raise NotFoundException("댓글을 찾을 수 없습니다.")
+    log_user(userUid, "manager.post.comment.delete", f"Deleted comment: {comment_uid}")
+    return get_post(uid, userUid)

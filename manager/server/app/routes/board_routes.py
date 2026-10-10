@@ -1,5 +1,11 @@
 from fastapi import APIRouter, Request
-from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
+from app.models.board_model import (
+    AddVersionDto,
+    AddBugDto,
+    AddPostDto,
+    BugReplyDto,
+    CommentDto,
+)
 from app.services.board_service import (
     add_version,
     edit_version,
@@ -16,10 +22,21 @@ from app.services.board_service import (
     get_post_list,
     delete_post,
     edit_post,
+    edit_bug,
+    add_bug_reply,
+    add_comment,
+    edit_comment,
+    delete_comment,
 )
-from app.routes.dependencies import get_uid
+from app.routes.dependencies import get_uid, get_current_user
 
 router = APIRouter()
+
+
+@router.get("/me")
+def board_identity(request: Request):
+    return get_current_user(request)
+
 
 # ---------------- Version ----------------
 
@@ -68,8 +85,18 @@ def read_bug(uid: str, request: Request):
 
 
 @router.get("/bug")
-def list_bugs():
-    return get_bug_list()
+def list_bugs(request: Request):
+    return get_bug_list(get_uid(request))
+
+
+@router.put("/bug/{uid}")
+def update_bug(uid: str, data: AddBugDto, request: Request):
+    return edit_bug(uid, data, get_uid(request))
+
+
+@router.post("/bug/{uid}/replies")
+def create_bug_reply(uid: str, data: BugReplyDto, request: Request):
+    return add_bug_reply(uid, data, get_uid(request))
 
 
 @router.delete("/bug/{uid}")
@@ -91,8 +118,8 @@ def read_post(uid: str, request: Request):
 
 
 @router.get("/post")
-def list_posts():
-    return get_post_list()
+def list_posts(request: Request):
+    return get_post_list(get_uid(request))
 
 
 @router.delete("/post/{uid}")
@@ -103,3 +130,18 @@ def remove_post(uid: str, request: Request):
 @router.put("/post/{uid}")
 def update_post(uid: str, data: AddPostDto, request: Request):
     return edit_post(uid, data, get_uid(request))
+
+
+@router.post("/post/{uid}/comments")
+def create_comment(uid: str, data: CommentDto, request: Request):
+    return add_comment(uid, data, get_uid(request))
+
+
+@router.put("/post/{uid}/comments/{comment_uid}")
+def update_comment(uid: str, comment_uid: str, data: CommentDto, request: Request):
+    return edit_comment(uid, comment_uid, data, get_uid(request))
+
+
+@router.delete("/post/{uid}/comments/{comment_uid}")
+def remove_comment(uid: str, comment_uid: str, request: Request):
+    return delete_comment(uid, comment_uid, get_uid(request))
