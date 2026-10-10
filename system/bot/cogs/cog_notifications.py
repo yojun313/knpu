@@ -4,17 +4,18 @@ from discord.ext import commands, tasks
 
 from config import CHANNEL_IDS, HOMEPAGE_API_URL
 from libs.internal_auth import mint_admin_token
+from libs.interactions import BotView, reply
+from pymongo.errors import PyMongoError
 from system.notify.mail import sendEmailAsync as sendEmail
 
 
-class SignupApprovalView(discord.ui.View):
+class SignupApprovalView(BotView):
     def __init__(self, bot):
-        super().__init__(timeout=None)
-        self.bot = bot
+        super().__init__(bot)
 
     @staticmethod
     def _get_uid(interaction: discord.Interaction) -> str | None:
-        if not interaction.message.embeds:
+        if not interaction.message or not interaction.message.embeds:
             return None
         for field in interaction.message.embeds[0].fields:
             if field.name == "UID":
@@ -26,7 +27,9 @@ class SignupApprovalView(discord.ui.View):
 
         token = mint_admin_token()
         url = f"{HOMEPAGE_API_URL}/auth/admin/requests/{uid}/{action}"
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=30)
+        ) as session:
             async with session.post(
                 url, headers={"Authorization": f"Bearer {token}"}
             ) as resp:
@@ -43,25 +46,33 @@ class SignupApprovalView(discord.ui.View):
         label: str,
         color: discord.Color,
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True, thinking=True)
         uid = self._get_uid(interaction)
         if not uid:
-            return await interaction.followup.send(
-                "UID를 찾을 수 없습니다.", ephemeral=True
-            )
+            return await reply(interaction, "UID를 찾을 수 없습니다.", ephemeral=True)
 
         ok, body = await self._call_homepage(uid, action)
         if not ok:
-            return await interaction.followup.send(
-                f"처리 실패: {body.get('detail', '알 수 없는 오류')}", ephemeral=True
+            return await reply(
+                interaction,
+                f"처리 실패: {body.get('detail', '알 수 없는 오류')}",
+                ephemeral=True,
             )
 
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds[0].copy()
         embed.color = color
         embed.set_footer(text=f"{label} 처리됨 · {interaction.user}")
-        for child in self.children:
+        resolved_view = SignupApprovalView(self.bot)
+        for child in resolved_view.children:
             child.disabled = True
-        await interaction.message.edit(embed=embed, view=self)
+        try:
+            await interaction.message.edit(embed=embed, view=resolved_view)
+        except discord.HTTPException:
+            return await reply(
+                interaction,
+                f"{label} 처리는 완료했지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해주세요.",
+            )
+        await reply(interaction, f"{label} 처리가 완료되었습니다.")
 
     @discord.ui.button(
         label="승인", style=discord.ButtonStyle.green, custom_id="signup_approve"
@@ -84,7 +95,11 @@ class NotificationPoller(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.col = self.bot.notifications_db
+        self.poll.add_exception_type(PyMongoError)
         self.poll.start()
+
+    async def cog_load(self):
+        self.bot.add_view(SignupApprovalView(self.bot))
 
     def cog_unload(self):
         self.poll.cancel()
@@ -240,7 +255,16 @@ class NotificationPoller(commands.Cog):
         cursor = self.col.find({"status": "pending"}).sort("created_at", 1).limit(20)
         docs = await cursor.to_list(length=20)
         for doc in docs:
-            await self._send_one(doc)
+            try:
+                await self._send_one(doc)
+            except PyMongoError:
+                raise
+            except Exception as error:
+                print(f"알림 처리 실패: {error}")
+                await self.col.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"status": "failed", "error": str(error)}},
+                )
 
     @poll.before_loop
     async def before_poll(self):

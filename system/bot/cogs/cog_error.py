@@ -5,12 +5,13 @@ import datetime
 import io
 
 from config import CHANNEL_IDS
+from libs.interactions import BotView, reply
+from pymongo.errors import PyMongoError
 
 
-class ErrorManageView(discord.ui.View):
+class ErrorManageView(BotView):
     def __init__(self, bot):
-        super().__init__(timeout=None)
-        self.bot = bot
+        super().__init__(bot)
 
     async def update_bug_status(
         self,
@@ -19,7 +20,10 @@ class ErrorManageView(discord.ui.View):
         color: discord.Color,
         status_text: str,
     ):
-        embed = interaction.message.embeds[0]
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        if not interaction.message or not interaction.message.embeds:
+            return await reply(interaction, "버그 보고 메시지를 찾을 수 없습니다.")
+        embed = interaction.message.embeds[0].copy()
         bug_uid = None
 
         for field in embed.fields:
@@ -28,17 +32,23 @@ class ErrorManageView(discord.ui.View):
                 break
 
         if not bug_uid:
-            return await interaction.response.send_message(
-                "버그 UID를 찾을 수 없습니다.", ephemeral=True
+            return await reply(
+                interaction, "버그 UID를 찾을 수 없습니다.", ephemeral=True
             )
 
         try:
-            await self.bot.systems_db["user-bugs"].update_one(
+            result = await self.bot.systems_db["user-bugs"].update_one(
                 {"uid": bug_uid}, {"$set": {"status": status}}
             )
-        except Exception as e:
-            return await interaction.response.send_message(
-                f"DB 업데이트 실패: {e}", ephemeral=True
+        except PyMongoError:
+            return await reply(
+                interaction, "DB에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+            )
+
+        if not result.matched_count:
+            return await reply(
+                interaction,
+                "이 버그 기록을 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.",
             )
 
         for i, field in enumerate(embed.fields):
@@ -49,9 +59,17 @@ class ErrorManageView(discord.ui.View):
         embed.color = color
         embed.set_footer(text=f"상태: {status_text} | 처리자: {interaction.user}")
 
-        await interaction.message.edit(embed=embed, view=self)
-        await interaction.response.send_message(
-            f"상태가 **{status_text}**(으)로 변경되었습니다.", ephemeral=True
+        try:
+            await interaction.message.edit(embed=embed, view=self)
+        except discord.HTTPException:
+            return await reply(
+                interaction,
+                f"DB 상태는 **{status_text}**(으)로 변경되었지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해주세요.",
+            )
+        await reply(
+            interaction,
+            f"상태가 **{status_text}**(으)로 변경되었습니다.",
+            ephemeral=True,
         )
 
     @discord.ui.button(
@@ -88,7 +106,11 @@ class ErrorManageView(discord.ui.View):
 class ErrorWatcher(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.watch_errors.add_exception_type(PyMongoError)
         self.watch_errors.start()
+
+    async def cog_load(self):
+        self.bot.add_view(ErrorManageView(self.bot))
 
     def cog_unload(self):
         self.watch_errors.cancel()
@@ -106,6 +128,7 @@ class ErrorWatcher(commands.Cog):
         for bug in bugs:
             message = bug.get("message", "No Message")
 
+            sent = False
             for guild in self.bot.guilds:
                 channel = guild.get_channel(CHANNEL_IDS["system_error"])
                 if not channel:
@@ -185,11 +208,13 @@ class ErrorWatcher(commands.Cog):
                         await channel.send(embed=embed, view=ErrorManageView(self.bot))
                 except Exception as e:
                     print(f"전송 실패 ({guild.name}): {e}")
+                else:
+                    sent = True
 
-            await self.bot.systems_db["user-bugs"].update_one(
-                {"uid": bug["uid"]},
-                {"$set": {"notified": True, "status": bug.get("status", "pending")}},
-            )
+            if sent:
+                await self.bot.systems_db["user-bugs"].update_one(
+                    {"uid": bug["uid"]}, {"$set": {"notified": True}}
+                )
 
 
 async def setup(bot):

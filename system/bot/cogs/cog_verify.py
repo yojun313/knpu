@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands, tasks
 import datetime
 import secrets
+from pathlib import Path
+from pymongo.errors import PyMongoError
+from libs.interactions import BotView, reply
 
 from config import (
     HOMEPAGE_WEB_URL,
@@ -15,10 +18,9 @@ from config import (
 LINK_EXPIRE_MINUTES = 10
 
 
-class VerifyButtonView(discord.ui.View):
+class VerifyButtonView(BotView):
     def __init__(self, bot):
-        super().__init__(timeout=None)
-        self.bot = bot
+        super().__init__(bot)
 
     @discord.ui.button(
         label="Verify", style=discord.ButtonStyle.primary, custom_id="verify_persistent"
@@ -26,6 +28,7 @@ class VerifyButtonView(discord.ui.View):
     async def verify_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
+        await interaction.response.defer(ephemeral=True, thinking=True)
         token = secrets.token_urlsafe(24)
         await self.bot.homepage_db["discord-link-requests"].insert_one(
             {
@@ -56,12 +59,13 @@ class VerifyButtonView(discord.ui.View):
             )
         )
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await reply(interaction, embed=embed, view=view)
 
 
 class VerificationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.poll_links.add_exception_type(PyMongoError)
         self.poll_links.start()
 
     def cog_unload(self):
@@ -89,10 +93,12 @@ class VerificationCog(commands.Cog):
                 return  # 이미 게시되어 있음
 
         banner_file = discord.File(
-            "assets/imgs/auth_banner.png", filename="auth_banner.png"
+            str(Path(__file__).resolve().parents[1] / "assets/imgs/auth_banner.png"),
+            filename="auth_banner.png",
         )
         profile_file = discord.File(
-            "assets/imgs/thumbnail.png", filename="thumbnail.png"
+            str(Path(__file__).resolve().parents[1] / "assets/imgs/thumbnail.png"),
+            filename="thumbnail.png",
         )
 
         embed = discord.Embed(
@@ -181,7 +187,10 @@ class VerificationCog(commands.Cog):
             await member.remove_roles(unverified_role)
 
         await col.update_one({"_id": doc["_id"]}, {"$set": {"status": "done"}})
-        await self._send_verify_log(guild, member)
+        try:
+            await self._send_verify_log(guild, member)
+        except discord.HTTPException as error:
+            print(f"인증은 완료되었지만 로그 전송 실패: {error}")
 
     @tasks.loop(seconds=3.0)
     async def poll_links(self):
@@ -190,7 +199,16 @@ class VerificationCog(commands.Cog):
         )
         docs = await cursor.to_list(length=20)
         for doc in docs:
-            await self._complete_link(doc)
+            try:
+                await self._complete_link(doc)
+            except PyMongoError:
+                raise  # Let the task loop retry transient database failures.
+            except Exception as error:
+                print(f"인증 처리 실패: {error}")
+                await self.bot.homepage_db["discord-link-requests"].update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"status": "failed", "error": str(error)}},
+                )
 
     @poll_links.before_loop
     async def before_poll_links(self):

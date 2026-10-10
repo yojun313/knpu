@@ -45,3 +45,20 @@ def require_admin(request: Request) -> dict:
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="관리자만 접근할 수 있습니다")
     return user
+
+
+def require_signup_reviewer(request: Request) -> dict:
+    """Allow the bot's signed, short-lived token only on signup review endpoints."""
+    authorization = request.headers.get("Authorization", "")
+    if authorization.startswith("Bearer "):
+        payload = decode_token(authorization[len("Bearer ") :])
+        if (
+            payload
+            and payload.get("sub") == "discord-bot"
+            and payload.get("iss") == "knpu-discord-bot"
+            and payload.get("scope") == "signup:review"
+            and payload.get("role") == "admin"
+            and payload.get("exp")
+        ):
+            return payload
+    return require_admin(request)

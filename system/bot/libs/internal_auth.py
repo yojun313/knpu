@@ -13,6 +13,8 @@ def mint_admin_token() -> str:
         "sub": "discord-bot",
         "name": "Discord Bot",
         "role": "admin",
+        "iss": "knpu-discord-bot",
+        "scope": "signup:review",
         "exp": now + datetime.timedelta(minutes=5),
         "iat": now,
     }

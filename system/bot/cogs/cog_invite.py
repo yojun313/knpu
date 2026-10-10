@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import datetime
+from libs.interactions import reply
 
 
 class ServerLogger(commands.Cog):
@@ -16,11 +17,12 @@ class ServerLogger(commands.Cog):
     @app_commands.command(
         name="입장로그채널설정", description="서버 입장 로그 채널을 설정합니다."
     )
+    @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
     async def set_log_channel(
         self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
-
+        await interaction.response.defer(ephemeral=True, thinking=True)
         await self.bot.systems_db["bot-config"].update_one(
             {"guild_id": interaction.guild.id},
             {"$set": {"join_log_channel": channel.id}},
@@ -33,7 +35,7 @@ class ServerLogger(commands.Cog):
             color=discord.Color.green(),
         )
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await reply(interaction, embed=embed)
 
     # =========================
     # 서버 입장 감지

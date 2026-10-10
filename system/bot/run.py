@@ -17,6 +17,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from config import CHANNEL_IDS
+from libs.interactions import reply
 
 load_dotenv()
 # test
@@ -49,7 +50,12 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents, help_command=None)
 
         # 외부에서 생성된 URI로 DB 연결
-        self.mongo_client = motor.motor_asyncio.AsyncIOMotorClient(mongo_uri)
+        self.mongo_client = motor.motor_asyncio.AsyncIOMotorClient(
+            mongo_uri,
+            serverSelectionTimeoutMS=10000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=20000,
+        )
 
         # dev/prod는 DB를 공유한다(system/db/__init__.py 참고) — MODE로 "_dev"
         # DB를 갈라 보던 옛 동작은 실제로 존재하지 않는 DB를 가리키고 있었다.
@@ -64,10 +70,8 @@ class MyBot(commands.Bot):
         print("\n" + "=" * 30)
         print("Cogs 로딩 프로세스 시작...")
 
-        if not os.path.exists("./cogs"):
-            os.makedirs("./cogs")
-
-        for filename in os.listdir("./cogs"):
+        cogs_dir = os.path.join(os.path.dirname(__file__), "cogs")
+        for filename in os.listdir(cogs_dir):
             if filename.endswith(".py") and not filename.startswith("__"):
                 extension = f"cogs.{filename[:-3]}"
                 try:
@@ -109,18 +113,24 @@ class MyBot(commands.Bot):
         await self._report_error(f"command `{ctx.command}`", tb)
 
     async def on_app_command_error(self, interaction, error):
+        if isinstance(error, discord.app_commands.CheckFailure):
+            try:
+                await reply(
+                    interaction,
+                    "이 명령어를 실행할 권한이 없거나 현재 위치에서 사용할 수 없습니다.",
+                )
+            except discord.HTTPException:
+                logging.exception("Could not reply to command permission error")
+            return
         tb = "".join(
             traceback.format_exception(type(error), error, error.__traceback__)
         )
         print(f"[BOT] App command error in `{interaction.command}`:\n{tb}")
+        try:
+            await reply(interaction, "오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+        except discord.HTTPException:
+            logging.exception("Could not reply to slash command error")
         await self._report_error(f"slash command `{interaction.command}`", tb)
-        if not interaction.response.is_done():
-            try:
-                await interaction.response.send_message(
-                    "오류가 발생했습니다. 관리자에게 전달되었습니다.", ephemeral=True
-                )
-            except Exception:
-                pass
 
 
 async def main():
