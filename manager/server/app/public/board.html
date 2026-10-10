@@ -6,11 +6,11 @@
 <title>BOARD · KNPU</title>
 <script>(function(){try{['style','mode'].forEach(function(k){var m=document.cookie.match(new RegExp('(?:^|; )ui_theme_'+k+'=([^;]*)'));var v=m&&decodeURIComponent(m[1]);if(k==='style'&&v&&v!=='default')document.documentElement.setAttribute('data-ui-theme',v);if(k==='mode'&&v==='dark')document.documentElement.setAttribute('data-ui-theme-mode',v);});}catch(e){}})();</script>
 <link rel="icon" href="/shared-ui/favicon.ico">
-<link rel="stylesheet" href="/assets/board.css?v=20261010">
+<link rel="stylesheet" href="/assets/board.css?v=20261010-sidebar">
 <link rel="stylesheet" href="/shared-ui/theme.css">
 <script src="/shared-ui/services.js"></script>
 <script src="/shared-ui/knpu.js"></script>
-<script src="/assets/board.js?v=20261010-patchnotes" defer></script>
+<script src="/assets/board.js?v=20261010-sidebar" defer></script>
 </head>
 <body class="board-app">
 <header class="top-header knpu-service-header">
@@ -23,12 +23,23 @@
 <div class="sb-top"><div class="board-brand-icon">▤</div><div><strong>Board</strong><div class="board-eyebrow">KNPU COMMUNITY</div></div></div>
 <div class="board-side-label">게시판</div>
 <nav class="board-tabs" aria-label="게시판 선택">
-<button type="button" data-tab="version"><span class="board-tab-icon">↗</span><span>MANAGER 패치노트</span><span data-count="version">0</span></button>
+<button type="button" data-tab="version"><span class="board-tab-icon">↗</span><span class="board-tab-label">MANAGER<br>패치노트</span><span data-count="version">0</span></button>
 <button type="button" data-tab="bug"><span class="board-tab-icon">⚑</span><span>버그리포트</span><span data-count="bug">0</span></button>
 <button type="button" data-tab="post"><span class="board-tab-icon">☷</span><span>자유게시판</span><span data-count="post">0</span></button>
 </nav>
 <div class="board-side-help">매니저 앱과 같은 게시판입니다.<br>어디서든 글과 답변을 확인하세요.</div>
-<div class="board-account"><div class="sb-user"><div class="sb-avatar">♙</div><div class="sb-user-info"><span class="sb-welcome">Welcome,</span><strong id="board-user-name">불러오는 중…</strong></div></div><button type="button" id="board-logout" class="board-logout">↪ 로그아웃</button></div>
+<div class="sb-bottom">
+<div id="board-connection" class="sb-conn" title="서버 연결 상태"><span class="conn-dot"></span><span class="conn-label sb-label">연결 확인 중…</span></div>
+<div class="sb-user">
+<div class="sb-avatar" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+<div class="sb-label sb-user-text"><p class="sb-welcome">Welcome,</p><p id="board-user-name" class="rail-user sb-username">불러오는 중…</p></div>
+</div>
+<div class="sb-account">
+<button id="board-logout" class="sb-logout" type="button" title="로그아웃"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="sb-label">Logout</span></button>
+<button type="button" class="sb-icon" data-theme-settings title="설정" aria-label="설정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+<button id="board-theme" type="button" class="sb-icon" title="테마 설정" aria-label="테마 설정"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.63 0-.43-.17-.8-.44-1.1-.26-.29-.43-.66-.43-1.1A1.64 1.64 0 0 1 14.27 16.5H16c3.05 0 5.56-2.5 5.56-5.56C21.56 6.01 17.06 2 12 2z"/></svg></button>
+</div>
+</div>
 </aside>
 <main class="board-main">
 <div class="board-heading"><div><div class="board-eyebrow">COMMUNITY</div><h1 id="board-title">자유게시판</h1><p id="board-description">연구 이야기와 소식을 함께 나누세요.</p></div><button type="button" class="board-btn primary" id="board-create">＋ 글 작성</button></div>

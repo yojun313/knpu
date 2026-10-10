@@ -56,10 +56,12 @@ function renderList() {
   return '<button type="button" class="board-row" data-open="'+escape(key(d))+'"><span class="board-row-main"><span class="board-row-title"><strong>'+escape(title)+'</strong>'+(tag?'<span class="board-tag">'+escape(tag)+'</span>':'')+'</span><span class="board-row-meta">'+meta.filter(Boolean).map(v=>'<span>'+escape(v)+'</span>').join('')+'</span></span><span class="board-chevron" aria-hidden="true">›</span></button>';
  }).join(''):'<div class="board-empty">'+($('board-search').value?'검색 조건에 맞는 글이 없습니다.':'게시글이 없습니다. 첫 글을 작성해보세요.')+'</div>';
 }
+function connection(ok) {const status=$('board-connection');status.classList.toggle('ok',ok);status.classList.toggle('bad',!ok);status.querySelector('.conn-label').textContent=ok?'서버 연결됨':'연결 오류';}
+$('board-theme').onclick=()=>{if(window.KNPUSettings)KNPUSettings.open('appearance');};
 async function refresh(silent=false) {
  const n=++generation;if(!silent){$('board-feedback').textContent='불러오는 중…';$('board-feedback').classList.remove('error');}
- try {const results=await Promise.all(['version','bug','post'].map(t=>api('/api/board/'+t)));if(n!==generation)return;['version','bug','post'].forEach((t,i)=>lists[t]=results[i]);renderList();$('board-feedback').textContent='';}
- catch(e){if(n===generation){$('board-feedback').classList.add('error');$('board-feedback').textContent=e.message;}}
+ try {const results=await Promise.all(['version','bug','post'].map(t=>api('/api/board/'+t)));if(n!==generation)return;['version','bug','post'].forEach((t,i)=>lists[t]=results[i]);renderList();$('board-feedback').textContent='';connection(true);}
+ catch(e){if(n===generation){connection(false);$('board-feedback').classList.add('error');$('board-feedback').textContent=e.message;}}
 }
 async function openDetail(id) {
  const t=tab,n=++modalGeneration;

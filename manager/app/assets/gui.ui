@@ -270,7 +270,7 @@
           </property>
           <widget class="QWidget" name="tab_version">
            <attribute name="title">
-            <string>MANAGER 패치노트</string>
+            <string>패치노트</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_1">
             <item>
