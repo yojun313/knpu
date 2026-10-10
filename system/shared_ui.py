@@ -148,6 +148,10 @@ def mount_shared_ui(
 
     register_account(app)
 
+    from system.board import register as register_board
+
+    register_board(app)
+
     # 연구실 챗봇 API (오른쪽 아래 동그라미 버튼) — 정적 마운트보다 먼저 등록해야 한다
     if chatbot:
         from system.chatbot.routes import register as register_chatbot

@@ -70,6 +70,10 @@
     },
   };
   window.KNPU = KNPU;
+  var boardNotices = document.createElement('script');
+  boardNotices.src = '/shared-ui/board-notices.js';
+  boardNotices.defer = true;
+  document.head.appendChild(boardNotices);
 
   // prod 도메인 -> dev 도메인 (중앙 로그인을 맡은 홈페이지는 제외)
   var DEV_MAP = {};
@@ -121,7 +125,8 @@
   var NAV_ITEMS = [
     ['homepage', 'HOME'], ['manager', 'MANAGER'], ['crawler', 'CRAWLER'],
     ['network', 'NETWORK'], ['kemkim', 'KEMKIM'],
-    ['statistics', 'STATISTICS'], ['mcdm', 'POLYDECISION'], ['whisper', 'WHISPER']
+    ['statistics', 'STATISTICS'], ['mcdm', 'POLYDECISION'], ['whisper', 'WHISPER'],
+    ['manager', 'BOARD', '/board', 'board']
   ];
 
   function renderServiceNav() {
@@ -129,13 +134,16 @@
       var active = nav.getAttribute('data-knpu-active');
       nav.replaceChildren();
       NAV_ITEMS.forEach(function (item) {
+        var key = item[3] || item[0];
         var link = document.createElement('a');
-        link.className = 'top-nav-link' + (active === item[0] ? ' active' : '');
+        link.className = 'top-nav-link' + (active === key ? ' active' : '');
         link.textContent = item[1];
-        link.href = url(item[0]);
+        link.href = url(item[0], item[2] || '');
         link.setAttribute('data-knpu-service', item[0]);
-        if (active === item[0]) link.setAttribute('aria-current', 'page');
-        if (item[0] === 'manager' && nav.dataset.knpuManagerApp === 'true') {
+        if (item[2]) link.setAttribute('data-knpu-path', item[2]);
+        if (key === 'board') link.setAttribute('data-knpu-board-link', '');
+        if (active === key) link.setAttribute('aria-current', 'page');
+        if (key === 'manager' && nav.dataset.knpuManagerApp === 'true') {
           link.addEventListener('click', function (event) { window.openManagerApp(event); });
         }
         nav.appendChild(link);
@@ -161,7 +169,7 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
-      nav.appendChild(link);
+      nav.insertBefore(link, nav.querySelector('[data-knpu-board-link]'));
       if (nav.dataset.knpuActive === 'dashboard') {
         link.classList.add('active');
         link.setAttribute('aria-current', 'page');

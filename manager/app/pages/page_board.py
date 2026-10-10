@@ -153,11 +153,12 @@ class Manager_Board:
                     sub_list["writerName"],
                     sub_list["versionName"],
                     sub_list["bugTitle"],
+                    "답변 있음" if sub_list.get("replyCount", 0) else "답변 대기",
                     sub_list["datetime"],
                 ]
                 for sub_list in self.bug_data
             ]
-            self.bug_table_column = ["User", "Version Num", "Title", "DateTime"]
+            self.bug_table_column = ["User", "Version Num", "Title", "답변", "DateTime"]
             makeTable(
                 self.main,
                 self.main.board_bug_tableWidget,
@@ -221,12 +222,15 @@ class Manager_Board:
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
-                bug_data = self.bug_data[selectedRow]
+                bug_data = Request(
+                    "get", f"/board/bug/{self.bug_data[selectedRow]['uid']}"
+                ).json()["data"]
                 printStatus(self.main)
                 from ui.dialogs import ViewBugDialog
 
                 dialog = ViewBugDialog(self.main, bug_data)
                 dialog.exec()
+                self.refreshBugBoard()
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -322,7 +326,9 @@ class Manager_Board:
                 printStatus(self.main, "불러오는 중...")
                 post_data = self.post_data[selectedRow]
 
-                Request("get", f"/board/post/{post_data['uid']}")
+                post_data = Request("get", f"/board/post/{post_data['uid']}").json()[
+                    "data"
+                ]
                 printStatus(self.main)
 
                 from ui.dialogs import ViewPostDialog

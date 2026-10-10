@@ -126,6 +126,20 @@ app.add_middleware(
 @app.on_event("startup")
 async def start_background_tasks():
     asyncio.create_task(periodic_gc(60))
+    from app.services.board_mail import reply_notification_loop
+
+    app.state.reply_mail_task = asyncio.create_task(reply_notification_loop())
+
+
+@app.on_event("shutdown")
+async def stop_background_tasks():
+    task = getattr(app.state, "reply_mail_task", None)
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app.include_router(site_router, tags=["Site"])

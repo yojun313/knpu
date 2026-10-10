@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BOARD · KNPU</title>
+<script>(function(){try{['style','mode'].forEach(function(k){var m=document.cookie.match(new RegExp('(?:^|; )ui_theme_'+k+'=([^;]*)'));var v=m&&decodeURIComponent(m[1]);if(k==='style'&&v&&v!=='default')document.documentElement.setAttribute('data-ui-theme',v);if(k==='mode'&&v==='dark')document.documentElement.setAttribute('data-ui-theme-mode',v);});}catch(e){}})();</script>
+<link rel="icon" href="/shared-ui/favicon.ico">
+<link rel="stylesheet" href="/assets/board.css?v=20261010">
+<link rel="stylesheet" href="/shared-ui/theme.css">
+<script src="/shared-ui/services.js"></script>
+<script src="/shared-ui/knpu.js"></script>
+<script src="/assets/board.js?v=20261010" defer></script>
+</head>
+<body class="board-app">
+<header class="top-header knpu-service-header">
+<a data-knpu-service="homepage" href="/" title="홈으로"><img class="top-header-logo" src="/assets/imgs/lab_logo.png" alt="미래치안공학연구원"></a>
+<nav class="top-nav" data-knpu-active="board" aria-label="서비스 이동"></nav>
+<button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="설정" aria-label="설정">⚙</button>
+</header>
+<div class="board-shell">
+<aside class="rail board-rail">
+<div class="sb-top"><div class="board-brand-icon">▤</div><div><strong>Board</strong><div class="board-eyebrow">KNPU COMMUNITY</div></div></div>
+<div class="board-side-label">게시판</div>
+<nav class="board-tabs" aria-label="게시판 선택">
+<button type="button" data-tab="version"><span class="board-tab-icon">↗</span><span>패치 노트</span><span data-count="version">0</span></button>
+<button type="button" data-tab="bug"><span class="board-tab-icon">⚑</span><span>버그리포트</span><span data-count="bug">0</span></button>
+<button type="button" data-tab="post"><span class="board-tab-icon">☷</span><span>자유게시판</span><span data-count="post">0</span></button>
+</nav>
+<div class="board-side-help">매니저 앱과 같은 게시판입니다.<br>어디서든 글과 답변을 확인하세요.</div>
+<div class="board-account"><div class="sb-user"><div class="sb-avatar">♙</div><div class="sb-user-info"><span class="sb-welcome">Welcome,</span><strong id="board-user-name">불러오는 중…</strong></div></div><button type="button" id="board-logout" class="board-logout">↪ 로그아웃</button></div>
+</aside>
+<main class="board-main">
+<div class="board-heading"><div><div class="board-eyebrow">COMMUNITY</div><h1 id="board-title">자유게시판</h1><p id="board-description">연구 이야기와 소식을 함께 나누세요.</p></div><button type="button" class="board-btn primary" id="board-create">＋ 글 작성</button></div>
+<section class="board-panel" aria-label="게시글 목록">
+<div class="board-toolbar"><div class="board-search"><span aria-hidden="true">⌕</span><input type="search" id="board-search" placeholder="제목·내용·작성자 검색" autocomplete="off" aria-label="게시글 검색"></div><select id="board-filter" aria-label="게시글 필터"><option value="all">전체 게시글</option><option value="mine">내가 작성한 글</option><option value="unread">읽지 않은 글</option></select><button class="board-btn" type="button" id="board-refresh">↻ 새로고침</button></div>
+<div id="board-feedback" class="board-feedback" role="status" aria-live="polite"></div>
+<div id="board-list" class="board-list"></div>
+<div class="board-pagination"><span id="board-total"></span><div><button type="button" class="board-btn" id="board-prev" aria-label="이전 페이지">‹</button><span id="board-page"></span><button type="button" class="board-btn" id="board-next" aria-label="다음 페이지">›</button></div></div>
+</section>
+</main>
+</div>
+<dialog id="board-dialog" class="modal-card board-dialog" aria-labelledby="board-dialog-title">
+<div class="board-dialog-head"><h2 id="board-dialog-title">게시글</h2><button type="button" class="board-close" aria-label="닫기" id="board-close">×</button></div>
+<div id="board-dialog-body" class="board-dialog-body"></div>
+</dialog>
+<div id="board-toast" class="board-toast" role="status" hidden></div>
+<script src="/shared-ui/theme.js"></script>
+</body>
+</html>

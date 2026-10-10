@@ -24,9 +24,11 @@ def _build_message(sender: str, receiver: str, title: str, text: str) -> MIMEMul
 def sendEmail(receiver: str, title: str, text: str) -> None:
     sender = os.getenv("MAIL_SENDER")
     mail_password = os.getenv("MAIL_PASSWORD")
+    if not sender or not mail_password:
+        raise RuntimeError("메일 전송 설정이 필요합니다.")
     msg = _build_message(sender, receiver, title, text)
 
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
         server.starttls()
         server.login(sender, mail_password)
         server.sendmail(sender, receiver, msg.as_string())

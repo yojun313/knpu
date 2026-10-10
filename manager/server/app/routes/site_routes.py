@@ -20,6 +20,13 @@ def manager_intro_page():
     return FileResponse(os.path.join(PUBLIC_DIR, "manager.html"))
 
 
+@router.get("/board")
+def board_page():
+    return FileResponse(
+        os.path.join(PUBLIC_DIR, "board.html"), headers={"Cache-Control": "no-store"}
+    )
+
+
 @router.get("/manual/{topic}")
 def manual_page(topic: str):
     filename = _MANUAL_FILES.get(topic)

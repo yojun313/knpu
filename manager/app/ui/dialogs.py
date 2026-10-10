@@ -30,6 +30,7 @@ from config import HOMEPAGE_EDIT_API
 from services.api import upload_homepage_image
 from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics, QPixmap
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from services.api import Request
 from typing import Callable
 import httpx
@@ -627,11 +628,183 @@ class AddPostDialog(BaseDialog):
         self.accept()
 
 
+class BoardDiscussionWidget(QWidget):
+    """Shared reply/comment UI for the manager's existing board dialogs."""
+
+    def __init__(self, main, doc: dict, kind: str, parent=None):
+        super().__init__(parent)
+        self.main, self.doc, self.kind = main, doc, kind
+        self.layout_box = QVBoxLayout(self)
+        self.layout_box.setContentsMargins(0, 0, 0, 0)
+        header = QHBoxLayout()
+        self.heading = QLabel()
+        header.addWidget(self.heading)
+        refresh = QPushButton("새로고침")
+        refresh.clicked.connect(self.refresh)
+        header.addWidget(refresh)
+        self.layout_box.addLayout(header)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(160)
+        self.items_widget = QWidget()
+        self.items_layout = QVBoxLayout(self.items_widget)
+        scroll.setWidget(self.items_widget)
+        self.layout_box.addWidget(scroll)
+        self.editor = None
+        if kind == "post" or getattr(main, "user_role", None) == "admin":
+            self.editor = QTextEdit()
+            self.editor.setPlaceholderText(
+                "댓글을 입력하세요."
+                if kind == "post"
+                else "관리자 답변을 입력하세요. 등록하면 작성자에게 이메일 알림이 발송됩니다."
+            )
+            self.editor.setMaximumHeight(100)
+            self.layout_box.addWidget(self.editor)
+            self.submit = QPushButton("댓글 등록" if kind == "post" else "답변 등록")
+            self.submit.clicked.connect(self.add)
+            self.layout_box.addWidget(self.submit)
+        self.request_id = str(uuid.uuid4())
+        self.render()
+
+    def render(self):
+        while self.items_layout.count():
+            item = self.items_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        items = self.doc.get("comments" if self.kind == "post" else "replies", [])
+        self.heading.setText(
+            f"{'댓글' if self.kind == 'post' else '관리자 답변'} · {len(items)}"
+        )
+        if not items:
+            self.items_layout.addWidget(QLabel("아직 등록된 내용이 없습니다."))
+        for item in items:
+            box = QGroupBox()
+            body = QVBoxLayout(box)
+            stamp = item.get("datetime", "")
+            try:
+                stamp = (
+                    datetime.fromisoformat(stamp)
+                    .astimezone(ZoneInfo("Asia/Seoul"))
+                    .strftime("%Y-%m-%d %H:%M")
+                )
+            except (ValueError, TypeError):
+                pass
+            name = QLabel(
+                f"{item.get('writerName', '')} · {stamp}"
+                + (" · 수정됨" if item.get("editedAt") else "")
+            )
+            name.setTextFormat(Qt.TextFormat.PlainText)
+            name.setWordWrap(True)
+            body.addWidget(name)
+            text = QTextEdit()
+            text.setReadOnly(True)
+            text.setPlainText(item.get("text", ""))
+            text.setMinimumHeight(65)
+            text.setMaximumHeight(160)
+            body.addWidget(text)
+            if self.kind == "post" and (
+                getattr(self.main, "user_role", None) == "admin"
+                or item.get("writerUid") == getattr(self.main, "userUid", None)
+            ):
+                actions = QHBoxLayout()
+                edit, delete = QPushButton("수정"), QPushButton("삭제")
+                edit.clicked.connect(lambda checked=False, c=item: self.edit(c))
+                delete.clicked.connect(lambda checked=False, c=item: self.delete(c))
+                actions.addWidget(edit)
+                actions.addWidget(delete)
+                body.addLayout(actions)
+            elif self.kind == "bug" and item.get("mailStatus"):
+                state = {
+                    "pending": "메일 알림 대기",
+                    "sending": "메일 전송 중",
+                    "sent": "메일 알림 전송됨",
+                    "retry": "메일 알림 재시도 대기",
+                    "skipped": "작성자 이메일 없음",
+                }
+                body.addWidget(QLabel(state.get(item["mailStatus"], "")))
+            self.items_layout.addWidget(box)
+        self.items_layout.addStretch()
+
+    def request(self, method, suffix="", **kwargs):
+        try:
+            response = Request(
+                method,
+                f"/board/{self.kind}/{self.doc['uid']}{suffix}",
+                timeout=30,
+                **kwargs,
+            )
+            self.doc = response.json()["data"]
+            self.render()
+            return True
+        except Exception as error:
+            from services.api import handle_permission_error
+
+            if not handle_permission_error(self, error):
+                message = "요청을 처리하지 못했습니다. 다시 시도해주세요."
+                if (
+                    isinstance(error, requests.exceptions.HTTPError)
+                    and error.response is not None
+                ):
+                    try:
+                        detail = error.response.json().get("detail")
+                        if isinstance(detail, str):
+                            message = detail
+                    except (ValueError, AttributeError):
+                        pass
+                QMessageBox.warning(self, "게시판", message)
+            return False
+
+    def refresh(self):
+        self.request("get")
+
+    def add(self):
+        text = self.editor.toPlainText().strip()
+        if not text:
+            return
+        self.submit.setEnabled(False)
+        try:
+            if self.request(
+                "post",
+                "/comments" if self.kind == "post" else "/replies",
+                json={"text": text, "requestId": self.request_id},
+            ):
+                self.editor.clear()
+                self.request_id = str(uuid.uuid4())
+                if self.kind == "bug":
+                    QMessageBox.information(
+                        self,
+                        "답변 등록",
+                        "답변이 등록되었습니다. 이메일 알림이 예약되었습니다.",
+                    )
+        finally:
+            self.submit.setEnabled(True)
+
+    def edit(self, item):
+        text, ok = QInputDialog.getMultiLineText(
+            self, "댓글 수정", "내용", item.get("text", "")
+        )
+        if ok and text.strip():
+            self.request("put", f"/comments/{item['uid']}", json={"text": text.strip()})
+
+    def delete(self, item):
+        if (
+            QMessageBox.question(
+                self,
+                "댓글 삭제",
+                "이 댓글을 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            == QMessageBox.StandardButton.Yes
+        ):
+            self.request("delete", f"/comments/{item['uid']}")
+
+
 class ViewBugDialog(BaseDialog):
     def __init__(self, parent, bug_data: dict):
         super().__init__(parent)
         self.setWindowTitle(f"Version {bug_data.get('versionName', '')} Bug Details")
-        self.resize(500, 600)
+        self.resize(760, 850)
 
         self.bug_data = bug_data
         self._build_ui()
@@ -648,6 +821,9 @@ class ViewBugDialog(BaseDialog):
         )
         self.add_label(
             layout, "Program Log", self.bug_data.get("programLog", ""), multiline=True
+        )
+        layout.addWidget(
+            BoardDiscussionWidget(self.parent(), self.bug_data, "bug", self)
         )
 
 
@@ -689,7 +865,7 @@ class ViewPostDialog(BaseDialog):
         super().__init__(parent)
         self.post_data = post_data
         self.setWindowTitle("Post View")
-        self.resize(500, 500)
+        self.resize(760, 760)
         self._build_ui()
 
     def _build_ui(self):
@@ -700,6 +876,9 @@ class ViewPostDialog(BaseDialog):
         self.add_label(layout, "DateTime", self.post_data.get("datetime", ""))
         self.add_label(
             layout, "Post Text", self.post_data.get("text", ""), multiline=True
+        )
+        layout.addWidget(
+            BoardDiscussionWidget(self.parent(), self.post_data, "post", self)
         )
 
 

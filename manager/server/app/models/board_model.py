@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
+from uuid import UUID, uuid4
 
 
 class AddVersionDto(BaseModel):
@@ -21,7 +22,7 @@ class VersionBoardSchema(BaseModel):
 
 
 class AddBugDto(BaseModel):
-    writerUid: str
+    writerUid: str = ""
     versionName: str
     bugTitle: str
     bugText: str
@@ -40,10 +41,33 @@ class BugBoardSchema(BaseModel):
 
 
 class AddPostDto(BaseModel):
-    writerUid: str
+    writerUid: str = ""
     title: str
     text: str
-    broadcastNotify: bool
+    broadcastNotify: bool = False
+
+
+class BugReplyDto(BaseModel):
+    text: str = Field(min_length=1, max_length=20000)
+    requestId: UUID = Field(default_factory=uuid4)
+
+    @field_validator("text")
+    @classmethod
+    def nonempty_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("답변 내용을 입력해주세요.")
+        return value
+
+
+class CommentDto(BaseModel):
+    text: str = Field(min_length=1, max_length=10000)
+    requestId: UUID = Field(default_factory=uuid4)
+
+    @field_validator("text")
+    @classmethod
+    def nonempty_text(cls, value: str) -> str:
+        return BugReplyDto.nonempty_text(value)
 
 
 class FreeBoardSchema(BaseModel):
