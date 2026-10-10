@@ -13,10 +13,9 @@ body.board-app { margin:0; font:14px/1.6 var(--ud-font,system-ui,sans-serif); co
 .board-tabs button.active { background:var(--ud-active-bg); color:var(--ud-active-fg); border-color:var(--ud-active-line); }
 .board-tabs button span:last-child { margin-left:auto; font-size:11px; padding:1px 7px; border-radius:20px; background:var(--ud-surface-soft); }
 .board-tab-icon { font-size:19px; width:22px; text-align:center; }
+.board-tab-label { white-space:nowrap; line-height:1.4; }
 .board-side-help { margin:24px 22px; font-size:12px; color:var(--sidebar-muted); line-height:1.8; }
-.board-account { margin-top:auto; padding:14px 12px; border-top:1px solid var(--ud-line); }
-.board-account .sb-user { margin:0; }
-.board-logout { border:0; background:transparent; color:var(--sidebar-text); cursor:pointer; padding:12px; font:600 12px var(--ud-font); }
+.board-rail .sb-bottom { margin-top:auto; }
 .board-main { padding:34px clamp(16px,3vw,48px); min-width:0; max-width:1500px; width:100%; margin:auto; align-self:start; }
 .board-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:25px; }
 .board-heading h1 { margin:5px 0 6px; font-size:29px; letter-spacing:-.04em; }
@@ -83,4 +82,10 @@ html[data-ui-theme-mode="dark"] .board-feedback.error,html[data-ui-theme-mode="d
 .board-toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:400; background:#172033; color:#fff; border-radius:12px; padding:12px 20px; max-width:calc(100vw - 28px); box-shadow:0 5px 25px rgba(0,0,0,.2); }
 [hidden] { display:none !important; }
 @media(max-width:900px) { .board-shell { grid-template-columns:190px minmax(0,1fr); } .board-main { padding:25px 18px; } .board-rail .sb-top { padding:16px 12px; } }
-@media(max-width:680px) { .board-shell { display:block; } .board-rail { position:static; height:auto; border-right:0; border-bottom:1px solid var(--ud-line); } .board-rail .sb-top,.board-side-label,.board-side-help,.board-account { display:none; } .board-tabs { display:flex; padding:10px; overflow:auto; } .board-tabs button { flex:1; justify-content:center; padding:9px 8px; white-space:nowrap; font-size:12px; gap:5px; } .board-tabs button span:last-child { margin-left:0; } .board-tab-icon { display:none; } .board-heading { gap:10px; } .board-heading h1 { font-size:24px; } .board-heading p { font-size:12px; } .board-heading .board-btn { padding:9px; } .board-toolbar { padding:14px; } .board-search { max-width:none; flex-basis:100%; } .board-toolbar select { flex:1; min-width:0; } .board-row { padding:18px 16px; } .board-dialog { width:calc(100vw - 18px); max-height:calc(100dvh - 20px); } .board-dialog-body { padding:20px; } .board-detail-title { font-size:21px; } }
+@media(max-width:680px) { .board-shell { display:block; } .board-rail { position:static; height:auto; border-right:0; border-bottom:1px solid var(--ud-line); } .board-rail .sb-top,.board-side-label,.board-side-help { display:none; } .board-tabs { display:flex; padding:10px; overflow:auto; } .board-tabs button { flex:1; justify-content:center; padding:9px 8px; white-space:nowrap; font-size:12px; gap:5px; } .board-tabs button span:last-child { margin-left:0; } .board-tab-icon { display:none; } .board-heading { gap:10px; } .board-heading h1 { font-size:24px; } .board-heading p { font-size:12px; } .board-heading .board-btn { padding:9px; } .board-toolbar { padding:14px; } .board-search { max-width:none; flex-basis:100%; } .board-toolbar select { flex:1; min-width:0; } .board-row { padding:18px 16px; } .board-dialog { width:calc(100vw - 18px); max-height:calc(100dvh - 20px); } .board-dialog-body { padding:20px; } .board-detail-title { font-size:21px; } }
+
+@media(max-width:680px) {
+ .board-rail .sb-bottom { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 12px; align-items:center; }
+ .board-rail .sb-bottom .sb-conn { grid-column:1 / -1; padding-bottom:0; }
+ .board-rail .sb-bottom .sb-user { margin:0; }
+}

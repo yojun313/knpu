@@ -169,7 +169,7 @@
       link.textContent = 'ADMIN';
       link.href = url('dashboard');
       link.setAttribute('data-knpu-admin-link', '');
-      nav.insertBefore(link, nav.querySelector('[data-knpu-board-link]'));
+      nav.appendChild(link);
       if (nav.dataset.knpuActive === 'dashboard') {
         link.classList.add('active');
         link.setAttribute('aria-current', 'page');
