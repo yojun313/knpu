@@ -8,6 +8,7 @@ from system.logging.user_log import insert_log
 import re
 import uuid
 from app.libs.crawl_papers import fetch_bib
+from pymongo import ReturnDocument
 
 
 router = APIRouter()
@@ -57,16 +58,36 @@ def _find_duplicate(paper_data: dict, exclude_uid: str | None) -> dict | None:
 @router.get("/")
 def list_papers():
     docs = list(papers_db.find())
+    available = []
     for d in docs:
+        if not d.get("uid"):
+            # Legacy imports sometimes omitted uid. Repair only identity, never ownership.
+            repaired = papers_db.find_one_and_update(
+                {"_id": d["_id"], "uid": {"$in": [None, ""]}},
+                {"$set": {"uid": str(uuid.uuid4())}},
+                return_document=ReturnDocument.AFTER,
+            )
+            if repaired is None:
+                # Another request may have repaired or deleted the same record.
+                repaired = papers_db.find_one({"_id": d["_id"]})
+            if repaired is None:
+                continue
+            d["uid"] = repaired.get("uid")
         d.pop("_id", None)
+        available.append(d)
 
     grouped: dict[int, list[dict]] = {}
-    for d in docs:
+    for d in available:
         grouped.setdefault(d.get("year"), []).append(d)
 
     result = []
     for year, papers in grouped.items():
-        papers.sort(key=lambda p: p.get("fetched_at", ""), reverse=True)
+        # Same default order as publications.html: year, then publication date.
+        # Collection date only breaks ties, preserving the site's previous tie order.
+        papers.sort(
+            key=lambda p: (p.get("published_date") or "", p.get("fetched_at") or ""),
+            reverse=True,
+        )
         result.append({"year": year, "papers": papers})
 
     result.sort(key=lambda x: int(x.get("year") or 0), reverse=True)
