@@ -241,6 +241,18 @@
       display: none;
     }
 
+    .content-manage-card { border-top: 4px solid #2458c6; }
+    .content-manage-card h2 { margin-bottom: 0.65rem; }
+    .content-manage-card .content-icon { color: #2458c6; }
+    .btn-content-manage {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%; padding: 0.9rem 1rem; border-radius: 10px;
+      background: #2458c6; color: #fff; font-weight: 700;
+    }
+    .btn-content-manage:hover, .btn-content-manage:focus-visible {
+      background: #19449e; color: #fff;
+    }
+
     .auth-alert {
       display: none;
       font-size: 0.85rem;
@@ -277,6 +289,14 @@
   <div class="container">
     <div class="account-wrap" id="account-content" style="display:none;">
 
+      <div class="card account-card content-manage-card" id="content-manage-card">
+        <div class="card-body">
+          <h2><i class="fa-solid fa-pen-to-square content-icon"></i>홈페이지 수정</h2>
+          <p class="meta-line mb-3" id="content-permission-note">논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 추가할 수 있습니다. 본인이 추가한 항목만 수정·삭제할 수 있으며, 기존 콘텐츠는 관리자만 관리할 수 있습니다.</p>
+          <a href="/content" class="btn btn-content-manage"><i class="fa-solid fa-pen-to-square"></i>홈페이지 수정하기<i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+
       <div class="card account-card" id="member-photo-card">
         <div class="card-body">
           <h2><i class="fa-solid fa-image"></i>프로필 사진</h2>
@@ -287,7 +307,7 @@
             <div class="photo-preview-placeholder" id="photo-preview-placeholder"><i class="fa-solid fa-user"></i></div>
             <div>
               <div class="meta-line" id="member-link-note">홈페이지 멤버 <strong id="member-link-name"></strong> 프로필과 연결되어 있습니다.</div>
-              <label class="btn btn-outline-dark btn-sm mt-1" for="photo-input" style="cursor:pointer;">
+              <label class="btn btn-outline-dark btn-sm mt-1" for="photo-input" id="photo-change-button" style="cursor:pointer;">
                 <i class="fa-solid fa-upload me-1"></i>사진 변경
               </label>
               <input type="file" id="photo-input" accept="image/*" style="display:none;" />
@@ -371,7 +391,6 @@
           <h2><i class="fa-solid fa-user-shield"></i>관리자</h2>
           <p class="meta-line mb-3">가입 승인 대기 중인 요청과 홈페이지 콘텐츠를 관리할 수 있습니다.</p>
           <a href="https://dashboard.knpu.re.kr/users" class="btn btn-account-primary text-white me-2 mb-2">가입 요청 관리로 이동</a>
-          <a href="/admin" class="btn btn-outline-dark mb-2">콘텐츠 관리로 이동</a>
         </div>
       </div>
 
@@ -420,13 +439,14 @@
         badge.textContent = 'ADMIN';
         badge.style.display = 'inline-block';
         document.getElementById('admin-card').style.display = 'block';
+        document.getElementById('content-permission-note').textContent = '관리자는 홈페이지의 모든 콘텐츠를 추가·수정·삭제할 수 있습니다.';
       }
 
       document.getElementById('p-username').textContent = user.username;
       document.getElementById('p-email').textContent = user.email;
       document.getElementById('p-name').value = user.name;
 
-      loadLinkedMember();
+      loadLinkedMember(user);
       loadPasskeys();
     }
 
@@ -511,13 +531,17 @@
       }
     }
 
-    function loadLinkedMember() {
+    function loadLinkedMember(user) {
       fetch('/api/members/me', { credentials: 'include' }).then(function (res) {
         return res.ok ? res.json() : null;
       }).then(function (member) {
         if (!member) return;
         document.getElementById('member-photo-card').style.display = 'block';
         document.getElementById('member-link-name').textContent = member.name;
+        const canChangePhoto = user.role === 'admin' || (member.created_by && member.created_by === user.uid);
+        document.getElementById('photo-change-button').hidden = !canChangePhoto;
+        document.getElementById('photo-input').disabled = !canChangePhoto;
+        if (!canChangePhoto) document.getElementById('photo-status').textContent = '이 멤버 프로필은 관리자 또는 해당 항목의 작성자만 수정할 수 있습니다.';
         renderMemberPhoto(member);
         if (!document.getElementById('account-avatar').querySelector('img') && member.image) {
           document.getElementById('account-avatar').innerHTML =
@@ -546,7 +570,7 @@
           statusEl.textContent = '';
           renderMemberPhoto(member);
           showAlert(successEl, '프로필 사진이 변경되었습니다');
-          loadLinkedMember();
+          loadLinkedMember(user);
         })
         .catch(function (err) {
           statusEl.textContent = '';

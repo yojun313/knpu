@@ -1091,6 +1091,9 @@
         display: none;
       }
     }
+    .content-lock { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #5e6875; white-space: normal; }
+    .content-owner { display: block; font-size: 0.7rem; font-weight: 600; color: #2458a5; margin-bottom: 0.25rem; }
+    .row-readonly { cursor: default; }
   </style>
 </head>
 
@@ -1101,9 +1104,9 @@
     <header class="admin-topbar">
       <div class="admin-topbar-inner">
         <div>
-          <span class="admin-eyebrow">KNPU FPEI · ADMIN</span>
+          <span class="admin-eyebrow" id="content-role-label">KNPU FPEI · CONTENT</span>
           <h1>콘텐츠 관리</h1>
-          <p>홈페이지에 보이는 논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 여기서 추가하고 고칩니다. 행을 누르면 바로 편집할 수 있습니다.</p>
+          <p id="content-permission-note">홈페이지에 보이는 논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 관리합니다.</p>
         </div>
         <div class="admin-top-links">
           <a href="/" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i>홈페이지 보기</a>
@@ -1711,7 +1714,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/scripts.js"></script>
   <script src="js/nav.js"></script>
-  <script src="js/admin.js?v=20261003"></script>
+  <script src="js/admin.js?v=20261010-ownership"></script>
 </body>
 
 </html>
