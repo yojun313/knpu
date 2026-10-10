@@ -3138,6 +3138,7 @@ class EditHomePaperDialog(BaseDialog):
 
         self.in_year = QLineEdit(str(self.data.get("year", "")))
         self.in_title = QLineEdit(self.data.get("title", ""))
+        self.in_title.setPlaceholderText("논문 제목 (SCI/SCOPUS는 DOI도 입력 가능)")
 
         raw_authors = self.data.get("authors", [])
         if isinstance(raw_authors, list):
@@ -3156,6 +3157,9 @@ class EditHomePaperDialog(BaseDialog):
         crawl_row = QHBoxLayout()
         self.in_journal_type = QComboBox()
         self.in_journal_type.addItems(["KCI", "SCI", "SCOPUS"])
+        journal_type = str(self.data.get("journal_type") or "KCI").strip().upper()
+        if journal_type in ("KCI", "SCI", "SCOPUS"):
+            self.in_journal_type.setCurrentText(journal_type)
         crawl_btn = QPushButton("메타데이터 가져오기")
         crawl_btn.clicked.connect(self.crawl_metadata)
         crawl_row.addWidget(self.in_journal_type)
@@ -3203,9 +3207,15 @@ class EditHomePaperDialog(BaseDialog):
                     "해당 제목으로 메타데이터를 찾지 못했습니다.",
                 )
             else:
-                QMessageBox.warning(
-                    self, "크롤링 실패", "메타데이터를 가져오는 중 오류가 발생했습니다."
-                )
+                message = "메타데이터를 가져오는 중 오류가 발생했습니다."
+                if e.response is not None:
+                    try:
+                        detail = e.response.json().get("detail")
+                        if isinstance(detail, str) and detail:
+                            message = detail
+                    except (ValueError, AttributeError):
+                        pass
+                QMessageBox.warning(self, "크롤링 실패", message)
             return
         except Exception:
             QMessageBox.warning(

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from system.logging.user_log import insert_log
 import re
 import uuid
-from app.libs.crawl_papers import fetch_bib
+from app.libs.crawl_papers import MetadataLookupError, fetch_bib
 from pymongo import ReturnDocument
 
 
@@ -152,13 +152,15 @@ def delete_paper(
 
 @router.get("/crawl", dependencies=[Depends(get_current_user)])
 def crawl_paper(
-    title: str = Query(..., description="논문 제목"),
+    title: str = Query(..., description="논문 제목 또는 DOI (SCI / SCOPUS)"),
     journal_type: str = Query(..., alias="type", description="SCI / SCOPUS / KCI"),
 ):
     try:
         record = fetch_bib(title, journal_type)
+    except MetadataLookupError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     if record is None:
         raise HTTPException(status_code=404, detail="메타데이터를 찾을 수 없습니다")

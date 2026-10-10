@@ -21,9 +21,11 @@ import re
 import sys
 import time
 import uuid
+import unicodedata
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
+from urllib.parse import quote, unquote
 
 import bibtexparser
 import requests
@@ -36,7 +38,8 @@ from bs4 import BeautifulSoup
 # ---------------------------------------------------------------------------
 
 CROSSREF_URL = "https://api.crossref.org/works"
-CONFIDENCE_THRESHOLD = 0.60
+CONFIDENCE_THRESHOLD = 0.80
+DATACITE_URL = "https://api.datacite.org/dois"
 KCI_SEARCH_URL = "https://www.kci.go.kr/kciportal/po/search/poTotalSearList.kci"
 KCI_DETAIL_URL = (
     "https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci"
@@ -108,7 +111,11 @@ def _is_korean(text: str) -> bool:
 
 
 def _similarity(a: str, b: str) -> float:
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+    def normalize(text: str) -> str:
+        text = unicodedata.normalize("NFKC", html_lib.unescape(_strip_tags(text)))
+        return " ".join(re.findall(r"\w+", text.casefold()))
+
+    return SequenceMatcher(None, normalize(a), normalize(b), autojunk=False).ratio()
 
 
 def _strip_braces(text: str) -> str:
@@ -309,63 +316,58 @@ def _build_record_from_bibtex(
 
 
 # ---------------------------------------------------------------------------
-# CrossRef (SCI / SCOPUS)
+# Crossref / DataCite (SCI / SCOPUS)
 # ---------------------------------------------------------------------------
 
 
-def _crossref_query(query: str, rows: int = 5) -> list[dict]:
-    params = {
-        "query": f'title="{query}"',
-        "rows": rows,
-        "select": "title,author,issued,container-title,DOI,type,volume,issue,page,publisher,abstract",
-    }
+class MetadataLookupError(RuntimeError):
+    """A failed provider request, distinct from an empty search result."""
+
+
+def _metadata_request(url: str, params: dict | None = None) -> dict | None:
     try:
         resp = requests.get(
-            CROSSREF_URL, params=params, headers=CROSSREF_HEADERS, timeout=15
+            url, params=params, headers=CROSSREF_HEADERS, timeout=(5, 15)
         )
+        if resp.status_code == 404:
+            return None
         resp.raise_for_status()
-        return resp.json().get("message", {}).get("items", [])
-    except Exception as e:
-        print(f"  [CrossRef] 오류: {e}")
-        return []
+        payload = resp.json()
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid metadata response")
+        return payload
+    except (requests.RequestException, ValueError) as exc:
+        raise MetadataLookupError(
+            "논문 메타데이터 제공처에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+        ) from exc
 
 
-def _best_crossref_match(
+def _crossref_query(query: str, rows: int = 10) -> list[dict]:
+    payload = _metadata_request(
+        CROSSREF_URL, {"query.bibliographic": query, "rows": rows}
+    )
+    return (payload or {}).get("message", {}).get("items", [])
+
+
+def _best_title_match(
     input_title: str,
     items: list[dict],
-    known_names: set[str],
-    korean: bool,
 ) -> dict | None:
     if not items:
         return None
 
-    if korean:
-        # KCI 논문은 CrossRef에 영문 제목으로 등록 → 알려진 저자 기반 신뢰
-        for item in items:
-            for a in item.get("author", []):
-                given = a.get("given", "")
-                family = a.get("family", "")
-                full = f"{family}, {given}".strip(", ").lower()
-                full2 = f"{given} {family}".strip().lower()
-                if full in known_names or full2 in known_names:
-                    item["_confidence"] = 0.8
-                    item["_source"] = "crossref"
-                    return item
-        return None
-
-    # 영문 제목: 유사도 체크
+    # A known author alone does not establish that this is the requested paper.
     best, best_score = None, 0.0
     for item in items:
-        titles = item.get("title", [])
-        returned = titles[0] if titles else ""
-        score = _similarity(input_title, returned)
+        titles = item.get("title") or []
+        if isinstance(titles, str):
+            titles = [titles]
+        score = max((_similarity(input_title, t) for t in titles), default=0.0)
         if score > best_score:
             best_score = score
             best = item
     if best and best_score >= CONFIDENCE_THRESHOLD:
-        best["_confidence"] = best_score
-        best["_source"] = "crossref"
-        return best
+        return {**best, "_confidence": best_score}
     return None
 
 
@@ -447,30 +449,130 @@ def _build_record_from_crossref(
     return record
 
 
-def _fetch_crossref(
+def _datacite_as_crossref(raw: dict) -> dict:
+    """Adapt DataCite fields without inventing missing journal information."""
+    authors = [
+        {
+            "family": a.get("familyName") or a.get("name", ""),
+            "given": a.get("givenName", ""),
+        }
+        for a in raw.get("creators", [])
+    ]
+    date = next(
+        (
+            d.get("date")
+            for d in raw.get("dates", [])
+            if d.get("dateType") == "Issued" and d.get("date")
+        ),
+        None,
+    )
+    match = re.match(r"^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?", str(date or ""))
+    parts = [int(v) for v in match.groups() if v] if match else []
+    if not parts and raw.get("publicationYear"):
+        parts = [int(raw["publicationYear"])]
+    publisher = raw.get("publisher")
+    if isinstance(publisher, dict):
+        publisher = publisher.get("name")
+    container = raw.get("container") or {}
+    resource_type = ((raw.get("types") or {}).get("resourceType") or "").casefold()
+    type_map = {
+        "journalarticle": "journal-article",
+        "journal article": "journal-article",
+        "conferencepaper": "proceedings-article",
+        "conference paper": "proceedings-article",
+        "bookchapter": "book-chapter",
+        "report": "report",
+    }
+    abstract = next(
+        (
+            d.get("description")
+            for d in raw.get("descriptions", [])
+            if d.get("descriptionType") == "Abstract"
+        ),
+        None,
+    )
+    return {
+        "title": [t["title"] for t in raw.get("titles", []) if t.get("title")],
+        "author": authors,
+        "DOI": raw.get("doi"),
+        "issued": {"date-parts": [parts]},
+        "container-title": [container.get("title")],
+        "publisher": publisher,
+        "type": type_map.get(resource_type, ""),
+        "volume": container.get("volume"),
+        "issue": container.get("issue"),
+        "page": container.get("pages") or container.get("firstPage"),
+        "abstract": html_lib.unescape(_strip_tags(abstract)) if abstract else None,
+        "_keywords": [
+            s["subject"] for s in raw.get("subjects", []) if s.get("subject")
+        ],
+    }
+
+
+def _fetch_international(
     title: str,
     name_map: dict[str, str],
     journal_type: str,
 ) -> dict | None:
-    known_names = set(name_map.keys())
-    korean = _is_korean(title)
-
-    # 1차: 전체 제목
-    items = _crossref_query(title)
-    raw = _best_crossref_match(title, items, known_names, korean)
-
-    # 2차: 콜론 앞 핵심어
-    if raw is None:
-        short = title.split(":")[0].strip()
-        if short and short != title:
-            items2 = _crossref_query(short)
-            raw = _best_crossref_match(title, items2, known_names, korean)
-
-    if raw is None:
-        print(f"  [CrossRef] 매칭 실패")
-        return None
-
-    return _build_record_from_crossref(title, raw, name_map, journal_type)
+    title = title.strip()
+    if not title:
+        raise ValueError("논문 제목 또는 DOI를 입력해주세요.")
+    doi_match = re.fullmatch(
+        r"(?:https?://(?:dx\.)?doi\.org/|doi:\s*)?(10\.\d{4,9}/\S+)",
+        title,
+        flags=re.IGNORECASE,
+    )
+    doi = unquote(doi_match.group(1)) if doi_match else None
+    failures = []
+    for source in ("crossref", "datacite"):
+        try:
+            if source == "crossref":
+                if doi:
+                    payload = _metadata_request(
+                        f"{CROSSREF_URL}/{quote(doi, safe='/')}"
+                    )
+                    raw = (payload or {}).get("message")
+                    if raw:
+                        raw = {**raw, "_confidence": 1.0}
+                else:
+                    raw = _best_title_match(title, _crossref_query(title))
+            else:
+                if doi:
+                    payload = _metadata_request(
+                        f"{DATACITE_URL}/{quote(doi, safe='/')}"
+                    )
+                    attrs = ((payload or {}).get("data") or {}).get("attributes")
+                    raw = _datacite_as_crossref(attrs) if attrs else None
+                    if raw:
+                        raw["_confidence"] = 1.0
+                else:
+                    # Escape user text before embedding it in the provider query.
+                    escaped = title.replace(chr(92), chr(92) * 2).replace(
+                        '"', chr(92) + '"'
+                    )
+                    payload = _metadata_request(
+                        DATACITE_URL,
+                        {
+                            "query": f'titles.title:"{escaped}"',
+                            "page[size]": 10,
+                        },
+                    )
+                    items = [
+                        _datacite_as_crossref(item["attributes"])
+                        for item in (payload or {}).get("data", [])
+                    ]
+                    raw = _best_title_match(title, items)
+            if raw:
+                record = _build_record_from_crossref(title, raw, name_map, journal_type)
+                record["source_api"] = source
+                if source == "datacite":
+                    record["keywords"] = raw.get("_keywords") or None
+                return record
+        except MetadataLookupError as exc:
+            failures.append(exc)
+    if failures:
+        raise failures[0]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -622,7 +724,7 @@ def fetch_bib(
     논문 제목과 등재 종류로 메타데이터를 수집하여 final.json 호환 레코드 반환.
 
     Args:
-        title:        논문 제목 (한글 또는 영문)
+        title:        논문 제목 (SCI/SCOPUS는 DOI 또는 DOI URL도 가능)
         journal_type: "SCI", "SCOPUS", "KCI"
         name_map:     load_name_map() 반환값. None이면 author_names.json 자동 로드
 
@@ -632,10 +734,10 @@ def fetch_bib(
     if name_map is None:
         name_map = load_name_map()
 
-    jtype = journal_type.upper()
+    jtype = journal_type.strip().upper()
 
     if jtype in ("SCI", "SCOPUS"):
-        return _fetch_crossref(title, name_map, jtype)
+        return _fetch_international(title, name_map, jtype)
     elif jtype == "KCI":
         return _fetch_kci(title, name_map, jtype)
     else:
