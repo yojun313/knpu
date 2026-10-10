@@ -3,51 +3,63 @@ from services.update import updateProgram
 from libs.console import openConsole, closeConsole
 
 
-def initShortcut(parent):
-    parent.ctrld = QShortcut(QKeySequence("Ctrl+D"), parent)
-    parent.ctrls = QShortcut(QKeySequence("Ctrl+S"), parent)
-    parent.ctrlv = QShortcut(QKeySequence("Ctrl+V"), parent)
-    parent.ctrlu = QShortcut(QKeySequence("Ctrl+U"), parent)
-    parent.ctrll = QShortcut(QKeySequence("Ctrl+L"), parent)
-    parent.ctrla = QShortcut(QKeySequence("Ctrl+A"), parent)
-    parent.ctrli = QShortcut(QKeySequence("Ctrl+I"), parent)
-    parent.ctrle = QShortcut(QKeySequence("Ctrl+E"), parent)
-    parent.ctrlr = QShortcut(QKeySequence("Ctrl+R"), parent)
-    parent.ctrlk = QShortcut(QKeySequence("Ctrl+K"), parent)
-    parent.ctrlm = QShortcut(QKeySequence("Ctrl+M"), parent)
-    parent.ctrlp = QShortcut(QKeySequence("Ctrl+P"), parent)
-    parent.ctrlc = QShortcut(QKeySequence("Ctrl+C"), parent)
-    parent.ctrlq = QShortcut(QKeySequence("Ctrl+Q"), parent)
-    parent.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), parent)
+SHORTCUT_KEYS = {
+    "ctrld": "Ctrl+D",
+    "ctrls": "Ctrl+S",
+    "ctrlv": "Ctrl+V",
+    "ctrlu": "Ctrl+U",
+    "ctrll": "Ctrl+L",
+    "ctrla": "Ctrl+A",
+    "ctrli": "Ctrl+I",
+    "ctrle": "Ctrl+E",
+    "ctrlr": "Ctrl+R",
+    "ctrlk": "Ctrl+K",
+    "ctrlm": "Ctrl+M",
+    "ctrlp": "Ctrl+P",
+    "ctrlc": "Ctrl+C",
+    "ctrlq": "Ctrl+Q",
+    "ctrlpp": "Ctrl+Shift+P",
+    "cmdd": "Ctrl+ㅇ",
+    "cmds": "Ctrl+ㄴ",
+    "cmdv": "Ctrl+ㅍ",
+    "cmdu": "Ctrl+ㅕ",
+    "cmdl": "Ctrl+ㅣ",
+    "cmda": "Ctrl+ㅁ",
+    "cmdi": "Ctrl+ㅑ",
+    "cmde": "Ctrl+ㄷ",
+    "cmdr": "Ctrl+ㄱ",
+    "cmdk": "Ctrl+ㅏ",
+    "cmdm": "Ctrl+ㅡ",
+    "cmdp": "Ctrl+ㅔ",
+    "cmdc": "Ctrl+ㅊ",
+    "cmdq": "Ctrl+ㅂ",
+    "cmdpp": "Ctrl+Shift+ㅔ",
+}
 
-    parent.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), parent)
-    parent.cmds = QShortcut(QKeySequence("Ctrl+ㄴ"), parent)
-    parent.cmdv = QShortcut(QKeySequence("Ctrl+ㅍ"), parent)
-    parent.cmdu = QShortcut(QKeySequence("Ctrl+ㅕ"), parent)
-    parent.cmdl = QShortcut(QKeySequence("Ctrl+ㅣ"), parent)
-    parent.cmda = QShortcut(QKeySequence("Ctrl+ㅁ"), parent)
-    parent.cmdi = QShortcut(QKeySequence("Ctrl+ㅑ"), parent)
-    parent.cmde = QShortcut(QKeySequence("Ctrl+ㄷ"), parent)
-    parent.cmdr = QShortcut(QKeySequence("Ctrl+ㄱ"), parent)
-    parent.cmdk = QShortcut(QKeySequence("Ctrl+ㅏ"), parent)
-    parent.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), parent)
-    parent.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), parent)
-    parent.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), parent)
-    parent.cmdq = QShortcut(QKeySequence("Ctrl+ㅂ"), parent)
-    parent.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), parent)
+
+def initShortcut(parent):
+    # 화면별 재등록이 먼저 호출되어도 모든 단축키 객체를 한 번만 만든다.
+    for name, key in SHORTCUT_KEYS.items():
+        if getattr(parent, name, None) is None:
+            setattr(parent, name, QShortcut(QKeySequence(key), parent))
+
+    if getattr(parent, "_global_shortcuts_initialized", False):
+        return
 
     parent.ctrlu.activated.connect(lambda: updateProgram(parent, sc=True))
     parent.ctrlq.activated.connect(lambda: parent.close())
     parent.ctrlp.activated.connect(lambda: openConsole("Developer Mode"))
-    parent.cmdpp.activated.connect(lambda: closeConsole())
+    parent.ctrlpp.activated.connect(lambda: closeConsole())
 
     parent.cmdu.activated.connect(lambda: updateProgram(parent, sc=True))
     parent.cmdq.activated.connect(lambda: parent.close())
     parent.cmdp.activated.connect(lambda: openConsole("Developer Mode"))
     parent.cmdpp.activated.connect(lambda: closeConsole())
+    parent._global_shortcuts_initialized = True
 
 
 def resetShortcuts(parent):
+    initShortcut(parent)
     shortcuts = [
         parent.ctrld,
         parent.ctrls,
@@ -59,6 +71,7 @@ def resetShortcuts(parent):
         parent.ctrlk,
         parent.ctrlm,
         parent.ctrlc,
+        parent.ctrli,
         parent.cmdd,
         parent.cmds,
         parent.cmdv,
@@ -69,6 +82,7 @@ def resetShortcuts(parent):
         parent.cmdk,
         parent.cmdm,
         parent.cmdc,
+        parent.cmdi,
     ]
     for shortcut in shortcuts:
         try:

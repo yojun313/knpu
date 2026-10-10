@@ -1,12 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.auth.content import save_content, delete_content, require_content_owner
 from app.models import GalleryPost
 from app.db import gallery_db, user_logs_db
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import get_current_user
 from app.libs import r2
+from app.auth.images import can_delete_image
 from system.logging.user_log import insert_log
 import uuid
 
 router = APIRouter()
+
+
+def _delete_owned_photo(url, user):
+    try:
+        key = r2.object_name_from_url(url)
+        if can_delete_image(key, user):
+            r2.s3.delete_object(Bucket=r2.BUCKET_NAME, Key=key)
+    except Exception as error:
+        print(f"R2 delete failed for {url}: {error}")
 
 
 @router.get("/")
@@ -20,17 +31,21 @@ def list_gallery_posts():
 
 
 @router.post("/")
-def upsert_gallery_post(post: GalleryPost, admin=Depends(require_admin)):
+def upsert_gallery_post(post: GalleryPost, admin=Depends(get_current_user)):
     if not post.photos:
         raise HTTPException(
             status_code=400, detail="사진을 최소 1장 이상 등록해야 합니다."
         )
 
+    previous = gallery_db.find_one({"uid": post.uid}) if post.uid else None
     post_data = post.dict()
     if not post_data.get("uid"):
         post_data["uid"] = str(uuid.uuid4())
 
-    gallery_db.update_one({"uid": post_data["uid"]}, {"$set": post_data}, upsert=True)
+    save_content(gallery_db, post_data, admin)
+    for url in (previous or {}).get("photos", []):
+        if url not in post_data["photos"]:
+            _delete_owned_photo(url, admin)
     insert_log(
         user_logs_db,
         admin["sub"],
@@ -49,19 +64,17 @@ def upsert_gallery_post(post: GalleryPost, admin=Depends(require_admin)):
 @router.delete("/")
 def delete_gallery_post(
     uid: str = Query(..., description="삭제할 게시글의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
     doc = gallery_db.find_one({"uid": uid})
     if not doc:
         raise HTTPException(status_code=404, detail="Post not found")
 
+    require_content_owner(doc, admin)
+    delete_content(gallery_db, uid, admin)
     for url in doc.get("photos", []):
-        try:
-            r2.s3.delete_object(Bucket=r2.BUCKET_NAME, Key=r2.object_name_from_url(url))
-        except Exception as e:
-            print(f"R2 delete failed for {url}: {e}")
+        _delete_owned_photo(url, admin)
 
-    gallery_db.delete_one({"uid": uid})
     insert_log(
         user_logs_db,
         admin["sub"],

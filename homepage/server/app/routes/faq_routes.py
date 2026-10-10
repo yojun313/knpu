@@ -1,7 +1,13 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db import admission_faq_db, admission_faq_categories_db, user_logs_db
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import get_current_user
+from app.auth.content import (
+    save_content,
+    delete_content,
+    require_content_owner,
+    check_content_update,
+)
 from app.models import FaqItem, FaqCategory
 from system.logging.user_log import insert_log
 
@@ -31,7 +37,7 @@ def list_faq_categories():
 
 
 @router.post("/categories")
-def upsert_faq_category(category: FaqCategory, admin=Depends(require_admin)):
+def upsert_faq_category(category: FaqCategory, admin=Depends(get_current_user)):
     data = category.dict()
     data["name"] = (data.get("name") or "").strip()
     if not data["name"]:
@@ -42,6 +48,12 @@ def upsert_faq_category(category: FaqCategory, admin=Depends(require_admin)):
         if data.get("uid")
         else None
     )
+
+    if existing:
+        require_content_owner(existing, admin)
+        if admin.get("role") != "admin" and existing["name"] != data["name"]:
+            for item in admission_faq_db.find({"category": existing["name"]}):
+                require_content_owner(item, admin)
 
     # 이름 중복 방지 (자기 자신 제외)
     dup = admission_faq_categories_db.find_one({"name": data["name"]})
@@ -55,15 +67,16 @@ def upsert_faq_category(category: FaqCategory, admin=Depends(require_admin)):
 
     old_name = existing.get("name") if existing else None
 
-    admission_faq_categories_db.update_one(
-        {"uid": data["uid"]}, {"$set": data}, upsert=True
-    )
+    save_content(admission_faq_categories_db, data, admin)
 
     # 이름이 바뀌면 소속 FAQ 항목의 category 도 함께 갱신한다.
     renamed = 0
     if old_name and old_name != data["name"]:
+        rename_query = {"category": old_name}
+        if admin.get("role") != "admin":
+            rename_query["created_by"] = admin["sub"]
         renamed = admission_faq_db.update_many(
-            {"category": old_name}, {"$set": {"category": data["name"]}}
+            rename_query, {"$set": {"category": data["name"]}}
         ).modified_count
 
     result = admission_faq_categories_db.find_one({"uid": data["uid"]})
@@ -82,12 +95,13 @@ def upsert_faq_category(category: FaqCategory, admin=Depends(require_admin)):
 @router.delete("/categories")
 def delete_faq_category(
     uid: str = Query(..., description="삭제할 카테고리의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
     doc = admission_faq_categories_db.find_one({"uid": uid})
     if not doc:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    require_content_owner(doc, admin)
     in_use = admission_faq_db.count_documents({"category": doc["name"]})
     if in_use:
         raise HTTPException(
@@ -95,7 +109,7 @@ def delete_faq_category(
             detail=f"이 카테고리를 사용하는 FAQ가 {in_use}개 있습니다. 먼저 해당 FAQ의 분류를 바꾸거나 삭제해주세요.",
         )
 
-    admission_faq_categories_db.delete_one({"uid": uid})
+    delete_content(admission_faq_categories_db, uid, admin)
     insert_log(
         user_logs_db,
         admin["sub"],
@@ -127,11 +141,13 @@ def list_faq():
 
 
 @router.post("/")
-def upsert_faq(item: FaqItem, admin=Depends(require_admin)):
+def upsert_faq(item: FaqItem, admin=Depends(get_current_user)):
     data = item.dict()
     data["category"] = (data.get("category") or "").strip()
     if not data.get("uid"):
         data["uid"] = str(uuid.uuid4())
+
+    check_content_update(admission_faq_db, data, admin)
 
     # 카테고리 관리 UI를 거치지 않고 새 분류가 들어오면 자동으로 등록해 그룹 순서를 부여한다.
     if data["category"] and not admission_faq_categories_db.find_one(
@@ -146,10 +162,11 @@ def upsert_faq(item: FaqItem, admin=Depends(require_admin)):
                 "uid": str(uuid.uuid4()),
                 "name": data["category"],
                 "order": max_order + 10,
+                "created_by": admin["sub"],
             }
         )
 
-    admission_faq_db.update_one({"uid": data["uid"]}, {"$set": data}, upsert=True)
+    save_content(admission_faq_db, data, admin)
 
     result = admission_faq_db.find_one({"uid": data["uid"]})
     if not result:
@@ -168,9 +185,9 @@ def upsert_faq(item: FaqItem, admin=Depends(require_admin)):
 @router.delete("/")
 def delete_faq(
     uid: str = Query(..., description="삭제할 FAQ 항목의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
-    result = admission_faq_db.delete_one({"uid": uid})
+    result = delete_content(admission_faq_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="FAQ not found")
     insert_log(

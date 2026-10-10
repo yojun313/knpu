@@ -2807,10 +2807,17 @@ class Manager_Analysis(Manager_Worker):
         self.main.analysis_kemkim_btn.setToolTip("Ctrl+K")
 
     def analysis_shortcut_setting(self):
-        self.updateShortcut(0)
-        self.main.tabWidget_data_process.currentChanged.connect(self.updateShortcut)
+        if not getattr(self, "_shortcut_tab_connected", False):
+            self.main.tabWidget_data_process.currentChanged.connect(self.updateShortcut)
+            self._shortcut_tab_connected = True
+        self.updateShortcut(self.main.tabWidget_data_process.currentIndex())
 
     def updateShortcut(self, index):
+        if (
+            not getattr(self.main, "_pages_ready", False)
+            or self.main.stackedWidget.currentIndex() != 2
+        ):
+            return
         resetShortcuts(self.main)
 
         # 파일 불러오기

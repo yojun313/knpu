@@ -1,4 +1,5 @@
-from services.api import Request
+from services.api import Request, handle_permission_error
+import sys
 import traceback
 from ui.status import printStatus
 from PySide6.QtWidgets import QMessageBox
@@ -24,6 +25,8 @@ def userBugging(text=""):
 
 
 def programBugLog(parent, text):
+    if handle_permission_error(parent, sys.exc_info()[1]):
+        return
     if parent.user_role == "admin":
         openConsole("Error Log")
     print(text)

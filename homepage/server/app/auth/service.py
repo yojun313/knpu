@@ -336,9 +336,18 @@ def update_my_member_photo(uid: str, image_url: str) -> dict:
             status_code=400, detail="연결된 멤버 프로필을 찾을 수 없습니다"
         )
 
+    from app.auth.content import content_filter
+    from app.auth.images import can_delete_image
+
+    actor = {"sub": uid, "role": users_db.find_one({"uid": uid}).get("role")}
+    query = content_filter(members_db, member["uid"], actor)
     old_image = member.get("image")
-    members_db.update_one({"uid": member["uid"]}, {"$set": {"image": image_url}})
-    if old_image:
+    result = members_db.update_one(query, {"$set": {"image": image_url}})
+    if not result.matched_count:
+        raise HTTPException(
+            status_code=409, detail="콘텐츠가 변경되었습니다. 목록을 새로고침해주세요."
+        )
+    if old_image and can_delete_image(r2.object_name_from_url(old_image), actor):
         try:
             r2.delete_object(old_image)
         except Exception:

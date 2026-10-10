@@ -13,10 +13,37 @@ def get_api_headers():
     return {"Authorization": f"Bearer {token}"}
 
 
+class APIPermissionError(requests.exceptions.HTTPError):
+    """An expected authentication/authorization failure, never a bug report."""
+
+
+def handle_permission_error(parent, error):
+    if not isinstance(error, APIPermissionError):
+        return False
+    from PySide6.QtWidgets import QMessageBox
+
+    title = "로그인 필요" if error.response.status_code == 401 else "권한 없음"
+    QMessageBox.warning(parent, title, str(error))
+    return True
+
+
 def Request(method, url, base_api=MANAGER_SERVER_API, **kwargs):
     full_url = f"{base_api}/{url.lstrip('/')}"
     kwargs["headers"] = get_api_headers()
     response = requests.request(method.upper(), full_url, **kwargs)
+    if response.status_code in (401, 403):
+        message = (
+            "로그인이 만료되었습니다. 다시 로그인해주세요."
+            if response.status_code == 401
+            else "이 작업을 수행할 권한이 없습니다."
+        )
+        try:
+            detail = response.json().get("detail")
+            if isinstance(detail, str) and detail:
+                message = detail
+        except (ValueError, AttributeError):
+            pass
+        raise APIPermissionError(message, response=response)
     response.raise_for_status()
     return response
 

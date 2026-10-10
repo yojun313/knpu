@@ -57,6 +57,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             super(MainWindow, self).__init__()
             self.setupUi(self)
             self.user_role = None
+            self._pages_ready = False
+            initShortcut(self)
 
             self.cleanup_old_exe()
 
@@ -77,7 +79,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     openConsole("Boot Process")
                 self.startTime = datetime.now()
                 checkNetwork(self)
-                self.listWidget.currentRowChanged.connect(self.display)
                 self._resolve_app_paths()
 
                 self.networkText = (
@@ -116,8 +117,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
                 print(f"\n{self.user}님 환영합니다!")
 
-                initShortcut(self)
+                self._pages_ready = True
+                self.listWidget.setCurrentRow(0)
                 self.managerDatabaseObj.setDatabaseShortcut()
+                self.listWidget.currentRowChanged.connect(self.display)
                 userLogging(f"부팅: {getUserLocation(self)}")
 
                 if get_setting("BootTerminal") == "on":
@@ -254,6 +257,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print(traceback.format_exc())
 
     def display(self, index):
+        if not self._pages_ready:
+            return
         if index != 5:
             self.stackedWidget.setCurrentIndex(index)
 

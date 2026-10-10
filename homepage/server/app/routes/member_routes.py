@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, UploadFile, File
+from app.auth.content import save_content, delete_content, require_content_owner
 from app.models import Member
 from app.db import members_db, user_logs_db
-from app.auth.dependencies import require_admin, get_current_user
+from app.auth.dependencies import get_current_user
 from app.auth import service as auth_service
 from app.libs import r2
 from system.logging.user_log import insert_log
@@ -20,7 +21,13 @@ def my_linked_member(user=Depends(get_current_user)):
 async def upload_my_member_photo(
     file: UploadFile = File(...), user=Depends(get_current_user)
 ):
-    url = r2.upload_fileobj(file, "members")
+    member = auth_service.get_linked_member(user["sub"])
+    require_content_owner(member, user)
+    from app.auth.images import image_prefix
+    import os
+
+    key = f"{image_prefix(user)}members/{uuid.uuid4().hex}{os.path.splitext(file.filename)[1].lower()}"
+    url = r2.upload_fileobj(file, "members", key)
     return auth_service.update_my_member_photo(user["sub"], url)
 
 
@@ -55,14 +62,12 @@ def list_members():
 
 
 @router.post("/")
-def upsert_member(member: Member, admin=Depends(require_admin)):
+def upsert_member(member: Member, admin=Depends(get_current_user)):
     member_data = member.dict(by_alias=True)
     if "uid" not in member_data or not member_data["uid"]:
         member_data["uid"] = str(uuid.uuid4())
 
-    result = members_db.update_one(
-        {"uid": member_data["uid"]}, {"$set": member_data}, upsert=True
-    )
+    save_content(members_db, member_data, admin)
 
     new_member = members_db.find_one({"uid": member_data["uid"]})
     if not new_member:
@@ -103,10 +108,10 @@ def get_member_options():
 @router.delete("/")
 def delete_member(
     uid: str = Query(..., description="삭제할 멤버의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
     doc = members_db.find_one({"uid": uid})
-    result = members_db.delete_one({"uid": uid})
+    result = delete_content(members_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Member not found")
     insert_log(

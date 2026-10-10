@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from app.db import news_db, user_logs_db
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import get_current_user
 from datetime import datetime
+from app.auth.content import save_content, delete_content
 from app.models import News
 from system.logging.user_log import insert_log
 import uuid
@@ -29,14 +30,12 @@ def list_news():
 
 
 @router.post("/")
-def upsert_news(news: News, admin=Depends(require_admin)):
+def upsert_news(news: News, admin=Depends(get_current_user)):
     news_data = news.dict(by_alias=True)
     if "uid" not in news_data or not news_data["uid"]:
         news_data["uid"] = str(uuid.uuid4())
 
-    result = news_db.update_one(
-        {"uid": news_data["uid"]}, {"$set": news_data}, upsert=True
-    )
+    save_content(news_db, news_data, admin)
 
     new_news = news_db.find_one({"uid": news_data["uid"]})
     if not new_news:
@@ -56,9 +55,9 @@ def upsert_news(news: News, admin=Depends(require_admin)):
 @router.delete("/")
 def delete_news(
     uid: str = Query(..., description="삭제할 뉴스의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
-    result = news_db.delete_one({"uid": uid})
+    result = delete_content(news_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="News not found")
     insert_log(

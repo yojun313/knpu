@@ -429,10 +429,14 @@ class Manager_Board:
         self.main.board_editpost_button.setToolTip("Ctrl+E")
 
     def setBoardShortcut(self):
-        self.updateShortcut(0)
-        self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
+        self.updateShortcut(self.main.tabWidget_board.currentIndex())
 
     def updateShortcut(self, index):
+        if (
+            not getattr(self.main, "_pages_ready", False)
+            or self.main.stackedWidget.currentIndex() != 3
+        ):
+            return
         resetShortcuts(self.main)
 
         # 패치 노트 탭
