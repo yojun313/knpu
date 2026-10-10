@@ -293,7 +293,8 @@
     }
 
     .adm-search input {
-      width: 260px;
+      width: clamp(180px, 19vw, 280px);
+      min-width: 0;
       padding: 0.5rem 0.75rem 0.5rem 2rem;
       border: 1px solid var(--adm-line);
       border-radius: 9px;
@@ -377,6 +378,7 @@
       margin: 0;
       border-collapse: separate;
       border-spacing: 0;
+      table-layout: fixed;
     }
 
     .admin-table thead th {
@@ -427,17 +429,18 @@
 
     .admin-table .col-actions {
       white-space: nowrap;
-      width: 1%;
+      width: 120px;
+      min-width: 120px;
       text-align: right;
     }
 
     .admin-table .col-narrow {
-      width: 1%;
+      width: 68px;
       white-space: nowrap;
     }
 
     .admin-table .col-num {
-      width: 1%;
+      width: 68px;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
       color: var(--adm-sub);
@@ -529,7 +532,7 @@
       background: #fff;
       color: var(--adm-sub);
       font-size: 0.8rem;
-      margin-left: 4px;
+      margin-left: 0;
       transition: all .12s ease;
     }
 
@@ -802,7 +805,7 @@
 
     .photo-thumb {
       position: relative;
-      width: 104px;
+      width: 120px;
       height: 104px;
       border-radius: 10px;
       overflow: hidden;
@@ -1091,8 +1094,52 @@
         display: none;
       }
     }
-    .content-lock { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #5e6875; white-space: normal; }
-    .content-owner { display: block; font-size: 0.7rem; font-weight: 600; color: #2458a5; margin-bottom: 0.25rem; }
+    .content-lock {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+      padding: 0.3rem 0.45rem; border-radius: 6px; background: var(--adm-soft);
+      font-size: 0.72rem; color: var(--adm-sub); white-space: nowrap;
+    }
+    .row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+    .category-actions { display: inline-flex; gap: 8px; align-items: center; }
+    [data-panel="faq-category"] .col-actions { width: 190px; }
+    .admin-table .col-meta { width: 23%; overflow-wrap: anywhere; }
+    .admin-table .col-date { width: 116px; }
+    .admin-table .col-period { width: 200px; }
+    .admin-table .col-status { width: 98px; }
+    .admin-table .col-count { width: 72px; }
+    .admin-table .col-num { width: 78px; }
+    .cell-mobile-meta { display: none; }
+    .cell-meta-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+    .admin-topbar-inner > div:first-child { flex: 1 1 520px; min-width: 0; }
+    .admin-topbar p { max-width: 900px; line-height: 1.65; color: rgba(255,255,255,0.8); }
+    .admin-top-links { flex-shrink: 0; }
+    .admin-panel-desc { line-height: 1.55; }
+    .icon-btn:focus-visible, .content-lock:focus-visible { outline: 2px solid var(--adm-accent); outline-offset: 3px; }
+    @media (max-width: 1199px) {
+      .admin-panel-actions { flex: 1 1 100%; justify-content: flex-start; }
+      .adm-search { flex: 1 1 220px; min-width: 0; }
+      .adm-search input { width: 100%; }
+      .adm-result { margin-left: auto; }
+    }
+    @media (max-width: 576px) {
+      .admin-panel-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; }
+      .adm-search { grid-column: 1 / -1; }
+      .adm-filter { width: 100%; max-width: none; }
+      .btn-admin-add { justify-content: center; min-height: 40px; white-space: nowrap; }
+      .btn-admin-add span { display: inline; }
+      .admin-table th, .admin-table td { padding: 0.65rem 0.55rem; }
+      .admin-table .col-actions { width: 112px; min-width: 112px; }
+      .admin-table .col-narrow { width: 56px; }
+      .admin-table .col-num { width: 60px; }
+      .admin-table .col-count { width: 68px; }
+      [data-panel="faq-category"] .col-actions { width: 112px; }
+      .category-actions { flex-direction: column; gap: 5px; }
+      .cell-mobile-meta { display: block; font-size: 0.75rem; color: var(--adm-sub); margin-top: 4px; overflow-wrap: anywhere; }
+      .cell-link { max-width: 100%; }
+      .admin-topbar p { display: block; font-size: 0.8rem; }
+      .admin-top-links a { padding: 0.5rem 0.65rem; }
+      .modal-footer > div { display: flex; gap: 0.4rem; }
+    }
     .row-readonly { cursor: default; }
   </style>
 </head>
@@ -1177,7 +1224,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-num">연도</th><th>논문 (제목 · 저자)</th><th class="hide-md">학회/저널</th><th class="col-narrow hide-sm">등재</th><th class="col-narrow hide-md">링크</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-num">연도</th><th>논문 (제목 · 저자)</th><th class="col-meta hide-md">학회/저널</th><th class="col-narrow hide-sm">등재</th><th class="col-narrow hide-md">링크</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="papers-tbody"></tbody>
                   </table>
@@ -1205,7 +1252,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-narrow"></th><th>이름</th><th>구분</th><th class="hide-sm">직책</th><th class="hide-md">소속</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>이름</th><th class="col-status hide-sm">구분</th><th class="col-meta hide-sm">직책</th><th class="col-meta hide-md">소속</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="members-tbody"></tbody>
                   </table>
@@ -1233,7 +1280,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-num hide-sm">날짜</th><th class="hide-md">원본 기사</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-date hide-sm">날짜</th><th class="col-meta hide-md">원본 기사</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="news-tbody"></tbody>
                   </table>
@@ -1261,7 +1308,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-num">날짜</th><th class="col-num">사진</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-date hide-sm">날짜</th><th class="col-count hide-sm">사진</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="gallery-tbody"></tbody>
                   </table>
@@ -1289,7 +1336,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-narrow"></th><th>제목</th><th class="hide-sm">게시 기간</th><th class="col-narrow">상태</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-narrow"></th><th>제목</th><th class="col-period hide-sm">게시 기간</th><th class="col-status hide-sm">상태</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="popups-tbody"></tbody>
                   </table>
@@ -1314,7 +1361,7 @@
                 <div class="admin-table-wrap">
                   <table class="admin-table">
                     <thead>
-                      <tr><th class="col-num">순서</th><th>이름</th><th class="col-num">FAQ 수</th><th class="col-actions">작업</th></tr>
+                      <tr><th class="col-num">순서</th><th>이름</th><th class="col-count">FAQ 수</th><th class="col-actions">작업</th></tr>
                     </thead>
                     <tbody id="faq-category-tbody"></tbody>
                   </table>
@@ -1714,7 +1761,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/scripts.js"></script>
   <script src="js/nav.js"></script>
-  <script src="js/admin.js?v=20261010-ownership"></script>
+  <script src="js/admin.js?v=20261010-layout"></script>
 </body>
 
 </html>

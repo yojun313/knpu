@@ -88,17 +88,16 @@
     var target = editFn.match(/^(\w+)\('([^']*)'/);
     var record = target ? recordFor(target[1], target[2]) : null;
     if (!canManage(record)) {
-      var label = record && record.created_by ? '다른 작성자의 항목' : '기존 콘텐츠 · 관리자만';
-      if (record && !record.uid) label = '식별자 확인 필요';
-      return '<span class="content-lock" title="' + escAttr(permissionNote) + '"><i class="fa-solid fa-lock"></i> ' + label + '</span>';
+      var detail = record && record.created_by ? '다른 작성자가 추가한 항목입니다. 작성자와 관리자만 수정·삭제할 수 있습니다.' : permissionNote;
+      if (record && !record.uid) detail = '식별자가 누락되어 수정할 수 없습니다. 목록을 새로고침해주세요.';
+      return '<span class="content-lock" tabindex="0" title="' + escAttr(detail) + '" aria-label="' + escAttr(detail) + '"><i class="fa-solid fa-lock" aria-hidden="true"></i>읽기 전용</span>';
     }
-    var ownership = currentUser.role !== 'admin' ? '<span class="content-owner">내가 추가</span>' : '';
-    return ownership + contentActionButtons(editFn, deleteFn);
+    return '<span class="row-actions"' + (currentUser.role !== 'admin' ? ' title="내가 추가한 항목"' : '') + '>' + contentActionButtons(editFn, deleteFn) + '</span>';
   }
 
   function contentActionButtons(editFn, deleteFn) {
-    return '<button class="icon-btn" title="수정" onclick="' + editFn + '"><i class="fa-solid fa-pen"></i></button>'
-      + '<button class="icon-btn danger" title="삭제" onclick="' + deleteFn + '"><i class="fa-solid fa-trash"></i></button>';
+    return '<button type="button" class="icon-btn" title="수정" aria-label="수정" onclick="' + editFn + '"><i class="fa-solid fa-pen"></i></button>'
+      + '<button type="button" class="icon-btn danger" title="삭제" aria-label="삭제" onclick="' + deleteFn + '"><i class="fa-solid fa-trash"></i></button>';
   }
 
   // 행 전체를 눌러 편집 — data-edit 에 편집 함수 호출 정보를 담는다.
@@ -379,7 +378,7 @@
         + '<td class="col-num">' + esc(p.year) + '</td>'
         + '<td><div class="cell-main" title="' + escAttr(p.title) + '">' + esc(p.title) + '</div>'
         + '<div class="cell-sub">' + esc(authors || '저자 미입력') + '</div></td>'
-        + '<td class="hide-md cell-muted">' + esc(p.venue || '—') + '</td>'
+        + '<td class="hide-md cell-muted"><div class="cell-meta-text" title="' + escAttr(p.venue || '') + '">' + esc(p.venue || '—') + '</div></td>'
         + '<td class="col-narrow hide-sm">' + (type ? '<span class="badge-soft ' + type.toLowerCase() + '">' + esc(type) + '</span>' : '') + '</td>'
         + '<td class="col-narrow hide-md">' + (p.url ? '<a class="icon-btn" href="' + escAttr(p.url) + '" target="_blank" rel="noopener" title="논문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>' : '<span class="cell-muted">—</span>') + '</td>'
         + '<td class="col-actions">' + actionButtons("openPaperModal('" + p.uid + "')", "deletePaper('" + p.uid + "')") + '</td></tr>';
@@ -495,10 +494,10 @@
     tbody.innerHTML = membersData.map(function (m) {
       return '<tr' + rowAttrs('openMemberModal', m.uid, m.section || '') + '>'
         + '<td class="col-narrow">' + thumbCell(m.image, true) + '</td>'
-        + '<td><div class="cell-main">' + esc(m.name) + '</div><div class="cell-sub">' + esc(m.email || '이메일 없음') + '</div></td>'
-        + '<td><span class="badge-soft">' + esc(m.section || '—') + '</span></td>'
+        + '<td><div class="cell-main">' + esc(m.name) + '</div><div class="cell-sub">' + esc(m.email || '이메일 없음') + '</div><div class="cell-mobile-meta">' + esc([m.section, m.position].filter(Boolean).join(' · ')) + '</div></td>'
+        + '<td class="hide-sm"><span class="badge-soft">' + esc(m.section || '—') + '</span></td>'
         + '<td class="hide-sm cell-muted">' + esc(m.position || '—') + '</td>'
-        + '<td class="hide-md cell-muted">' + esc(m.affiliation || '—') + '</td>'
+        + '<td class="hide-md cell-muted"><div class="cell-meta-text" title="' + escAttr(m.affiliation || '') + '">' + esc(m.affiliation || '—') + '</div></td>'
         + '<td class="col-actions">' + actionButtons(
           "openMemberModal('" + m.uid + "')",
           escAttr("deleteMember('" + m.uid + "', " + JSON.stringify(m.name) + ")")
@@ -610,7 +609,7 @@
       return '<tr' + rowAttrs('openNewsModal', n.uid, yearOf(n.date)) + '>'
         + '<td class="col-narrow">' + thumbCell(n.image) + '</td>'
         + '<td><div class="cell-main" title="' + escAttr(n.title) + '">' + esc(n.title) + '</div>'
-        + (n.content ? '<div class="cell-sub">' + esc(n.content) + '</div>' : '') + '</td>'
+        + (n.content ? '<div class="cell-sub">' + esc(n.content) + '</div>' : '') + '<div class="cell-mobile-meta">' + esc(n.date || '') + '</div></td>'
         + '<td class="col-num hide-sm">' + esc(n.date || '—') + '</td>'
         + '<td class="hide-md">' + linkCell(n.url) + '</td>'
         + '<td class="col-actions">' + actionButtons("openNewsModal('" + n.uid + "')", "deleteNews('" + n.uid + "')") + '</td></tr>';
@@ -702,9 +701,9 @@
       return '<tr' + rowAttrs('openGalleryModal', g.uid, yearOf(g.date)) + '>'
         + '<td class="col-narrow">' + thumbCell((g.photos || [])[0]) + '</td>'
         + '<td><div class="cell-main" title="' + escAttr(g.title) + '">' + esc(g.title) + '</div>'
-        + (g.content ? '<div class="cell-sub">' + esc(g.content) + '</div>' : '') + '</td>'
-        + '<td class="col-num">' + esc(g.date || '—') + '</td>'
-        + '<td class="col-num">' + ((g.photos || []).length) + '장</td>'
+        + (g.content ? '<div class="cell-sub">' + esc(g.content) + '</div>' : '') + '<div class="cell-mobile-meta">' + esc(g.date || '') + ' · ' + ((g.photos || []).length) + '장' + '</div></td>'
+        + '<td class="col-date hide-sm">' + esc(g.date || '—') + '</td>'
+        + '<td class="col-count hide-sm">' + ((g.photos || []).length) + '장</td>'
         + '<td class="col-actions">' + actionButtons("openGalleryModal('" + g.uid + "')", "deleteGallery('" + g.uid + "')") + '</td></tr>';
     }).join('');
     applyFilters('gallery');
@@ -853,9 +852,9 @@
       return '<tr' + rowAttrs('openPopupModal', p.uid, st[1]) + '>'
         + '<td class="col-narrow">' + thumbCell(p.image) + '</td>'
         + '<td><div class="cell-main" title="' + escAttr(p.title) + '">' + esc(p.title) + '</div>'
-        + (p.content ? '<div class="cell-sub">' + esc(p.content) + '</div>' : '') + '</td>'
+        + (p.content ? '<div class="cell-sub">' + esc(p.content) + '</div>' : '') + '<div class="cell-mobile-meta">' + esc(st[1]) + ' · ' + esc(p.start_date || '') + ' ~ ' + esc(p.end_date || '') + '</div></td>'
         + '<td class="hide-sm cell-muted" style="white-space:nowrap">' + esc(p.start_date || '—') + ' ~ ' + esc(p.end_date || '—') + '</td>'
-        + '<td class="col-narrow"><span class="status-pill ' + st[0] + '">' + st[1] + '</span></td>'
+        + '<td class="col-status hide-sm"><span class="status-pill ' + st[0] + '">' + st[1] + '</span></td>'
         + '<td class="col-actions">' + actionButtons("openPopupModal('" + p.uid + "')", "deletePopup('" + p.uid + "')") + '</td></tr>';
     }).join('');
     applyFilters('popups');
@@ -987,7 +986,7 @@
         + '<td class="col-num">' + esc(c.order != null ? c.order : '') + '</td>'
         + '<td><div class="cell-main">' + esc(c.name) + '</div></td>'
         + '<td class="col-num">' + count + '개</td>'
-        + '<td class="col-actions">' + (canManage(c) ? moveBtns : '') + actionButtons("openFaqCategoryModal('" + c.uid + "')", "deleteFaqCategory('" + c.uid + "')") + '</td></tr>';
+        + '<td class="col-actions"><span class="category-actions">' + (canManage(c) ? '<span class="row-actions">' + moveBtns + '</span>' : '') + actionButtons("openFaqCategoryModal('" + c.uid + "')", "deleteFaqCategory('" + c.uid + "')") + '</span></td></tr>';
     }).join('');
   }
 
