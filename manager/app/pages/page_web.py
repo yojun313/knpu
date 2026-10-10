@@ -25,8 +25,7 @@ from ui.dialogs import (
 from ui.table import makeTable
 from ui.status import changeStatusbarAction
 from services.logging import printStatus, userLogging
-from services.api import upload_homepage_image, delete_homepage_image
-from core.auth import accessCheck
+from services.api import upload_homepage_image
 
 warnings.filterwarnings("ignore")
 
@@ -40,6 +39,19 @@ class Manager_Web:
         self.refreshPopupBoard()
         self.web_buttonMatch()
         self.photoTableLoad = False
+
+    def _can_manage(self, record):
+        if self.main.user_role == "admin":
+            return True
+        owner = record.get("created_by")
+        if owner and owner == getattr(self.main, "userUid", None):
+            return True
+        QMessageBox.warning(
+            self.main,
+            "권한 없음",
+            "본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다. 기존 콘텐츠는 관리자만 관리할 수 있습니다.",
+        )
+        return False
 
     def web_open_webbrowser(self, url, widget):
         try:
@@ -123,6 +135,7 @@ class Manager_Web:
         for member in self.origin_member_data:
             member_info = {
                 "uid": member.get("uid", ""),
+                "created_by": member.get("created_by"),
                 "name": str(member.get("name", "")),
                 "position": str(member.get("position", "")),
                 "email": str(member.get("email", "")),
@@ -219,8 +232,6 @@ class Manager_Web:
 
     def addHomePaper(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             dialog = EditHomePaperDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -239,8 +250,6 @@ class Manager_Web:
 
     def addHomeMember(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             dialog = EditHomeMemberDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -255,8 +264,6 @@ class Manager_Web:
 
     def addHomeNews(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             dialog = EditHomeNewsDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -273,9 +280,6 @@ class Manager_Web:
 
     def addGroupPhoto(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
-
             dialog = EditGalleryPostDialog(parent=self.main)
             if dialog.exec():
                 printStatus(self.main, "이미지 업로드 중...")
@@ -302,12 +306,12 @@ class Manager_Web:
 
     def deleteHomePaper(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.paper_data[selectedRow]["uid"]
+            if not self._can_manage(self.paper_data[selectedRow]):
+                return
             reply = QMessageBox.question(
                 self.main,
                 "Confirm Delete",
@@ -329,15 +333,14 @@ class Manager_Web:
 
     def deleteHomeMember(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
-
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
 
             targetName = self.member_data[selectedRow]["name"]
             selectedUid = self.member_data[selectedRow]["uid"]
+            if not self._can_manage(self.member_data[selectedRow]):
+                return
 
             # 1. 먼저 삭제 의사를 묻습니다.
             reply = QMessageBox.question(
@@ -381,12 +384,12 @@ class Manager_Web:
 
     def deleteHomeNews(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.news_data[selectedRow]["uid"]
+            if not self._can_manage(self.news_data[selectedRow]):
+                return
             reply = QMessageBox.question(
                 self.main,
                 "Confirm Delete",
@@ -408,14 +411,14 @@ class Manager_Web:
 
     def deleteGroupPhoto(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_groupphotos_tableWidget.currentRow()
             if selectedRow < 0:
                 return
 
             target_data = self.photo_data[selectedRow]
             uid = target_data["uid"]
+            if not self._can_manage(target_data):
+                return
 
             if (
                 QMessageBox.question(
@@ -440,12 +443,12 @@ class Manager_Web:
 
     def editHomePaper(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.paper_data[selectedRow]["uid"]
+            if not self._can_manage(self.paper_data[selectedRow]):
+                return
 
             origin = None
             for year_group in self.origin_paper_data:
@@ -478,12 +481,12 @@ class Manager_Web:
 
     def editHomeMember(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.member_data[selectedRow]["uid"]
+            if not self._can_manage(self.member_data[selectedRow]):
+                return
             origin = None
             for m in self.origin_member_data:
                 if m.get("uid") == selectedUid:
@@ -508,12 +511,12 @@ class Manager_Web:
 
     def editHomeNews(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.news_data[selectedRow]["uid"]
+            if not self._can_manage(self.news_data[selectedRow]):
+                return
             origin = None
             for n in self.news_data:
                 if n.get("uid") == selectedUid:
@@ -538,14 +541,13 @@ class Manager_Web:
 
     def editGroupPhoto(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
-
             selectedRow = self.main.web_groupphotos_tableWidget.currentRow()
             if selectedRow < 0:
                 return
 
             selectedUid = self.photo_data[selectedRow]["uid"]
+            if not self._can_manage(self.photo_data[selectedRow]):
+                return
             origin = next(
                 (p for p in self.photo_data if p.get("uid") == selectedUid), None
             )
@@ -556,9 +558,6 @@ class Manager_Web:
 
             dialog = EditGalleryPostDialog(data=origin, parent=self.main)
             if dialog.exec():
-                for url in dialog.removed_photos:
-                    delete_homepage_image(url)
-
                 printStatus(self.main, "새 이미지 업로드 중...")
                 new_urls = [
                     upload_homepage_image(
@@ -691,8 +690,6 @@ class Manager_Web:
 
     def addHomePopup(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             dialog = EditHomePopupDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -709,12 +706,12 @@ class Manager_Web:
 
     def deleteHomePopup(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_popup_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.popup_data[selectedRow]["uid"]
+            if not self._can_manage(self.popup_data[selectedRow]):
+                return
             reply = QMessageBox.question(
                 self.main,
                 "Confirm Delete",
@@ -733,12 +730,12 @@ class Manager_Web:
 
     def editHomePopup(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]):
-                return
             selectedRow = self.main.web_popup_tableWidget.currentRow()
             if selectedRow < 0:
                 return
             selectedUid = self.popup_data[selectedRow]["uid"]
+            if not self._can_manage(self.popup_data[selectedRow]):
+                return
             origin = next(
                 (p for p in self.popup_data if p.get("uid") == selectedUid), None
             )
@@ -776,10 +773,17 @@ class Manager_Web:
             programBugLog(self.main, traceback.format_exc())
 
     def setWebShortcut(self):
-        self.updateShortcut(0)
-        self.main.tabWidget_web.currentChanged.connect(self.updateShortcut)
+        if not getattr(self, "_shortcut_tab_connected", False):
+            self.main.tabWidget_web.currentChanged.connect(self.updateShortcut)
+            self._shortcut_tab_connected = True
+        self.updateShortcut(self.main.tabWidget_web.currentIndex())
 
     def updateShortcut(self, index):
+        if (
+            not getattr(self.main, "_pages_ready", False)
+            or self.main.stackedWidget.currentIndex() != 4
+        ):
+            return
         resetShortcuts(self.main)
 
         if index == 0:

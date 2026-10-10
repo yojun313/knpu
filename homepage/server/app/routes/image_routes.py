@@ -1,9 +1,21 @@
 # app/routers/upload.py
 import os, uuid
 from typing import Literal
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Query
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    File,
+    Form,
+    HTTPException,
+    status,
+    Query,
+    Depends,
+)
 from fastapi.responses import JSONResponse
 from app.libs.r2 import s3, BUCKET_NAME, PUBLIC_BASE, _allowed
+
+from app.auth.dependencies import get_current_user
+from app.auth.images import image_prefix, require_image_owner
 
 router = APIRouter()
 
@@ -19,6 +31,7 @@ async def upload_image(
     folder: Literal["members", "news", "papers", "gallery", "popup", "misc"] = Form(
         "misc"
     ),
+    user=Depends(get_current_user),
 ) -> JSONResponse:
     _, ext = os.path.splitext(file.filename)
     if not _allowed(ext):
@@ -26,13 +39,15 @@ async def upload_image(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="지원하지 않는 확장자",
         )
-    if not file.content_type.startswith("image/"):
+    if not (file.content_type or "").startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="image/* 만 허용",
         )
 
-    if object_name == "default":
+    if user.get("role") != "admin":
+        object_name = f"{image_prefix(user)}{folder}/{uuid.uuid4().hex}{ext.lower()}"
+    elif object_name == "default":
         object_name = f"{folder}/{uuid.uuid4().hex}{ext.lower()}"
 
     try:
@@ -60,7 +75,9 @@ async def delete_image(
     object_name: str = Query(
         ..., description="삭제할 객체의 전체 경로 (예: members/uuid.jpg)"
     ),
+    user=Depends(get_current_user),
 ) -> JSONResponse:
+    require_image_owner(object_name, user)
     try:
         s3.delete_object(
             Bucket=BUCKET_NAME,

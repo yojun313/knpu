@@ -3191,6 +3191,10 @@ class EditHomePaperDialog(BaseDialog):
                 params={"title": title, "type": self.in_journal_type.currentText()},
             )
         except requests.exceptions.HTTPError as e:
+            from services.api import handle_permission_error
+
+            if handle_permission_error(self, e):
+                return
             status = e.response.status_code if e.response is not None else None
             if status == 404:
                 QMessageBox.information(

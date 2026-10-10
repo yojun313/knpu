@@ -1,8 +1,9 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db import popup_db, user_logs_db
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import get_current_user
 from datetime import datetime
+from app.auth.content import save_content, delete_content
 from app.models import Popup
 from system.logging.user_log import insert_log
 
@@ -19,14 +20,14 @@ def list_popups():
 
 
 @router.post("/")
-def upsert_popup(popup: Popup, admin=Depends(require_admin)):
+def upsert_popup(popup: Popup, admin=Depends(get_current_user)):
     data = popup.dict()
     if not data.get("uid"):
         data["uid"] = str(uuid.uuid4())
     if not data.get("created_at"):
         data["created_at"] = datetime.utcnow().isoformat()
 
-    popup_db.update_one({"uid": data["uid"]}, {"$set": data}, upsert=True)
+    save_content(popup_db, data, admin)
 
     result = popup_db.find_one({"uid": data["uid"]})
     if not result:
@@ -45,9 +46,9 @@ def upsert_popup(popup: Popup, admin=Depends(require_admin)):
 @router.delete("/")
 def delete_popup(
     uid: str = Query(..., description="삭제할 팝업의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
-    result = popup_db.delete_one({"uid": uid})
+    result = delete_content(popup_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Popup not found")
     insert_log(

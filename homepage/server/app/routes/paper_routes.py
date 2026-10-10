@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db import papers_db, user_logs_db
+from app.auth.content import save_content, delete_content
 from app.models import PaperRequest
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import get_current_user
 from datetime import datetime, timezone
 from system.logging.user_log import insert_log
 import re
@@ -73,7 +74,7 @@ def list_papers():
 
 
 @router.post("/")
-def upsert_paper(paper: PaperRequest, admin=Depends(require_admin)):
+def upsert_paper(paper: PaperRequest, admin=Depends(get_current_user)):
     paper_data = paper.dict(by_alias=True)
 
     incoming_uid = paper_data.get("uid") or None
@@ -95,11 +96,7 @@ def upsert_paper(paper: PaperRequest, admin=Depends(require_admin)):
         paper_data.get("fetched_at") or datetime.now(timezone.utc).isoformat()
     )
 
-    papers_db.update_one(
-        {"uid": paper_data["uid"]},
-        {"$set": paper_data},
-        upsert=True,
-    )
+    save_content(papers_db, paper_data, admin)
     insert_log(
         user_logs_db,
         admin["sub"],
@@ -117,9 +114,9 @@ def upsert_paper(paper: PaperRequest, admin=Depends(require_admin)):
 @router.delete("/")
 def delete_paper(
     uid: str = Query(..., description="삭제할 논문의 UID"),
-    admin=Depends(require_admin),
+    admin=Depends(get_current_user),
 ):
-    result = papers_db.delete_one({"uid": uid})
+    result = delete_content(papers_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Paper not found")
     insert_log(
@@ -132,7 +129,7 @@ def delete_paper(
     return {"message": f"Paper '{uid}' deleted successfully"}
 
 
-@router.get("/crawl", dependencies=[Depends(require_admin)])
+@router.get("/crawl", dependencies=[Depends(get_current_user)])
 def crawl_paper(
     title: str = Query(..., description="논문 제목"),
     journal_type: str = Query(..., alias="type", description="SCI / SCOPUS / KCI"),
