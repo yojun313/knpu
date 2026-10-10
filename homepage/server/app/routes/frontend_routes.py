@@ -97,6 +97,13 @@ def admin_page(user=Depends(get_current_user_optional)):
     return _page("admin.html")
 
 
+@router.get("/content")
+def content_page(user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login?redirect=%2Fcontent")
+    return _page("admin.html")
+
+
 def _discord_link_page(title: str, message: str, ok: bool) -> HTMLResponse:
     color = "#22c55e" if ok else "#ef4444"
     html = f"""<!doctype html>

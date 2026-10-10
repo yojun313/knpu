@@ -3,6 +3,9 @@
 (function () {
   'use strict';
 
+  var currentUser = null;
+  var permissionNote = '본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다. 기존 콘텐츠는 관리자만 관리할 수 있습니다.';
+
   // ---------------------------------------------------------------
   // 공통 유틸
   // ---------------------------------------------------------------
@@ -31,10 +34,6 @@
   }
   function apiDelete(path) { return api(path, { method: 'DELETE' }); }
 
-  function objectNameFromUrl(url) {
-    try { return new URL(url).pathname.replace(/^\//, ''); } catch (e) { return url; }
-  }
-
   function randomName() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, '');
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -49,13 +48,6 @@
       if (!res.ok) return res.json().then(function (b) { throw new Error(b.detail || '업로드 실패'); });
       return res.json();
     }).then(function (data) { return data.url; });
-  }
-
-  function deleteImageByUrl(url) {
-    if (!url) return Promise.resolve();
-    return fetch('/api/image/?object_name=' + encodeURIComponent(objectNameFromUrl(url)), {
-      method: 'DELETE', credentials: 'include',
-    }).catch(function () { /* 이미지 삭제 실패는 콘텐츠 저장을 막지 않는다 */ });
   }
 
   function setTabCount(id, n) {
@@ -77,15 +69,44 @@
       + '<i class="fa-solid fa-arrow-up-right-from-square"></i>' + esc(label) + '</a>';
   }
 
+  function canManage(record) {
+    return !!(currentUser && record && record.uid &&
+      (currentUser.role === 'admin' || (record.created_by && record.created_by === currentUser.uid)));
+  }
+
+  function recordFor(editFn, uid) {
+    var lists = {
+      openPaperModal: papersData, openMemberModal: membersData,
+      openNewsModal: newsData, openGalleryModal: galleryData,
+      openPopupModal: popupsData, openFaqModal: faqData,
+      openFaqCategoryModal: faqCategoriesData,
+    };
+    return (lists[editFn] || []).find(function (record) { return record.uid === uid; });
+  }
+
   function actionButtons(editFn, deleteFn) {
+    var target = editFn.match(/^(\w+)\('([^']*)'/);
+    var record = target ? recordFor(target[1], target[2]) : null;
+    if (!canManage(record)) {
+      var label = record && record.created_by ? '다른 작성자의 항목' : '기존 콘텐츠 · 관리자만';
+      if (record && !record.uid) label = '식별자 확인 필요';
+      return '<span class="content-lock" title="' + escAttr(permissionNote) + '"><i class="fa-solid fa-lock"></i> ' + label + '</span>';
+    }
+    var ownership = currentUser.role !== 'admin' ? '<span class="content-owner">내가 추가</span>' : '';
+    return ownership + contentActionButtons(editFn, deleteFn);
+  }
+
+  function contentActionButtons(editFn, deleteFn) {
     return '<button class="icon-btn" title="수정" onclick="' + editFn + '"><i class="fa-solid fa-pen"></i></button>'
       + '<button class="icon-btn danger" title="삭제" onclick="' + deleteFn + '"><i class="fa-solid fa-trash"></i></button>';
   }
 
   // 행 전체를 눌러 편집 — data-edit 에 편집 함수 호출 정보를 담는다.
   function rowAttrs(editFn, uid, filterValue, extraClass) {
-    return ' class="row-click' + (extraClass ? ' ' + extraClass : '') + '" data-row data-edit="' + editFn + '" data-uid="' + escAttr(uid)
-      + '" data-fv="' + escAttr(filterValue == null ? '' : filterValue) + '"';
+    var editable = canManage(recordFor(editFn, uid));
+    return ' class="' + (editable ? 'row-click' : 'row-readonly') + (extraClass ? ' ' + extraClass : '') + '" data-row'
+      + (editable ? ' data-edit="' + editFn + '" data-uid="' + escAttr(uid) + '"' : '')
+      + ' data-fv="' + escAttr(filterValue == null ? '' : filterValue) + '"';
   }
 
   function emptyRow(colspan, icon, text) {
@@ -296,13 +317,14 @@
     return res.ok ? res.json() : null;
   }).then(function (user) {
     if (!user) {
-      window.location.href = '/login?redirect=' + encodeURIComponent('/admin');
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
       return;
     }
-    if (user.role !== 'admin') {
-      window.location.href = '/account';
-      return;
-    }
+    currentUser = user;
+    $('content-role-label').textContent = user.role === 'admin' ? 'KNPU FPEI · ADMIN' : 'KNPU FPEI · CONTENT';
+    $('content-permission-note').textContent = user.role === 'admin'
+      ? '관리자는 모든 콘텐츠를 추가·수정·삭제할 수 있습니다. 행을 누르면 편집할 수 있습니다.'
+      : '새 콘텐츠를 자유롭게 추가하세요. ' + permissionNote + ' 본인 항목의 행을 누르면 편집할 수 있습니다.';
     $('admin-loading').style.display = 'none';
     $('admin-content').style.display = 'block';
     bindPanelControls();
@@ -317,7 +339,7 @@
     loadFaqCategories();
     loadFaq();
   }).catch(function () {
-    window.location.href = '/login?redirect=' + encodeURIComponent('/admin');
+    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
   });
 
   function loadFailed(what) {
@@ -775,9 +797,6 @@
         return apiPost('/api/gallery/', payload);
       })
       .then(function () {
-        return Promise.all(galleryRemovedPhotos.map(deleteImageByUrl));
-      })
-      .then(function () {
         closeModal('galleryModal');
         toast(galleryEditingUid ? '게시글을 수정했습니다.' : '게시글을 추가했습니다.');
         loadGallery();
@@ -959,16 +978,16 @@
     }
     tbody.innerHTML = faqCategoriesData.map(function (c, idx) {
       var count = faqCountByCategory(c.name);
-      var upDisabled = idx === 0 ? ' disabled' : '';
-      var downDisabled = idx === faqCategoriesData.length - 1 ? ' disabled' : '';
+      var upDisabled = idx === 0 || !canManage(c) || !canManage(faqCategoriesData[idx - 1]) ? ' disabled' : '';
+      var downDisabled = idx === faqCategoriesData.length - 1 || !canManage(c) || !canManage(faqCategoriesData[idx + 1]) ? ' disabled' : '';
       var moveBtns =
         '<button class="icon-btn" title="위로" onclick="moveFaqCategory(\'' + c.uid + '\',-1)"' + upDisabled + '><i class="fa-solid fa-arrow-up"></i></button>'
         + '<button class="icon-btn" title="아래로" onclick="moveFaqCategory(\'' + c.uid + '\',1)"' + downDisabled + '><i class="fa-solid fa-arrow-down"></i></button>';
-      return '<tr class="row-click" data-edit="openFaqCategoryModal" data-uid="' + escAttr(c.uid) + '">'
+      return '<tr' + rowAttrs('openFaqCategoryModal', c.uid, '') + '>'
         + '<td class="col-num">' + esc(c.order != null ? c.order : '') + '</td>'
         + '<td><div class="cell-main">' + esc(c.name) + '</div></td>'
         + '<td class="col-num">' + count + '개</td>'
-        + '<td class="col-actions">' + moveBtns + actionButtons("openFaqCategoryModal('" + c.uid + "')", "deleteFaqCategory('" + c.uid + "')") + '</td></tr>';
+        + '<td class="col-actions">' + (canManage(c) ? moveBtns : '') + actionButtons("openFaqCategoryModal('" + c.uid + "')", "deleteFaqCategory('" + c.uid + "')") + '</td></tr>';
     }).join('');
   }
 
@@ -1031,6 +1050,7 @@
     var other = faqCategoriesData[idx + dir];
     var cur = faqCategoriesData[idx];
     if (!other || !cur) return;
+    if (!canManage(cur) || !canManage(other)) { toast(permissionNote, 'err'); return; }
     var a = { uid: cur.uid, name: cur.name, order: other.order };
     var b = { uid: other.uid, name: other.name, order: cur.order };
     apiPost('/api/faq/categories', a)
@@ -1120,5 +1140,32 @@
       .then(function () { toast('FAQ를 삭제했습니다.'); return Promise.all([loadFaq(), loadFaqCategories()]); })
       .catch(function (err) { toast(err.message || '삭제에 실패했습니다.', 'err'); });
   };
+
+  function guardContentAction(name, list, editingUid, kind) {
+    var action = window[name];
+    window[name] = function (uid) {
+      var target = kind === 'save' ? editingUid() : uid;
+      if (!currentUser) { toast('로그인이 필요합니다.', 'err'); return; }
+      if (target || kind === 'delete') {
+        var record = list().find(function (item) { return item.uid === target; });
+        if (!canManage(record)) { toast(permissionNote, 'err'); return; }
+      }
+      return action.apply(this, arguments);
+    };
+  }
+
+  [
+    ['Paper', function () { return papersData; }, function () { return paperEditingUid; }],
+    ['Member', function () { return membersData; }, function () { return memberEditingUid; }],
+    ['News', function () { return newsData; }, function () { return newsEditingUid; }],
+    ['Gallery', function () { return galleryData; }, function () { return galleryEditingUid; }],
+    ['Popup', function () { return popupsData; }, function () { return popupEditingUid; }],
+    ['Faq', function () { return faqData; }, function () { return faqEditingUid; }],
+    ['FaqCategory', function () { return faqCategoriesData; }, function () { return faqCategoryEditingUid; }],
+  ].forEach(function (config) {
+    guardContentAction('open' + config[0] + 'Modal', config[1], config[2], 'open');
+    guardContentAction('save' + config[0], config[1], config[2], 'save');
+    guardContentAction('delete' + config[0], config[1], config[2], 'delete');
+  });
 
 })();
