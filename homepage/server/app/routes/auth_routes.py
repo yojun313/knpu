@@ -19,6 +19,7 @@ from app.auth import service, webauthn_service
 from app.auth.webauthn_config import BASE_URL
 from system.endpoints import COOKIE_DOMAIN as SHARED_COOKIE_DOMAIN
 from app.auth.jwt import decode_token
+from app.auth.dependencies import require_signup_reviewer
 from app.db import users_db
 from app.libs.discord_notify import notify_discord
 from app.auth.dependencies import (
@@ -130,12 +131,12 @@ def list_requests(admin=Depends(require_admin)):
 
 
 @router.post("/admin/requests/{uid}/approve")
-def approve_request(uid: str, admin=Depends(require_admin)):
+def approve_request(uid: str, admin=Depends(require_signup_reviewer)):
     return service.approve_request(uid, admin["sub"])
 
 
 @router.post("/admin/requests/{uid}/reject")
-def reject_request(uid: str, admin=Depends(require_admin)):
+def reject_request(uid: str, admin=Depends(require_signup_reviewer)):
     return service.reject_request(uid, admin["sub"])
 
 
