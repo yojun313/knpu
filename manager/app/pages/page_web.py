@@ -49,7 +49,7 @@ class Manager_Web:
         QMessageBox.warning(
             self.main,
             "권한 없음",
-            "본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다. 기존 콘텐츠는 관리자만 관리할 수 있습니다.",
+            "본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다.",
         )
         return False
 

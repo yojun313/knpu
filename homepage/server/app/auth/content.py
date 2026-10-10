@@ -14,7 +14,7 @@ def require_content_owner(doc, user):
     ):
         raise HTTPException(
             status_code=403,
-            detail="본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다. 기존 콘텐츠는 관리자만 관리할 수 있습니다.",
+            detail="본인이 추가한 콘텐츠만 수정·삭제할 수 있습니다.",
         )
     return doc
 
