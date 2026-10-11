@@ -342,6 +342,47 @@ class Ui_MainWindow(object):
 
         self.tabWidget_board.addTab(self.tab_post, "")
 
+        self.tab_suggestion = QWidget()
+        self.tab_suggestion.setObjectName("tab_suggestion")
+        self.verticalLayout_tab_suggestion = QVBoxLayout(self.tab_suggestion)
+        self.verticalLayout_tab_suggestion.setObjectName(
+            "verticalLayout_tab_suggestion"
+        )
+        self.board_suggestion_tableWidget = QTableWidget(self.tab_suggestion)
+        self.board_suggestion_tableWidget.setObjectName("board_suggestion_tableWidget")
+
+        self.verticalLayout_tab_suggestion.addWidget(self.board_suggestion_tableWidget)
+
+        self.horizontalLayout_suggestion = QHBoxLayout()
+        self.horizontalLayout_suggestion.setObjectName("horizontalLayout_suggestion")
+        self.board_addsuggestion_button = QPushButton(self.tab_suggestion)
+        self.board_addsuggestion_button.setObjectName("board_addsuggestion_button")
+
+        self.horizontalLayout_suggestion.addWidget(self.board_addsuggestion_button)
+
+        self.board_deletesuggestion_button = QPushButton(self.tab_suggestion)
+        self.board_deletesuggestion_button.setObjectName(
+            "board_deletesuggestion_button"
+        )
+
+        self.horizontalLayout_suggestion.addWidget(self.board_deletesuggestion_button)
+
+        self.board_detailsuggestion_button = QPushButton(self.tab_suggestion)
+        self.board_detailsuggestion_button.setObjectName(
+            "board_detailsuggestion_button"
+        )
+
+        self.horizontalLayout_suggestion.addWidget(self.board_detailsuggestion_button)
+
+        self.board_editsuggestion_button = QPushButton(self.tab_suggestion)
+        self.board_editsuggestion_button.setObjectName("board_editsuggestion_button")
+
+        self.horizontalLayout_suggestion.addWidget(self.board_editsuggestion_button)
+
+        self.verticalLayout_tab_suggestion.addLayout(self.horizontalLayout_suggestion)
+
+        self.tabWidget_board.addTab(self.tab_suggestion, "")
+
         self.verticalLayout_data_process1.addWidget(self.tabWidget_board)
 
         self.stackedWidget.addWidget(self.page_board)
@@ -700,6 +741,22 @@ class Ui_MainWindow(object):
             QCoreApplication.translate(
                 "MainWindow", "\uc790\uc720\uac8c\uc2dc\ud310", None
             ),
+        )
+        self.board_addsuggestion_button.setText(
+            QCoreApplication.translate("MainWindow", "\ucd94\uac00", None)
+        )
+        self.board_deletesuggestion_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc0ad\uc81c", None)
+        )
+        self.board_detailsuggestion_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc790\uc138\ud788", None)
+        )
+        self.board_editsuggestion_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc218\uc815", None)
+        )
+        self.tabWidget_board.setTabText(
+            self.tabWidget_board.indexOf(self.tab_suggestion),
+            QCoreApplication.translate("MainWindow", "건의·제안사항", None),
         )
         self.web_addpaper_button.setText(
             QCoreApplication.translate("MainWindow", "\ucd94\uac00", None)

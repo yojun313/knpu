@@ -17,6 +17,7 @@ class Manager_Board:
         self.refreshVersionBoard()
         self.refreshBugBoard()
         self.refreshPostBoard()
+        self.refreshSuggestionBoard()
         self.matchButton()
         self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
 
@@ -407,7 +408,162 @@ class Manager_Board:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    def suggestionError(self, error):
+        from services.api import handle_permission_error
+
+        if handle_permission_error(self.main, error):
+            return
+        message = "요청을 처리하지 못했습니다. 연결 상태를 확인하고 다시 시도해주세요."
+        response = getattr(error, "response", None)
+        if response is not None:
+            try:
+                detail = response.json().get("detail")
+                if isinstance(detail, str):
+                    message = detail
+            except (ValueError, AttributeError):
+                pass
+        QMessageBox.warning(self.main, "건의·제안사항", message)
+
+    def refreshSuggestionBoard(self):
+        try:
+            self.suggestion_data = Request(
+                "get", "/board/suggestion", timeout=30
+            ).json()["data"]
+            categories = {
+                "feature": "기능 추가",
+                "workflow": "사용 방법 개선",
+                "other": "기타 제안",
+            }
+            statuses = {
+                "new": "접수",
+                "reviewing": "검토 중",
+                "planned": "반영 예정",
+                "done": "반영 완료",
+                "declined": "보류",
+            }
+            rows = [
+                [
+                    d.get("writerName", ""),
+                    categories.get(d.get("category"), "기타 제안"),
+                    d.get("title", ""),
+                    statuses.get(d.get("status"), "접수"),
+                    d.get("datetime", ""),
+                    str(d.get("commentCount", 0)),
+                ]
+                for d in self.suggestion_data
+            ]
+            makeTable(
+                self.main,
+                self.main.board_suggestion_tableWidget,
+                rows,
+                ["작성자", "제안 유형", "제목", "검토 상태", "작성일", "댓글"],
+            )
+            self.main.board_suggestion_tableWidget.itemDoubleClicked.disconnect()
+            self.main.board_suggestion_tableWidget.itemDoubleClicked.connect(
+                lambda _: self.viewSuggestion()
+            )
+        except Exception as error:
+            self.suggestion_data = []
+            self.suggestionError(error)
+
+    def selectedSuggestion(self):
+        row = self.main.board_suggestion_tableWidget.currentRow()
+        return (
+            self.suggestion_data[row] if 0 <= row < len(self.suggestion_data) else None
+        )
+
+    def addSuggestion(self):
+        try:
+            from ui.dialogs import SuggestionEditorDialog
+
+            dialog = SuggestionEditorDialog(self.main)
+            dialog.exec()
+            if dialog.data:
+                Request("post", "/board/suggestion/add", json=dialog.data, timeout=30)
+                self.refreshSuggestionBoard()
+        except Exception as error:
+            self.suggestionError(error)
+
+    def viewSuggestion(self):
+        doc = self.selectedSuggestion()
+        if not doc:
+            return
+        try:
+            from ui.dialogs import ViewPostDialog
+
+            detail = Request(
+                "get", f"/board/suggestion/{doc['uid']}", timeout=30
+            ).json()["data"]
+            dialog = ViewPostDialog(self.main, detail, kind="suggestion")
+            dialog.exec()
+            self.refreshSuggestionBoard()
+        except Exception as error:
+            self.suggestionError(error)
+
+    def editSuggestion(self):
+        doc = self.selectedSuggestion()
+        if not doc:
+            return
+        if doc.get("writerUid") != self.main.userUid and self.main.user_role != "admin":
+            QMessageBox.warning(
+                self.main, "권한 없음", "작성자 또는 관리자만 수정할 수 있습니다."
+            )
+            return
+        try:
+            from ui.dialogs import SuggestionEditorDialog
+
+            detail = Request(
+                "get", f"/board/suggestion/{doc['uid']}", timeout=30
+            ).json()["data"]
+            dialog = SuggestionEditorDialog(self.main, detail)
+            dialog.exec()
+            if dialog.data:
+                Request(
+                    "put",
+                    f"/board/suggestion/{doc['uid']}",
+                    json=dialog.data,
+                    timeout=30,
+                )
+                self.refreshSuggestionBoard()
+        except Exception as error:
+            self.suggestionError(error)
+
+    def deleteSuggestion(self):
+        doc = self.selectedSuggestion()
+        if not doc:
+            return
+        if doc.get("writerUid") != self.main.userUid and self.main.user_role != "admin":
+            QMessageBox.warning(
+                self.main, "권한 없음", "작성자 또는 관리자만 삭제할 수 있습니다."
+            )
+            return
+        if (
+            QMessageBox.question(
+                self.main,
+                "제안 삭제",
+                "이 제안을 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        try:
+            Request("delete", f"/board/suggestion/{doc['uid']}", timeout=30)
+            self.refreshSuggestionBoard()
+        except Exception as error:
+            self.suggestionError(error)
+
     def matchButton(self):
+        for name, method, shortcut in (
+            ("add", self.addSuggestion, "A"),
+            ("edit", self.editSuggestion, "E"),
+            ("delete", self.deleteSuggestion, "D"),
+            ("detail", self.viewSuggestion, "V"),
+        ):
+            button = getattr(self.main, f"board_{name}suggestion_button")
+            button.clicked.connect(method)
+            button.setToolTip(f"Ctrl+{shortcut} / Cmd+{shortcut}")
         self.main.board_addversion_button.clicked.connect(self.addVersion)
         self.main.board_deleteversion_button.clicked.connect(self.deleteVersion)
         self.main.board_editversion_button.clicked.connect(self.editVersion)
@@ -478,3 +634,14 @@ class Manager_Board:
             self.main.cmdv.activated.connect(self.viewPost)
             self.main.cmda.activated.connect(self.addPost)
             self.main.cmde.activated.connect(self.editPost)
+
+        # 건의·제안사항 탭
+        if index == 3:
+            for suffix, method in (
+                ("d", self.deleteSuggestion),
+                ("v", self.viewSuggestion),
+                ("a", self.addSuggestion),
+                ("e", self.editSuggestion),
+            ):
+                for prefix in ("ctrl", "cmd"):
+                    getattr(self.main, prefix + suffix).activated.connect(method)

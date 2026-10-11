@@ -474,10 +474,6 @@
   }
 
   function renderRail() {
-    // 사이드바 Overview 통계
-    var statP = document.getElementById('statProjects'), statF = document.getElementById('statFolders');
-    if (statP) statP.textContent = railProjects.length;
-    if (statF) statF.textContent = railFolders.length;
     var listEl = document.getElementById('railList');
     var emptyEl = document.getElementById('railEmpty');
     listEl.innerHTML = '';
@@ -954,7 +950,7 @@
     if (!window.KNPUJobs) return;
     KNPUJobs.init({
       service: 'kemkim',
-      anchor: document.querySelector('#rail .sb-overview') || document.querySelector('.sb-overview'),
+      anchor: document.querySelector('#rail .sb-top'),
       onOpenResult: function (job) {
         loadRailProjects();
         if (job.result && job.result.project_id) switchProject(job.result.project_id);
@@ -1140,7 +1136,7 @@
       if (!plotLayout) return;
       e.preventDefault();
       var rect = svg.getBoundingClientRect();
-      var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      var factor = window.KNPUZoom ? KNPUZoom.wheelFactor(e) : Math.exp(-e.deltaY * .0007);
       zoomBy(factor, e.clientX - rect.left, e.clientY - rect.top);
     }, { passive: false });
 
@@ -2049,7 +2045,7 @@
     }
     stage.addEventListener('wheel', function (e) {
       e.preventDefault(); var r = stage.getBoundingClientRect();
-      zoom(state.zoom * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .002)), e.clientX - r.left, e.clientY - r.top);
+      zoom(state.zoom * (window.KNPUZoom ? KNPUZoom.wheelFactor(e) : Math.exp(-e.deltaY * .0007)), e.clientX - r.left, e.clientY - r.top);
     }, {passive:false});
     var gestureZoom = 1;
     stage.addEventListener('gesturestart', function (e) { e.preventDefault(); gestureZoom = state.zoom; });
@@ -2191,6 +2187,64 @@
     return options;
   }
 
+  var wordDraft = new Set(), wordGroups = {};
+  function pickerWords(key) {
+    var query = document.getElementById('graphWordSearch').value.trim().toLowerCase();
+    return (key ? wordGroups[key] : SIGNAL_KEYS.flatMap(function (k) { return wordGroups[k]; }))
+      .filter(function (word) { return word.toLowerCase().includes(query); });
+  }
+  function updateWordPickerCounts() {
+    SIGNAL_KEYS.forEach(function (key) {
+      var words = pickerWords(key), selected = words.filter(function (w) { return wordDraft.has(w); }).length;
+      var box = document.querySelector('[data-word-group="' + key + '"]');
+      box.checked = words.length > 0 && selected === words.length;
+      box.indeterminate = selected > 0 && selected < words.length;
+      box.disabled = !words.length;
+      box.parentNode.querySelector('small').textContent = wordGroups[key].filter(function (w) { return wordDraft.has(w); }).length + ' / ' + wordGroups[key].length;
+    });
+    document.getElementById('graphWordCount').textContent = wordDraft.size + ' / ' + SIGNAL_KEYS.reduce(function (n, k) { return n + wordGroups[k].length; }, 0) + '개 선택';
+    document.getElementById('graphWordApply').disabled = !wordDraft.size;
+  }
+  function renderWordPicker() {
+    document.getElementById('graphWordGroups').innerHTML = SIGNAL_KEYS.map(function (key) {
+      var words = pickerWords(key);
+      return '<section class="graph-word-group"><label class="graph-word-group-head"><input type="checkbox" data-word-group="' + key + '">' + SIGNAL_LABEL[key] + '<small></small></label><div class="graph-word-grid">' +
+        (words.length ? words.map(function (word) { return '<label><input type="checkbox" data-picker-word="' + escAttr(word) + '"' + (wordDraft.has(word) ? ' checked' : '') + '><span>' + esc(word) + '</span></label>'; }).join('') : '<span class="empty">해당 단어가 없습니다.</span>') + '</div></section>';
+    }).join('');
+    updateWordPickerCounts();
+  }
+  function initGraphWordPicker() {
+    var dialog = document.getElementById('graphWordDialog');
+    document.getElementById('graphExportWordPicker').onclick = function () {
+      var section = graph[document.getElementById('graphExportForm').elements.kind.value];
+      wordDraft = new Set(exportSelection);
+      SIGNAL_KEYS.forEach(function (key) { wordGroups[key] = []; });
+      Object.keys(section.coordinates).sort().forEach(function (word) {
+        var xy = section.coordinates[word];
+        wordGroups[quadrantOf(xy[0], xy[1], section.axis[0], section.axis[1])].push(word);
+      });
+      document.getElementById('graphWordSearch').value = '';
+      renderWordPicker(); dialog.showModal();
+    };
+    document.getElementById('graphWordSearch').oninput = renderWordPicker;
+    document.getElementById('graphWordGroups').onchange = function (e) {
+      var word = e.target.dataset.pickerWord, group = e.target.dataset.wordGroup;
+      if (word !== undefined) { if (e.target.checked) wordDraft.add(word); else wordDraft.delete(word); updateWordPickerCounts(); }
+      else if (group) { pickerWords(group).forEach(function (w) { if (e.target.checked) wordDraft.add(w); else wordDraft.delete(w); }); renderWordPicker(); }
+    };
+    ['All', 'None'].forEach(function (action) {
+      document.getElementById('graphWord' + action).onclick = function () {
+        pickerWords().forEach(function (w) { if (action === 'All') wordDraft.add(w); else wordDraft.delete(w); }); renderWordPicker();
+      };
+    });
+    ['Close', 'Cancel'].forEach(function (action) { document.getElementById('graphWord' + action).onclick = function () { dialog.close(); }; });
+    document.getElementById('graphWordApply').onclick = function () {
+      if (!wordDraft.size) return;
+      exportSelection = new Set(wordDraft); exportWordList(); dialog.close(); queueExportPreview();
+    };
+    dialog.addEventListener('close', function () { if (!dialog.open) document.getElementById('graphExportWordPicker').focus(); });
+  }
+
   function exportWordList() {
     var kind = document.getElementById('graphExportForm').elements.kind.value;
     var section = graph[kind] || {}, coords = section.coordinates || {};
@@ -2263,6 +2317,7 @@
     if (!exportInitialized) {
       exportInitialized = true;
       initGraphSave();
+      initGraphWordPicker();
       document.getElementById('graphExportClose').onclick = function () { dialog.close(); };
       dialog.addEventListener('click', function (e) { if (e.target === dialog) { var r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } });
       dialog.addEventListener('close', function () {

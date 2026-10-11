@@ -39,13 +39,6 @@
           <button id="railNewFolderBtn" class="rail-new-folder-btn sb-icon" title="새 폴더"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M12 10v6M9 13h6"/></svg></button>
         </div>
       </div>
-      <div class="sb-overview">
-        <p class="sb-section">Overview</p>
-        <div class="sb-stats">
-          <div class="sb-stat"><p>프로젝트</p><b id="statProjects">—</b></div>
-          <div class="sb-stat"><p>폴더</p><b id="statFolders" class="c-violet">—</b></div>
-        </div>
-      </div>
       <p class="sb-section sb-section-list">Projects</p>
       <label id="railAdminAllToggle" class="rail-admin-toggle" hidden>
         <input type="checkbox" id="railAdminAllChk"><span class="rat-text">모든 사용자 프로젝트 보기</span>
@@ -486,6 +479,7 @@
         <div class="hint" id="graphExportResolution">6000 × 6000 px</div>
         <div class="btn-row"><button type="button" id="graphExportDefaults" class="btn btn-sm">기본값</button><button type="button" id="graphExportVisible" class="btn btn-sm">현재 표시 단어 선택</button></div>
         <div class="graph-export-word-head"><strong>표시할 단어</strong><span id="graphExportCount"></span></div>
+        <button type="button" id="graphExportWordPicker" class="btn primary">큰 화면에서 단어 선택</button>
         <input id="graphExportSearch" type="search" placeholder="단어 검색" autocomplete="off">
         <div class="btn-row"><button type="button" id="graphExportAll" class="btn btn-sm">전체 선택</button><button type="button" id="graphExportNone" class="btn btn-sm">전체 해제</button></div>
         <div id="graphExportWords" class="graph-export-words"></div>
@@ -513,6 +507,17 @@
       </div>
       <div class="graph-save-footer"><div id="graphSaveStatus" role="status"></div><button type="button" class="btn primary" id="graphSaveDownload" disabled>이 미리보기로 PNG 저장</button></div>
     </div>
+  </dialog>
+
+  <dialog id="graphWordDialog" class="modal-card graph-word-dialog" aria-labelledby="graphWordTitle">
+    <div class="modal-head"><span id="graphWordTitle">그래프 표시 단어 선택</span><button type="button" id="graphWordClose" class="modal-close" aria-label="닫기">×</button></div>
+    <div class="graph-word-toolbar">
+      <input id="graphWordSearch" type="search" placeholder="단어 검색" autocomplete="off" aria-label="단어 검색">
+      <button type="button" id="graphWordAll" class="btn">전체 선택</button><button type="button" id="graphWordNone" class="btn">전체 해제</button>
+    </div>
+    <div class="hint graph-word-hint">체크한 단어를 그래프에 표시합니다. 검색 중에는 검색된 단어에만 전체·신호별 선택이 적용됩니다.</div>
+    <div id="graphWordGroups" class="graph-word-groups"></div>
+    <div class="graph-word-footer"><span id="graphWordCount" role="status"></span><div><button type="button" id="graphWordCancel" class="btn">취소</button><button type="button" id="graphWordApply" class="btn primary">선택 적용 · 미리보기 갱신</button></div></div>
   </dialog>
 
   <script src="/shared-ui/services.js"></script>

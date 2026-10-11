@@ -387,6 +387,48 @@
             </item>
            </layout>
           </widget>
+          <widget class="QWidget" name="tab_suggestion">
+           <attribute name="title">
+            <string>건의·제안사항</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_suggestion">
+            <item>
+             <widget class="QTableWidget" name="board_suggestion_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_suggestion">
+              <item>
+               <widget class="QPushButton" name="board_addsuggestion_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_deletesuggestion_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_detailsuggestion_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_editsuggestion_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
