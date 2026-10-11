@@ -165,8 +165,8 @@
     });
     var maxVal = maxAbs || 1;
 
-    var labelW = Math.min(70, cssWidth * 0.14);
-    var headerH = 20;
+    var labelW = opts.font ? Math.min(cssWidth * .28, Math.max(70, Math.max.apply(null, rowLabels.map(function (label) { return label.length; })) * opts.font * .65 + 12)) : Math.min(70, cssWidth * 0.14);
+    var headerH = opts.font ? opts.font + 12 : 20;
     var cellW = (cssWidth - labelW) / Math.max(1, colLabels.length);
     var cellH = (cssHeight - headerH) / Math.max(1, rowLabels.length);
 
@@ -184,12 +184,12 @@
     }
 
     var accent = hexToRgb(cssVar('--series-1'));
-    var textColor = background === 'white' ? '#33414f' : cssVar('--sidebar-text');
-    var mutedColor = background === 'white' ? '#7c8896' : cssVar('--sidebar-muted');
+    var textColor = opts.color || (background === 'white' ? '#33414f' : cssVar('--sidebar-text'));
+    var mutedColor = opts.color || (background === 'white' ? '#7c8896' : cssVar('--sidebar-muted'));
 
     // 열 머리글(시간대 등) — 너무 많으면 겹치지 않도록 일부만 표시
     ctx.fillStyle = mutedColor;
-    ctx.font = '9px sans-serif';
+    ctx.font = (opts.font || 9) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     var labelStep = cellW < 22 ? Math.ceil(22 / cellW) : 1;
@@ -200,7 +200,7 @@
 
     rowLabels.forEach(function (rowLabel, ri) {
       ctx.fillStyle = textColor;
-      ctx.font = '10px sans-serif';
+      ctx.font = (opts.font || 10) + 'px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(rowLabel, labelW - 6, headerH + ri * cellH + cellH / 2);
 
@@ -214,8 +214,8 @@
 
         // 예전에는 String(v) 를 그대로 찍어 0.011994375557191… 처럼 18자리가 들어가
         // 옆 칸까지 침범했다. 자릿수를 줄이고, 그래도 안 들어가면 아예 생략한다.
-        if (cellW > 26 && cellH > 16) {
-          var fontPx = Math.max(8, Math.round(Math.min(cellH * 0.34, cellW * 0.26)));
+        if (opts.showValues !== false && cellW > 26 && cellH > 16) {
+          var fontPx = opts.font || Math.max(8, Math.round(Math.min(cellH * 0.34, cellW * 0.26)));
           ctx.font = fontPx + 'px sans-serif';
           var label = heatCellLabel(v, cellW - 6, ctx);
           if (label) {
@@ -273,7 +273,7 @@
     return { mode: mode, labelIdx: labelIdx, numericIdxs: numericIdxs };
   }
 
-  function buildChart(canvas, table, plan) {
+  function buildChart(canvas, table, plan, exportStyle) {
     var seriesColors = [cssVar('--series-1'), cssVar('--series-2'), cssVar('--series-3')];
     var labels = table.rows.map(function (r) { return fmtCell(r[plan.labelIdx]); });
     var datasets = plan.numericIdxs.map(function (idx, si) {
@@ -291,7 +291,7 @@
       };
     });
 
-    return new Chart(canvas, {
+    var config = {
       type: plan.mode,
       data: { labels: labels, datasets: datasets },
       options: {
@@ -307,7 +307,28 @@
           y: { ticks: { color: cssVar('--sidebar-muted'), font: { size: 10 } }, grid: { color: cssVar('--sidebar-panel2') } },
         },
       },
-    });
+    };
+    if (exportStyle) {
+      config.options.responsive = false;
+      config.options.animation = false;
+      config.options.devicePixelRatio = exportStyle.scale;
+      config.options.layout = {padding: exportStyle.padding};
+      config.options.plugins.legend.display = exportStyle.legend;
+      config.options.plugins.legend.labels.color = exportStyle.color;
+      config.options.plugins.legend.labels.font.size = exportStyle.font;
+      config.options.plugins.tooltip.enabled = false;
+      Object.keys(config.options.scales).forEach(function (key) {
+        var axis = config.options.scales[key];
+        axis.ticks.color = exportStyle.color; axis.ticks.font.size = exportStyle.font;
+        axis.grid.display = exportStyle.grid; axis.grid.color = exportStyle.color + '25';
+        axis.border = {color:exportStyle.color};
+      });
+      config.options.scales.x.ticks.minRotation = exportStyle.rotation;
+      config.options.scales.x.ticks.maxRotation = exportStyle.rotation;
+      config.options.scales.y.beginAtZero = exportStyle.zero;
+      datasets.forEach(function (dataset) { if (plan.mode === 'line') { dataset.borderWidth = exportStyle.line; dataset.pointRadius = exportStyle.point; } });
+    }
+    return new Chart(canvas, config);
   }
 
   function buildTableCard(table) {
@@ -425,43 +446,25 @@
   // ---------------------------------------------------------------
   function openExportModal(tableId, title) {
     exportTargetId = tableId;
+    exportImageUrl = null;
+    document.getElementById('btnDownloadPng').disabled = true;
     document.getElementById('exportTargetTitle').textContent = title;
     document.getElementById('exportModal').hidden = false;
+    document.getElementById('exportTitleText').value = title;
+    ['exportShowLegend','exportShowGrid','exportZero','exportRotation','exportLineWidth','exportPointSize'].forEach(function (id) { document.getElementById(id).disabled = !!tablesById[tableId].is_heatmap; });
+    document.getElementById('exportHeatValues').disabled = !tablesById[tableId].is_heatmap;
+    requestAnimationFrame(renderExportPreview);
   }
   function closeExportModal() {
     document.getElementById('exportModal').hidden = true;
     exportTargetId = null;
+    clearTimeout(statisticsExportTimer);
+    exportImageUrl = null;
   }
 
   function selectedOptionValue(rowId) {
     var active = document.querySelector('#' + rowId + ' .option-btn.active');
     return active ? active.getAttribute('data-value') : null;
-  }
-
-  // src 캔버스(이미 background/scale까지 반영해 그려진 상태) 위에 제목 캡션을 붙이고
-  // 다운로드 URL을 만든다. 차트/히트맵 내보내기가 공통으로 사용한다.
-  function compositeWithTitle(src, scale, background, showTitleCaption, titleText) {
-    var titleH = showTitleCaption ? Math.round(28 * scale) : 0;
-    var out = document.createElement('canvas');
-    out.width = src.width;
-    out.height = src.height + titleH;
-    var ctx = out.getContext('2d');
-
-    // Chart.js 캔버스는 배경을 칠하지 않는다(투명). 예전에는 제목 띠 영역만 칠하고
-    // 차트 본체는 그대로 얹어서, "흰색"을 골라도 받은 PNG가 투명하게 나왔다.
-    // 캔버스 전체를 먼저 칠한 뒤 차트를 올린다.
-    if (background !== 'transparent') {
-      ctx.fillStyle = background === 'white' ? '#ffffff' : cssVar('--sidebar-bg');
-      ctx.fillRect(0, 0, out.width, out.height);
-    }
-    if (showTitleCaption) {
-      ctx.fillStyle = background === 'white' ? '#111111' : cssVar('--text-strong');
-      ctx.font = 'bold ' + Math.round(14 * scale) + 'px sans-serif';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(titleText, Math.round(12 * scale), titleH / 2);
-    }
-    ctx.drawImage(src, 0, titleH);
-    return out.toDataURL('image/png');
   }
 
   function triggerDownload(url, filename) {
@@ -546,75 +549,86 @@
     toast('수치 데이터를 CSV로 저장했습니다.');
   }
 
-  // 모달에서 바로 PNG 저장 — 옵션 없이 2배율·흰 배경(인쇄/문서 삽입용 기본값)
   function downloadZoomPng() {
     var table = tablesById[zoomTableId];
-    if (!table) return;
-    var scale = 2, background = 'white';
-    var src;
-    if (table.is_heatmap) {
-      src = document.createElement('canvas');
-      drawHeatmap(src, table, { scale: scale, background: background, width: 900, height: 420 });
-    } else {
-      var chart = zoomChart;
-      if (!chart) return;
-      var origRatio = chart.options.devicePixelRatio;
-      chart.options.devicePixelRatio = scale;
-      chart.resize(); chart.update('none');
-      src = chart.canvas;
-      var url = compositeWithTitle(src, scale, background, true, table.title);
-      chart.options.devicePixelRatio = origRatio;
-      chart.resize(); chart.update('none');
-      triggerDownload(url, zoomTableId + '.png');
-      toast('그래프를 PNG로 저장했습니다.');
-      return;
-    }
-    triggerDownload(compositeWithTitle(src, scale, background, true, table.title),
-                    zoomTableId + '.png');
-    toast('그래프를 PNG로 저장했습니다.');
+    if (table) openExportModal(zoomTableId, table.title);
   }
 
+  var exportImageUrl = null, statisticsExportTimer = null;
+  function exportNumber(id) { var el = document.getElementById(id), n = Number(el.value); if (!Number.isFinite(n) || n < Number(el.min) || n > Number(el.max)) throw new Error(el.previousElementSibling.textContent + ' 범위를 확인하세요.'); return n; }
+  function queueStatisticsExport() {
+    exportImageUrl = null; document.getElementById('btnDownloadPng').disabled = true;
+    clearTimeout(statisticsExportTimer); statisticsExportTimer = setTimeout(renderExportPreview, 180);
+  }
+  function renderExportPreview() {
+    if (!exportTargetId || document.getElementById('exportModal').hidden) return;
+    var status = document.getElementById('exportPreviewStatus'), button = document.getElementById('btnDownloadPng');
+    exportImageUrl = null; button.disabled = true;
+    try {
+      var width = exportNumber('exportWidth'), height = exportNumber('exportHeight');
+      var scale = Number(selectedOptionValue('exportScaleRow')) || 2;
+      if (width * height * scale * scale > 36000000) throw new Error('이미지는 3,600만 픽셀 이하로 설정하세요. 크기나 해상도 배율을 줄여 주세요.');
+      var background = selectedOptionValue('exportBgRow'), format = document.getElementById('exportFormat').value;
+      if (format === 'jpeg' && background === 'transparent') throw new Error('JPEG는 투명 배경을 지원하지 않습니다. PNG·WebP 또는 다른 배경을 선택하세요.');
+      var color = document.getElementById('exportTextColor').value, font = exportNumber('exportFont');
+      var table = tablesById[exportTargetId], src = document.createElement('canvas');
+      var caption = document.getElementById('exportShowTitle').checked;
+      var padding = exportNumber('exportPadding'), titleH = caption ? font * 2 + padding : 0;
+      var chartHeight = height - titleH;
+      if (chartHeight - padding * 2 < 100 || width - padding * 2 < 100) throw new Error('세로 크기를 늘리거나 글자 크기·여백을 줄여 주세요.');
+      src.width = width; src.height = chartHeight;
+      var style = {scale:scale,padding:padding,color:color,font:font,legend:document.getElementById('exportShowLegend').checked,grid:document.getElementById('exportShowGrid').checked,zero:document.getElementById('exportZero').checked,rotation:exportNumber('exportRotation'),line:exportNumber('exportLineWidth'),point:exportNumber('exportPointSize')};
+      if (table.is_heatmap) drawHeatmap(src, table, {width:width-padding*2,height:chartHeight-padding*2,scale:scale,background:'transparent',color:color,font:font,showValues:document.getElementById('exportHeatValues').checked});
+      else {
+        var plan = planChart(table); if (!plan) throw new Error('내보낼 그래프가 없습니다.');
+        var chart = buildChart(src, table, plan, style); chart.update('none');
+      }
+      var out = document.createElement('canvas'); out.width = Math.round(width * scale); out.height = Math.round(height * scale);
+      var ctx = out.getContext('2d');
+      if (background !== 'transparent') {
+        ctx.fillStyle = background === 'white' ? '#ffffff' : background === 'custom' ? document.getElementById('exportBackgroundColor').value : cssVar('--sidebar-bg');
+        ctx.fillRect(0,0,out.width,out.height);
+      }
+      if (caption) { ctx.fillStyle = color; ctx.font = 'bold ' + font * scale + 'px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(document.getElementById('exportTitleText').value, padding * scale, titleH * scale / 2, out.width - padding * scale * 2); }
+      ctx.drawImage(src,table.is_heatmap ? padding*scale : 0,Math.round((titleH+(table.is_heatmap ? padding : 0))*scale));
+      if (chart) chart.destroy();
+      exportImageUrl = out.toDataURL('image/' + format, exportNumber('exportQuality') / 100);
+      document.getElementById('exportPreviewImage').src = exportImageUrl;
+      status.textContent = out.width + ' × ' + out.height + ' px · ' + format.toUpperCase() + ' · 이 미리보기 그대로 저장됩니다.';
+      button.disabled = false;
+    } catch (err) { status.textContent = err.message; document.getElementById('exportPreviewImage').removeAttribute('src'); }
+  }
   function downloadChartPng() {
-    var scale = parseInt(selectedOptionValue('exportScaleRow'), 10) || 2;
-    var background = selectedOptionValue('exportBgRow') || 'theme';
-    var showLegend = document.getElementById('exportShowLegend').checked;
-    var showTitleCaption = document.getElementById('exportShowTitle').checked;
-    var titleText = document.getElementById('exportTargetTitle').textContent;
+    if (!exportImageUrl || !exportTargetId) return;
+    var format = document.getElementById('exportFormat').value;
+    triggerDownload(exportImageUrl, exportTargetId + '.' + (format === 'jpeg' ? 'jpg' : format));
+    toast('그래프 이미지를 저장했습니다.');
+  }
 
-    var heatmapTable = heatmapTables[exportTargetId];
-    if (heatmapTable) {
-      // 히트맵은 Chart.js 인스턴스가 없으므로, 요청한 배율/배경으로 다시 한번 그려서
-      // 그 결과를 그대로 내보낸다("범례 표시" 옵션은 히트맵에는 해당하지 않는다).
-      var hCanvas = document.createElement('canvas');
-      drawHeatmap(hCanvas, heatmapTable, { scale: scale, background: background, width: 640, height: 260 });
-      var hUrl = compositeWithTitle(hCanvas, scale, background, showTitleCaption, titleText);
-      triggerDownload(hUrl, exportTargetId + '.png');
-      closeExportModal();
-      return;
-    }
-
-    var chart = chartsById[exportTargetId];
-    if (!chart) { closeExportModal(); return; }
-
-    // Chart.js는 devicePixelRatio를 기준으로 캔버스 실제 픽셀 수를 정하므로, 배율을 이
-    // 값에 반영해 resize하면 별도 캔버스 없이 고해상도로 다시 그려진다.
-    var originalRatio = chart.options.devicePixelRatio;
-    var originalLegendDisplay = chart.options.plugins.legend.display;
-    chart.options.devicePixelRatio = scale;
-    chart.options.plugins.legend.display = showLegend && chart.data.datasets.length > 1;
-    chart.resize();
-    chart.update('none');
-
-    var url = compositeWithTitle(chart.canvas, scale, background, showTitleCaption, titleText);
-
-    // 원상복구
-    chart.options.devicePixelRatio = originalRatio;
-    chart.options.plugins.legend.display = originalLegendDisplay;
-    chart.resize();
-    chart.update('none');
-
-    triggerDownload(url, exportTargetId + '.png');
-    closeExportModal();
+  function initStatisticsExport() {
+    var form = document.getElementById('statisticsExportForm');
+    form.addEventListener('submit', function (e) { e.preventDefault(); });
+    form.addEventListener('input', queueStatisticsExport);
+    form.addEventListener('change', queueStatisticsExport);
+    document.getElementById('exportReset').onclick = function () {
+      form.reset();
+      ['exportScaleRow','exportBgRow'].forEach(function (id) { document.querySelectorAll('#' + id + ' .option-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.value === (id === 'exportScaleRow' ? '2' : 'white')); }); });
+      document.getElementById('exportTitleText').value = tablesById[exportTargetId].title;
+      queueStatisticsExport();
+    };
+    var stage = document.getElementById('exportPreviewStage'), img = document.getElementById('exportPreviewImage');
+    var state = {zoom:1,x:0,y:0,w:1,h:1}, pointers = new Map(), drag = null, pinch = null;
+    function apply() { img.style.width = state.w * state.zoom + 'px'; img.style.height = state.h * state.zoom + 'px'; img.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px)'; document.getElementById('exportZoomRange').value = Math.round(state.zoom * 100); document.getElementById('exportZoomValue').textContent = Math.round(state.zoom * 100) + '%'; }
+    function fit() { if (!img.naturalWidth || !stage.clientWidth) return; var ratio = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight) * .96; state.w = img.naturalWidth * ratio; state.h = img.naturalHeight * ratio; state.zoom = 1; state.x = (stage.clientWidth-state.w)/2; state.y = (stage.clientHeight-state.h)/2; apply(); }
+    function zoom(value,x,y) { var next = Math.max(.25,Math.min(16,value)); if (x == null) x = stage.clientWidth/2; if (y == null) y = stage.clientHeight/2; state.x = x-(x-state.x)*next/state.zoom; state.y = y-(y-state.y)*next/state.zoom; state.zoom = next; apply(); }
+    img.onload = fit; new ResizeObserver(fit).observe(stage);
+    stage.addEventListener('wheel',function(e){e.preventDefault();var r=stage.getBoundingClientRect();zoom(state.zoom*(window.KNPUZoom ? KNPUZoom.wheelFactor(e) : Math.exp(-e.deltaY*.0007)),e.clientX-r.left,e.clientY-r.top);},{passive:false});
+    var gestureZoom=1; stage.addEventListener('gesturestart',function(e){e.preventDefault();gestureZoom=state.zoom;}); stage.addEventListener('gesturechange',function(e){e.preventDefault();zoom(gestureZoom*e.scale);});
+    stage.addEventListener('pointerdown',function(e){if(e.button!==0)return;e.preventDefault();stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2){var ps=Array.from(pointers.values());pinch={distance:Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y),zoom:state.zoom};drag=null;}else drag={x:e.clientX,y:e.clientY,ox:state.x,oy:state.y};});
+    stage.addEventListener('pointermove',function(e){if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinch&&pointers.size===2){var ps=Array.from(pointers.values()),r=stage.getBoundingClientRect();zoom(pinch.zoom*Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y)/Math.max(1,pinch.distance),(ps[0].x+ps[1].x)/2-r.left,(ps[0].y+ps[1].y)/2-r.top);}else if(drag){state.x=drag.ox+e.clientX-drag.x;state.y=drag.oy+e.clientY-drag.y;apply();}});
+    function end(e){pointers.delete(e.pointerId);drag=null;pinch=null;if(stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId);}
+    stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);
+    document.getElementById('exportZoomRange').oninput=function(e){zoom(Number(e.target.value)/100);};document.getElementById('exportZoomPlus').onclick=function(){zoom(state.zoom*1.25);};document.getElementById('exportZoomMinus').onclick=function(){zoom(state.zoom*.8);};document.getElementById('exportFit').onclick=fit;
   }
 
   var SECTION_ORDER = [
@@ -953,10 +967,6 @@
   }
 
   function renderRail() {
-    // 사이드바 Overview 통계
-    var statP = document.getElementById('statProjects'), statF = document.getElementById('statFolders');
-    if (statP) statP.textContent = railProjects.length;
-    if (statF) statF.textContent = railFolders.length;
     var listEl = document.getElementById('railList');
     var emptyEl = document.getElementById('railEmpty');
     listEl.innerHTML = '';
@@ -1517,7 +1527,7 @@
     if (!window.KNPUJobs) return;
     KNPUJobs.init({
       service: 'statistics',
-      anchor: document.querySelector('#rail .sb-overview') || document.querySelector('.sb-overview'),
+      anchor: document.querySelector('#rail .sb-top'),
       onOpenResult: function (job) {
         loadRailProjects();
         if (job.result && job.result.project_id) switchProject(job.result.project_id);
@@ -2351,6 +2361,7 @@
     document.getElementById('uploadModalClose').addEventListener('click', closeUploadModal);
     document.getElementById('uploadModal').addEventListener('click', function (e) { if (e.target.id === 'uploadModal') closeUploadModal(); });
 
+    initStatisticsExport();
     document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
     document.getElementById('exportModal').addEventListener('click', function (e) { if (e.target.id === 'exportModal') closeExportModal(); });
     document.getElementById('btnDownloadPng').addEventListener('click', downloadChartPng);
@@ -2376,6 +2387,7 @@
         if (!btn) return;
         this.querySelectorAll('.option-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
+        queueStatisticsExport();
       });
     });
 

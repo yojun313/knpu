@@ -81,10 +81,11 @@ user_logs_db = systems_db["user-logs"]
 user_bugs_db = systems_db["user-bugs"]
 identities_db = systems_db["identities"]
 
-# ── manager 게시판 (매니저 앱 전용으로 남은 유일한 데이터) ──
+# ── 웹 BOARD와 매니저 앱이 공유하는 게시판 ──
 version_board_db = manager_db["version-board"]
 bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
+suggestion_board_db = manager_db["suggestion-board"]
 
 # ── 서비스별 프로젝트 ──
 network_projects_db = network_db["projects"]

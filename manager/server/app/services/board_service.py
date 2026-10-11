@@ -1,8 +1,20 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
-from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
-from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
+from app.db import (
+    version_board_db,
+    bug_board_db,
+    free_board_db,
+    suggestion_board_db,
+    user_db,
+    user_bugs_db,
+)
+from app.models.board_model import (
+    AddVersionDto,
+    AddBugDto,
+    AddPostDto,
+    AddSuggestionDto,
+)
 from system.notify.discord import notify_discord
 from app.libs.exceptions import NotFoundException
 from dotenv import load_dotenv
@@ -351,10 +363,22 @@ def delete_bug(uid: str, userUid: str):
     return JSONResponse(status_code=200, content={"message": "Bug post deleted"})
 
 
-def add_post(data: AddPostDto, userUid: str):
+def _post_collection(board: str):
+    if board == "post":
+        return free_board_db
+    if board == "suggestion":
+        return suggestion_board_db
+    raise ValueError("알 수 없는 게시판입니다.")
+
+
+def add_post(data: AddPostDto | AddSuggestionDto, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
     doc = data.model_dump()
     doc["writerUid"] = userUid
     doc["notified"] = False
+    if board == "suggestion":
+        doc["status"] = "new"
+        doc["comments"] = []
     now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = now_kst
@@ -364,7 +388,7 @@ def add_post(data: AddPostDto, userUid: str):
     doc["writerName"] = writer["name"] if writer else "Unknown"
     doc["viewCnt"] = []
 
-    free_board_db.insert_one(doc)
+    collection.insert_one(doc)
 
     if "_id" in doc:
         del doc["_id"]
@@ -382,16 +406,17 @@ def add_post(data: AddPostDto, userUid: str):
 
     log_user(
         userUid,
-        "manager.post.create",
+        f"manager.{board}.create",
         f"Added new post: {data.title}",
-        target={"type": "post", "id": data.title},
+        target={"type": board, "id": data.title},
     )
 
     return JSONResponse(status_code=201, content={"message": "Post added", "data": doc})
 
 
-def get_post(uid: str, userUid: str):
-    doc = free_board_db.find_one_and_update(
+def get_post(uid: str, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    doc = collection.find_one_and_update(
         {"uid": uid},
         {"$addToSet": {"viewCnt": userUid}},
         projection={"_id": 0},
@@ -404,17 +429,18 @@ def get_post(uid: str, userUid: str):
     doc["datetime"] = doc.get("datetime_kst", "")
     log_user(
         userUid,
-        "manager.post.view",
+        f"manager.{board}.view",
         f"Viewed post: {doc['title']}",
-        target={"type": "post", "id": doc["title"]},
+        target={"type": board, "id": doc["title"]},
     )
     return JSONResponse(
         status_code=200, content={"message": "Post retrieved", "data": doc}
     )
 
 
-def get_post_list(userUid: str):
-    docs = list(free_board_db.find({}, {"_id": 0}).sort("datetime", -1))
+def get_post_list(userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    docs = list(collection.find({}, {"_id": 0}).sort("datetime", -1))
 
     for doc in docs:
         doc["readByMe"] = userUid in doc.get("viewCnt", [])
@@ -427,37 +453,41 @@ def get_post_list(userUid: str):
     )
 
 
-def delete_post(uid: str, userUid: str):
-    _editable_document(free_board_db, {"uid": uid}, userUid)
+def delete_post(uid: str, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    _editable_document(collection, {"uid": uid}, userUid)
     log_user(
         userUid,
-        "manager.post.delete",
+        f"manager.{board}.delete",
         f"Deleted post with UID: {uid}",
-        target={"type": "post", "id": uid},
+        target={"type": board, "id": uid},
     )
-    result = free_board_db.delete_one({"uid": uid})
+    result = collection.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise NotFoundException("Post not found")
     return JSONResponse(status_code=200, content={"message": "Post deleted"})
 
 
-def edit_post(postUid: str, data: AddPostDto, userUid: str):
-    _editable_document(free_board_db, {"uid": postUid}, userUid)
+def edit_post(
+    postUid: str, data: AddPostDto | AddSuggestionDto, userUid: str, board: str = "post"
+):
+    collection = _post_collection(board)
+    _editable_document(collection, {"uid": postUid}, userUid)
     log_user(
         userUid,
-        "manager.post.update",
+        f"manager.{board}.update",
         f"Edited post with UID: {postUid}",
-        target={"type": "post", "id": postUid},
+        target={"type": board, "id": postUid},
     )
     update_fields = data.model_dump()
     update_fields.pop("writerUid", None)
 
-    result = free_board_db.update_one({"uid": postUid}, {"$set": update_fields})
+    result = collection.update_one({"uid": postUid}, {"$set": update_fields})
 
     if result.matched_count == 0:
         raise NotFoundException("Post not found")
 
-    updated_doc = free_board_db.find_one({"uid": postUid}, {"_id": 0})
+    updated_doc = collection.find_one({"uid": postUid}, {"_id": 0})
     updated_doc["datetime"] = updated_doc.get("datetime_kst", "")
 
     return JSONResponse(
@@ -508,21 +538,23 @@ def add_bug_reply(uid: str, data, userUid: str):
     return get_bug(uid, userUid)
 
 
-def add_comment(uid: str, data, userUid: str):
-    writer = user_db.find_one({"uid": userUid}, {"name": 1}) or {}
+def add_comment(uid: str, data, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    writer = user_db.find_one({"uid": userUid}, {"name": 1, "role": 1}) or {}
     comment = {
         "uid": str(data.requestId),
         "writerUid": userUid,
         "writerName": writer.get("name") or "사용자",
+        "writerRole": writer.get("role", "user"),
         "text": data.text,
         "datetime": datetime.now(timezone.utc).isoformat(),
     }
-    result = free_board_db.update_one(
+    result = collection.update_one(
         {"uid": uid, "comments.uid": {"$ne": comment["uid"]}},
         {"$push": {"comments": comment}},
     )
     if not result.matched_count:
-        existing = free_board_db.find_one({"uid": uid}, {"comments": 1})
+        existing = collection.find_one({"uid": uid}, {"comments": 1})
         if not existing:
             raise NotFoundException("Post not found")
         if not any(
@@ -533,12 +565,15 @@ def add_comment(uid: str, data, userUid: str):
         ):
             raise HTTPException(409, "댓글 요청이 충돌했습니다. 다시 시도해주세요.")
     else:
-        log_user(userUid, "manager.post.comment.create", f"Commented on post: {uid}")
-    return get_post(uid, userUid)
+        log_user(
+            userUid, f"manager.{board}.comment.create", f"Commented on post: {uid}"
+        )
+    return get_post(uid, userUid, board)
 
 
-def _require_comment(uid: str, comment_uid: str, userUid: str):
-    doc = free_board_db.find_one({"uid": uid}, {"comments": 1})
+def _require_comment(uid: str, comment_uid: str, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    doc = collection.find_one({"uid": uid}, {"comments": 1})
     comment = next(
         (c for c in (doc or {}).get("comments", []) if c.get("uid") == comment_uid),
         None,
@@ -550,9 +585,10 @@ def _require_comment(uid: str, comment_uid: str, userUid: str):
         raise HTTPException(403, "댓글 작성자 또는 관리자만 수정·삭제할 수 있습니다.")
 
 
-def edit_comment(uid: str, comment_uid: str, data, userUid: str):
-    _require_comment(uid, comment_uid, userUid)
-    result = free_board_db.update_one(
+def edit_comment(uid: str, comment_uid: str, data, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    _require_comment(uid, comment_uid, userUid, board)
+    result = collection.update_one(
         {"uid": uid, "comments.uid": comment_uid},
         {
             "$set": {
@@ -563,17 +599,40 @@ def edit_comment(uid: str, comment_uid: str, data, userUid: str):
     )
     if not result.matched_count:
         raise NotFoundException("댓글을 찾을 수 없습니다.")
-    log_user(userUid, "manager.post.comment.update", f"Edited comment: {comment_uid}")
-    return get_post(uid, userUid)
+    log_user(
+        userUid, f"manager.{board}.comment.update", f"Edited comment: {comment_uid}"
+    )
+    return get_post(uid, userUid, board)
 
 
-def delete_comment(uid: str, comment_uid: str, userUid: str):
-    _require_comment(uid, comment_uid, userUid)
-    result = free_board_db.update_one(
+def delete_comment(uid: str, comment_uid: str, userUid: str, board: str = "post"):
+    collection = _post_collection(board)
+    _require_comment(uid, comment_uid, userUid, board)
+    result = collection.update_one(
         {"uid": uid, "comments.uid": comment_uid},
         {"$pull": {"comments": {"uid": comment_uid}}},
     )
     if not result.matched_count:
         raise NotFoundException("댓글을 찾을 수 없습니다.")
-    log_user(userUid, "manager.post.comment.delete", f"Deleted comment: {comment_uid}")
-    return get_post(uid, userUid)
+    log_user(
+        userUid, f"manager.{board}.comment.delete", f"Deleted comment: {comment_uid}"
+    )
+    return get_post(uid, userUid, board)
+
+
+def edit_suggestion_status(uid: str, data, userUid: str):
+    _require_admin(userUid)
+    result = suggestion_board_db.update_one(
+        {"uid": uid},
+        {
+            "$set": {
+                "status": data.status,
+                "statusUpdatedAt": datetime.now(timezone.utc).isoformat(),
+                "statusUpdatedBy": userUid,
+            }
+        },
+    )
+    if not result.matched_count:
+        raise NotFoundException("제안을 찾을 수 없습니다.")
+    log_user(userUid, "manager.suggestion.status", f"Updated suggestion status: {uid}")
+    return get_post(uid, userUid, "suggestion")

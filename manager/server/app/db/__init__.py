@@ -9,6 +9,7 @@ from system.db import (
     version_board_db,
     bug_board_db,
     free_board_db,
+    suggestion_board_db,
     discord_notifications_db,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "version_board_db",
     "bug_board_db",
     "free_board_db",
+    "suggestion_board_db",
     "discord_notifications_db",
 ]

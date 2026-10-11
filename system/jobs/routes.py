@@ -47,13 +47,20 @@ def register(app, service: str, runner) -> None:
     base = "/api/jobs"
 
     @app.get(base, include_in_schema=False)
-    def jobs_list(request: Request, scope: str = "service", limit: int = 60):
+    def jobs_list(
+        request: Request,
+        scope: str = "service",
+        limit: int = 60,
+        exclude_done: bool = False,
+    ):
         user = _user(request)
         q: dict = {"uid": user["uid"]}
         if scope == "everyone" and user.get("role") == "admin":
             q = {}
         if scope != "all":
             q["service"] = service
+        if exclude_done:
+            q["status"] = {"$ne": "done"}
         limit = max(1, min(int(limit or 60), 200))
         col = store.collection()
         items = [

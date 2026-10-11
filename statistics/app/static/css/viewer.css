@@ -723,3 +723,22 @@ details.ai-prompt pre{max-height:260px;overflow:auto;margin:0;padding:9px 10px;b
   .zoom-actions{margin-left:0;width:100%}
   .zoom-actions .btn{flex:1}
 }
+
+/* 이미지 설정과 실제 저장 결과 미리보기 */
+#exportModal{z-index:280;background:rgba(15,23,42,.65)}
+#exportModal .statistics-export-card{width:min(1440px,96vw);height:min(940px,92dvh);max-height:92dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--modal-surface,var(--sidebar-bg))}
+.statistics-export-card>.modal-head{flex:none}
+.statistics-export-body{display:grid;grid-template-columns:310px minmax(0,1fr);min-height:0;flex:1}
+.statistics-export-settings{overflow:auto;border-right:1px solid var(--sidebar-border);margin:0!important;padding:18px!important}
+.statistics-export-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.statistics-export-settings input:not([type=checkbox]):not([type=range]),.statistics-export-settings select{box-sizing:border-box;width:100%;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--sidebar-border);background:var(--input-bg,var(--sidebar-panel));color:var(--sidebar-text)}
+.statistics-export-settings .option-row{flex-wrap:wrap}
+.statistics-export-preview{min-width:0;min-height:0;display:flex;flex-direction:column;padding:18px;gap:12px}
+.statistics-preview-tools{display:flex;align-items:center;gap:8px;flex:none;flex-wrap:wrap}
+.statistics-preview-tools .btn{width:auto;margin:0;padding:7px 12px}
+.statistics-preview-tools input{flex:1;min-width:70px}
+#exportPreviewStage{flex:1;min-height:120px;position:relative;overflow:hidden;touch-action:none;cursor:grab;border:1px solid var(--sidebar-border);border-radius:10px;background:repeating-conic-gradient(#b8bdc5 0% 25%,#e5e7eb 0% 50%) 0/20px 20px}
+#exportPreviewStage:active{cursor:grabbing}
+#exportPreviewImage{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;user-select:none;pointer-events:none}
+.statistics-export-preview p{margin:0;flex:none}
+@media(max-width:760px){.statistics-export-body{grid-template-columns:1fr;overflow:auto;display:block}.statistics-export-settings{overflow:visible;border-right:0;border-bottom:1px solid var(--sidebar-border)}.statistics-export-preview{height:440px}.statistics-export-fields{grid-template-columns:1fr 1fr}}

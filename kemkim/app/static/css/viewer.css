@@ -653,11 +653,12 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .plot-label-control{display:flex;align-items:center;gap:5px;font-size:12px;padding:0 8px;white-space:nowrap;color:var(--sidebar-text)}
 .plot-output-controls{position:absolute;bottom:22px;left:22px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--pill-bg);border:1px solid var(--sidebar-border);border-radius:10px;padding:6px}
 .plot-output-controls .btn{width:auto;margin:0;padding:8px;font-size:12px}
-dialog.graph-export-dialog,dialog.graph-save-dialog{position:fixed!important;inset:0!important;margin:auto!important;transform:none!important;animation:none;width:min(1440px,96vw);max-width:96vw;height:min(940px,92dvh);max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden;box-sizing:border-box}
-dialog.graph-export-dialog[open],dialog.graph-save-dialog[open]{display:flex;flex-direction:column}
+dialog.graph-export-dialog,dialog.graph-save-dialog,dialog.graph-word-dialog{position:fixed!important;inset:0!important;margin:auto!important;transform:none!important;animation:none;width:min(1440px,96vw);max-width:96vw;height:min(940px,92dvh);max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden;box-sizing:border-box}
+dialog.graph-export-dialog[open],dialog.graph-save-dialog[open],dialog.graph-word-dialog[open]{display:flex;flex-direction:column}
 dialog.graph-export-dialog:not([open]){display:none}
 dialog.graph-save-dialog:not([open]){display:none}
-dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filter:blur(4px)}
+dialog.graph-word-dialog:not([open]){display:none}
+dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop,dialog.graph-word-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filter:blur(4px)}
 .graph-export-layout{display:grid;grid-template-columns:320px minmax(0,1fr);flex:1;min-height:0}
 .graph-export-controls{display:flex;flex-direction:column;gap:12px;padding:18px;overflow:auto;border-right:1px solid var(--sidebar-border)}
 .graph-export-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--sidebar-text)}
@@ -699,6 +700,21 @@ dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{backgrou
 #graphCropBox i[data-crop-handle="ne"]{right:-6px;top:-6px;cursor:nesw-resize}
 #graphCropBox i[data-crop-handle="sw"]{left:-6px;bottom:-6px;cursor:nesw-resize}
 #graphCropBox i[data-crop-handle="se"]{right:-6px;bottom:-6px;cursor:nwse-resize}
+.graph-word-toolbar{display:flex;align-items:center;gap:10px;padding:16px 20px 10px;flex-shrink:0}
+.graph-word-toolbar input{flex:1;min-width:0;border:1px solid var(--sidebar-border);border-radius:8px;padding:10px;background:var(--sidebar-panel);color:var(--sidebar-text);font:inherit}
+.graph-word-toolbar .btn,.graph-word-footer .btn{width:auto;margin:0;white-space:nowrap}
+.graph-word-hint{padding:0 20px 12px;flex-shrink:0}
+.graph-word-groups{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 20px 20px;overflow:auto;flex:1;min-height:0;align-content:start}
+.graph-word-group{border:1px solid var(--sidebar-border);border-radius:12px;min-width:0;background:var(--sidebar-panel)}
+.graph-word-group-head{display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid var(--sidebar-border);font-weight:700;font-size:14px;cursor:pointer}
+.graph-word-group-head small{margin-left:auto;font-size:12px;font-weight:400;white-space:nowrap}
+.graph-word-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;padding:12px}
+.graph-word-grid label{display:flex;align-items:center;gap:8px;padding:7px;border-radius:7px;font-size:13px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.graph-word-grid label:hover{background:var(--ud-hover)}
+.graph-word-grid input,.graph-word-group-head input{flex-shrink:0;accent-color:var(--accent);width:16px;height:16px}
+.graph-word-grid .empty{grid-column:1/-1;padding:12px}
+.graph-word-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid var(--sidebar-border);flex-shrink:0;font-size:13px}
+.graph-word-footer>div{display:flex;gap:8px}
 @media(max-width:760px){
   .plot-output-controls{left:10px;bottom:16px;gap:0;flex-direction:column}
   dialog.graph-export-dialog{overflow-y:auto}
@@ -709,4 +725,10 @@ dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{backgrou
   .graph-save-previews{grid-template-columns:1fr;flex:none}
   .graph-save-previews>section{height:340px}
   .graph-save-footer{flex-direction:column;align-items:stretch}
+  .graph-word-toolbar{flex-wrap:wrap;padding:12px}
+  .graph-word-toolbar input{flex-basis:100%}
+  .graph-word-groups{grid-template-columns:1fr;padding:0 12px 12px}
+  .graph-word-hint{padding:0 12px 12px}
+  .graph-word-footer{flex-direction:column;align-items:stretch;padding:12px}
+  .graph-word-footer>div{flex-wrap:wrap}
 }

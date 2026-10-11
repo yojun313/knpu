@@ -468,10 +468,6 @@
   }
 
   function renderRail() {
-    // 사이드바 Overview 통계
-    var statP = document.getElementById('statProjects'), statF = document.getElementById('statFolders');
-    if (statP) statP.textContent = railProjects.length;
-    if (statF) statF.textContent = railFolders.length;
     var listEl = document.getElementById('railList');
     var emptyEl = document.getElementById('railEmpty');
     listEl.innerHTML = '';
@@ -999,7 +995,7 @@
     if (!window.KNPUJobs) return;
     KNPUJobs.init({
       service: 'network',
-      anchor: document.querySelector('#rail .sb-overview') || document.querySelector('.sb-overview'),
+      anchor: document.querySelector('#rail .sb-top'),
       onOpenResult: function (job) {
         loadRailProjects();
         if (job.result && job.result.project_id) switchProject(job.result.project_id);
@@ -1596,9 +1592,12 @@
       // 물리 엔진은 배치가 흔들리고 결과가 일관되지 않는다는 피드백에 따라 사용하지 않음.
       // 분석 시 서버에서 계산해 둔 좌표(x, y)를 고정 배치로 그대로 사용한다.
       physics: { enabled: false },
-      interaction: { zoomView: cfg.zoomWheel, dragNodes: cfg.dragNodes, hover: true, tooltipDelay: 120, navigationButtons: false, keyboard: false }
+      interaction: { zoomSpeed: window.KNPUZoom ? KNPUZoom.sensitivity() : .35, zoomView: cfg.zoomWheel, dragNodes: cfg.dragNodes, hover: true, tooltipDelay: 120, navigationButtons: false, keyboard: false }
     };
   }
+
+  window.addEventListener('knpu-zoom-sensitivity-change', applyOptions);
+  window.addEventListener('focus', function () { if (net) applyOptions(); });
 
   function applyOptions() {
     if (!net) return;

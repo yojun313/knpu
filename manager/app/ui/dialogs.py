@@ -628,6 +628,81 @@ class AddPostDialog(BaseDialog):
         self.accept()
 
 
+SUGGESTION_CATEGORIES = {
+    "feature": "기능 추가",
+    "workflow": "사용 방법 개선",
+    "other": "기타 제안",
+}
+SUGGESTION_STATUSES = {
+    "new": "접수",
+    "reviewing": "검토 중",
+    "planned": "반영 예정",
+    "done": "반영 완료",
+    "declined": "보류",
+}
+
+
+class SuggestionEditorDialog(BaseDialog):
+    def __init__(self, parent, doc=None):
+        super().__init__(parent)
+        self.data = None
+        self.setWindowTitle("제안 수정" if doc else "건의·제안 작성")
+        self.resize(620, 520)
+        doc = doc or {}
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("제안 유형"))
+        self.category = QComboBox()
+        for key, label in SUGGESTION_CATEGORIES.items():
+            self.category.addItem(label, key)
+        self.category.setCurrentIndex(
+            max(0, self.category.findData(doc.get("category", "feature")))
+        )
+        layout.addWidget(self.category)
+        layout.addWidget(QLabel("제목"))
+        self.title_input = QLineEdit(doc.get("title", ""))
+        self.title_input.setMaxLength(300)
+        self.title_input.setPlaceholderText(
+            "어떤 기능이나 사용 방법을 개선하면 좋을까요?"
+        )
+        layout.addWidget(self.title_input)
+        layout.addWidget(QLabel("제안 내용"))
+        self.text_input = QTextEdit()
+        self.text_input.setPlainText(doc.get("text", ""))
+        self.text_input.setPlaceholderText(
+            "현재 불편한 점, 필요한 기능, 원하는 개선 방법을 구체적으로 적어주세요."
+        )
+        layout.addWidget(self.text_input)
+        actions = QHBoxLayout()
+        cancel, save = QPushButton("취소"), QPushButton("저장")
+        cancel.clicked.connect(self.reject)
+        save.clicked.connect(self.submit)
+        actions.addWidget(cancel)
+        actions.addWidget(save)
+        layout.addLayout(actions)
+
+    def submit(self):
+        title, text = (
+            self.title_input.text().strip(),
+            self.text_input.toPlainText().strip(),
+        )
+        if not title or not text:
+            QMessageBox.warning(
+                self, "건의·제안사항", "제목과 제안 내용을 입력해주세요."
+            )
+            return
+        if len(text) > 20000:
+            QMessageBox.warning(
+                self, "건의·제안사항", "제안 내용은 20,000자 이내로 입력해주세요."
+            )
+            return
+        self.data = {
+            "title": title,
+            "text": text,
+            "category": self.category.currentData(),
+        }
+        self.accept()
+
+
 class BoardDiscussionWidget(QWidget):
     """Shared reply/comment UI for the manager's existing board dialogs."""
 
@@ -651,16 +726,16 @@ class BoardDiscussionWidget(QWidget):
         scroll.setWidget(self.items_widget)
         self.layout_box.addWidget(scroll)
         self.editor = None
-        if kind == "post" or getattr(main, "user_role", None) == "admin":
+        if kind != "bug" or getattr(main, "user_role", None) == "admin":
             self.editor = QTextEdit()
             self.editor.setPlaceholderText(
                 "댓글을 입력하세요."
-                if kind == "post"
+                if kind != "bug"
                 else "관리자 답변을 입력하세요. 등록하면 작성자에게 이메일 알림이 발송됩니다."
             )
             self.editor.setMaximumHeight(100)
             self.layout_box.addWidget(self.editor)
-            self.submit = QPushButton("댓글 등록" if kind == "post" else "답변 등록")
+            self.submit = QPushButton("댓글 등록" if kind != "bug" else "답변 등록")
             self.submit.clicked.connect(self.add)
             self.layout_box.addWidget(self.submit)
         self.request_id = str(uuid.uuid4())
@@ -671,9 +746,9 @@ class BoardDiscussionWidget(QWidget):
             item = self.items_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        items = self.doc.get("comments" if self.kind == "post" else "replies", [])
+        items = self.doc.get("comments" if self.kind != "bug" else "replies", [])
         self.heading.setText(
-            f"{'댓글' if self.kind == 'post' else '관리자 답변'} · {len(items)}"
+            f"{'관리자 답변' if self.kind == 'bug' else '댓글'} · {len(items)}"
         )
         if not items:
             self.items_layout.addWidget(QLabel("아직 등록된 내용이 없습니다."))
@@ -702,7 +777,7 @@ class BoardDiscussionWidget(QWidget):
             text.setMinimumHeight(65)
             text.setMaximumHeight(160)
             body.addWidget(text)
-            if self.kind == "post" and (
+            if self.kind != "bug" and (
                 getattr(self.main, "user_role", None) == "admin"
                 or item.get("writerUid") == getattr(self.main, "userUid", None)
             ):
@@ -765,7 +840,7 @@ class BoardDiscussionWidget(QWidget):
         try:
             if self.request(
                 "post",
-                "/comments" if self.kind == "post" else "/replies",
+                "/comments" if self.kind != "bug" else "/replies",
                 json={"text": text, "requestId": self.request_id},
             ):
                 self.editor.clear()
@@ -865,10 +940,11 @@ class ViewVersionDialog(BaseDialog):
 
 
 class ViewPostDialog(BaseDialog):
-    def __init__(self, parent, post_data: dict):
+    def __init__(self, parent, post_data: dict, kind="post"):
         super().__init__(parent)
+        self.kind = kind
         self.post_data = post_data
-        self.setWindowTitle("Post View")
+        self.setWindowTitle("건의·제안사항" if kind == "suggestion" else "Post View")
         self.resize(760, 760)
         self._build_ui()
 
@@ -881,9 +957,61 @@ class ViewPostDialog(BaseDialog):
         self.add_label(
             layout, "Post Text", self.post_data.get("text", ""), multiline=True
         )
+        if self.kind == "suggestion":
+            self.add_label(
+                layout,
+                "제안 유형",
+                SUGGESTION_CATEGORIES.get(self.post_data.get("category"), "기타 제안"),
+            )
+            self.suggestion_status_display = self.add_label(
+                layout,
+                "검토 상태",
+                SUGGESTION_STATUSES.get(self.post_data.get("status"), "접수"),
+            )
+            if getattr(self.parent(), "user_role", None) == "admin":
+                row = QHBoxLayout()
+                self.status_combo = QComboBox()
+                for key, label in SUGGESTION_STATUSES.items():
+                    self.status_combo.addItem(label, key)
+                self.status_combo.setCurrentIndex(
+                    max(
+                        0,
+                        self.status_combo.findData(self.post_data.get("status", "new")),
+                    )
+                )
+                row.addWidget(self.status_combo)
+                save = QPushButton("검토 상태 저장")
+                save.clicked.connect(self.save_suggestion_status)
+                row.addWidget(save)
+                layout.addLayout(row)
         layout.addWidget(
-            BoardDiscussionWidget(self.parent(), self.post_data, "post", self)
+            BoardDiscussionWidget(self.parent(), self.post_data, self.kind, self)
         )
+
+    def save_suggestion_status(self):
+        try:
+            response = Request(
+                "put",
+                f"/board/suggestion/{self.post_data['uid']}/status",
+                json={"status": self.status_combo.currentData()},
+                timeout=30,
+            )
+            self.post_data = response.json()["data"]
+            self.suggestion_status_display.setText(
+                SUGGESTION_STATUSES.get(self.post_data.get("status"), "접수")
+            )
+            QMessageBox.information(
+                self, "건의·제안사항", "검토 상태가 저장되었습니다."
+            )
+        except Exception as error:
+            from services.api import handle_permission_error
+
+            if not handle_permission_error(self, error):
+                QMessageBox.warning(
+                    self,
+                    "건의·제안사항",
+                    "검토 상태를 저장하지 못했습니다. 다시 시도해주세요.",
+                )
 
 
 class EditVersionDialog(BaseDialog):

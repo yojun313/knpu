@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from uuid import UUID, uuid4
+from typing import Literal
 
 
 class AddVersionDto(BaseModel):
@@ -45,6 +46,24 @@ class AddPostDto(BaseModel):
     title: str
     text: str
     broadcastNotify: bool = False
+
+
+class AddSuggestionDto(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    text: str = Field(min_length=1, max_length=20000)
+    category: Literal["feature", "workflow", "other"] = "feature"
+
+    @field_validator("title", "text")
+    @classmethod
+    def strip_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("제목과 제안 내용을 입력해주세요.")
+        return value
+
+
+class SuggestionStatusDto(BaseModel):
+    status: Literal["new", "reviewing", "planned", "done", "declined"]
 
 
 class BugReplyDto(BaseModel):

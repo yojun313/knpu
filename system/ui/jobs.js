@@ -371,6 +371,7 @@
         }, 900);
       }
     }
+    if (j.status === 'done' && navData) { navData.items = (navData.items || []).filter(function (item) { return item.id !== j.id; }); renderNav(); }
     d.lastStatus = j.status;
   }
 
@@ -482,6 +483,7 @@
         if (firstSummary) return; // 페이지를 열기 전에 끝난 작업은 알리지 않는다
         if (S.detail && S.detail.id === j.id) return;
         if (j.status === 'done') {
+          if (navData) { navData.items = (navData.items || []).filter(function (item) { return item.id !== j.id; }); renderNav(); }
           if (S.opts.onJobDone) S.opts.onJobDone(j);
           toast('분석 완료 — ' + (j.title || ''), 'ok', { label: '결과 열기', fn: function () { openResult(j); } });
         } else if (j.status === 'error' || j.status === 'interrupted') {
@@ -621,7 +623,7 @@
     renderNav();
   }
 
-  // 진행·대기·예약을 먼저, 그 다음 최근 끝난 것 — 사이드바는 좁으니 NAV_LIMIT 개까지만
+  // 진행·대기·예약과 실패·중단만 표시한다. 완료 결과는 프로젝트에서 확인한다.
   function navItems() {
     var all = (navData && navData.items) || [];
     var rank = function (j) {
@@ -630,7 +632,7 @@
       if (j.status === 'scheduled') return 2;
       return 3;
     };
-    return all.slice().sort(function (a, b) {
+    return all.filter(function (j) { return j.status !== "done"; }).sort(function (a, b) {
       var d = rank(a) - rank(b);
       if (d) return d;
       return (b.finished_ts || b.created_ts || 0) - (a.finished_ts || a.created_ts || 0);
@@ -686,7 +688,7 @@
   }
 
   function refreshNav() {
-    return api('?scope=service&limit=' + NAV_LIMIT * 3).then(function (data) {
+    return api('?scope=service&exclude_done=true&limit=' + NAV_LIMIT * 3).then(function (data) {
       navData = data;
       renderNav();
     }).catch(function () { });

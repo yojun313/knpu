@@ -44,6 +44,19 @@
     } catch (e) { return null; }
   }
 
+  var ZOOM_COOKIE_KEY = 'ui_zoom_sensitivity';
+  function zoomSensitivity() {
+    var raw = getCookie(ZOOM_COOKIE_KEY), n = Number(raw);
+    return raw !== null && Number.isFinite(n) ? Math.max(.1, Math.min(2, n)) : .35;
+  }
+  window.KNPUZoom = {
+    sensitivity: zoomSensitivity,
+    wheelFactor: function (event) {
+      var delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 800 : 1);
+      return Math.exp(Math.max(-1, Math.min(1, -delta * (event.ctrlKey ? .01 : .002) * zoomSensitivity())));
+    }
+  };
+
   function currentTheme() { return getCookie(COOKIE_KEY) || 'default'; }
 
   function applyTheme(id) {
@@ -119,6 +132,7 @@
       + '<div class="st-group"><div class="st-group-title">화면</div>'
       + switchRow('themeModeSwitch', '다크 모드', '어두운 배경으로 바꿉니다')
       + switchRow('themeNavSwitch', '상단 네비게이션 바 자동 숨김', '마우스를 화면 위쪽에 올리면 나타납니다')
+      + '<div class="st-row"><div><b>그래프 스크롤 확대 감도</b><span>낮게 설정하면 천천히 확대됩니다. 모든 분석 그래프와 저장 미리보기에 적용됩니다.</span></div><div><input id="graphZoomSensitivity" type="range" min="10" max="200" step="5" aria-label="그래프 확대 감도"><output id="graphZoomSensitivityValue"></output></div></div>'
       + '</div></section>'
       // AI 모델
       + '<section class="st-pane" data-pane="ai">'
@@ -606,7 +620,28 @@
       .catch(function () { /* 비로그인·오류면 기본 아이콘 그대로 */ });
   }
 
+  function initGpuCollapse() {
+    document.querySelectorAll('.gpu-widget').forEach(function (widget) {
+      var body = widget.querySelector('#gpuBody, #gpu-body');
+      if (!body || widget.querySelector('.gpu-collapse-toggle')) return;
+      var button = document.createElement('button');
+      button.type = 'button'; button.className = 'gpu-collapse-toggle';
+      button.setAttribute('aria-controls', body.id);
+      widget.insertBefore(button, body);
+      function sync() {
+        var collapsed = getCookie('ui_gpu_collapsed') === 'yes';
+        body.hidden = collapsed;
+        button.setAttribute('aria-expanded', String(!collapsed));
+        button.setAttribute('aria-label', collapsed ? 'GPU 사용량 펼치기' : 'GPU 사용량 접기');
+        button.innerHTML = '<span>GPU 사용량</span><span aria-hidden="true">' + (collapsed ? '⌃' : '⌄') + '</span>';
+      }
+      button.addEventListener('click', function () { setCookie('ui_gpu_collapsed', body.hidden ? 'no' : 'yes'); sync(); });
+      window.addEventListener('focus', sync); sync();
+    });
+  }
+
   function init() {
+    initGpuCollapse();
     initLiquidGlass();
     initConnStatus();
     loadChatbot();
@@ -615,8 +650,16 @@
     if (!btn) return;
 
     var overlay = buildModal();
+    var zoomInput = overlay.querySelector('#graphZoomSensitivity'), zoomValue = overlay.querySelector('#graphZoomSensitivityValue');
+    function syncZoomSetting() { zoomInput.value = Math.round(zoomSensitivity() * 100); zoomValue.textContent = zoomInput.value + '%'; }
+    syncZoomSetting();
+    zoomInput.addEventListener('input', function () {
+      setCookie(ZOOM_COOKIE_KEY, Number(zoomInput.value) / 100); syncZoomSetting();
+      window.dispatchEvent(new CustomEvent('knpu-zoom-sensitivity-change'));
+    });
 
     function open(pane) {
+      syncZoomSetting();
       markSelected(overlay); overlay.hidden = false;
       var saved = null; try { saved = localStorage.getItem(PANE_KEY); } catch (e) { }
       showPane(overlay, typeof pane === 'string' ? pane : (saved || 'appearance'));

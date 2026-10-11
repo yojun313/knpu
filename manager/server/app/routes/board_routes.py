@@ -5,6 +5,8 @@ from app.models.board_model import (
     AddPostDto,
     BugReplyDto,
     CommentDto,
+    AddSuggestionDto,
+    SuggestionStatusDto,
 )
 from app.services.board_service import (
     add_version,
@@ -27,6 +29,7 @@ from app.services.board_service import (
     add_comment,
     edit_comment,
     delete_comment,
+    edit_suggestion_status,
 )
 from app.routes.dependencies import get_uid, get_current_user
 
@@ -145,3 +148,53 @@ def update_comment(uid: str, comment_uid: str, data: CommentDto, request: Reques
 @router.delete("/post/{uid}/comments/{comment_uid}")
 def remove_comment(uid: str, comment_uid: str, request: Request):
     return delete_comment(uid, comment_uid, get_uid(request))
+
+
+# ---------------- Suggestions ----------------
+
+
+@router.post("/suggestion/add")
+def create_suggestion(data: AddSuggestionDto, request: Request):
+    return add_post(data, get_uid(request), "suggestion")
+
+
+@router.get("/suggestion")
+def list_suggestions(request: Request):
+    return get_post_list(get_uid(request), "suggestion")
+
+
+@router.get("/suggestion/{uid}")
+def read_suggestion(uid: str, request: Request):
+    return get_post(uid, get_uid(request), "suggestion")
+
+
+@router.put("/suggestion/{uid}")
+def update_suggestion(uid: str, data: AddSuggestionDto, request: Request):
+    return edit_post(uid, data, get_uid(request), "suggestion")
+
+
+@router.delete("/suggestion/{uid}")
+def remove_suggestion(uid: str, request: Request):
+    return delete_post(uid, get_uid(request), "suggestion")
+
+
+@router.put("/suggestion/{uid}/status")
+def update_suggestion_status(uid: str, data: SuggestionStatusDto, request: Request):
+    return edit_suggestion_status(uid, data, get_uid(request))
+
+
+@router.post("/suggestion/{uid}/comments")
+def create_suggestion_comment(uid: str, data: CommentDto, request: Request):
+    return add_comment(uid, data, get_uid(request), "suggestion")
+
+
+@router.put("/suggestion/{uid}/comments/{comment_uid}")
+def update_suggestion_comment(
+    uid: str, comment_uid: str, data: CommentDto, request: Request
+):
+    return edit_comment(uid, comment_uid, data, get_uid(request), "suggestion")
+
+
+@router.delete("/suggestion/{uid}/comments/{comment_uid}")
+def remove_suggestion_comment(uid: str, comment_uid: str, request: Request):
+    return delete_comment(uid, comment_uid, get_uid(request), "suggestion")
