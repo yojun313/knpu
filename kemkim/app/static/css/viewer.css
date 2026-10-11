@@ -357,6 +357,8 @@ html[data-ui-theme-mode="dark"]:not([data-ui-theme]) .badge.warn{color:#ffb37a}
 /* ===== sidebar ===== */
 #side{width:360px;background:var(--sidebar-bg);border-left:1px solid var(--sidebar-border);
   display:flex;flex-direction:column;overflow-y:auto;color:var(--sidebar-text)}
+/* Expanded sections keep their content height; the sidebar scrolls as a whole. */
+#side > details,#side > .title-block{flex:0 0 auto}
 #side::-webkit-scrollbar{width:7px}
 #side::-webkit-scrollbar-track{background:transparent}
 #side::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:10px}
@@ -670,7 +672,7 @@ dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{backgrou
 .graph-preview-stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;user-select:none;cursor:grab;background:var(--sidebar-panel);border:1px solid var(--sidebar-border);border-radius:10px}
 .graph-preview-stage:active{cursor:grabbing}
 .graph-preview-stage.selecting{cursor:crosshair}
-.graph-preview-stage>img,.graph-preview-content{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;will-change:transform}
+.graph-preview-stage>img,.graph-preview-content{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0}
 .graph-preview-content>img{display:block;width:100%;height:100%;pointer-events:none}
 .graph-preview-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
 .graph-preview-toolbar .btn{width:auto;margin:0;white-space:nowrap}
