@@ -189,3 +189,8 @@
     applyAdminNav();
   }
 })();
+
+(function () {
+  var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/shared-ui/llm-activity.css'; document.head.appendChild(css);
+  var script = document.createElement('script'); script.src = '/shared-ui/llm-activity.js'; document.head.appendChild(script);
+})();

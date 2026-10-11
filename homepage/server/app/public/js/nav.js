@@ -86,3 +86,11 @@
         })
         .catch(() => {});
 })();
+
+// AI activity is shared with the research applications, including the public homepage.
+(function () {
+    var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/shared-ui/llm-activity.css'; document.head.appendChild(css);
+    function activity() { var s = document.createElement('script'); s.src = '/shared-ui/llm-activity.js'; document.head.appendChild(s); }
+    if (window.KNPU_SERVICES) activity();
+    else { var s = document.createElement('script'); s.src = '/shared-ui/services.js'; s.onload = activity; document.head.appendChild(s); }
+})();

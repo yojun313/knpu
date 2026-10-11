@@ -10,6 +10,8 @@
 한 번 더 시도하고, 그래도 안 되면 원인을 적은 502 JSON을 돌려준다.
 """
 
+from system.llm_activity import tracked
+
 import json
 import logging
 import os
@@ -94,6 +96,7 @@ async def _fallback_body(client, headers, body: bytes) -> bytes:
 
 
 @router.post("/v1/openai/chat/completions")
+@tracked("MANAGER LLM 응답 생성", service="manager")
 async def proxy_openai_chat(request: Request):
     body = await request.json()
     headers = {
@@ -119,6 +122,7 @@ async def proxy_openai_chat(request: Request):
 # 스트리밍 경로는 아래의 일반 /v1/{path} 보다 먼저 등록해야 한다(예전에는 순서가
 # 반대라 /stream 요청이 일반 경로로 빠져 스트리밍이 동작하지 않았다).
 @router.post("/v1/{path:path}/stream")
+@tracked("MANAGER LLM 연결 및 생성 준비", service="manager")
 async def proxy_llm_stream(path: str, request: Request):
     headers = _req_headers(request)
     body = await request.body()
@@ -154,6 +158,7 @@ async def proxy_llm_stream(path: str, request: Request):
             f"로컬 LLM 서버에 연결하지 못했습니다({type(e).__name__}). GPU 서버의 모델이 실행 중인지 확인해 주시기 바랍니다."
         )
 
+    @tracked("MANAGER LLM 스트리밍", service="manager")
     async def event_stream():
         try:
             async for chunk in resp.aiter_raw():
@@ -173,6 +178,16 @@ async def proxy_llm_stream(path: str, request: Request):
 
 @router.api_route(
     "/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
+@tracked(
+    "MANAGER LLM 응답 생성",
+    service="manager",
+    when=lambda params: (
+        params["request"].method == "POST"
+        and params["path"]
+        .rstrip("/")
+        .endswith(("completions", "responses", "embeddings"))
+    ),
 )
 async def proxy_llm(path: str, request: Request):
     headers = _req_headers(request)
