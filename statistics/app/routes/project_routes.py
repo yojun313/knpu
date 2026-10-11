@@ -575,7 +575,7 @@ async def project_ai_analysis(project_id: str, request: Request):
         project_id=project_id,
         title="통계 AI 분석 · " + str(label),
         kind="statistics_ai",
-        path="/view/" + project_id,
+        path="/viewer/" + project_id,
         outcome=lambda: job,
     )
     return JSONResponse({"job_id": job_id, "job": _job_public(job)}, status_code=202)

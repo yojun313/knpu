@@ -150,6 +150,7 @@
       currentMeta = meta;
       graph = g;
       hasSource = !!meta.has_source;
+      resetViewState();
 
       document.getElementById('projectName').textContent = meta.name || 'KEMKIM Analyzer';
       document.title = (meta.name || 'KEMKIM Analyzer') + ' · KEMKIM Analyzer';
@@ -165,7 +166,6 @@
       currentPlotTab = 'dov';
       document.getElementById('tabKem').classList.add('active');
       document.getElementById('tabKim').classList.remove('active');
-      resetViewState();
       resetZoomState();
       buildPlotSkeleton();
       applyTransform();

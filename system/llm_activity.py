@@ -60,7 +60,15 @@ def public(doc):
         "path",
         "error",
     )
-    return {"id": doc["_id"], **{k: doc.get(k) for k in keys}}
+    result = {"id": doc["_id"], **{k: doc.get(k) for k in keys}}
+    # Older activity records used a route that these applications never exposed.
+    if (
+        result["service"] in {"kemkim", "statistics", "network"}
+        and result["project_id"]
+        and result["path"] == "/view/" + result["project_id"]
+    ):
+        result["path"] = "/viewer/" + result["project_id"]
+    return result
 
 
 class Activity:
@@ -98,7 +106,7 @@ class Activity:
             "project_id": project_id,
             "path": path
             or (
-                "/view/" + project_id
+                "/viewer/" + project_id
                 if project_id
                 else "/git"
                 if (service or ctx.get("service")) == "admin"
