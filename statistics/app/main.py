@@ -23,7 +23,10 @@ from system.logging.user_log import AuditLogMiddleware
 from system.shared_ui import mount_shared_ui
 
 app = FastAPI(
-    title="KNPU Statistics Analyzer", docs_url=None, redoc_url=None, openapi_url=None
+    title="KNPU FPEI Statistics Analyzer",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 app.add_middleware(AuthMiddleware)

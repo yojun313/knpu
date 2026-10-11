@@ -198,3 +198,8 @@ def update_suggestion_comment(
 @router.delete("/suggestion/{uid}/comments/{comment_uid}")
 def remove_suggestion_comment(uid: str, comment_uid: str, request: Request):
     return delete_comment(uid, comment_uid, get_uid(request), "suggestion")
+
+
+@router.post("/suggestion/{uid}/replies")
+def create_suggestion_reply(uid: str, data: BugReplyDto, request: Request):
+    return add_bug_reply(uid, data, get_uid(request), "suggestion")

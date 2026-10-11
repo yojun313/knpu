@@ -426,6 +426,8 @@ def get_post(uid: str, userUid: str, board: str = "post"):
     if not doc:
         raise NotFoundException("Post not found")
 
+    if board == "suggestion":
+        doc = _bug_for_user(doc, userUid, detail=True)
     doc["datetime"] = doc.get("datetime_kst", "")
     log_user(
         userUid,
@@ -442,7 +444,9 @@ def get_post_list(userUid: str, board: str = "post"):
     collection = _post_collection(board)
     docs = list(collection.find({}, {"_id": 0}).sort("datetime", -1))
 
-    for doc in docs:
+    for index, doc in enumerate(docs):
+        if board == "suggestion":
+            doc = docs[index] = _bug_for_user(doc, userUid)
         doc["readByMe"] = userUid in doc.get("viewCnt", [])
         doc["commentCount"] = len(doc.get("comments", []))
         doc["viewCnt"] = len(doc.get("viewCnt", []))
@@ -506,7 +510,8 @@ def edit_bug(uid: str, data: AddBugDto, userUid: str):
     return get_bug(uid, userUid)
 
 
-def add_bug_reply(uid: str, data, userUid: str):
+def add_bug_reply(uid: str, data, userUid: str, board: str = "bug"):
+    collection = bug_board_db if board == "bug" else _post_collection(board)
     admin = _require_admin(userUid)
     now = datetime.now(timezone.utc)
     reply = {
@@ -518,12 +523,12 @@ def add_bug_reply(uid: str, data, userUid: str):
         # Mail state is stored in the same atomic write as the reply.
         "mail": {"status": "pending", "attempts": 0, "next_attempt": now},
     }
-    result = bug_board_db.update_one(
+    result = collection.update_one(
         {"uid": uid, "replies.uid": {"$ne": reply["uid"]}},
         {"$push": {"replies": reply}},
     )
     if not result.matched_count:
-        existing = bug_board_db.find_one({"uid": uid}, {"replies": 1})
+        existing = collection.find_one({"uid": uid}, {"replies": 1})
         if not existing:
             raise NotFoundException("Bug post not found")
         if not any(
@@ -534,8 +539,8 @@ def add_bug_reply(uid: str, data, userUid: str):
         ):
             raise HTTPException(409, "답변 요청이 충돌했습니다. 다시 시도해주세요.")
     else:
-        log_user(userUid, "manager.bug.reply", f"Replied to bug: {uid}")
-    return get_bug(uid, userUid)
+        log_user(userUid, f"manager.{board}.reply", f"Replied to bug: {uid}")
+    return get_bug(uid, userUid) if board == "bug" else get_post(uid, userUid, board)
 
 
 def add_comment(uid: str, data, userUid: str, board: str = "post"):

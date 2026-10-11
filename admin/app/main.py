@@ -50,7 +50,9 @@ def _extract_identity(request: Request):
     }
 
 
-app = FastAPI(title="KNPU Dashboard", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(
+    title="KNPU FPEI Dashboard", docs_url=None, redoc_url=None, openapi_url=None
+)
 
 
 @app.middleware("http")

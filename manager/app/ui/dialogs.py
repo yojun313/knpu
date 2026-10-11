@@ -706,9 +706,10 @@ class SuggestionEditorDialog(BaseDialog):
 class BoardDiscussionWidget(QWidget):
     """Shared reply/comment UI for the manager's existing board dialogs."""
 
-    def __init__(self, main, doc: dict, kind: str, parent=None):
+    def __init__(self, main, doc: dict, kind: str, parent=None, replies=False):
         super().__init__(parent)
         self.main, self.doc, self.kind = main, doc, kind
+        self.reply_mode = kind == "bug" or replies
         self.layout_box = QVBoxLayout(self)
         self.layout_box.setContentsMargins(0, 0, 0, 0)
         header = QHBoxLayout()
@@ -726,16 +727,18 @@ class BoardDiscussionWidget(QWidget):
         scroll.setWidget(self.items_widget)
         self.layout_box.addWidget(scroll)
         self.editor = None
-        if kind != "bug" or getattr(main, "user_role", None) == "admin":
+        if not self.reply_mode or getattr(main, "user_role", None) == "admin":
             self.editor = QTextEdit()
             self.editor.setPlaceholderText(
                 "댓글을 입력하세요."
-                if kind != "bug"
+                if not self.reply_mode
                 else "관리자 답변을 입력하세요. 등록하면 작성자에게 이메일 알림이 발송됩니다."
             )
             self.editor.setMaximumHeight(100)
             self.layout_box.addWidget(self.editor)
-            self.submit = QPushButton("댓글 등록" if kind != "bug" else "답변 등록")
+            self.submit = QPushButton(
+                "댓글 등록" if not self.reply_mode else "답변 등록"
+            )
             self.submit.clicked.connect(self.add)
             self.layout_box.addWidget(self.submit)
         self.request_id = str(uuid.uuid4())
@@ -746,9 +749,9 @@ class BoardDiscussionWidget(QWidget):
             item = self.items_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        items = self.doc.get("comments" if self.kind != "bug" else "replies", [])
+        items = self.doc.get("comments" if not self.reply_mode else "replies", [])
         self.heading.setText(
-            f"{'관리자 답변' if self.kind == 'bug' else '댓글'} · {len(items)}"
+            f"{'관리자 답변' if self.reply_mode else '댓글'} · {len(items)}"
         )
         if not items:
             self.items_layout.addWidget(QLabel("아직 등록된 내용이 없습니다."))
@@ -777,7 +780,7 @@ class BoardDiscussionWidget(QWidget):
             text.setMinimumHeight(65)
             text.setMaximumHeight(160)
             body.addWidget(text)
-            if self.kind != "bug" and (
+            if not self.reply_mode and (
                 getattr(self.main, "user_role", None) == "admin"
                 or item.get("writerUid") == getattr(self.main, "userUid", None)
             ):
@@ -788,7 +791,7 @@ class BoardDiscussionWidget(QWidget):
                 actions.addWidget(edit)
                 actions.addWidget(delete)
                 body.addLayout(actions)
-            elif self.kind == "bug" and item.get("mailStatus"):
+            elif self.reply_mode and item.get("mailStatus"):
                 state = {
                     "pending": "메일 알림 대기",
                     "sending": "메일 전송 중",
@@ -840,12 +843,12 @@ class BoardDiscussionWidget(QWidget):
         try:
             if self.request(
                 "post",
-                "/comments" if self.kind != "bug" else "/replies",
+                "/comments" if not self.reply_mode else "/replies",
                 json={"text": text, "requestId": self.request_id},
             ):
                 self.editor.clear()
                 self.request_id = str(uuid.uuid4())
-                if self.kind == "bug":
+                if self.reply_mode:
                     QMessageBox.information(
                         self,
                         "답변 등록",
@@ -984,6 +987,12 @@ class ViewPostDialog(BaseDialog):
                 save.clicked.connect(self.save_suggestion_status)
                 row.addWidget(save)
                 layout.addLayout(row)
+        if self.kind == "suggestion":
+            layout.addWidget(
+                BoardDiscussionWidget(
+                    self.parent(), self.post_data, self.kind, self, replies=True
+                )
+            )
         layout.addWidget(
             BoardDiscussionWidget(self.parent(), self.post_data, self.kind, self)
         )
