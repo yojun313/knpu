@@ -11,6 +11,8 @@ API 키는 서버 비밀값으로 암호화해 저장하고, 브라우저에는 
 사용액은 응답의 토큰 수 × 아래 요금표로 계산한 '추정치'다. 실제 청구액은 OpenAI 대시보드가 기준이다.
 """
 
+from system.llm_activity import tracked
+
 import base64
 import hashlib
 import json
@@ -335,6 +337,7 @@ class UserCall:
     notes: list = field(default_factory=list)  # 앞선 대상의 실패 사유 등
 
 
+@tracked("AI 분석 및 응답 생성", service=None)
 async def achat_for_user(
     uid, messages, *, purpose="", validate=None, **kwargs
 ) -> UserCall:
@@ -367,6 +370,7 @@ async def achat_for_user(
     )
 
 
+@tracked("AI 분석 및 응답 생성", service=None)
 def chat_for_user(uid, messages, *, purpose="", validate=None, **kwargs) -> UserCall:
     """achat_for_user 의 동기 버전."""
     from .client import chat

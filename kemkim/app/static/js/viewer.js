@@ -12,6 +12,10 @@
   var graph = null;             // /api/projects/{id}/graph 응답: metadata,dov,dod,final_signal,filtered_words,periods,trace
   var currentPlotTab = 'dov';   // 'dov' | 'dod'
   var interpretationsList = [];
+  var interpretationJobs = [];
+  var interpretationPoll = null;
+  var interpretationRequest = 0;
+  var observedSignalJob = null;
   var hasSource = false;
   var searchQuery = '';
 
@@ -127,6 +131,12 @@
     interpKwSearchQuery = '';
     document.getElementById('interpKwSearch').value = '';
     currentInterpretation = null;
+    observedSignalJob = null;
+    signalBusy = false;
+    interpretationJobs = [];
+    interpretationsList = [];
+    clearTimeout(interpretationPoll);
+    ++interpretationRequest;
     document.getElementById('interpretResult').innerHTML = '';
   }
 
@@ -1657,16 +1667,44 @@
   }
 
   function loadInterpretations() {
-    api('/api/projects/' + projectId + '/interpretations').then(function (res) {
+    clearTimeout(interpretationPoll);
+    if (!projectId) return;
+    var selectedProject = projectId;
+    var seq = ++interpretationRequest;
+    api('/api/projects/' + selectedProject + '/interpretations').then(function (res) {
+      if (projectId !== selectedProject || seq !== interpretationRequest) return;
       interpretationsList = res.interpretations || [];
+      interpretationJobs = res.jobs || [];
       renderInterpretationList();
-    }).catch(function () { });
+    }).catch(function () { }).finally(function () {
+      if (projectId === selectedProject && seq === interpretationRequest) interpretationPoll = setTimeout(loadInterpretations, document.hidden ? 10000 : 3000);
+    });
+  }
+
+  function resumeSignalJob(job) {
+    if (observedSignalJob === job.id && !document.getElementById('signalModal').hidden) return;
+    observedSignalJob = job.id;
+    signalBusy = false;
+    openSignalModal(job.title);
+    document.getElementById('signalModalBody').innerHTML = loadingBlockHtml(job.stage || 'AI 해석을 실행하고 있습니다.');
+    pollSignalJob(job.id, function (result) {
+      if (observedSignalJob !== job.id) return;
+      if (job.kind === 'signal_group') renderGroupResult(result); else renderSignalResult(result, false);
+      loadInterpretations();
+    }, function (err) {
+      if (observedSignalJob === job.id) document.getElementById('signalModalBody').textContent = err.message;
+      loadInterpretations();
+    });
   }
 
   function renderInterpretationList() {
     var box = document.getElementById('interpretationList');
-    if (!interpretationsList.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">아직 해석 결과가 없습니다</div>'; return; }
-    var html = '';
+    if (!interpretationsList.length && !interpretationJobs.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">아직 해석 결과가 없습니다</div>'; return; }
+    var html = interpretationJobs.map(function (job) {
+      return '<button type="button" class="rev-item interpretation-running" data-signal-job="' + escAttr(job.id) + '">'
+        + '<span class="sig-spin" aria-hidden="true"></span><span class="rev-label">' + esc(job.title)
+        + '<small>' + esc(job.stage || 'AI 해석 실행 중') + '</small></span><span class="rev-date">작업 중</span></button>';
+    }).join('');
     interpretationsList.slice().reverse().forEach(function (it) {
       var kindTag = it.kind === 'signal' ? '📈 ' : it.kind === 'signal_group' ? '🧭 ' : '';
       html += '<div class="rev-item" data-interp="' + escAttr(it.id) + '" data-kind="' + escAttr(it.kind || 'keyword') + '">'
@@ -1674,8 +1712,17 @@
         + '<span class="rev-date">' + esc(fmtAnalyzedAt(it.created_at)) + '</span></div>';
     });
     box.innerHTML = html;
+    box.querySelectorAll('[data-signal-job]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var job = interpretationJobs.find(function (j) { return j.id === button.getAttribute('data-signal-job'); });
+        if (job && (job.kind === 'signal' || job.kind === 'signal_group')) resumeSignalJob(job);
+        else if (window.KNPULLMActivity) KNPULLMActivity.open();
+      });
+    });
     box.querySelectorAll('[data-interp]').forEach(function (el) {
       el.addEventListener('click', function () {
+        observedSignalJob = null;
+        signalBusy = false;
         var id = el.getAttribute('data-interp');
         var kind = el.getAttribute('data-kind');
         api('/api/projects/' + projectId + '/interpretations/' + id).then(function (it) {
@@ -1711,7 +1758,7 @@
     closeMobileDrawers();
     document.getElementById('signalModal').hidden = false;
   }
-  function closeSignalModal() { document.getElementById('signalModal').hidden = true; }
+  function closeSignalModal() { document.getElementById('signalModal').hidden = true; observedSignalJob = null; signalBusy = false; }
 
   // 기간별 DoV 곡선 + 국면 배경 띠
   function signalChartSvg(profile) {
@@ -1822,14 +1869,16 @@
   function pollSignalJob(jobId, onDone, onError) {
     var timer = null, tries = 0;
     function tick() {
+      if (observedSignalJob !== jobId) return;
       tries++;
       api('/api/signal-jobs/' + jobId).then(function (job) {
+        if (observedSignalJob !== jobId) return;
         var stageEl = document.getElementById('sigStage');
         if (stageEl && job.stage) stageEl.textContent = job.stage;
         var slot = document.getElementById('sigPromptSlot');
         if (slot && job.prompt && !slot.firstChild) slot.innerHTML = promptHtml(job.prompt);
         if (job.status === 'done') { onDone(job.result); return; }
-        if (job.status === 'error') { onError(new Error(job.error || '해석에 실패했습니다.')); return; }
+        if (job.status === 'error' || job.status === 'interrupted') { onError(new Error(job.error || job.stage || '해석에 실패했습니다.')); return; }
         if (tries > 450) { onError(new Error('해석이 15분 넘게 끝나지 않았습니다. 잠시 후 해석 목록을 확인해 주시기 바랍니다.')); return; }
         timer = setTimeout(tick, 2000);
       }).catch(function (err) {
@@ -1928,6 +1977,9 @@
       if (keep) document.getElementById('sigPromptSlot').innerHTML = keep;
     }).catch(function () { });
     postJson('/api/projects/' + projectId + '/signal-ai', { word: word }).then(function (res) {
+      loadInterpretations();
+      if (window.KNPULLMActivity) KNPULLMActivity.refresh();
+      observedSignalJob = res.job_id;
       pollSignalJob(res.job_id, function (it) {
         signalBusy = false;
         renderSignalResult(it, false);
@@ -1986,6 +2038,9 @@
       body.insertAdjacentHTML('afterbegin', '<div class="sig-err">' + esc(err.message || String(err)) + '</div>');
     };
     postJson('/api/projects/' + projectId + '/signal-group-ai', { basis: basis, signal: signal }).then(function (res) {
+      loadInterpretations();
+      if (window.KNPULLMActivity) KNPULLMActivity.refresh();
+      observedSignalJob = res.job_id;
       pollSignalJob(res.job_id, function (it) {
         signalBusy = false;
         renderGroupResult(it);

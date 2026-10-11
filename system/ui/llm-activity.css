@@ -1,0 +1,16 @@
+.kla-nav{flex:0 0 auto;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:7px 10px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.kla-sidebar{flex:0 0 auto;padding:10px 14px;border-bottom:1px solid var(--sidebar-border,var(--ud-line,#ddd));color:var(--sidebar-text,var(--ud-text,#182233))}
+.kla-heading{border:0;background:none;color:inherit;font:inherit;font-size:12px;font-weight:700;padding:0 0 8px;cursor:pointer;text-align:left}
+.kla-list{max-height:155px;overflow-y:auto}
+.kla-row{display:flex;gap:9px;align-items:flex-start;padding:8px 4px;color:inherit;text-decoration:none;border-radius:8px}
+.kla-row:hover{background:var(--overlay-hover,rgba(128,128,128,.12))}
+.kla-text{min-width:0;flex:1}.kla-text b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kla-text small{display:block;font-size:11px;line-height:1.5;opacity:.8;margin-top:3px;overflow-wrap:anywhere}
+.kla-dot{width:8px;height:8px;border-radius:50%;background:#3685f5;margin-top:5px;flex:0 0 auto;animation:kla-pulse 1.6s infinite}
+@keyframes kla-pulse{50%{opacity:.4}}
+html body dialog.kla-dialog{position:fixed;inset:0;margin:auto;width:min(720px,94vw);max-height:80dvh;padding:20px;border:1px solid var(--sidebar-border,#888);border-radius:16px;background:var(--ud-bg,#f7f8fb);color:var(--sidebar-text,var(--text-strong,#182233));box-sizing:border-box;overflow-y:auto;transform:none}
+html[data-ui-theme-mode="dark"] body dialog.kla-dialog{background:#141a26;color:var(--sidebar-text,#edf1f8)}
+.kla-dialog::backdrop{background:rgba(10,18,32,.65);backdrop-filter:blur(4px)}.kla-dialog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.kla-dialog-head button{background:none;border:0;color:inherit;font-size:24px;cursor:pointer}.kla-admin{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px}
+.kla-nav[hidden],.kla-sidebar[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.kla-dot{animation:none}}
+
+html[data-theme="dark"] body dialog.kla-dialog{background:#141a26;color:#edf1f8}.app-header-inner .kla-nav{color:var(--ink);background:var(--panel);border-color:var(--line)}

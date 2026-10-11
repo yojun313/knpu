@@ -10,6 +10,8 @@
 '고소인'·'피고소인'으로만 지칭하고, 인적사항은 렌더링 단계에서 양식 표에만 들어간다.
 """
 
+from system.llm_activity import tracked
+
 import asyncio
 import json
 import logging
@@ -489,6 +491,7 @@ def complaint_deadline(crime, facts: dict) -> str:
     )
 
 
+@tracked("AI 고소장 작성", service="complaint")
 async def generate(case: dict):
     """NDJSON 이벤트를 흘려보내며 case를 채운다. 마지막에 result 이벤트."""
     crime_id = case["crime_type"]

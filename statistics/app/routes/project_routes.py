@@ -1,3 +1,5 @@
+from system.llm_activity import start_background, stage as activity_stage
+
 # app/routes/project_routes.py
 import asyncio
 import os
@@ -513,6 +515,7 @@ async def project_ai_analysis(project_id: str, request: Request):
         project_store.save_ai_job(owner, project_id, job)
 
     def progress(stage, prompt=None):
+        activity_stage(stage)
         if prompt is not None:
             live["prompt"] = prompt
         if stage != job.get("stage"):
@@ -565,7 +568,16 @@ async def project_ai_analysis(project_id: str, request: Request):
             # 최종 상태를 디스크에 쓴 뒤에 메모리에서 뺀다.
             _ai_live.pop(job_id, None)
 
-    asyncio.create_task(worker())
+    start_background(
+        worker(),
+        uid=uid,
+        service="statistics",
+        project_id=project_id,
+        title="통계 AI 분석 · " + str(label),
+        kind="statistics_ai",
+        path="/view/" + project_id,
+        outcome=lambda: job,
+    )
     return JSONResponse({"job_id": job_id, "job": _job_public(job)}, status_code=202)
 
 

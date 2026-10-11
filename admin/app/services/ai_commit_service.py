@@ -5,6 +5,8 @@
 - 저장소는 읽기만 한다 (git diff · status · log). 스테이징 같은 변경은 하지 않는다.
 """
 
+from system.llm_activity import tracked
+
 import json
 import os
 import re
@@ -280,6 +282,7 @@ def _generate_with_knpu_llm(uid: str | None, prompt: str) -> str:
     return call.result.text or ""
 
 
+@tracked("AI 커밋 메시지 작성", service="admin")
 def generate(repository_id: str, include_all: bool, uid: str | None = None) -> dict:
     settings = _read()
     use_knpu = not (settings.get("base_url") and settings.get("model"))

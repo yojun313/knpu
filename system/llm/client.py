@@ -1,3 +1,4 @@
+from system.llm_activity import tracked
 import logging
 import re
 from dataclasses import dataclass, field
@@ -273,6 +274,7 @@ def _extract_text(response) -> str:
     return content
 
 
+@tracked("AI 응답 생성", service=None)
 def chat(
     messages: list[Message] | None = None,
     *,
@@ -337,6 +339,7 @@ def chat(
     raise LLMError("LLM 호출에 실패했습니다.", attempts)
 
 
+@tracked("AI 응답 생성", service=None)
 async def achat(
     messages: list[Message] | None = None,
     *,
@@ -398,6 +401,7 @@ async def achat(
     raise LLMError("LLM 호출에 실패했습니다.", attempts)
 
 
+@tracked("AI 응답 생성", service=None)
 async def astream(
     messages: list[Message] | None = None,
     *,

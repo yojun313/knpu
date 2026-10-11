@@ -30,6 +30,9 @@ logging.basicConfig(
 )
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+from system.llm_activity import register as register_llm_activity
+
+register_llm_activity(app, "complaint")
 app.include_router(api_router, prefix="/api")
 
 PUBLIC_DIR = Path(__file__).resolve().parent / "public"
@@ -88,4 +91,18 @@ def index():
     )
 
 
+from system.shared_ui import NoCacheStaticFiles, SHARED_UI_DIR, _services_js
+from fastapi.responses import Response
+
+
+@app.get("/shared-ui/services.js", include_in_schema=False)
+def shared_services():
+    return Response(
+        _services_js(),
+        media_type="application/javascript",
+        headers={"cache-control": "no-store"},
+    )
+
+
+app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="static")

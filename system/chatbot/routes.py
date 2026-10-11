@@ -10,6 +10,8 @@
   요청 하나는 이 프로세스의 작업으로 돌려 폴링하고, IP 당 요청 수를 제한한다.
 """
 
+from system.llm_activity import start_background, stage as activity_stage
+
 import asyncio
 import json
 import logging
@@ -327,6 +329,8 @@ def register(app, *, public: bool) -> None:
         _anon_jobs[job_id] = job
 
         def emit(ev):
+            if ev.get("label"):
+                activity_stage(ev["label"])
             if ev["type"] == "step":
                 job["steps"].append(ev["label"])
             if ev["type"] in ("step", "stage"):
@@ -345,7 +349,13 @@ def register(app, *, public: bool) -> None:
                     str(e) or "답변을 만들지 못했습니다.",
                 )
 
-        asyncio.create_task(worker())
+        start_background(
+            worker(),
+            title="홈페이지 AI 안내",
+            kind="chatbot",
+            service="homepage",
+            outcome=lambda: job,
+        )
         return JSONResponse({"ok": True, "job_id": job_id}, status_code=202)
 
     async def _ask_saved(user: dict, mode: str, question: str, cid: str):
@@ -392,6 +402,9 @@ def register(app, *, public: bool) -> None:
         _live.add(job_id)
 
         def emit(ev):
+            if ev.get("label"):
+                activity_stage(ev["label"])
+
             def fix(c):
                 for m in c["messages"]:
                     if m.get("job_id") == job_id and m.get("pending"):
@@ -450,7 +463,17 @@ def register(app, *, public: bool) -> None:
 
             await asyncio.to_thread(_update, uid, cid, done)
 
-        asyncio.create_task(worker())
+        start_background(
+            worker(),
+            uid=uid,
+            title="AI 연구 시스템 상담",
+            kind="chatbot",
+            outcome=lambda: (
+                {"status": "error", "error": "챗봇 응답에 실패했습니다."}
+                if (_load(uid, cid) or {}).get("messages", [{}])[-1].get("error")
+                else {}
+            ),
+        )
         return JSONResponse(
             {"ok": True, "job_id": job_id, "conversation_id": cid}, status_code=202
         )

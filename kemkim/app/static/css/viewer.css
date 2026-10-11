@@ -737,3 +737,6 @@ dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop,dialog.g
   .graph-word-footer{flex-direction:column;align-items:stretch;padding:12px}
   .graph-word-footer>div{flex-wrap:wrap}
 }
+
+.interpretation-running{width:100%;display:flex;gap:10px;align-items:center;text-align:left;font:inherit;background:var(--sidebar-panel);color:var(--sidebar-text);border:1px solid var(--sidebar-border);border-radius:9px;cursor:pointer;margin-bottom:8px}
+.interpretation-running .rev-label{min-width:0;flex:1}.interpretation-running small{display:block;color:var(--sidebar-muted);font-size:11px;white-space:normal;line-height:1.5;margin-top:4px}.interpretation-running .sig-spin{flex:0 0 auto;width:14px;height:14px}.interpretation-running .rev-date{white-space:nowrap;color:var(--accent)}

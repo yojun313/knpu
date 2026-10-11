@@ -7,8 +7,10 @@
 import traceback
 
 from system.llm import LLMError, complete
+from system.llm_activity import tracked
 
 
+@tracked("Discord AI 응답 생성", service="bot")
 def generateLLM(query):
     try:
         return complete(query)

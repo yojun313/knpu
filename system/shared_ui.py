@@ -93,6 +93,15 @@ def mount_shared_ui(
 ) -> None:
     """chatbot: "member"(구성원용만) · "public"(홈페이지: 외부인용 + 로그인하면 구성원용) · None(끔)."""
 
+    from system.llm_activity import register as register_llm_activity
+
+    register_llm_activity(
+        app,
+        {"fpei": "homepage", "polydecision": "mcdm"}.get(
+            (app_name or "system").lower(), (app_name or "system").lower()
+        ),
+    )
+
     @app.get("/shared-ui/services.js", include_in_schema=False)
     def shared_services_js():
         return Response(

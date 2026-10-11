@@ -1,3 +1,9 @@
+from system.llm_activity import (
+    Activity,
+    collection as activity_collection,
+    expire_stale,
+    public as public_activity,
+)
 import time
 import asyncio
 import csv
@@ -524,52 +530,52 @@ def _try_load_source(uid: str, project_id: str):
 
 # AI 해석은 기사 맥락을 읽고 LLM을 부르느라 1분을 넘기기 쉽다. 요청 하나로 기다리면
 # 앞단 프록시(nginx 기본 60초)가 끊고 HTML 오류 페이지를 돌려주므로, 백그라운드 작업으로
-# 돌리고 화면은 상태를 주기적으로 조회한다. kemkim은 워커 1개로 돌아서 메모리 보관으로 충분하다.
-_signal_jobs: dict[str, dict] = {}
-_JOB_TTL_SEC = 3600
-
-
-def _prune_jobs():
-    now = time.time()
-    for jid in [
-        j for j, v in _signal_jobs.items() if now - v["created"] > _JOB_TTL_SEC
-    ]:
-        _signal_jobs.pop(jid, None)
-
-
-def _start_signal_job(uid: str, project_id: str, run, finish) -> str:
-    """run(progress) 코루틴을 백그라운드로 돌리고 끝나면 finish(result)로 저장한다."""
-    _prune_jobs()
-    job_id = uuid.uuid4().hex
-    job = {
-        "uid": uid,
-        "project_id": project_id,
-        "status": "running",
-        "stage": "준비 중",
-        "prompt": None,
-        "result": None,
-        "error": None,
-        "created": time.time(),
-    }
-    _signal_jobs[job_id] = job
+# 돌리고 공통 DB에 상태를 저장한다. 화면은 다른 브라우저·서버 워커에서도 같은 상태를 조회한다.
+def _start_signal_job(
+    uid: str, project_id: str, run, finish, title: str, kind: str
+) -> str:
+    activity = Activity(
+        uid=uid,
+        service="kemkim",
+        project_id=project_id,
+        title=title,
+        kind=kind,
+        path="/view/" + project_id,
+    )
+    activity.start()
+    activity.update(prompt=None, result=None, error=None)
 
     def progress(stage, prompt=None):
-        job["stage"] = stage
+        fields = {"stage": stage}
         if prompt is not None:
-            job["prompt"] = prompt
+            fields["prompt"] = prompt
+        activity.update(**fields)
 
     async def worker():
+        from system.llm_activity import _current
+
+        token = _current.set(activity)
         try:
             result = await run(progress)
-            job["result"] = await asyncio.to_thread(finish, result)
-            job["status"] = "done"
-        except ValueError as e:
-            job["status"], job["error"] = "error", str(e)
-        except Exception as e:  # 예상 못 한 오류도 화면에 알린다
-            job["status"], job["error"] = "error", f"해석 중 오류가 발생했습니다: {e}"
+            saved = await asyncio.to_thread(finish, result)
+            activity.update(result=saved)
+            activity.finish()
+        except asyncio.CancelledError:
+            activity.finish(interrupted=True)
+            raise
+        except Exception as e:
+            activity.finish(str(e))
+        finally:
+            _current.reset(token)
 
-    asyncio.create_task(worker())
-    return job_id
+    task = asyncio.create_task(worker())
+
+    def completed(t):
+        if t.cancelled() and not activity.stop.is_set():
+            activity.finish(interrupted=True)
+
+    task.add_done_callback(completed)
+    return activity.id
 
 
 @router.get("/api/projects/{project_id}/signal-profile")
@@ -619,7 +625,13 @@ async def project_signal_ai(project_id: str, request: Request):
         )
         return saved
 
-    return JSONResponse({"job_id": _start_signal_job(uid, project_id, run, finish)})
+    return JSONResponse(
+        {
+            "job_id": _start_signal_job(
+                uid, project_id, run, finish, word + " · AI 신호 해석", "signal"
+            )
+        }
+    )
 
 
 @router.post("/api/projects/{project_id}/signal-group-ai")
@@ -667,19 +679,33 @@ async def project_signal_group_ai(project_id: str, request: Request):
         )
         return saved
 
-    return JSONResponse({"job_id": _start_signal_job(uid, project_id, run, finish)})
+    return JSONResponse(
+        {
+            "job_id": _start_signal_job(
+                uid,
+                project_id,
+                run,
+                finish,
+                label + " · AI 신호군 해석",
+                "signal_group",
+            )
+        }
+    )
 
 
 @router.get("/api/signal-jobs/{job_id}")
 async def signal_job_status(job_id: str, request: Request):
     uid = _uid(request)
-    job = _signal_jobs.get(job_id)
-    if not job or job["uid"] != uid:
+    expire_stale()
+    job = activity_collection().find_one(
+        {"_id": job_id, "uid": uid, "service": "kemkim"}
+    )
+    if not job:
         raise HTTPException(
             404, "해석 작업을 찾을 수 없습니다. 서버가 다시 시작되었을 수 있습니다."
         )
     return JSONResponse(
-        {k: job[k] for k in ("status", "stage", "prompt", "result", "error")}
+        {k: job.get(k) for k in ("status", "stage", "prompt", "result", "error")}
     )
 
 
@@ -691,7 +717,24 @@ async def project_interpretations(project_id: str, request: Request):
         project_id,
         _is_admin(request),
     )
-    return JSONResponse({"interpretations": interpretations})
+    expire_stale()
+    jobs = [
+        public_activity(j)
+        for j in activity_collection()
+        .find(
+            {
+                "uid": _uid(request),
+                "service": "kemkim",
+                "project_id": project_id,
+                "status": "running",
+            }
+        )
+        .sort("created_ts", -1)
+    ]
+    return JSONResponse(
+        {"interpretations": interpretations, "jobs": jobs},
+        headers={"cache-control": "no-store"},
+    )
 
 
 @router.get("/api/projects/{project_id}/interpretations/{interpretation_id}")

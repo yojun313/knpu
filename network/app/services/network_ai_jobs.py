@@ -1,5 +1,7 @@
 """프로젝트별 AI 해석 작업: DB 상태 공유, 완료 결과 영구 보관."""
 
+from system.llm_activity import start_background, stage as activity_stage
+
 import asyncio
 import time
 import uuid
@@ -69,6 +71,7 @@ def active_jobs(uid):
 
 
 def _stage(job_id, name, prompt=None):
+    activity_stage(name)
     fields = {"stage": name, "updated_at": _now(), "heartbeat_at": time.time()}
     if prompt is not None:
         fields["prompt"] = prompt
@@ -234,5 +237,14 @@ def start_job(uid, project_id, payload, admin=False):
             "heartbeat_at": time.time(),
         }
     )
-    asyncio.create_task(_run(job_id, uid, project_id, payload, admin))
+    start_background(
+        _run(job_id, uid, project_id, payload, admin),
+        uid=uid,
+        service="network",
+        project_id=project_id,
+        title=title,
+        kind="network_ai",
+        path="/view/" + project_id,
+        outcome=lambda: network_ai_jobs_db.find_one({"_id": job_id}) or {},
+    )
     return job_id

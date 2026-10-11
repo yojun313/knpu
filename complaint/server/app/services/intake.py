@@ -10,6 +10,8 @@
 기억으로 말하지 않게 프롬프트로 막고, 화면에는 원문 카드를 함께 보여준다.
 """
 
+from system.llm_activity import tracked
+
 import difflib
 import re
 from datetime import date
@@ -529,6 +531,7 @@ def _context_block(state: dict) -> str:
     )
 
 
+@tracked("고소장 AI 상담", service="complaint")
 async def chat_turn(case: dict, user_text: str):
     """NDJSON 이벤트 dict를 흘려보내는 async 제너레이터. case는 제자리에서 갱신된다."""
     case["messages"].append({"role": "user", "content": user_text, "ts": time.time()})

@@ -1,3 +1,4 @@
+from system.llm_activity import tracked
 import re
 from datetime import datetime, timezone
 
@@ -113,6 +114,7 @@ def build_topic_prompt(topic_hint: str, titles: list) -> str:
     )
 
 
+@tracked("키워드 AI 해석", service="kemkim")
 def request_ai_topics(prompt: str, uid: str | None = None) -> str:
     """주제 해석을 요청한다. 사용자의 LLM 설정(로컬/내 GPT API)을 순서대로 쓴다."""
     call = user_llm.chat_for_user(
