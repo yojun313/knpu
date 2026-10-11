@@ -11,7 +11,7 @@ from system.endpoints import HOMEPAGE_URL
 
 
 def main():
-    print("=== KNPU 최초 관리자 계정 생성 ===")
+    print("=== KNPU FPEI 최초 관리자 계정 생성 ===")
     username = input("아이디: ").strip()
     if users_db.find_one({"username": username}):
         print(f"이미 존재하는 아이디입니다: {username}")

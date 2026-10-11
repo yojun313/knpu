@@ -19,13 +19,13 @@
 (function () {
   var cfg = window.KNPU_SERVICES;
   if (!cfg || !cfg.services) {
-    console.error('[KNPU] /shared-ui/services.js 를 먼저 로드해야 합니다.');
+    console.error('[KNPU FPEI] /shared-ui/services.js 를 먼저 로드해야 합니다.');
     return;
   }
 
   function svc(name) {
     var s = cfg.services[name];
-    if (!s) throw new Error('[KNPU] services.json에 없는 서비스: ' + name);
+    if (!s) throw new Error('[KNPU FPEI] services.json에 없는 서비스: ' + name);
     return s;
   }
 
@@ -59,7 +59,7 @@
           credentials: 'include', cache: 'no-store'
         }).then(function (response) {
           if (response.status === 401) return null;
-          if (!response.ok) throw new Error('[KNPU] 사용자 정보를 가져오지 못했습니다.');
+          if (!response.ok) throw new Error('[KNPU FPEI] 사용자 정보를 가져오지 못했습니다.');
           return response.json();
         }).catch(function (error) {
           mePromise = null;

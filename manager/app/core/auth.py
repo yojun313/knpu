@@ -13,7 +13,7 @@ from core.setting import get_setting, set_setting
 class WebLoginDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("KNPU 로그인")
+        self.setWindowTitle("KNPU FPEI 로그인")
         self.resize(480, 720)
         self.token = None
 

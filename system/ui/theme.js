@@ -121,7 +121,7 @@
 
     overlay.innerHTML =
       '<div class="theme-modal st-modal" role="dialog" aria-modal="true" aria-label="설정">'
-      + '<aside class="st-side"><div class="st-side-title"><h3>설정</h3><p>모든 KNPU 사이트에 똑같이 적용돼요</p></div>'
+      + '<aside class="st-side"><div class="st-side-title"><h3>설정</h3><p>KNPU FPEI 연구 시스템에 공통으로 적용됩니다.</p></div>'
       + '<nav class="st-nav">' + nav + '</nav></aside>'
       + '<div class="st-main">'
       + '<div class="st-head"><h4 id="stTitle">테마</h4><button type="button" class="theme-modal-close" aria-label="닫기">&times;</button></div>'
@@ -137,7 +137,7 @@
       // AI 모델
       + '<section class="st-pane" data-pane="ai">'
       + '<section class="llm-settings" id="llmSettings" hidden>'
-      + '<div class="llm-head"><span class="theme-modal-sub">AI 해석·요약·챗봇에 쓸 모델을 고릅니다. 로컬 LLM은 연구실 서버에서 무료로 동작하고, 내 GPT API를 연결하면 로컬이 실패할 때나 항상 GPT를 쓸 수 있어요.</span></div>'
+      + '<div class="llm-head"><span class="theme-modal-sub">AI 해석·요약·챗봇에 사용할 모델을 설정합니다. 로컬 LLM은 연구실 서버에서 무료로 제공되며, 개인 GPT API를 연결하면 선택한 사용 방식에 따라 GPT를 이용할 수 있습니다.</span></div>'
       + '<div class="llm-modes" id="llmModes"></div>'
       + '<div class="llm-openai" id="llmOpenai">'
       + '<label class="llm-field"><span>OpenAI API 키</span><input type="password" id="llmKey" autocomplete="off" placeholder="sk-..."><small id="llmKeyHint"></small></label>'
@@ -147,7 +147,7 @@
       + '</div>'
       + '<div class="llm-actions"><span class="llm-status" id="llmStatus"></span><button type="button" class="llm-save" id="llmSave">저장</button></div>'
       + '</section>'
-      + '<div class="st-empty" id="llmLogin" hidden>로그인하면 AI 모델을 고를 수 있어요.</div>'
+      + '<div class="st-empty" id="llmLogin" hidden>로그인 후 AI 모델을 설정할 수 있습니다.</div>'
       + '</section>'
       // 로컬 AI API
       + '<section class="st-pane" data-pane="labapi"><div id="labApi"><div class="st-empty">불러오는 중…</div></div></section>'
@@ -282,7 +282,7 @@
       if (!res.ok) throw new Error('unavailable');
       return res.json();
     }).then(function (st) { var l = document.getElementById('llmLogin'); if (l) l.hidden = true; renderLlmSettings(st); })
-      .catch(function () { sec.hidden = true; var l = document.getElementById('llmLogin'); if (l) { l.hidden = false; l.innerHTML = loginBox('로그인하면 AI 모델을 고를 수 있어요.').replace(/^<div class="st-empty">|<\/div>$/g, ''); } });
+      .catch(function () { sec.hidden = true; var l = document.getElementById('llmLogin'); if (l) { l.hidden = false; l.innerHTML = loginBox('로그인 후 AI 모델을 설정할 수 있습니다.').replace(/^<div class="st-empty">|<\/div>$/g, ''); } });
   }
   function saveLlmSettings(extra) {
     var body = {

@@ -165,9 +165,9 @@ def _send_signup_verification_link(username: str, email: str):
     verify_url = f"{BASE_URL}/verify-email?token={token}"
     sendEmail(
         email,
-        "[KNPU] 이메일 인증",
-        f"{username}님, 아래 링크를 클릭하면 KNPU 랩 시스템 가입 이메일 인증이 완료됩니다.\n\n"
-        f"{verify_url}\n\n{SIGNUP_LINK_TTL_MINUTES}분 이내에 클릭해주세요.",
+        "[KNPU FPEI] 이메일 인증",
+        f"{username}님, KNPU FPEI 연구 시스템 가입을 위한 이메일 인증을 진행하려면 아래 링크를 클릭하십시오.\n\n"
+        f"{verify_url}\n\n{SIGNUP_LINK_TTL_MINUTES}분 이내에 인증을 완료해 주시기 바랍니다.",
     )
 
 
@@ -232,7 +232,7 @@ def verify_email(data) -> dict:
     if auto_approved:
         sendEmail(
             user["email"],
-            "[KNPU] 가입이 완료되었습니다",
+            "[KNPU FPEI] 가입이 완료되었습니다",
             f"{user['name']}님, 기존에 등록된 멤버 프로필과 자동으로 연결되어 "
             f"별도 승인 없이 바로 knpu.re.kr에서 로그인할 수 있습니다.",
         )
@@ -418,9 +418,9 @@ def forgot_password(username: str) -> dict:
     )
     sendEmail(
         user["email"],
-        "[KNPU] 비밀번호 재설정 인증번호",
+        "[KNPU FPEI] 비밀번호 재설정 인증번호",
         f"{username}님, 비밀번호 재설정 인증번호는 다음과 같습니다.\n\n{code}\n\n"
-        f"{CODE_TTL_MINUTES}분 이내에 입력해주세요.",
+        f"{CODE_TTL_MINUTES}분 이내에 입력해 주시기 바랍니다.",
     )
     return {"message": "비밀번호 재설정 인증번호를 전송했습니다"}
 
@@ -483,8 +483,8 @@ def approve_request(uid: str, admin_uid: str) -> dict:
     )
     sendEmail(
         user["email"],
-        "[KNPU] 가입이 승인되었습니다",
-        f"{user['name']}님, KNPU 랩 시스템 가입이 승인되었습니다. "
+        "[KNPU FPEI] 가입이 승인되었습니다",
+        f"{user['name']}님, KNPU FPEI 연구 시스템 가입이 승인되었습니다. "
         f"이제 knpu.re.kr에서 로그인할 수 있습니다.",
     )
     _log_user_activity(
@@ -512,9 +512,9 @@ def reject_request(uid: str, admin_uid: str) -> dict:
     )
     sendEmail(
         user["email"],
-        "[KNPU] 가입 요청이 거절되었습니다",
-        f"{user['name']}님, KNPU 랩 시스템 가입 요청이 거절되었습니다. "
-        f"문의 사항은 관리자에게 연락해주세요.",
+        "[KNPU FPEI] 가입 요청이 거절되었습니다",
+        f"{user['name']}님, KNPU FPEI 연구 시스템 가입 요청이 거절되었습니다. "
+        f"문의 사항이 있는 경우 관리자에게 연락해 주시기 바랍니다.",
     )
     _log_user_activity(
         admin_uid,

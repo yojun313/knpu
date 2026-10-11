@@ -151,7 +151,7 @@ class NotificationPoller(commands.Cog):
             try:
                 await sendEmail(
                     fallback_email,
-                    doc.get("fallback_subject") or "[KNPU] 알림",
+                    doc.get("fallback_subject") or "[KNPU FPEI] 알림",
                     doc.get("fallback_text") or content,
                 )
                 status = "sent_via_email_fallback"
@@ -236,7 +236,7 @@ class NotificationPoller(commands.Cog):
                 try:
                     await sendEmail(
                         fallback_email,
-                        doc.get("fallback_subject") or "[KNPU] 알림",
+                        doc.get("fallback_subject") or "[KNPU FPEI] 알림",
                         doc.get("fallback_text") or str(doc.get("content") or ""),
                     )
                     status = "sent_via_email_fallback"

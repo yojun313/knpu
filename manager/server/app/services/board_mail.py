@@ -1,4 +1,4 @@
-"""Durable bug reply mail delivery, shared by all manager server workers."""
+"""Durable board reply mail delivery, shared by all manager server workers."""
 
 import asyncio
 import logging
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from pymongo import ReturnDocument
-from app.db import bug_board_db, user_db
+from app.db import bug_board_db, suggestion_board_db, user_db
 from system.endpoints import public_url
 from system.notify.mail import sendEmail
 
@@ -15,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 def send_next_reply_notification() -> bool:
+    bug_processed = _send_next_reply_notification(bug_board_db, "bug")
+    suggestion_processed = _send_next_reply_notification(
+        suggestion_board_db, "suggestion"
+    )
+    return bug_processed or suggestion_processed
+
+
+def _send_next_reply_notification(collection, board: str) -> bool:
     now = datetime.now(timezone.utc)
     claim = str(uuid.uuid4())
     due = {
@@ -26,7 +34,7 @@ def send_next_reply_notification() -> bool:
             {"mail.status": "sending", "mail.lease_until": {"$lte": now}},
         ]
     }
-    candidate = bug_board_db.find_one(
+    candidate = collection.find_one(
         {"replies": {"$elemMatch": due}}, {"uid": 1, "replies": 1}
     )
     if not candidate:
@@ -70,7 +78,7 @@ def send_next_reply_notification() -> bool:
             },
         ],
     }
-    doc = bug_board_db.find_one_and_update(
+    doc = collection.find_one_and_update(
         selector,
         {
             "$set": {
@@ -104,14 +112,15 @@ def send_next_reply_notification() -> bool:
             link = (
                 public_url("manager")
                 + "/board?"
-                + urlencode({"tab": "bug", "uid": doc["uid"]})
+                + urlencode({"tab": board, "uid": doc["uid"]})
             )
+            label = "버그리포트" if board == "bug" else "건의·제안사항"
             sendEmail(
                 recipient,
-                "[KNPU] 버그리포트에 관리자 답변이 등록되었습니다",
-                f"버그리포트: {doc.get('bugTitle', '')}\n"
+                f"[KNPU FPEI] {label}에 관리자 답변이 등록되었습니다",
+                f"{label}: {doc.get('bugTitle' if board == 'bug' else 'title', '')}\n"
                 f"답변자: {reply.get('writerName', '관리자')}\n\n{reply['text']}\n\n"
-                f"게시판에서 확인하기: {link}\n\n매니저 앱의 버그리포트에서도 확인할 수 있습니다.",
+                f"게시판에서 확인하기: {link}\n\n매니저 앱의 {label}에서도 확인할 수 있습니다.",
             )
     except Exception:
         status = "retry"
@@ -119,11 +128,13 @@ def send_next_reply_notification() -> bool:
         fields[f"{prefix}.mail.next_attempt"] = now + timedelta(seconds=delay)
         # Avoid logging credentials or recipient addresses from SMTP exceptions.
         logger.warning(
-            "Bug reply email delivery failed; retry queued (bug=%s)", doc["uid"]
+            "Board reply email delivery failed; retry queued (board=%s, uid=%s)",
+            board,
+            doc["uid"],
         )
     fields[f"{prefix}.mail.status"] = status
     fields[f"{prefix}.mail.updated_at"] = datetime.now(timezone.utc)
-    bug_board_db.update_one(
+    collection.update_one(
         selector,
         {
             "$set": fields,
@@ -143,6 +154,6 @@ async def reply_notification_loop():
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.warning("Bug reply notification queue unavailable; retrying later")
+            logger.warning("Board reply notification queue unavailable; retrying later")
             processed = False
         await asyncio.sleep(1 if processed else 10)

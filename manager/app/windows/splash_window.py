@@ -206,7 +206,7 @@ class AboutDialog(BaseDialog):
         text_layout.addWidget(version_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         desc_label = QLabel(
-            "MANAGER는 KNPU PAILAB에서 개발한 빅데이터 분석 및 관리 프로그램입니다."
+            "MANAGER는 KNPU FPEI에서 개발한 빅데이터 분석 및 관리 프로그램입니다."
         )
         desc_label.setWordWrap(True)
         desc_label.setStyleSheet(
