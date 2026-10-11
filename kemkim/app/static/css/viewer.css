@@ -678,8 +678,6 @@ dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{backgrou
 .graph-preview-toolbar .btn{width:auto;margin:0;white-space:nowrap}
 .graph-preview-toolbar input[type="range"]{flex:1;min-width:80px;max-width:250px;accent-color:var(--accent)}
 .graph-preview-toolbar output{min-width:48px;font-size:12px;text-align:center}
-#exportSection{border:1px solid var(--accent);border-radius:12px;margin:12px 10px;overflow:hidden}
-#exportSection>summary{font-weight:800;color:var(--text-strong)}
 .graph-export-main-btn{font-weight:800!important;min-height:42px}
 .graph-modal-head-actions{display:flex;align-items:center;gap:14px}
 .graph-modal-head-actions .btn{width:auto;margin:0;min-height:38px;font-weight:800}
