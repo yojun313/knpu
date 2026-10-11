@@ -58,7 +58,7 @@ class AddSuggestionDto(BaseModel):
     def strip_text(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("제목과 제안 내용을 입력해주세요.")
+            raise ValueError("제목과 제안 내용을 입력해 주시기 바랍니다.")
         return value
 
 
@@ -75,7 +75,7 @@ class BugReplyDto(BaseModel):
     def nonempty_text(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("답변 내용을 입력해주세요.")
+            raise ValueError("답변 내용을 입력해 주시기 바랍니다.")
         return value
 
 

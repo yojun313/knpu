@@ -132,7 +132,7 @@ def register(app) -> None:
         name = str(body.get("name") or "").strip()
         if name and name != user.get("name"):
             if len(name) > 40:
-                raise HTTPException(400, "이름은 40자 이하로 입력해 주세요.")
+                raise HTTPException(400, "이름은 40자 이하로 입력해 주시기 바랍니다.")
             updates["name"] = name
         new_pw = body.get("new_password")
         if new_pw:
@@ -242,7 +242,7 @@ def register_lab_llm_test(app) -> None:
             return JSONResponse(
                 {
                     "ok": False,
-                    "error": f"HTTP {r.status_code} (토큰을 확인하세요)"
+                    "error": f"HTTP {r.status_code} (토큰을 확인해 주시기 바랍니다)"
                     if r.status_code == 401
                     else f"HTTP {r.status_code}",
                 },

@@ -98,7 +98,7 @@ def verify_registration(
     if not stored or stored.get("user_uid") != user_uid:
         raise HTTPException(
             status_code=400,
-            detail="등록 요청이 만료되었거나 올바르지 않습니다. 다시 시도해주세요",
+            detail="등록 요청이 만료되었거나 올바르지 않습니다. 다시 시도해 주시기 바랍니다",
         )
 
     try:
@@ -162,7 +162,8 @@ def verify_authentication(credential: dict) -> dict:
     stored_challenge = _pop_challenge(challenge_b64, purpose="authentication")
     if not stored_challenge:
         raise HTTPException(
-            status_code=400, detail="로그인 요청이 만료되었습니다. 다시 시도해주세요"
+            status_code=400,
+            detail="로그인 요청이 만료되었습니다. 다시 시도해 주시기 바랍니다",
         )
 
     try:
@@ -183,7 +184,9 @@ def verify_authentication(credential: dict) -> dict:
 
     # 비밀번호 로그인과 동일한 계정 상태 검사(service.login 참고) — 패스키라고 우회되면 안 된다
     if user["status"] == "pending_email":
-        raise HTTPException(status_code=403, detail="이메일 인증을 먼저 완료해주세요")
+        raise HTTPException(
+            status_code=403, detail="이메일 인증을 먼저 완료해 주시기 바랍니다"
+        )
     if user["status"] == "pending_approval":
         raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다")
     if user["status"] == "rejected":

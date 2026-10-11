@@ -109,7 +109,7 @@ def build_topic_prompt(topic_hint: str, titles: list) -> str:
     return (
         f"다음은 '{topic_hint}'와 관련해 검색된 뉴스 기사 제목 {len(sample)}개입니다.\n"
         f"이 제목들에서 공통적으로 드러나는 주제를 1개에서 5개 사이로 추출하고, "
-        f"각 주제를 한두 문장으로 설명해주세요.\n\n{titles_block}"
+        f"각 주제를 한두 문장으로 설명해 주시기 바랍니다.\n\n{titles_block}"
     )
 
 

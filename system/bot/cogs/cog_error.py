@@ -42,7 +42,8 @@ class ErrorManageView(BotView):
             )
         except PyMongoError:
             return await reply(
-                interaction, "DB에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+                interaction,
+                "DB에 연결하지 못했습니다. 잠시 후 다시 시도해 주시기 바랍니다.",
             )
 
         if not result.matched_count:
@@ -64,7 +65,7 @@ class ErrorManageView(BotView):
         except discord.HTTPException:
             return await reply(
                 interaction,
-                f"DB 상태는 **{status_text}**(으)로 변경되었지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해주세요.",
+                f"DB 상태는 **{status_text}**(으)로 변경되었지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해 주시기 바랍니다.",
             )
         await reply(
             interaction,

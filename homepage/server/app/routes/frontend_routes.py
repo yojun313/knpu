@@ -139,13 +139,15 @@ def discord_link(token: str = "", user=Depends(get_current_user_optional)):
     req_doc = discord_link_col.find_one({"token": token})
     if not req_doc:
         return _discord_link_page(
-            "유효하지 않은 링크", "디스코드에서 인증 버튼을 다시 눌러주세요.", False
+            "유효하지 않은 링크",
+            "디스코드에서 인증 버튼을 다시 눌러 주시기 바랍니다.",
+            False,
         )
 
     if req_doc.get("status") != "pending":
         return _discord_link_page(
             "이미 처리된 링크",
-            "이미 인증이 완료되었거나 만료된 링크입니다. 디스코드로 돌아가주세요.",
+            "이미 인증이 완료되었거나 만료된 링크입니다. 디스코드로 돌아가 주시기 바랍니다.",
             False,
         )
 
@@ -158,7 +160,7 @@ def discord_link(token: str = "", user=Depends(get_current_user_optional)):
         )
         return _discord_link_page(
             "만료된 링크",
-            "인증 링크가 만료되었습니다. 디스코드에서 인증 버튼을 다시 눌러주세요.",
+            "인증 링크가 만료되었습니다. 디스코드에서 인증 버튼을 다시 눌러 주시기 바랍니다.",
             False,
         )
 
@@ -172,7 +174,7 @@ def discord_link(token: str = "", user=Depends(get_current_user_optional)):
 
     return _discord_link_page(
         "인증 완료",
-        f"{user.get('name')}님, knpu.re.kr 계정으로 인증되었습니다. 디스코드로 돌아가주세요.",
+        f"{user.get('name')}님, knpu.re.kr 계정으로 인증되었습니다. 디스코드로 돌아가 주시기 바랍니다.",
         True,
     )
 

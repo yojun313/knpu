@@ -26,7 +26,8 @@ def get_current_user(request: Request) -> dict:
     live = revalidate_session(payload, users_db)
     if not live:
         raise HTTPException(
-            status_code=401, detail="세션이 만료되었습니다. 다시 로그인해주세요"
+            status_code=401,
+            detail="세션이 만료되었습니다. 다시 로그인해 주시기 바랍니다",
         )
 
     return live

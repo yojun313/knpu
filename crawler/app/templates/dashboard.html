@@ -1435,7 +1435,7 @@
             <button class="modal-close" onclick="closePreviewModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="preview-note">각 테이블의 처음/마지막 50개 행만 표시됩니다. 전체 데이터는 다운로드를 이용해 주세요. (셀 클릭 시 전체 내용 표시)</div>
+            <div class="preview-note">각 테이블의 처음/마지막 50개 행만 표시됩니다. 전체 데이터는 다운로드를 이용해 주시기 바랍니다. (셀 클릭 시 전체 내용 표시)</div>
             <div class="preview-tabs" id="preview-tabs"></div>
             <div class="preview-table-wrap" id="preview-table-wrap">
                 <div class="empty" style="border:none;">불러오는 중...</div>
@@ -1514,7 +1514,7 @@
         <div class="modal-body">
             <p class="recrawl-warn">
                 기존에 수집된 <b>데이터·로그를 모두 삭제</b>하고 처음부터 다시 수집합니다.
-                되돌릴 수 없으니 필요한 데이터는 먼저 다운로드해 주세요.
+                되돌릴 수 없으니 필요한 데이터는 먼저 다운로드해 주시기 바랍니다.
             </p>
 
             <div class="form-field">
@@ -1674,7 +1674,7 @@
         e.preventDefault();
         const keyword = buildKeyword();
         if (!keyword) {
-            setStatus('키워드를 입력해 주세요.', true); return;
+            setStatus('키워드를 입력해 주시기 바랍니다.', true); return;
         }
         const body = {
             name:          document.getElementById('f-name').textContent.trim(),
@@ -1687,7 +1687,7 @@
             speed:         Number(document.getElementById('f-speed').value || 5),
         };
         if (!body.name || !body.start_day || !body.end_day) {
-            setStatus('필수 필드를 모두 입력해 주세요.', true); return;
+            setStatus('필수 필드를 모두 입력해 주시기 바랍니다.', true); return;
         }
         if (body.start_day > body.end_day) {
             setStatus('시작일은 종료일보다 늦을 수 없습니다.', true); return;
@@ -2217,7 +2217,7 @@
         const startDate = document.getElementById('save-start-date').value.trim();
         const endDate = document.getElementById('save-end-date').value.trim();
         if (dateOption === 'part' && (!/^\d{8}$/.test(startDate) || !/^\d{8}$/.test(endDate))) {
-            setStatus('기간 지정 시 시작일/종료일을 YYYYMMDD 형식으로 입력해주세요.', true);
+            setStatus('기간 지정 시 시작일/종료일을 YYYYMMDD 형식으로 입력해 주시기 바랍니다.', true);
             return;
         }
 
@@ -2329,16 +2329,16 @@
         let endDate = null;
 
         if (state === 'completed') {
-            const input = prompt(`이미 완료된 크롤링입니다. 이어서 수집할 새 종료일을 입력하세요 (YYYYMMDD)\n현재 종료일: ${formatDate(currentEndDay)}`, '');
+            const input = prompt(`이미 완료된 크롤링입니다. 이어서 수집할 새 종료일을 입력해 주시기 바랍니다 (YYYYMMDD)\n현재 종료일: ${formatDate(currentEndDay)}`, '');
             if (!input) return;
             endDate = input.trim();
-            if (!/^\d{8}$/.test(endDate)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해주세요.', true); return; }
+            if (!/^\d{8}$/.test(endDate)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해 주시기 바랍니다.', true); return; }
         } else {
             const input = prompt(`이어받기 종료일 (YYYYMMDD). 비워두면 원래 종료일(${formatDate(currentEndDay)}) 그대로 사용합니다.`, '');
             if (input === null) return;
             const trimmed = input.trim();
             if (trimmed) {
-                if (!/^\d{8}$/.test(trimmed)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해주세요.', true); return; }
+                if (!/^\d{8}$/.test(trimmed)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해 주시기 바랍니다.', true); return; }
                 endDate = trimmed;
             }
         }
@@ -2386,7 +2386,7 @@
         const endDate   = document.getElementById('recrawl-end').value.trim();
 
         if (!/^\d{8}$/.test(startDate) || !/^\d{8}$/.test(endDate)) {
-            setStatus('날짜는 YYYYMMDD 형식으로 입력해주세요.', true); return;
+            setStatus('날짜는 YYYYMMDD 형식으로 입력해 주시기 바랍니다.', true); return;
         }
         if (endDate < startDate) {
             setStatus('종료일이 시작일보다 빠릅니다.', true); return;

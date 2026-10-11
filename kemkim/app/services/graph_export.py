@@ -48,7 +48,7 @@ class GraphExportOptions(BaseModel):
     def limit_pixels(self):
         if self.width * self.height * self.dpi**2 > 36_000_000:
             raise ValueError(
-                "이미지는 최대 3,600만 픽셀입니다. 크기나 DPI를 줄여 주세요."
+                "이미지는 최대 3,600만 픽셀입니다. 크기나 DPI를 줄여 주시기 바랍니다."
             )
         return self
 
@@ -136,7 +136,7 @@ def _crop_image(data, positions, options):
     height = top_height + middle_height + bottom_height
     if width * height > 36_000_000:
         raise ValueError(
-            "영역 밖 단어 여백을 포함한 이미지가 너무 큽니다. DPI나 단어 크기를 줄여 주세요."
+            "영역 밖 단어 여백을 포함한 이미지가 너무 큽니다. DPI나 단어 크기를 줄여 주시기 바랍니다."
         )
     result = Image.new("RGB", (width, height), options.background)
     crop_x, crop_y = (
@@ -183,7 +183,7 @@ def render_graph(graph: dict, options: GraphExportOptions) -> bytes:
         and all(math.isfinite(float(v)) for v in xy)
     }
     if not coords:
-        raise ValueError("표시할 단어를 하나 이상 선택해 주세요.")
+        raise ValueError("표시할 단어를 하나 이상 선택해 주시기 바랍니다.")
     with _render_lock:
         font = FontProperties(
             fname="/usr/share/fonts/truetype/nanum/NanumGothic.ttf",

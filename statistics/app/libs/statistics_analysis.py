@@ -47,7 +47,7 @@ class StatisticsAnalysis:
         if missing_columns:
             raise ValueError(
                 f"다음 필수 컬럼이 누락되어 있습니다: {', '.join(missing_columns)}. "
-                f"CSV 파일 형식이 올바른지 확인해주세요.",
+                f"CSV 파일 형식이 올바른지 확인해 주시기 바랍니다.",
             )
         return True
 

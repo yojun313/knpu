@@ -240,7 +240,7 @@ def build_app(data: dict) -> dict:
         raise ValueError("작업 폴더(cwd)가 존재하지 않습니다.")
     script = str(data.get("script") or "").strip()
     if not script or "\n" in script or len(script) > 500:
-        raise ValueError("실행 파일(script)을 입력하세요.")
+        raise ValueError("실행 파일(script)을 입력해 주시기 바랍니다.")
     script_path = Path(script) if Path(script).is_absolute() else cwd / script
     if not script_path.exists() and not shutil.which(script):
         raise ValueError(f"실행 파일을 찾을 수 없습니다: {script}")

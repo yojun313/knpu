@@ -135,7 +135,9 @@ async def api_create_project(
     request: Request, file: UploadFile = File(...), name: str = Form(None)
 ):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "KEMKIM 분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(
+            400, "KEMKIM 분석 결과 zip 파일을 업로드해 주시기 바랍니다."
+        )
     content = await file.read()
     project_name = name or os.path.splitext(file.filename)[0]
     uid = _uid(request)
@@ -159,7 +161,9 @@ async def api_create_project(
 @router.post("/api/projects/upload-zip")
 async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "KEMKIM 분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(
+            400, "KEMKIM 분석 결과 zip 파일을 업로드해 주시기 바랍니다."
+        )
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     return JSONResponse(
@@ -366,7 +370,7 @@ async def project_upload_source(
     project_id: str, request: Request, file: UploadFile = File(...)
 ):
     if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "원본(토큰화 전) CSV 파일을 업로드해주세요.")
+        raise HTTPException(400, "원본(토큰화 전) CSV 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     uid = _uid(request)
     _handle_store_error(project_store.save_source_csv, uid, project_id, content)
@@ -389,7 +393,7 @@ async def project_source_from_crawl_db(project_id: str, request: Request):
     crawl_uid = str(body.get("uid") or "").strip()
     name = os.path.basename(str(body.get("name") or "").strip())
     if not crawl_uid or not name:
-        raise HTTPException(400, "크롤링 DB와 파일을 선택해주세요.")
+        raise HTTPException(400, "크롤링 DB와 파일을 선택해 주시기 바랍니다.")
     if not name.endswith(".parquet") or name.startswith("token_"):
         raise HTTPException(400, "해석에는 토큰화 전 원본 파일을 선택해야 합니다.")
 
@@ -440,7 +444,7 @@ async def project_interpret(project_id: str, request: Request):
 
     keywords = [k for k in (body.get("keywords") or []) if k]
     if not keywords:
-        raise HTTPException(400, "해석할 키워드를 선택해주세요.")
+        raise HTTPException(400, "해석할 키워드를 선택해 주시기 바랍니다.")
     match_mode = body.get("match_mode") or "or"
     if match_mode not in ("and", "or"):
         raise HTTPException(400, "match_mode는 and/or 중 하나여야 합니다.")
@@ -583,7 +587,7 @@ async def project_signal_ai(project_id: str, request: Request):
     body = await request.json()
     word = str(body.get("word") or "").strip()
     if not word:
-        raise HTTPException(400, "해석할 단어를 선택해주세요.")
+        raise HTTPException(400, "해석할 단어를 선택해 주시기 바랍니다.")
     graph = _handle_store_error(project_store.load_graph, uid, project_id)
     profile = signal_ai.signal_profile(graph, word)
     if not any(r["DoV"] is not None or r["DoD"] is not None for r in profile["series"]):
@@ -672,7 +676,7 @@ async def signal_job_status(job_id: str, request: Request):
     job = _signal_jobs.get(job_id)
     if not job or job["uid"] != uid:
         raise HTTPException(
-            404, "해석 작업을 찾을 수 없습니다. 서버가 다시 시작되었을 수 있어요."
+            404, "해석 작업을 찾을 수 없습니다. 서버가 다시 시작되었을 수 있습니다."
         )
     return JSONResponse(
         {k: job[k] for k in ("status", "stage", "prompt", "result", "error")}
@@ -888,7 +892,7 @@ async def api_crawl_db_select(uid: str, request: Request):
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "토큰화된 CSV 파일을 업로드해주세요.")
+        raise HTTPException(400, "토큰화된 CSV 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     suggested_start, suggested_end = _suggest_date_range(file.filename)
@@ -916,7 +920,9 @@ async def api_analyze_start(request: Request):
 
     raw_option = body.get("option") or {}
     if not raw_option.get("startdate") or not raw_option.get("enddate"):
-        raise HTTPException(400, "분석 시작일/종료일을 선택해주세요 (YYYYMMDD).")
+        raise HTTPException(
+            400, "분석 시작일/종료일을 선택해 주시기 바랍니다 (YYYYMMDD)."
+        )
 
     built_option = analyze_service.build_option(raw_option)
 

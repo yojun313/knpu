@@ -29,7 +29,7 @@ def check(request: Request, bucket: str, limit: int, window_sec: float) -> None:
         retry = int(window_sec - (now - q[0])) + 1
         raise HTTPException(
             status_code=429,
-            detail=f"요청이 너무 많습니다. {retry}초 후에 다시 시도해 주세요.",
+            detail=f"요청이 너무 많습니다. {retry}초 후에 다시 시도해 주시기 바랍니다.",
             headers={"Retry-After": str(retry)},
         )
     q.append(now)

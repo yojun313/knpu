@@ -74,7 +74,7 @@ def run_job(ctx) -> dict:
     )
     if result is None:
         raise JobError(
-            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주세요."
+            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주시기 바랍니다."
         )
     if isinstance(result, JSONResponse):
         body = json.loads(bytes(result.body))

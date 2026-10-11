@@ -63,10 +63,10 @@ class AhpPlugin:
             "kind": "pairwise",
             "question_text": (
                 f"'{parent_name}' 기준에서 다음 대안들이 서로 얼마나 우수한지 "
-                f"비교해 주세요."
+                f"비교해 주시기 바랍니다."
                 if is_alternative
                 else f"'{parent_name}' 측면에서 다음 항목들이 서로 얼마나 중요한지 "
-                f"비교해 주세요."
+                f"비교해 주시기 바랍니다."
             ),
             "is_alternative": is_alternative,
         }

@@ -396,7 +396,7 @@
         if (roundSel && roundSel.value) roundMap[cid] = Number(roundSel.value);
       });
       if (!collectionIds.length) {
-        ahpToast('최소 한 개 이상 선택하거나 "전체 합산"을 유지해 주세요', true);
+        ahpToast('최소 한 개 이상 선택하거나 "전체 합산"을 유지해 주시기 바랍니다', true);
         return;
       }
       scopeMode = 'custom';

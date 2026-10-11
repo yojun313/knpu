@@ -70,7 +70,7 @@ class SignupApprovalView(BotView):
         except discord.HTTPException:
             return await reply(
                 interaction,
-                f"{label} 처리는 완료했지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해주세요.",
+                f"{label} 처리는 완료했지만 메시지를 갱신하지 못했습니다. 봇의 메시지 수정 권한을 확인해 주시기 바랍니다.",
             )
         await reply(interaction, f"{label} 처리가 완료되었습니다.")
 

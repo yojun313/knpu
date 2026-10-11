@@ -267,7 +267,7 @@
         if (blob) triggerDownload(blob, base + '.png');
       }, 'image/png');
     };
-    img.onerror = function () { alert('PNG 변환에 실패했습니다. SVG로 내려받아 주세요.'); };
+    img.onerror = function () { alert('PNG 변환에 실패했습니다. SVG로 내려받아 주시기 바랍니다.'); };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
   }
 

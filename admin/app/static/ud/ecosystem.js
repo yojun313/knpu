@@ -24,7 +24,7 @@
     }
     apps = data.apps;
     if (!apps.length) {
-      list.innerHTML = '<div class="p-5 text-xs text-white/40">등록된 앱이 없습니다. <b>새 앱</b>으로 추가하세요.</div>';
+      list.innerHTML = '<div class="p-5 text-xs text-white/40">등록된 앱이 없습니다. <b>새 앱</b>으로 추가해 주시기 바랍니다.</div>';
       return;
     }
     list.innerHTML = apps.map((app) => `

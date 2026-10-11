@@ -60,7 +60,7 @@
       currentTag = tag;
       aiRequestSerial++;
       document.getElementById('aiRun').disabled = false;
-      document.getElementById('aiResult').innerHTML = '<p class="hint">분석 범위를 고른 뒤 실행하세요.</p>';
+      document.getElementById('aiResult').innerHTML = '<p class="hint">분석 범위를 고른 뒤 실행해 주시기 바랍니다.</p>';
       document.getElementById('projectName').textContent = meta.name || 'Network Analyzer';
       document.title = (meta.name || 'Network Analyzer') + ' · Network Analyzer';
       document.getElementById('emptyProject').hidden = true;
@@ -517,7 +517,7 @@
   }
 
   function deleteRailProject(p) {
-    if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    if (!confirm('"' + p.name + '" 프로젝트를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
       clearSavedSettings(p.project_id);
@@ -541,7 +541,7 @@
   // 폴더
   // ---------------------------------------------------------------
   function createFolder() {
-    var name = prompt('새 폴더 이름을 입력하세요');
+    var name = prompt('새 폴더 이름을 입력해 주시기 바랍니다');
     if (name === null) return;
     name = name.trim();
     if (!name) return;
@@ -576,7 +576,7 @@
   }
 
   function deleteFolder(f) {
-    if (!confirm('"' + f.name + '" 폴더를 삭제할까요?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
+    if (!confirm('"' + f.name + '" 폴더를 삭제하시겠습니까?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
     railApi('/api/folders/' + f.folder_id, { method: 'DELETE' }).then(function () {
       collapsedFolders.delete(f.folder_id);
       loadRailProjects();
@@ -656,7 +656,7 @@
     document.getElementById('analyzeStatus').textContent = '';
     document.getElementById('analyzeProgress').hidden = true;
     document.getElementById('analyzeForm').hidden = true;
-    document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택하세요';
+    document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택해 주시기 바랍니다';
     document.getElementById('crawlStatus').textContent = '';
     document.getElementById('crawlProgress').hidden = true;
     document.getElementById('crawlAnalyzeForm').hidden = true;
@@ -772,7 +772,7 @@
       analyzeStage = res.stage_id;
       document.getElementById('analyzeProjectName').value = res.suggested_name || '';
       parseCsvHeader(file, function (cols) {
-        if (!cols.length) { statusEl.textContent = '열 이름을 읽지 못했습니다. CSV 형식을 확인해주세요.'; return; }
+        if (!cols.length) { statusEl.textContent = '열 이름을 읽지 못했습니다. CSV 형식을 확인해 주시기 바랍니다.'; return; }
         var sel = document.getElementById('optTextCol');
         sel.innerHTML = '';
         cols.forEach(function (c) {
@@ -1806,7 +1806,7 @@
   function uploadAiSource(file) {
     if (!projectId || !file) return;
     var box = document.getElementById('aiSourceStatus');
-    if (!/\.csv$/i.test(file.name)) { box.textContent = 'CSV 파일을 선택해주세요.'; return; }
+    if (!/\.csv$/i.test(file.name)) { box.textContent = 'CSV 파일을 선택해 주시기 바랍니다.'; return; }
     var pid = projectId;
     var form = new FormData(); form.append('file', file);
     box.textContent = '원문 업로드 중...';
@@ -1947,7 +1947,7 @@
     var p = data.profile;
     var s = p.summary || {};
     var title = data.title || (p.mode === 'overview' ? '전체 네트워크 AI 분석' : '네트워크 AI 분석');
-    var preview = (data.report || '요약과 상세 분석 결과를 보려면 펼치세요.').replace(/[#>*_`\n]/g, ' ').replace(/\s+/g, ' ').trim();
+    var preview = (data.report || '요약과 상세 분석 결과를 보려면 펼쳐 주시기 바랍니다.').replace(/[#>*_`\n]/g, ' ').replace(/\s+/g, ' ').trim();
     var html = '<details class="ai-result-card" open><summary><span class="ai-result-kind">AI 분석</span><b>' + esc(title) + '</b>'
       + '<small>' + esc(fmtAnalyzedAt(data.created_at)) + '</small><i aria-hidden="true"></i></summary>'
       + '<div class="ai-result-preview">' + esc(preview) + '</div><div class="ai-result-body">'
@@ -2005,7 +2005,7 @@
       other: document.getElementById('aiOther').value,
       community: document.getElementById('aiCommunity').value };
     if (mode === 'pair' && payload.word === payload.other) {
-      document.getElementById('aiResult').textContent = '서로 다른 두 단어를 선택해주세요.';
+      document.getElementById('aiResult').textContent = '서로 다른 두 단어를 선택해 주시기 바랍니다.';
       return;
     }
     var serial = ++aiRequestSerial;
@@ -2071,7 +2071,7 @@
     var p = summary && summary.weight_percentiles;
     var el = document.getElementById('wHint');
     if (!p) { el.textContent = ''; return; }
-    el.textContent = '참고: 중앙값 ' + p.p50 + ' · 상위 25% ' + p.p75 + ' · 상위 10% ' + p.p90 + ' — 관계가 너무 많으면 p75~p90 부근부터 올려보세요.';
+    el.textContent = '참고: 중앙값 ' + p.p50 + ' · 상위 25% ' + p.p75 + ' · 상위 10% ' + p.p90 + ' — 관계가 너무 많으면 p75~p90 부근부터 업로드해 주시기 바랍니다.';
   }
   function setFreqHint() {
     var p = summary && summary.freq_percentiles;

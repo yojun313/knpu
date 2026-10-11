@@ -103,7 +103,7 @@ class VerificationCog(commands.Cog):
 
         embed = discord.Embed(
             title="Verification",
-            description="해당 서버는 knpu.re.kr 계정 로그인을 통한 인증이 필요합니다.\n아래 버튼을 눌러 인증을 시작하세요.",
+            description="해당 서버는 knpu.re.kr 계정 로그인을 통한 인증이 필요합니다.\n아래 버튼을 눌러 인증을 시작해 주시기 바랍니다.",
             color=0x5865F2,
         )
         embed.set_image(url="attachment://auth_banner.png")

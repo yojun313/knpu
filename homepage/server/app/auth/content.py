@@ -43,7 +43,7 @@ def save_content(collection, data, user):
         if not result.matched_count:
             raise HTTPException(
                 status_code=409,
-                detail="콘텐츠가 변경되었습니다. 목록을 새로고침해주세요.",
+                detail="콘텐츠가 변경되었습니다. 목록을 새로고침해 주시기 바랍니다.",
             )
         if doc.get(OWNER):
             data[OWNER] = doc[OWNER]
@@ -59,6 +59,7 @@ def delete_content(collection, uid, user):
     result = collection.delete_one(content_filter(collection, uid, user))
     if not result.deleted_count:
         raise HTTPException(
-            status_code=409, detail="콘텐츠가 변경되었습니다. 목록을 새로고침해주세요."
+            status_code=409,
+            detail="콘텐츠가 변경되었습니다. 목록을 새로고침해 주시기 바랍니다.",
         )
     return result

@@ -62,7 +62,7 @@
     let data = null;
     try { data = await res.json(); } catch (e) {}
     if (!res.ok) {
-      const err = new Error((data && data.detail && (typeof data.detail === 'string' ? data.detail : '입력값을 확인해 주세요.')) || `요청에 실패했습니다 (${res.status})`);
+      const err = new Error((data && data.detail && (typeof data.detail === 'string' ? data.detail : '입력값을 확인해 주시기 바랍니다.')) || `요청에 실패했습니다 (${res.status})`);
       err.status = res.status;
       throw err;
     }
@@ -225,7 +225,7 @@
     } catch (e) {
       if (e.status === 404) {
         store.clear();
-        toast('작성하던 내용을 찾을 수 없습니다. 보존 기간이 지나 삭제되었을 수 있어요.', 'error');
+        toast('작성하던 내용을 찾을 수 없습니다. 보존 기간이 지나 삭제되었을 수 있습니다.', 'error');
         location.hash = '#/';
         return;
       }
@@ -245,7 +245,7 @@
     app.innerHTML = `<div class="view">
       <section class="hero"><div class="container">
         <span class="eyebrow">${icon('shield')}경찰청 표준 양식 · 국가법령정보센터 원문 기반</span>
-        <h1>범죄 피해, <em>AI와 대화하며</em><br>고소장으로 정리하세요</h1>
+        <h1>범죄 피해, <em>AI와 대화하며</em><br>고소장으로 정리할 수 있습니다</h1>
         <p class="lead">사기·명예훼손·폭행·스토킹·성범죄·임금체불까지, 있었던 일을 편하게 말씀해 주시면 AI가 법령과 판례를 근거로 꼭 필요한 내용을 되묻고 경찰청 표준 양식의 고소장 초안을 만들어 드립니다.</p>
         <div id="resumeSlot"></div>
         <div class="mode-grid">
@@ -253,7 +253,7 @@
             <span class="badge badge-primary">추천</span>
             <span class="mode-icon">${icon('chat')}</span>
             <h3>AI와 대화로 작성</h3>
-            <p>상황을 이야기하듯 적으면 AI가 필요한 질문을 이어 가며 사실관계를 정리합니다. 무엇을 써야 할지 막막할 때 좋아요.</p>
+            <p>상황을 이야기하듯 적으면 AI가 필요한 질문을 이어 가며 사실관계를 정리합니다. 작성할 내용을 정리하기 어려운 경우 활용할 수 있습니다.</p>
             <span class="go">대화 시작하기 ${icon('right')}</span>
           </button>
           <button class="mode-card" data-start="form">
@@ -276,7 +276,7 @@
       </div></section>
 
       <section class="home-section"><div class="container">
-        <div class="row between wrap" style="margin-bottom:14px"><h2 class="section-title" style="margin:0">지원하는 사건 유형 <span class="muted" style="font-weight:600;font-size:15px">${m.crimes.length}가지</span></h2><span class="muted small">유형을 누르면 바로 시작할 수 있어요</span></div>
+        <div class="row between wrap" style="margin-bottom:14px"><h2 class="section-title" style="margin:0">지원하는 사건 유형 <span class="muted" style="font-weight:600;font-size:15px">${m.crimes.length}가지</span></h2><span class="muted small">유형을 누르면 바로 시작할 수 있습니다</span></div>
         <div class="cat-tabs" id="catTabs">${m.categories.map((cat, i) => `<button type="button" data-cat="${esc(cat)}" aria-pressed="${i === 0}">${esc(cat)}<span>${m.crimes.filter((c) => c.category === cat).length}</span></button>`).join('')}</div>
         <div class="type-grid" id="typeGrid"></div>
       </div></section>
@@ -286,8 +286,8 @@
           <div class="trust-item"><div class="ic">${icon('book')}</div><div><h4>근거는 공식 원문만 씁니다</h4>
             <p>AI의 기억이 아니라 국가법령정보센터에서 받은 현행 법령과 판례 원문만 근거로 삼고, 인용한 조문은 원문과 함께 보여 드립니다.</p>
             <div class="kb-stats muted small"><span><b>${m.kb.statutes}</b>개 조문</span><span><b>${m.kb.precedents}</b>건 판례</span><span>기준일 ${esc(m.kb.built)}</span></div></div></div>
-          <div class="trust-item warn"><div class="ic">${icon('alert')}</div><div><h4>꼭 확인해 주세요</h4>
-            <p>AI가 만든 문서는 법률 자문이 아닌 초안입니다. 제출 전에 사실관계를 반드시 직접 확인하세요. 허위 사실로 고소하면 무고죄(형법 제156조)로 처벌받을 수 있습니다.</p></div></div>
+          <div class="trust-item warn"><div class="ic">${icon('alert')}</div><div><h4>꼭 확인해 주시기 바랍니다</h4>
+            <p>AI가 만든 문서는 법률 자문이 아닌 초안입니다. 제출 전에 사실관계를 반드시 직접 확인해 주시기 바랍니다. 허위 사실로 고소하면 무고죄(형법 제156조)로 처벌받을 수 있습니다.</p></div></div>
         </div>
       </div></section>
       <footer class="app-footer"><div class="container"><span>경찰대학 데이터사이언스전공 미래치안공학연구원(FPEI)</span><span>입력한 정보는 작성 후 ${72}시간이 지나면 자동으로 삭제됩니다.</span></div></footer>
@@ -316,11 +316,11 @@
         S.case = c;
         const label = c.state.crime_label ? `${c.state.crime_label} · ` : '';
         const where = c.files ? '완성된 고소장이 있습니다' : `작성 중 (${Math.round(c.state.completeness * 100)}%)`;
-        $('#resumeSlot').innerHTML = `<div class="resume-banner">${icon('clock')}<div class="grow"><b>이어서 작성할 수 있어요</b><div class="muted small">${esc(label + where)}</div></div>
+        $('#resumeSlot').innerHTML = `<div class="resume-banner">${icon('clock')}<div class="grow"><b>이어서 작성할 수 있습니다</b><div class="muted small">${esc(label + where)}</div></div>
           <a class="btn btn-soft btn-sm" href="${caseHome(c)}">${c.files ? '고소장 보기' : '이어서 작성'}</a>
           <button class="btn btn-ghost btn-sm btn-icon" id="forgetBtn" aria-label="지우기">${icon('x')}</button></div>`;
         $('#forgetBtn').addEventListener('click', async () => {
-          if (!(await confirmSheet({ title: '작성 내용을 지울까요?', message: '서버에 저장된 대화·사건 정리·문서를 지금 바로 삭제합니다.', ok: '삭제', danger: true }))) return;
+          if (!(await confirmSheet({ title: '작성 내용을 삭제하시겠습니까?', message: '서버에 저장된 대화·사건 정리·문서를 지금 바로 삭제합니다.', ok: '삭제', danger: true }))) return;
           try { await api(`/cases/${savedId}`, { method: 'DELETE' }); } catch (e) {}
           store.clear();
           $('#resumeSlot').innerHTML = '';
@@ -334,7 +334,7 @@
 
   // ── 사건 정리 패널 (채팅) ────────────────────────────────────────────────
   function lawCards(items, kind) {
-    if (!items || !items.length) return '<p class="muted small" style="margin:0 0 8px">사건 내용이 모이면 관련 근거를 찾아 드려요.</p>';
+    if (!items || !items.length) return '<p class="muted small" style="margin:0 0 8px">사건 내용이 모이면 관련 근거를 찾아 드립니다.</p>';
     return items.map((x) => kind === 'statute'
       ? `<details class="law-card"><summary><div class="t"><b>${esc(x.label)} <span>(${esc(x.title)})</span></b><span>${esc(x.reason || '')}</span></div>${icon('down').replace('class="i"', 'class="i chev"')}</summary>
           <div class="law-text">${esc(x.text)}<div class="law-meta"><span>시행 ${esc(fmtDate(x.effective))}</span><a href="${esc(x.url)}" target="_blank" rel="noopener">원문 ${icon('ext')}</a></div></div></details>`
@@ -354,7 +354,7 @@
       return `<button class="fact-row ${cls} ${changed.includes(k) ? 'flash' : ''}" data-fact="${esc(k)}">
         <span class="st">${v ? icon('check') : ''}</span>
         <span class="grow"><span class="lbl">${esc(d.label)}${req && !v ? '<span class="badge badge-warn" style="height:19px;font-size:11px">필요</span>' : ''}</span>
-        <span class="val">${v ? esc(v) : req ? '아직 확인되지 않았어요' : '선택 사항'}</span></span></button>`;
+        <span class="val">${v ? esc(v) : req ? '아직 확인되지 않았습니다' : '선택 사항'}</span></span></button>`;
     }).join('');
   }
 
@@ -373,21 +373,21 @@
         <div class="row between" style="margin-bottom:10px"><h3 style="font-size:16px;font-weight:800">사건 정리</h3>
           <button class="btn btn-ghost btn-sm btn-icon only-mobile" id="panelClose" aria-label="닫기">${icon('x')}</button></div>
         <select class="select" id="crimeSelect" aria-label="사건 유형">
-          <option value="">사건 유형 — 대화에서 자동으로 파악해요</option>
+          <option value="">사건 유형 — 대화에서 자동으로 파악합니다</option>
           ${S.meta.categories.map((cat) => `<optgroup label="${esc(cat)}">${S.meta.crimes.filter((c) => c.category === cat).map((c) => `<option value="${esc(c.id)}" ${c.id === state.crime_type ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</optgroup>`).join('')}
         </select>
         <div class="row between small" style="margin:12px 0 6px"><span class="muted">필수 항목</span><b>${crime ? `${done} / ${req}` : '-'}</b></div>
         <div class="progress"><span style="width:${pct}%"></span></div>
       </div>
       <div class="case-panel-body">
-        <div class="panel-section"><h4>${icon('list')}정리된 사실 <span class="muted" style="text-transform:none;font-weight:600">· 눌러서 고칠 수 있어요</span></h4>${state.crime_type ? factRows(state, changed) : '<p class="muted small" style="margin:0">어떤 피해인지 말씀해 주시면 필요한 항목을 보여 드릴게요.</p>'}</div>
-        ${crime && crime.notes && crime.notes.length ? `<div class="panel-section"><h4>${icon('alert')}꼭 알아 두세요</h4><ul class="list-clean small" style="color:var(--ink-2)">${crime.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>` : ''}
+        <div class="panel-section"><h4>${icon('list')}정리된 사실 <span class="muted" style="text-transform:none;font-weight:600">· 눌러서 고칠 수 있습니다</span></h4>${state.crime_type ? factRows(state, changed) : '<p class="muted small" style="margin:0">어떤 피해인지 말씀해 주시면 필요한 항목을 보여 드리겠습니다.</p>'}</div>
+        ${crime && crime.notes && crime.notes.length ? `<div class="panel-section"><h4>${icon('alert')}주요 유의 사항</h4><ul class="list-clean small" style="color:var(--ink-2)">${crime.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>` : ''}
         <div class="panel-section"><h4>${icon('scale')}관련 법령</h4>${lawCards(state.statutes, 'statute')}</div>
         <div class="panel-section"><h4>${icon('book')}참고 판례</h4>${lawCards(state.precedents, 'prec')}</div>
       </div>
       <div class="case-panel-foot">
         <button class="btn btn-primary btn-lg btn-block" id="toParty" ${state.crime_type ? '' : 'disabled'}>${icon('form')}고소장 작성하기</button>
-        <div class="tiny muted" style="text-align:center;margin-top:8px">${state.ready ? '필수 항목이 모두 모였어요.' : state.crime_type ? `필수 항목 ${state.missing.length}개가 더 필요해요.` : '사건 유형이 정해지면 진행할 수 있어요.'}</div>
+        <div class="tiny muted" style="text-align:center;margin-top:8px">${state.ready ? '필수 항목의 입력이 완료되었습니다.' : state.crime_type ? `필수 항목 ${state.missing.length}개가 더 필요합니다.` : '사건 유형이 정해지면 진행할 수 있습니다.'}</div>
       </div>`;
     // 메시지마다 다시 그려도 보던 위치와 펼친 조문 카드는 유지한다
     $('.case-panel-body', panel).scrollTop = keepScroll;
@@ -473,12 +473,12 @@
 
   async function proceedToParty() {
     const st = S.case.state;
-    if (!st.crime_type) return toast('사건 유형을 먼저 정해 주세요.', 'error');
+    if (!st.crime_type) return toast('사건 유형을 먼저 정해 주시기 바랍니다.', 'error');
     if (st.missing.length) {
       const list = st.missing.map((k) => `<li>${esc(factDef(k).label)}</li>`).join('');
       const ok = await confirmSheet({
-        title: '아직 비어 있는 필수 항목이 있어요',
-        message: `<p style="margin:0 0 8px">아래 내용이 빠지면 고소장의 설득력이 떨어질 수 있어요.</p><ul class="list-clean">${list}</ul>`,
+        title: '아직 비어 있는 필수 항목이 있습니다',
+        message: `<p style="margin:0 0 8px">아래 내용이 빠지면 고소장의 설득력이 떨어질 수 있습니다.</p><ul class="list-clean">${list}</ul>`,
         ok: '그래도 진행', cancel: '더 이야기하기',
       });
       if (!ok) return;
@@ -506,10 +506,10 @@
         <div class="composer-wrap"><div class="composer-inner">
           <div class="suggestions" id="suggestions"></div>
           <form class="composer" id="composer">
-            <textarea id="chatInput" rows="1" placeholder="있었던 일을 편하게 적어 주세요" aria-label="메시지"></textarea>
+            <textarea id="chatInput" rows="1" placeholder="있었던 일을 편하게 적어 주시기 바랍니다" aria-label="메시지"></textarea>
             <button class="send" id="sendBtn" type="submit" aria-label="보내기" disabled>${icon('send')}</button>
           </form>
-          <div class="composer-note">AI는 실수할 수 있어요. 사건 정리에서 내용을 확인하고 직접 고칠 수 있습니다.</div>
+          <div class="composer-note">AI는 실수할 수 있습니다. 사건 정리에서 내용을 확인하고 직접 고칠 수 있습니다.</div>
         </div></div>
       </section>
       <aside class="case-panel" id="casePanel" aria-label="사건 정리"></aside>
@@ -557,7 +557,7 @@
     $('#sendBtn').disabled = true;
     renderSuggestions([]);
     inner.insertAdjacentHTML('beforeend', msgHtml({ role: 'user', content: text }));
-    inner.insertAdjacentHTML('beforeend', `<div class="msg ai" id="pending"><div class="avatar">${icon('scale')}</div><div class="bubble"><span class="thinking"><span class="dots"><i></i><i></i><i></i></span><span id="pendingText">생각하고 있어요</span></span></div></div>`);
+    inner.insertAdjacentHTML('beforeend', `<div class="msg ai" id="pending"><div class="avatar">${icon('scale')}</div><div class="bubble"><span class="thinking"><span class="dots"><i></i><i></i><i></i></span><span id="pendingText">생각하고 있습니다</span></span></div></div>`);
     scrollChat();
     let reply = '';
     let bubble = null;
@@ -572,9 +572,9 @@
           $('#chatSub').textContent = ev.crime_label || '사건 유형을 파악하는 중';
           const n = (ev.changed || []).filter((k) => k !== 'crime_type').length;
           if (n) {
-            $('#pending').insertAdjacentHTML('beforebegin', `<div class="fact-toast">${icon('check')}사건 정리에 ${n}개 항목을 반영했어요</div>`);
+            $('#pending').insertAdjacentHTML('beforebegin', `<div class="fact-toast">${icon('check')}사건 정리에 ${n}개 항목을 반영했습니다</div>`);
           }
-          const pt = $('#pendingText'); if (pt) pt.textContent = '답변을 쓰고 있어요';
+          const pt = $('#pendingText'); if (pt) pt.textContent = '답변을 쓰고 있습니다';
         } else if (ev.type === 'delta') {
           if (!bubble) { bubble = $('#pending .bubble'); bubble.classList.add('cursor'); }
           reply += ev.text;
@@ -612,7 +612,7 @@
   // ── 양식 모드 ────────────────────────────────────────────────────────────
   const FORM_GROUPS = [
     { title: '언제, 어디서', icon: 'clock', keys: ['incident_datetime', 'incident_place', 'employment_period', 'known_date', 'post_url'] },
-    { title: '무슨 일이 있었나요', icon: 'chat', keys: ['relationship', 'background', 'contact_channel', 'item_name', 'trade_url', 'company_name', 'company_relation', 'contract_details', 'contract_document', 'counterparty_capacity', 'actual_performance', 'other_contractors', 'insurance_reason', 'insurance_payment', 'court', 'claim', 'false_reason', 'lawsuit_motive', 'entrustment', 'duty', 'document_details', 'act_description', 'words_used', 'weapon', 'deception', 'belief_reason'] },
+    { title: '무슨 일이 있었습니까', icon: 'chat', keys: ['relationship', 'background', 'contact_channel', 'item_name', 'trade_url', 'company_name', 'company_relation', 'contract_details', 'contract_document', 'counterparty_capacity', 'actual_performance', 'other_contractors', 'insurance_reason', 'insurance_payment', 'court', 'claim', 'false_reason', 'lawsuit_motive', 'entrustment', 'duty', 'document_details', 'act_description', 'words_used', 'weapon', 'deception', 'belief_reason'] },
     { title: '피해 내용', icon: 'bank', keys: ['disposition', 'target_property', 'injury', 'wage_details', 'damage_amount', 'repayment', 'post_conduct'] },
     { title: '정황과 상대방 정보', icon: 'search', keys: ['publicity', 'identifiability', 'falsity', 'repeated', 'victim_response', 'intent_evidence', 'other_victims', 'witnesses', 'suspect_description'] },
     { title: '증거와 기타 사항', icon: 'list', keys: ['evidence', 'additional_notes'] },
@@ -628,11 +628,11 @@
     const c = S.case;
     if (step === 'type' || !c.state.crime_type) {
       app.innerHTML = `<div class="container narrow page view">${stepper(0)}
-        <div class="page-head"><h1 class="page-title">어떤 피해를 입으셨나요?</h1><p class="page-sub">가장 가까운 유형을 골라 주세요. 유형에 맞는 질문으로 양식을 구성합니다.</p></div>
+        <div class="page-head"><h1 class="page-title">어떤 피해를 입으셨습니까?</h1><p class="page-sub">가장 가까운 유형을 골라 주시기 바랍니다. 유형에 맞는 질문으로 양식을 구성합니다.</p></div>
         <div class="search-box">${icon('search')}<input class="input" id="typeSearch" placeholder="예: 욕설, 폭행, 스토킹, 퇴직금" autocomplete="off"></div>
         <div id="typeGroups"></div>
         <div class="form-actions"><a class="btn btn-outline" href="#/">${icon('left')}처음으로</a>
-          <a class="btn btn-ghost" href="#" id="toChat">${icon('chat')}잘 모르겠어요 — AI와 대화로 작성</a></div></div>`;
+          <a class="btn btn-ghost" href="#" id="toChat">${icon('chat')}유형 선택이 어려운 경우 — AI와 대화로 작성</a></div></div>`;
       const drawTypes = () => {
         const q = ($('#typeSearch').value || '').trim();
         const hit = (x) => !q || (x.label + x.summary + x.category).includes(q);
@@ -640,7 +640,7 @@
           const list = S.meta.crimes.filter((x) => x.category === cat && hit(x));
           return list.length ? `<h3 class="type-group-title">${esc(cat)}</h3><div class="type-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${list.map((x) => typeCard(x, x.id === c.state.crime_type)).join('')}</div>` : '';
         }).join('');
-        $('#typeGroups').innerHTML = html || `<p class="muted">'${esc(q)}'에 맞는 유형이 없어요. ‘기타 사기’를 고르거나 AI와 대화로 작성해 보세요.</p>`;
+        $('#typeGroups').innerHTML = html || `<p class="muted">'${esc(q)}'에 맞는 유형이 없습니다. ‘기타 사기’를 고르거나 AI와 대화로 작성해 보시기 바랍니다.</p>`;
         $$('#typeGroups [data-type]', app).forEach((b) => b.addEventListener('click', () => pickType(b.dataset.type)));
       };
       $('#typeSearch').addEventListener('input', drawTypes);
@@ -667,11 +667,11 @@
         ${factInputHtml(k, c.state.facts[k], `f_${k}`)}${d.hint && (d.type === 'choice' || d.type === 'datetime') ? `<div class="field-hint">${esc(d.hint)}</div>` : ''}</label>`;
     };
     app.innerHTML = `<div class="container narrow page view">${stepper(1)}
-      <div class="page-head row between wrap"><div><h1 class="page-title">${esc(crime.label)} 내용 입력</h1><p class="page-sub">입력한 내용은 자동으로 저장됩니다. <span class="req">*</span> 표시는 꼭 필요한 항목이에요.</p></div>
+      <div class="page-head row between wrap"><div><h1 class="page-title">${esc(crime.label)} 내용 입력</h1><p class="page-sub">입력한 내용은 자동으로 저장됩니다. <span class="req">*</span> 표시는 꼭 필요한 항목입니다.</p></div>
         <a class="btn btn-ghost btn-sm" href="#/form/${c.id}/type">유형 바꾸기</a></div>
       ${notesHtml(crime.notes)}
       ${groups.map((g) => `<div class="card form-section"><div class="card-head"><h3>${icon(g.icon)}${esc(g.title)}</h3></div><div class="card-body grid-2">${g.keys.map(fieldHtml).join('')}</div></div>`).join('')}
-      <div class="callout"><span class="i">${icon('info')}</span><div>상대방이 한 말은 <b>따옴표로 그대로</b>, 금액과 날짜는 <b>숫자로 정확히</b> 적을수록 좋은 고소장이 됩니다. 모르는 부분은 “모름”이라고 적어도 괜찮아요.</div></div>
+      <div class="callout"><span class="i">${icon('info')}</span><div>상대방이 한 말은 <b>따옴표로 그대로</b>, 금액과 날짜는 <b>숫자로 정확히</b> 적을수록 좋은 고소장이 됩니다. 확인되지 않은 부분은 “모름”으로 작성할 수 있습니다.</div></div>
       <div class="sticky-actions"><div class="form-actions" style="margin:0"><a class="btn btn-outline" href="#/form/${c.id}/type">${icon('left')}이전</a>
         <button class="btn btn-primary btn-lg" id="formNext">다음: 당사자 정보 ${icon('right')}</button></div></div></div>`;
     wireChoices(app);
@@ -696,7 +696,7 @@
         const first = $(`[data-field="${CSS.escape(missing[0])}"]`);
         first.scrollIntoView({ behavior: 'smooth', block: 'center' });
         const ok = await confirmSheet({
-          title: `필수 항목 ${missing.length}개가 비어 있어요`,
+          title: `필수 항목 ${missing.length}개가 비어 있습니다`,
           message: `<ul class="list-clean">${missing.map((k) => `<li>${esc(factDef(k).label)}</li>`).join('')}</ul>`,
           ok: '그래도 진행', cancel: '채우러 가기',
         });
@@ -731,13 +731,13 @@
     const r = required ? '<span class="req">*</span>' : '';
     const hasRrn = p && p.has_rrn;
     return `<div class="grid-2">
-      <label class="field"><span class="field-label">성명${r}</span><input class="input" id="${prefix}_name" value="${esc(p.name || '')}" autocomplete="${required ? 'name' : 'off'}" ${required ? '' : 'placeholder="모르면 비워 두세요"'}></label>
+      <label class="field"><span class="field-label">성명${r}</span><input class="input" id="${prefix}_name" value="${esc(p.name || '')}" autocomplete="${required ? 'name' : 'off'}" ${required ? '' : 'placeholder="모르면 비워 두어 주시기 바랍니다"'}></label>
       <label class="field"><span class="field-label">주민등록번호${r}</span><div class="input-group">
         <input class="input" id="${prefix}_rrn1" inputmode="numeric" maxlength="6" placeholder="앞 6자리" autocomplete="off">
         <input class="input" id="${prefix}_rrn2" type="password" inputmode="numeric" maxlength="7" placeholder="${hasRrn ? '입력한 번호 유지' : '뒤 7자리'}" autocomplete="off"></div>
-        ${hasRrn ? '<div class="field-hint">이전에 입력한 번호가 있어요. 바꾸려면 새로 입력하세요.</div>' : ''}</label>
+        ${hasRrn ? '<div class="field-hint">이전에 입력한 번호가 있습니다. 바꾸려면 새로 입력해 주시기 바랍니다.</div>' : ''}</label>
       <label class="field span-2"><span class="field-label">주소${r}</span><div class="input-group">
-        <input class="input" id="${prefix}_addr1" value="${esc(p.address || '')}" placeholder="주소 검색을 눌러 주세요"><button type="button" class="btn btn-outline" data-postcode="${prefix}">${icon('search')}주소 검색</button></div>
+        <input class="input" id="${prefix}_addr1" value="${esc(p.address || '')}" placeholder="주소 검색을 눌러 주시기 바랍니다"><button type="button" class="btn btn-outline" data-postcode="${prefix}">${icon('search')}주소 검색</button></div>
         <input class="input" id="${prefix}_addr2" placeholder="상세 주소" style="margin-top:8px"></label>
       <label class="field"><span class="field-label">직업</span><input class="input" id="${prefix}_job" value="${esc(p.job || '')}"></label>
       <label class="field"><span class="field-label">전화번호${r}</span><input class="input" id="${prefix}_phone" value="${esc(p.phone || '')}" inputmode="tel" placeholder="010-0000-0000" autocomplete="${required ? 'tel' : 'off'}"></label>
@@ -754,10 +754,10 @@
       <div class="page-head"><h1 class="page-title">당사자 정보</h1><p class="page-sub">이 정보는 고소장 양식의 인적사항 칸에만 들어가며, <b>AI에게는 보내지 않습니다.</b></p></div>
       <div class="card form-section"><div class="card-head"><h3>${icon('user')}고소인 (본인)</h3></div><div class="card-body">${personFields('c', comp, true)}</div></div>
       <div class="card form-section"><div class="card-head"><h3>${icon('user')}피고소인 (상대방)</h3><span class="badge">아는 것만</span></div><div class="card-body">
-        <p class="muted small" style="margin:0 0 16px">모르는 칸은 비워 두세요. 닉네임·계좌 명의 등 사건 정리에 적은 특정 정보는 ‘기타사항’에 자동으로 들어갑니다.</p>${personFields('s', susp, false)}</div></div>
+        <p class="muted small" style="margin:0 0 16px">모르는 칸은 비워 두어 주시기 바랍니다. 닉네임·계좌 명의 등 사건 정리에 적은 특정 정보는 ‘기타사항’에 자동으로 들어갑니다.</p>${personFields('s', susp, false)}</div></div>
       <div class="card form-section"><div class="card-head"><h3>${icon('bank')}제출 정보</h3></div><div class="card-body grid-2">
         <label class="field" data-police><span class="field-label">시·도 경찰청<span class="req">*</span></span><select class="select" id="sido"><option value="">불러오는 중…</option></select></label>
-        <label class="field" data-police><span class="field-label">제출할 경찰서<span class="req">*</span></span><select class="select" id="station" disabled><option value="">경찰청을 먼저 고르세요</option></select></label>
+        <label class="field" data-police><span class="field-label">제출할 경찰서<span class="req">*</span></span><select class="select" id="station" disabled><option value="">경찰청을 먼저 선택해 주시기 바랍니다</option></select></label>
         <label class="field span-2" id="customWrap" hidden><span class="field-label">제출 기관<span class="req">*</span></span><input class="input" id="customStation" placeholder="예: 서울지방고용노동청 서울강남지청"></label>
         <div class="span-2"><label class="check"><input type="checkbox" id="customToggle"><span>경찰서가 아닌 기관에 제출합니다 (예: 임금체불은 지방고용노동청)</span></label></div>
         <label class="field"><span class="field-label">고소일자<span class="req">*</span></span><input class="input" type="date" id="filingDate" value="${esc(party.filing_date || today())}" max="9999-12-31"></label>
@@ -853,9 +853,9 @@
       else { mark('sido', !sido.value); mark('station', !station.value); }
       if (errs.length) {
         $(`#${errs[0]}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return toast('빨간색으로 표시된 칸을 확인해 주세요.', 'error');
+        return toast('빨간색으로 표시된 칸을 확인해 주시기 바랍니다.', 'error');
       }
-      if (!$('#agree1').checked || !$('#agree2').checked) return toast('안내 사항 두 가지에 동의해 주세요.', 'error');
+      if (!$('#agree1').checked || !$('#agree2').checked) return toast('안내 사항 두 가지에 동의해 주시기 바랍니다.', 'error');
       S.pendingParty = body;
       go(`#/generating/${c.id}`);
     });
@@ -879,8 +879,8 @@
     const party = S.pendingParty;
     app.innerHTML = `<div class="container view"><div class="gen-wrap"><div class="card gen-card" style="text-align:center">
       <div class="gen-orb">${icon('spark')}</div>
-      <h1 class="page-title">고소장을 만들고 있어요</h1>
-      <p class="page-sub">법령과 판례를 검토하며 작성하느라 1~2분 정도 걸립니다. 이 화면을 닫지 말아 주세요.</p>
+      <h1 class="page-title">고소장을 만들고 있습니다</h1>
+      <p class="page-sub">법령과 판례를 검토하며 작성하느라 1~2분 정도 걸립니다. 이 화면을 닫지 말아 주시기 바랍니다.</p>
       <ul class="gen-steps" style="text-align:left">${GEN_STEPS.map(([k, t]) => `<li class="wait" data-step="${k}"><span class="ic">${icon('clock')}</span><div><b>${t}</b><small></small></div></li>`).join('')}</ul>
       <div class="tiny muted" id="elapsed" style="margin-top:14px"></div>
       <div id="genErr"></div></div></div></div>`;
@@ -938,7 +938,7 @@
       <div class="card result-hero">
         <div class="ok">${icon('check')}</div>
         <div class="grow"><h1 class="page-title" style="font-size:22px">고소장 초안이 완성되었습니다</h1>
-          <div class="muted small">${esc(a.offense || '')} · ${esc(c.state.crime_label || '')} · 고소인 서명·날인 후 제출하세요</div></div>
+          <div class="muted small">${esc(a.offense || '')} · ${esc(c.state.crime_label || '')} · 고소인 서명·날인 후 제출해 주시기 바랍니다</div></div>
         <div class="row wrap">
           ${c.files.pdf ? `<a class="btn btn-primary" href="${fileUrl('pdf', true)}">${icon('download')}PDF</a>` : ''}
           <a class="btn btn-outline" href="${fileUrl('docx', true)}">${icon('download')}Word</a>
@@ -967,7 +967,7 @@
         <div class="card" id="docCard">
           <div class="card-head"><h3>${icon('form')}고소장 내용</h3><button class="btn btn-soft btn-sm" id="editBtn">${icon('pencil')}문장 고치기</button></div>
           ${Object.keys(SECTION_LABELS).map((k) => `<div class="doc-section" data-sec="${k}"><h4>${SECTION_LABELS[k]}</h4><div class="doc-text ${c.draft[k] ? '' : 'empty'}">${c.draft[k] ? esc(c.draft[k]) : '(비어 있음)'}</div></div>`).join('')}
-          <div class="card-body" id="editActions" hidden style="border-top:1px solid var(--line)"><div class="row between wrap"><span class="muted small">고친 내용으로 Word·PDF 문서를 다시 만듭니다. AI는 다시 호출하지 않아요.</span>
+          <div class="card-body" id="editActions" hidden style="border-top:1px solid var(--line)"><div class="row between wrap"><span class="muted small">고친 내용으로 Word·PDF 문서를 다시 만듭니다. AI는 다시 호출하지 않습니다.</span>
             <div class="row"><button class="btn btn-outline" id="cancelEdit">취소</button><button class="btn btn-primary" id="saveEdit">${icon('refresh')}문서 다시 만들기</button></div></div></div>
         </div>
         <div class="row wrap" style="margin-top:16px">
@@ -976,7 +976,7 @@
           <button class="btn btn-ghost" id="newBtn">${icon('plus')}새 고소장</button>
         </div>
       </div>
-      <div class="card preview-frame">${c.files.pdf ? `<iframe title="고소장 미리보기" src="${fileUrl('pdf')}#view=FitH"></iframe>` : `<div class="card-body muted">PDF 미리보기를 만들지 못했습니다. Word 파일을 받아 확인해 주세요.</div>`}</div>
+      <div class="card preview-frame">${c.files.pdf ? `<iframe title="고소장 미리보기" src="${fileUrl('pdf')}#view=FitH"></iframe>` : `<div class="card-body muted">PDF 미리보기를 만들지 못했습니다. Word 파일을 받아 확인해 주시기 바랍니다.</div>`}</div>
     </div>`;
     if (errs.length) $('#docCard').scrollIntoView({ block: 'nearest' });
 
@@ -1001,7 +1001,7 @@
       } catch (err) { toast(err.message, 'error'); e.target.disabled = false; }
     });
     $('#newBtn').addEventListener('click', async () => {
-      if (!(await confirmSheet({ title: '새 고소장을 작성할까요?', message: '지금 고소장은 보존 기간 동안 서버에 남아 있지만, 이 기기에서 바로 이어서 열 수는 없게 됩니다. 필요하면 먼저 파일을 받아 두세요.', ok: '새로 작성' }))) return;
+      if (!(await confirmSheet({ title: '새 고소장을 작성하시겠습니까?', message: '지금 고소장은 보존 기간 동안 서버에 남아 있지만, 이 기기에서 바로 이어서 열 수는 없게 됩니다. 필요하면 먼저 파일을 받아 두어 주시기 바랍니다.', ok: '새로 작성' }))) return;
       store.clear();
       S.case = null;
       go('#/');
@@ -1032,7 +1032,7 @@
       <div class="card card-pad"><h3 style="font-size:15px;font-weight:800;margin-bottom:10px">${icon('list')} 준비하면 좋은 증거</h3><ul class="list-clean">${(a.evidence_tips || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
       ${a.limitation ? `<div class="callout"><span class="i">${icon('clock')}</span><div><b>공소시효 (참고)</b><div>${esc(a.limitation)}</div></div></div>` : ''}
       <div class="card"><div class="card-head"><h3>${icon('book')}참고 판례</h3><span class="muted tiny">국가법령정보센터 원문</span></div><div class="card-body">${lawCards(a.precedents || [], 'prec')}</div></div>
-      <p class="tiny muted">이 검토는 입력한 사실관계를 바탕으로 AI가 작성한 참고 자료이며, 법률 자문을 대신하지 않습니다. 사건이 복잡하거나 피해액이 크다면 변호사 또는 대한법률구조공단(국번 없이 132)의 상담을 받아 보세요.</p>
+      <p class="tiny muted">이 검토는 입력한 사실관계를 바탕으로 AI가 작성한 참고 자료이며, 법률 자문을 대신하지 않습니다. 사건이 복잡하거나 피해액이 크다면 변호사 또는 대한법률구조공단(국번 없이 132)의 상담을 받아 보시기 바랍니다.</p>
     </div>`;
   }
 
@@ -1043,10 +1043,10 @@
     const card = (s, sub) => s ? `<details class="law-card"><summary><div class="t"><b>${esc(s.label)} <span>(${esc(s.title)})</span></b><span>${esc(sub)}</span></div>${icon('down').replace('class="i"', 'class="i chev"')}</summary><div class="law-text">${esc(s.text)}<div class="law-meta"><span>시행 ${esc(fmtDate(s.effective))}</span><a href="${esc(s.url)}" target="_blank" rel="noopener">원문 ${icon('ext')}</a></div></div></details>` : '';
     body.innerHTML = `<div class="stack" style="max-width:860px">
       <div class="card card-pad"><h3 class="section-title">제출 순서</h3><ol class="guide-steps">
-        <li><b>내용 확인·수정</b><p>‘고소장’ 탭에서 사실관계와 날짜·금액을 다시 확인하세요. Word 파일로 받아 직접 고쳐도 됩니다.</p></li>
-        <li><b>출력 후 서명·날인</b><p>고소인 란에 직접 서명하거나 도장을 찍어야 합니다. 제출일도 확인하세요.</p></li>
-        <li><b>증거자료 준비</b><p>‘6. 증거자료’에 적은 자료의 사본(이체확인증, 대화 캡처 출력물 등)을 함께 준비하세요. 원본은 본인이 보관합니다.</p></li>
-        <li><b>경찰서 제출</b><p>${party.station ? `선택한 <b>${esc(party.station)}</b> 또는 ` : ''}가까운 경찰서 민원실에 신분증을 지참해 방문 제출하세요. 온라인 사기·사이버 명예훼손 등 사이버 범죄는 경찰청 사이버범죄 신고시스템(ECRM)으로 신고할 수도 있습니다.</p></li>
+        <li><b>내용 확인·수정</b><p>‘고소장’ 탭에서 사실관계와 날짜·금액을 다시 확인해 주시기 바랍니다. Word 파일로 받아 직접 고쳐도 됩니다.</p></li>
+        <li><b>출력 후 서명·날인</b><p>고소인 란에 직접 서명하거나 도장을 찍어야 합니다. 제출일도 확인해 주시기 바랍니다.</p></li>
+        <li><b>증거자료 준비</b><p>‘6. 증거자료’에 적은 자료의 사본(이체확인증, 대화 캡처 출력물 등)을 함께 준비해 주시기 바랍니다. 원본은 본인이 보관합니다.</p></li>
+        <li><b>경찰서 제출</b><p>${party.station ? `선택한 <b>${esc(party.station)}</b> 또는 ` : ''}가까운 경찰서 민원실에 신분증을 지참해 방문 제출해 주시기 바랍니다. 온라인 사기·사이버 명예훼손 등 사이버 범죄는 경찰청 사이버범죄 신고시스템(ECRM)으로 신고할 수도 있습니다.</p></li>
         <li><b>접수 후 진행</b><p>접수 후 담당 수사관이 배정되며, 고소인 진술 조사를 위해 연락이 올 수 있습니다.</p></li>
       </ol></div>
       <div class="card"><div class="card-head"><h3>${icon('book')}관련 절차 법령</h3><span class="muted tiny">국가법령정보센터 원문</span></div><div class="card-body">
@@ -1057,13 +1057,13 @@
         ${card(law('001215-26'), '배상명령을 신청하는 방법')}
         ${card(law('001692-156'), '허위 고소에 대한 처벌')}
       </div></div>
-      <div class="callout"><span class="i">${icon('info')}</span><div><b>피해금 돌려받기</b><div>형사재판에서 법원에 배상명령을 신청하면 별도 민사소송 없이 피해금 배상 판결을 받을 수도 있습니다(소송촉진 등에 관한 특례법 제25조·제26조). 보이스피싱 피해라면 즉시 112와 송금한 은행에 지급정지를 요청하세요.</div></div></div>
-      <div class="callout warn"><span class="i">${icon('alert')}</span><div><b>무고죄 주의</b><div>사실과 다른 내용으로 고소하면 형법 제156조의 무고죄로 처벌받을 수 있습니다. 모르는 부분은 추측하지 말고 ‘불상’ 또는 ‘모름’으로 적으세요.</div></div></div>
-      <div class="card card-pad row between wrap"><div><b>개인정보 삭제</b><div class="muted small">입력한 정보와 문서는 72시간 후 자동으로 삭제됩니다. 지금 바로 지울 수도 있어요.</div></div>
+      <div class="callout"><span class="i">${icon('info')}</span><div><b>피해금 돌려받기</b><div>형사재판에서 법원에 배상명령을 신청하면 별도 민사소송 없이 피해금 배상 판결을 받을 수도 있습니다(소송촉진 등에 관한 특례법 제25조·제26조). 보이스피싱 피해라면 즉시 112와 송금한 은행에 지급정지를 요청해 주시기 바랍니다.</div></div></div>
+      <div class="callout warn"><span class="i">${icon('alert')}</span><div><b>무고죄 주의</b><div>사실과 다른 내용으로 고소하면 형법 제156조의 무고죄로 처벌받을 수 있습니다. 모르는 부분은 추측하지 말고 ‘불상’ 또는 ‘모름’으로 작성해 주시기 바랍니다.</div></div></div>
+      <div class="card card-pad row between wrap"><div><b>개인정보 삭제</b><div class="muted small">입력한 정보와 문서는 72시간 후 자동으로 삭제됩니다. 지금 바로 지울 수도 있습니다.</div></div>
         <button class="btn btn-danger-ghost" id="delBtn">${icon('trash')}지금 삭제</button></div>
     </div>`;
     $('#delBtn').addEventListener('click', async () => {
-      if (!(await confirmSheet({ title: '모든 정보를 삭제할까요?', message: '대화·사건 정리·당사자 정보·생성된 문서가 서버에서 즉시 삭제되며 되돌릴 수 없습니다.', ok: '삭제', danger: true }))) return;
+      if (!(await confirmSheet({ title: '모든 정보를 삭제하시겠습니까?', message: '대화·사건 정리·당사자 정보·생성된 문서가 서버에서 즉시 삭제되며 되돌릴 수 없습니다.', ok: '삭제', danger: true }))) return;
       try { await api(`/cases/${S.case.id}`, { method: 'DELETE' }); } catch (e) {}
       store.clear();
       S.case = null;

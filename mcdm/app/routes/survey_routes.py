@@ -92,7 +92,7 @@ async def _latest_hierarchy(project_id: str) -> dict:
         {"project_id": project_id}, sort=[("version", -1)]
     )
     if not h:
-        raise HTTPException(404, "계층을 먼저 설계해 주세요")
+        raise HTTPException(404, "계층을 먼저 설계해 주시기 바랍니다")
     return h
 
 
@@ -177,7 +177,7 @@ async def update_survey(project_id: str, request: Request):
         ):
             raise HTTPException(
                 409,
-                "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경하세요.",
+                "발행된 설문은 분석방법을 바꿀 수 없습니다. 새 설문 버전에서 변경해 주시기 바랍니다.",
             )
         patch["methods"] = new_methods
         hierarchy = await hierarchies_db.find_one(
@@ -391,7 +391,9 @@ async def publish_survey(project_id: str, request: Request):
     project = await _get_project_checked(project_id, request)
     doc = await _ensure_survey(project)
     if not doc.get("groups"):
-        raise HTTPException(400, "비교할 항목이 없습니다. 계층을 먼저 완성해 주세요")
+        raise HTTPException(
+            400, "비교할 항목이 없습니다. 계층을 먼저 완성해 주시기 바랍니다"
+        )
     await surveys_db.update_one(
         {"_id": doc["_id"]}, {"$set": {"status": "published", "updated_at": _now()}}
     )

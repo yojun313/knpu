@@ -29,8 +29,8 @@
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
   };
   var SUGGEST = {
-    public: ['연구원은 어떤 연구를 하나요?', '대학원 입학 지원 자격과 일정 알려줘', '최근 발표한 논문을 알려줘', '연구실에서 운영하는 시스템은 뭐가 있어?'],
-    member: ['KEMKIM에서 약한 신호 AI 해석은 어떻게 써?', '크롤러에서 새 수집 작업을 추가하는 방법', '통계 분석 AI 리포트는 어떤 근거로 만들어져?', '새 서비스를 PM2에 등록하려면?'],
+    public: ['연구원은 어떤 연구를 합니까?', '대학원 입학 지원 자격과 일정을 안내해 주시기 바랍니다.', '최근 발표한 논문을 안내해 주시기 바랍니다.', '연구실에서 운영하는 시스템에는 무엇이 있습니까?'],
+    member: ['KEMKIM 약한 신호 AI 해석 기능의 사용 방법은 무엇입니까?', '크롤러에서 새 수집 작업을 추가하는 방법', '통계 분석 AI 리포트의 작성 근거는 무엇입니까?', '새 서비스를 PM2에 등록하는 절차는 무엇입니까?'],
   };
 
   var state = {
@@ -57,7 +57,7 @@
       '<div class="kcb-grip" title="끌어서 크기 조절" aria-hidden="true"></div>' +
       '<div class="kcb-modes" role="tablist" hidden><button type="button" data-mode="public">홈페이지 안내</button><button type="button" data-mode="member">구성원용</button></div>' +
       '<div class="kcb-log" aria-live="polite"></div>' +
-      '<form class="kcb-compose"><textarea rows="1" maxlength="2000" placeholder="무엇이든 물어보세요" title="Enter 전송 · Shift+Enter 줄바꿈" aria-label="질문"></textarea>' +
+      '<form class="kcb-compose"><textarea rows="1" maxlength="2000" placeholder="무엇이든 질문해 주시기 바랍니다" title="Enter 전송 · Shift+Enter 줄바꿈" aria-label="질문"></textarea>' +
         '<button type="submit" class="kcb-send" aria-label="보내기">' + ICON.send + '</button></form>' +
       '<div class="kcb-foot" data-foot></div>' +
     '</div>';
@@ -153,7 +153,7 @@
       }
       return box;
     }
-    if (m.error) { box.textContent = m.content || '답변을 만들지 못했어요.'; return box; }
+    if (m.error) { box.textContent = m.content || '답변을 만들지 못했습니다.'; return box; }
     var body = el('div', 'kcb-md'); body.innerHTML = md(m.content || ''); box.appendChild(body);
     if ((m.sources || []).length) {
       var refs = el('div', 'kcb-refs');
@@ -186,9 +186,9 @@
       ? (cfg.user ? cfg.user.name + '님 · 연구 시스템 도우미' : '연구실 구성원 전용')
       : (cfg.user ? cfg.user.name + '님 · 홈페이지 안내' : '미래치안공학연구원 홈페이지 안내');
     root.querySelector('[data-foot]').textContent = loggedIn()
-      ? (state.mode === 'member' ? '연구실 코드를 직접 찾아 읽고 답해요. ' : '') + '대화는 모두 계정에 저장돼 다른 기기에서도 이어져요.'
-      : state.mode === 'member' ? '연구실 구성원 계정으로 로그인하면 쓸 수 있어요.'
-      : 'AI 답변은 홈페이지 정보를 바탕으로 하며 틀릴 수 있어요. 로그인하지 않으면 대화는 이 브라우저에만 저장돼요.';
+      ? (state.mode === 'member' ? '연구실 코드를 직접 찾아 읽고 답변합니다. ' : '') + '대화는 모두 계정에 저장돼 다른 기기에서도 이어집니다.'
+      : state.mode === 'member' ? '연구실 구성원 계정으로 로그인하면 쓸 수 있습니다.'
+      : 'AI 답변은 홈페이지 정보를 바탕으로 하며 틀릴 수 있습니다. 로그인하지 않으면 대화는 이 브라우저에만 저장됩니다.';
     modes.hidden = !(cfg.public && cfg.member);
     modes.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === state.mode); });
     listBtn.hidden = !loggedIn() || (FULL && wide());
@@ -200,7 +200,7 @@
     var add = el('button', 'kcb-newconv'); add.type = 'button'; add.innerHTML = ICON.plus + '<span>새 대화 시작</span>';
     add.addEventListener('click', function () { newConversation(); });
     host.appendChild(add);
-    if (!state.convs.length) { host.appendChild(el('div', 'kcb-empty', '저장된 대화가 없어요.')); return; }
+    if (!state.convs.length) { host.appendChild(el('div', 'kcb-empty', '저장된 대화가 없습니다.')); return; }
     state.convs.forEach(function (c) {
       var row = el('div', 'kcb-conv' + (state.active && state.active.id === c.id ? ' on' : ''));
       var main = el('button', 'kcb-conv-main'); main.type = 'button';
@@ -235,7 +235,7 @@
     var head = el('div', 'kcb-side-head'); head.innerHTML = '<div class="kcb-avatar">' + ICON.spark + '</div><b>FPEI AI 도우미</b>';
     side.appendChild(head);
     if (!loggedIn()) {
-      side.appendChild(el('p', 'kcb-side-note', '로그인하면 대화가 계정에 저장되고 여기에서 지난 대화를 골라 이어갈 수 있어요. 지금 대화는 이 브라우저에만 남아요.'));
+      side.appendChild(el('p', 'kcb-side-note', '로그인하면 대화가 계정에 저장되고 여기에서 지난 대화를 골라 이어갈 수 있습니다. 지금 대화는 이 브라우저에만 남습니다.'));
       return;
     }
     var box = el('div', 'kcb-side-list'); renderList(box); side.appendChild(box);
@@ -248,7 +248,7 @@
     log.innerHTML = '';
     if (state.mode === 'member' && !loggedIn()) {
       var box = el('div', 'kcb-login');
-      box.innerHTML = '<b>구성원 로그인이 필요해요</b><p>연구 시스템 도우미는 연구실 구성원만 쓸 수 있어요. 로그인하면 코드 · 사용법 질문에 답해 드리고, 대화도 계정에 저장돼요.</p>';
+      box.innerHTML = '<b>구성원 로그인이 필요합니다</b><p>연구 시스템 도우미는 연구실 구성원만 쓸 수 있습니다. 로그인하면 코드 · 사용법 질문에 답해 드리고, 대화도 계정에 저장됩니다.</p>';
       var a = el('a', null, '로그인하기'); a.href = loginUrl(); box.appendChild(a);
       log.appendChild(box);
       form.style.display = 'none';
@@ -260,8 +260,8 @@
     if (!list.length) {
       var w = el('div', 'kcb-welcome');
       w.innerHTML = state.mode === 'member'
-        ? '<b>무엇을 도와드릴까요?</b>연구실 소프트웨어(크롤러 · 통계 · KEMKIM · 네트워크 · Whisper · PolyDecision · MANAGER 등) 사용법이나 동작 원리를 물어보세요. 코드를 직접 찾아 읽고 근거와 함께 답해요.'
-        : '<b>안녕하세요! 미래치안공학연구원입니다.</b>연구 분야, 구성원, 논문, 소식, 대학원 입학 안내 등 홈페이지 정보를 바탕으로 답해 드려요.';
+        ? '<b>문의 내용을 입력해 주시기 바랍니다.</b>연구실 소프트웨어(크롤러 · 통계 · KEMKIM · 네트워크 · Whisper · PolyDecision · MANAGER 등) 사용법이나 동작 원리를 질문해 주시기 바랍니다. 코드를 직접 찾아 읽고 근거와 함께 답변합니다.'
+        : '<b>KNPU FPEI 연구 시스템 이용 안내입니다.</b>연구 분야, 구성원, 논문, 소식, 대학원 입학 안내 등 홈페이지 정보를 바탕으로 답해 드립니다.';
       var sg = el('div', 'kcb-suggest');
       SUGGEST[state.mode].forEach(function (q) {
         var b = el('button', null, q); b.type = 'button';
@@ -290,7 +290,7 @@
   function api(path, opts) {
     return fetch(API + path, Object.assign({ credentials: 'same-origin', cache: 'no-store' }, opts || {})).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (b) {
-        if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : '요청이 실패했어요 (' + r.status + ')');
+        if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : '요청이 실패했습니다 (' + r.status + ')');
         return b;
       });
     });
@@ -360,7 +360,7 @@
       var i = state.anon.indexOf(pending);
       var msg = j.status === 'done'
         ? { role: 'assistant', content: j.result.answer, sources: j.result.sources, steps: j.result.steps, llm: j.result.llm, created_at: new Date().toISOString() }
-        : { role: 'assistant', error: true, content: j.error || '답변을 만들지 못했어요.' };
+        : { role: 'assistant', error: true, content: j.error || '답변을 만들지 못했습니다.' };
       if (i >= 0) state.anon[i] = msg;
       saveAnon(); render();
     }).catch(function (e) {

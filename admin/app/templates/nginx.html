@@ -236,7 +236,7 @@
                 {% endfor %}
                 <tr class="folder-empty-row{{ ' in-folder' if g.id else '' }} border-b border-zinc-800/50">
                     <td colspan="5" class="px-6 py-4 text-zinc-600 text-xs italic">
-                        {% if g.id %}이 폴더에 담긴 도메인이 없습니다. 도메인 행을 끌어다 놓으세요.{% else %}모든 도메인이 폴더에 들어가 있습니다.{% endif %}
+                        {% if g.id %}이 폴더에 담긴 도메인이 없습니다. 도메인 행을 끌어다 놓아 주시기 바랍니다.{% else %}모든 도메인이 폴더에 들어가 있습니다.{% endif %}
                     </td>
                 </tr>
             </tbody>
@@ -276,7 +276,7 @@
             <div>
                 <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">경로 (선택, 기본 /)</label>
                 <input type="text" name="path" placeholder="/ 또는 /api" value="/" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white">
-                <p class="text-[11px] text-zinc-600 mt-1.5">이미 등록된 도메인에 경로만 추가하려면 목록에서 "+" 버튼을 사용하세요 (인증서 재발급 없이 즉시 반영됩니다).</p>
+                <p class="text-[11px] text-zinc-600 mt-1.5">이미 등록된 도메인에 경로만 추가하려면 목록에서 "+" 버튼을 사용해 주시기 바랍니다 (인증서 재발급 없이 즉시 반영됩니다).</p>
             </div>
             <div>
                 <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">SSL 인증용 이메일</label>
@@ -405,7 +405,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2 text-white text-center">정말 삭제하시겠습니까?</h3>
         <p class="text-zinc-400 text-sm text-center mb-6 leading-relaxed">
-            이 작업은 되돌릴 수 없으며 인증서도 함께 파기됩니다. 삭제를 확정하려면 아래에 도메인 이름을 똑같이 입력하세요: <br>
+            이 작업은 되돌릴 수 없으며 인증서도 함께 파기됩니다. 삭제를 확정하려면 아래에 도메인 이름을 똑같이 입력해 주시기 바랍니다: <br>
             <span id="targetDomainDisplay" class="text-red-400 font-black mt-2 inline-block px-2 py-1 bg-red-950/20 rounded border border-red-900/30"></span>
         </p>
         
@@ -470,7 +470,7 @@
                     {% endfor %}
                 </select>
                 {% if not folders %}
-                <p class="text-[11px] text-zinc-600 mt-1.5">아직 폴더가 없습니다. 상단의 "+ 새 폴더"로 먼저 만들어 주세요.</p>
+                <p class="text-[11px] text-zinc-600 mt-1.5">아직 폴더가 없습니다. 상단의 "+ 새 폴더"로 먼저 만들어 주시기 바랍니다.</p>
                 {% endif %}
             </div>
             <div class="flex gap-2 pt-2">
@@ -720,7 +720,7 @@ document.getElementById('moveFolderForm').onsubmit = async (e) => {
 };
 
 async function deleteFolder(folderId, name) {
-    if (!confirm(`'${name}' 폴더를 삭제할까요?\n\n안에 있던 도메인은 미분류로 이동하며, nginx 설정과 인증서는 그대로입니다.`)) return;
+    if (!confirm(`'${name}' 폴더를 삭제하시겠습니까?\n\n안에 있던 도메인은 미분류로 이동하며, nginx 설정과 인증서는 그대로입니다.`)) return;
     await postFolder(`/nginx/folders/${folderId}`, { method: 'DELETE' }, '폴더 삭제에 실패했습니다.');
 }
 
@@ -939,7 +939,7 @@ document.getElementById('renameDomainForm').onsubmit = async (e) => {
         return;
     }
 
-    if (!confirm(`${oldDomain} → ${newDomain}\n\n경로와 포트는 유지되고, 새 도메인으로 SSL 인증서를 다시 발급합니다. 진행할까요?`)) {
+    if (!confirm(`${oldDomain} → ${newDomain}\n\n경로와 포트는 유지되고, 새 도메인으로 SSL 인증서를 다시 발급합니다. 진행하시겠습니까?`)) {
         return;
     }
 

@@ -149,7 +149,7 @@
           '<button data-act="del" data-id="' + k.uuid + '" class="danger" title="삭제">🗑</button>' +
           '</span></div>';
       }).join('')
-      : '<p class="ni-empty">아직 하위 기준이 없습니다. 아래에 입력해 추가하세요.</p>';
+      : '<p class="ni-empty">아직 하위 기준이 없습니다. 아래에 입력해 추가해 주시기 바랍니다.</p>';
   }
 
   function focusAddChild(parentId) {
@@ -181,8 +181,8 @@
     if (node.parent_id === null) { ahpToast('최상위 목표는 삭제할 수 없습니다', true); return; }
     const n = descendantCount(id);
     const msg = n > 0
-      ? ('"' + node.name + '"과(와) 하위 ' + n + '개 항목이 함께 삭제됩니다. 계속할까요?')
-      : ('"' + node.name + '"을(를) 삭제할까요?');
+      ? ('"' + node.name + '"과(와) 하위 ' + n + '개 항목이 함께 삭제됩니다. 계속하시겠습니까?')
+      : ('"' + node.name + '"을(를) 삭제하시겠습니까?');
     if (!confirm(msg)) return;
     const toRemove = new Set([id]);
     let changed = true;
@@ -240,7 +240,7 @@
 
   function moveNode() {
     const newParentId = document.getElementById('moveTargetSelect').value;
-    if (!newParentId) { ahpToast('이동할 위치를 선택해 주세요', true); return; }
+    if (!newParentId) { ahpToast('이동할 위치를 선택해 주시기 바랍니다', true); return; }
     const node = byId(movingNodeId);
     node.parent_id = newParentId;
     const sibs = childrenOf(newParentId).filter(function (s) { return s.uuid !== node.uuid; });
@@ -256,7 +256,7 @@
   function renderAltList() {
     const list = document.getElementById('altList');
     if (!alternatives.length) {
-      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">비교할 대안을 추가해 주세요.</p>';
+      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">비교할 대안을 추가해 주시기 바랍니다.</p>';
       return;
     }
     const sorted = alternatives.slice().sort(function (a, b) { return a.order - b.order; });
@@ -353,7 +353,7 @@
   function renderBrainList() {
     const list = document.getElementById('brainList');
     if (!brainCards.length) {
-      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">떠오르는 기준·항목을 자유롭게 적어보세요.</p>';
+      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">떠오르는 기준·항목을 자유롭게 작성해 주시기 바랍니다.</p>';
       return;
     }
     list.innerHTML = brainCards.map(function (c, i) {
@@ -527,7 +527,7 @@
     }
 
     if (methodsSurvey.status === 'published' &&
-      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속할까요?')) return;
+      !confirm('이미 발행된 설문입니다. 방법을 바꾼 항목의 기존 응답은 초기화됩니다. 계속하시겠습니까?')) return;
     try {
       const res = await ahpApi('/api/projects/' + projectId + '/survey', {
         method: 'PUT',
@@ -710,7 +710,7 @@
     });
 
     function downloadDiagram(format) {
-      if (!tree.nodes.length) { ahpToast('먼저 계층을 만들어 주세요', true); return; }
+      if (!tree.nodes.length) { ahpToast('먼저 계층을 만들어 주시기 바랍니다', true); return; }
       const title = (document.getElementById('projTitle').textContent || '계층도').trim();
       window.AHPHierarchyDiagram.download(tree.nodes, { format: format, filename: title + '_계층도' });
     }
@@ -833,7 +833,7 @@
 
     document.getElementById('deleteProjectBtn').addEventListener('click', async function () {
       const title = document.getElementById('projTitle').textContent;
-      if (!confirm('"' + title + '"을(를) 삭제할까요?\n계층·설문지·수집된 모든 응답이 함께 삭제되며 되돌릴 수 없습니다.')) return;
+      if (!confirm('"' + title + '"을(를) 삭제하시겠습니까?\n계층·설문지·수집된 모든 응답이 함께 삭제되며 되돌릴 수 없습니다.')) return;
       try {
         await ahpApi('/api/projects/' + projectId, { method: 'DELETE' });
         ahpToast('삭제했습니다');

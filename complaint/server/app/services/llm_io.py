@@ -120,7 +120,7 @@ async def chat_json(
         {"role": "assistant", "content": res.text[:6000]},
         {
             "role": "user",
-            "content": "위 응답을 설명 없이 올바른 JSON 객체 하나로만 다시 출력하세요. 코드블록도 쓰지 마세요.",
+            "content": "위 응답을 설명 없이 올바른 JSON 객체 하나로만 다시 출력해 주시기 바랍니다. 코드블록도 쓰지 마시기 바랍니다.",
         },
     ]
     res2 = await achat(repair, temperature=0, max_tokens=max_tokens)

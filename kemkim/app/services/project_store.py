@@ -81,7 +81,7 @@ def _find_kemkim_root(extract_dir: str) -> str:
             return candidate
 
     raise ValueError(
-        "kemkim_info.txt를 찾지 못했습니다. KEMKIM 분석 결과 zip을 그대로 업로드해주세요."
+        "kemkim_info.txt를 찾지 못했습니다. KEMKIM 분석 결과 zip을 그대로 업로드해 주시기 바랍니다."
     )
 
 
@@ -362,7 +362,7 @@ def rename_project(uid: str, project_id: str, new_name: str) -> dict:
     _get_owned_doc(uid, project_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     kemkim_projects_db.update_one(
         {"_id": project_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
@@ -410,7 +410,7 @@ def list_all_folders() -> list:
 def create_folder(uid: str, name: str) -> dict:
     name = (name or "").strip()
     if not name:
-        raise ValueError("폴더 이름을 입력해주세요.")
+        raise ValueError("폴더 이름을 입력해 주시기 바랍니다.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     doc = {
@@ -437,7 +437,7 @@ def rename_folder(uid: str, folder_id: str, new_name: str) -> dict:
     _get_owned_folder(uid, folder_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     kemkim_folders_db.update_one(
         {"_id": folder_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
@@ -531,7 +531,7 @@ def load_source_csv(uid: str, project_id: str, is_admin: bool = False) -> pd.Dat
     path = _source_csv_path(doc["uid"], project_id)
     if not os.path.exists(path):
         raise NotFound(
-            "해석에 사용할 원본(토큰화 전) CSV가 아직 첨부되지 않았습니다. 먼저 업로드해주세요."
+            "해석에 사용할 원본(토큰화 전) CSV가 아직 첨부되지 않았습니다. 먼저 업로드해 주시기 바랍니다."
         )
     return pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
 

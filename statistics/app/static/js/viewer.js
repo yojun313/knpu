@@ -36,7 +36,7 @@
         if (b === null) {
           // nginx 504 같은 HTML 오류 페이지 — JSON 파싱 오류 대신 알아볼 수 있는 문구로.
           throw new Error(res.status === 504 || res.status === 502
-            ? '서버 응답이 늦어 게이트웨이가 요청을 끊었습니다(' + res.status + '). 잠시 후 다시 시도해 주세요.'
+            ? '서버 응답이 늦어 게이트웨이가 요청을 끊었습니다(' + res.status + '). 잠시 후 다시 시도해 주시기 바랍니다.'
             : '서버 응답을 해석하지 못했습니다(' + res.status + ').');
         }
         if (!res.ok) throw new Error(typeof b.detail === 'string' ? b.detail : res.statusText);
@@ -418,7 +418,7 @@
     if (table.truncated) {
       var trunc = document.createElement('div');
       trunc.className = 'tc-truncated';
-      trunc.textContent = '표가 너무 커서 처음 ' + table.row_count + '행만 표시합니다. 전체 데이터는 원본 zip 다운로드에서 확인하세요.';
+      trunc.textContent = '표가 너무 커서 처음 ' + table.row_count + '행만 표시합니다. 전체 데이터는 원본 zip 다운로드에서 확인해 주시기 바랍니다.';
       card.appendChild(trunc);
     }
 
@@ -555,7 +555,7 @@
   }
 
   var exportImageUrl = null, statisticsExportTimer = null;
-  function exportNumber(id) { var el = document.getElementById(id), n = Number(el.value); if (!Number.isFinite(n) || n < Number(el.min) || n > Number(el.max)) throw new Error(el.previousElementSibling.textContent + ' 범위를 확인하세요.'); return n; }
+  function exportNumber(id) { var el = document.getElementById(id), n = Number(el.value); if (!Number.isFinite(n) || n < Number(el.min) || n > Number(el.max)) throw new Error(el.previousElementSibling.textContent + ' 범위를 확인해 주시기 바랍니다.'); return n; }
   function queueStatisticsExport() {
     exportImageUrl = null; document.getElementById('btnDownloadPng').disabled = true;
     clearTimeout(statisticsExportTimer); statisticsExportTimer = setTimeout(renderExportPreview, 180);
@@ -567,15 +567,15 @@
     try {
       var width = exportNumber('exportWidth'), height = exportNumber('exportHeight');
       var scale = Number(selectedOptionValue('exportScaleRow')) || 2;
-      if (width * height * scale * scale > 36000000) throw new Error('이미지는 3,600만 픽셀 이하로 설정하세요. 크기나 해상도 배율을 줄여 주세요.');
+      if (width * height * scale * scale > 36000000) throw new Error('이미지는 3,600만 픽셀 이하로 설정해 주시기 바랍니다. 크기나 해상도 배율을 줄여 주시기 바랍니다.');
       var background = selectedOptionValue('exportBgRow'), format = document.getElementById('exportFormat').value;
-      if (format === 'jpeg' && background === 'transparent') throw new Error('JPEG는 투명 배경을 지원하지 않습니다. PNG·WebP 또는 다른 배경을 선택하세요.');
+      if (format === 'jpeg' && background === 'transparent') throw new Error('JPEG는 투명 배경을 지원하지 않습니다. PNG·WebP 또는 다른 배경을 선택해 주시기 바랍니다.');
       var color = document.getElementById('exportTextColor').value, font = exportNumber('exportFont');
       var table = tablesById[exportTargetId], src = document.createElement('canvas');
       var caption = document.getElementById('exportShowTitle').checked;
       var padding = exportNumber('exportPadding'), titleH = caption ? font * 2 + padding : 0;
       var chartHeight = height - titleH;
-      if (chartHeight - padding * 2 < 100 || width - padding * 2 < 100) throw new Error('세로 크기를 늘리거나 글자 크기·여백을 줄여 주세요.');
+      if (chartHeight - padding * 2 < 100 || width - padding * 2 < 100) throw new Error('세로 크기를 늘리거나 글자 크기·여백을 줄여 주시기 바랍니다.');
       src.width = width; src.height = chartHeight;
       var style = {scale:scale,padding:padding,color:color,font:font,legend:document.getElementById('exportShowLegend').checked,grid:document.getElementById('exportShowGrid').checked,zero:document.getElementById('exportZero').checked,rotation:exportNumber('exportRotation'),line:exportNumber('exportLineWidth'),point:exportNumber('exportPointSize')};
       if (table.is_heatmap) drawHeatmap(src, table, {width:width-padding*2,height:chartHeight-padding*2,scale:scale,background:'transparent',color:color,font:font,showValues:document.getElementById('exportHeatValues').checked});
@@ -1017,7 +1017,7 @@
   }
 
   function deleteRailProject(p) {
-    if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    if (!confirm('"' + p.name + '" 프로젝트를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
       if (wasCurrent) localStorage.removeItem(LAST_PROJECT_KEY);
@@ -1042,7 +1042,7 @@
   // 폴더
   // ---------------------------------------------------------------
   function createFolder() {
-    var name = prompt('새 폴더 이름을 입력하세요');
+    var name = prompt('새 폴더 이름을 입력해 주시기 바랍니다');
     if (name === null) return;
     name = name.trim();
     if (!name) return;
@@ -1077,7 +1077,7 @@
   }
 
   function deleteFolder(f) {
-    if (!confirm('"' + f.name + '" 폴더를 삭제할까요?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
+    if (!confirm('"' + f.name + '" 폴더를 삭제하시겠습니까?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
     railApi('/api/folders/' + f.folder_id, { method: 'DELETE' }).then(function () {
       collapsedFolders.delete(f.folder_id);
       loadRailProjects();
@@ -1273,7 +1273,7 @@
     document.getElementById('analyzeStatus').textContent = '';
     document.getElementById('analyzeProgress').hidden = true;
     document.getElementById('analyzeForm').hidden = true;
-    document.getElementById('analyzeFileLabel').textContent = '원본 CSV 파일을 선택하세요';
+    document.getElementById('analyzeFileLabel').textContent = '원본 CSV 파일을 선택해 주시기 바랍니다';
     document.getElementById('crawlStatus').textContent = '';
     document.getElementById('crawlProgress').hidden = true;
     document.getElementById('crawlAnalyzeForm').hidden = true;
@@ -1596,9 +1596,9 @@
 
   function friendlyAiError(msg) {
     msg = String(msg || '');
-    if (/^not found$/i.test(msg)) return '서버에 AI 분석 기능이 아직 반영되지 않았습니다. 서비스를 재시작한 뒤 다시 시도해 주세요.';
-    if (/unexpected token|not valid json|<html/i.test(msg)) return '서버 응답이 올바르지 않습니다(시간 초과 또는 게이트웨이 오류). 잠시 후 다시 시도해 주세요.';
-    if (/failed to fetch|networkerror/i.test(msg)) return '서버에 연결하지 못했습니다. 네트워크를 확인해 주세요.';
+    if (/^not found$/i.test(msg)) return '서버에 AI 분석 기능이 아직 반영되지 않았습니다. 서비스를 재시작한 뒤 다시 시도해 주시기 바랍니다.';
+    if (/unexpected token|not valid json|<html/i.test(msg)) return '서버 응답이 올바르지 않습니다(시간 초과 또는 게이트웨이 오류). 잠시 후 다시 시도해 주시기 바랍니다.';
+    if (/failed to fetch|networkerror/i.test(msg)) return '서버에 연결하지 못했습니다. 네트워크를 확인해 주시기 바랍니다.';
     return msg || 'AI 분석에 실패했습니다.';
   }
 
@@ -1901,7 +1901,7 @@
     body.appendChild(el('span', 'ai-ev-table', ev.table_title || ev.table_id || '표 미지정'));
     body.appendChild(document.createTextNode(ev.value || ''));
     if (ev.status === 'unverified') body.appendChild(el('span', 'ai-ev-note', '원자료에서 찾지 못한 수치: ' + (ev.unmatched || []).join(', ') + ' (계산값이거나 오류일 수 있음)'));
-    if (ev.status === 'unknown_table') body.appendChild(el('span', 'ai-ev-note', 'AI에 제공하지 않은 표를 근거로 들었습니다. 직접 확인하세요.'));
+    if (ev.status === 'unknown_table') body.appendChild(el('span', 'ai-ev-note', 'AI에 제공하지 않은 표를 근거로 들었습니다. 직접 확인해 주시기 바랍니다.'));
     b.appendChild(body);
     b.title = ev.status === 'verified' ? '원자료에서 수치를 확인했습니다 · 클릭하면 표로 이동' : '클릭하면 표로 이동';
     if (ev.table_id) b.addEventListener('click', function () { focusTable(ev.table_id); });
@@ -2035,7 +2035,7 @@
     var n = aiResults.length, running = jobs.filter(function (j) { return j.status === 'running'; }).length;
     document.getElementById('aiResultCount').textContent = (running ? '진행 중 ' + running + ' · ' : '') + (n ? n + '개 저장됨' : '');
     if (!jobs.length && !n) {
-      host.appendChild(el('div', 'ai-results-empty', '아직 분석 결과가 없습니다. 위에서 분석 방식을 고르거나 질문을 입력해 보세요.'));
+      host.appendChild(el('div', 'ai-results-empty', '아직 분석 결과가 없습니다. 위에서 분석 방식을 고르거나 질문을 입력해 보시기 바랍니다.'));
     }
     scroll.scrollTop = top;
     var busy = {};
@@ -2133,7 +2133,7 @@
     host.innerHTML = '';
     if (!chatLog.length) {
       var w = el('div', 'chat-welcome');
-      w.innerHTML = '<b>통계 결과에 대해 대화해 보세요.</b><br>AI가 이 프로젝트의 표를 직접 찾아 읽고, 필요하면 계산까지 해서 답합니다. 답에 나온 표 이름을 누르면 해당 표로 이동합니다. 대화는 계정에 저장되어 다른 기기에서도 이어집니다.';
+      w.innerHTML = '<b>통계 결과에 대해 대화해 보시기 바랍니다.</b><br>AI가 이 프로젝트의 표를 직접 찾아 읽고, 필요하면 계산까지 해서 답합니다. 답에 나온 표 이름을 누르면 해당 표로 이동합니다. 대화는 계정에 저장되어 다른 기기에서도 이어집니다.';
       host.appendChild(w);
     }
     chatLog.forEach(function (m) { host.appendChild(buildChatMessage(m)); });

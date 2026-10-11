@@ -48,7 +48,7 @@ def generate_matrices(
                 "child_uuids": [c["uuid"] for c in children_sorted],
                 "question_text": (
                     f"'{parent_name}' 측면에서 다음 항목들이 서로 얼마나 중요한지 "
-                    f"비교해 주세요."
+                    f"비교해 주시기 바랍니다."
                 ),
                 "is_alternative": False,
             }
@@ -65,7 +65,7 @@ def generate_matrices(
                     "child_uuids": alt_ids,
                     "question_text": (
                         f"'{leaf['name']}' 기준에서 다음 대안들이 서로 얼마나 "
-                        f"우수한지 비교해 주세요."
+                        f"우수한지 비교해 주시기 바랍니다."
                     ),
                     "is_alternative": True,
                 }

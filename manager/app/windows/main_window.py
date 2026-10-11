@@ -114,7 +114,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 print("Done")
 
-                self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
+                self.splashDialog.updateStatus(f"안녕하십니까, {self.user}님!")
                 print(f"\n{self.user}님 환영합니다!")
 
                 self._pages_ready = True

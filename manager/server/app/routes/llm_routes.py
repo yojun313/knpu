@@ -151,7 +151,7 @@ async def proxy_llm_stream(path: str, request: Request):
     except _CONN_ERRORS as e:
         await client.aclose()
         return _bad_gateway(
-            f"로컬 LLM 서버에 연결하지 못했습니다({type(e).__name__}). GPU 서버의 모델이 실행 중인지 확인하세요."
+            f"로컬 LLM 서버에 연결하지 못했습니다({type(e).__name__}). GPU 서버의 모델이 실행 중인지 확인해 주시기 바랍니다."
         )
 
     async def event_stream():
@@ -208,5 +208,5 @@ async def proxy_llm(path: str, request: Request):
                 media_type=resp.headers.get("content-type"),
             )
     return _bad_gateway(
-        f"로컬 LLM 서버에 연결하지 못했습니다({type(last).__name__}). GPU 서버의 모델이 실행 중인지 확인하세요."
+        f"로컬 LLM 서버에 연결하지 못했습니다({type(last).__name__}). GPU 서버의 모델이 실행 중인지 확인해 주시기 바랍니다."
     )

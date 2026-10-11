@@ -267,7 +267,7 @@ def _extract_text(response) -> str:
             # 추론 모델이 생각하느라 출력 한도를 다 쓰고 본문을 못 쓴 경우가 대부분이다
             raise LLMError(
                 "LLM이 출력 한도(max_tokens) 안에 답을 끝내지 못해 빈 응답을 반환했습니다. "
-                "추론 모델이라면 max_tokens를 늘려 주세요."
+                "추론 모델이라면 max_tokens를 늘려 주시기 바랍니다."
             )
         raise LLMError("LLM이 빈 응답을 반환했습니다.")
     return content

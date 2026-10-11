@@ -183,7 +183,7 @@ def register(app, service: str, runner) -> None:
         if job.get("input") and not (src and os.path.exists(src)):
             raise HTTPException(
                 410,
-                "입력 파일이 보관 기간이 지나 삭제되었습니다. 새로 분석을 시작해 주세요.",
+                "입력 파일이 보관 기간이 지나 삭제되었습니다. 새로 분석을 시작해 주시기 바랍니다.",
             )
         try:
             body = await request.json()
@@ -228,7 +228,7 @@ def register(app, service: str, runner) -> None:
         else:
             ts = parse_schedule(body.get("scheduled_at"))
             if not ts:
-                raise HTTPException(400, "예약 시각을 입력해 주세요.")
+                raise HTTPException(400, "예약 시각을 입력해 주시기 바랍니다.")
             col.update_one(
                 {"_id": job_id, "status": "scheduled"}, {"$set": {"scheduled_ts": ts}}
             )
@@ -239,7 +239,9 @@ def register(app, service: str, runner) -> None:
         """끝난 작업 기록 삭제(결과 프로젝트는 그대로 둔다)."""
         _, job = _owned(request, job_id)
         if job.get("status") not in store.FINISHED:
-            raise HTTPException(409, "실행 중이거나 예약된 작업은 먼저 중단해 주세요.")
+            raise HTTPException(
+                409, "실행 중이거나 예약된 작업은 먼저 중단해 주시기 바랍니다."
+            )
         store.collection().delete_one({"_id": job_id})
         store.remove_files(job_id)
         return {"ok": True}

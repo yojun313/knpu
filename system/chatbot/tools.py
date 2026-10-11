@@ -325,13 +325,13 @@ def run(mode: str, name: str, args: dict) -> dict:
                 if hits
                 else {
                     "count": 0,
-                    "note": "결과 없음. 더 짧은 핵심어로 다시 찾거나 kind 를 빼 보세요.",
+                    "note": "결과 없음. 더 짧은 핵심어로 다시 찾거나 kind 를 빼 보시기 바랍니다.",
                 }
             )
         if name == "read_doc":
             doc = homepage_kb.read(str(a.get("id", "")))
             return doc or {
-                "error": "없는 문서 id 입니다. search_site 결과의 id 를 그대로 쓰세요."
+                "error": "없는 문서 id 입니다. search_site 결과의 id 를 그대로 작성해 주시기 바랍니다."
             }
         if name == "list_members":
             items = homepage_kb.list_members(
@@ -349,7 +349,7 @@ def run(mode: str, name: str, args: dict) -> dict:
             if not hits:
                 return {
                     "count": 0,
-                    "note": "결과 없음. 화면에 보이는 문구나 영어 함수명으로 바꿔 찾거나 grep 을 써 보세요.",
+                    "note": "결과 없음. 화면에 보이는 문구나 영어 함수명으로 바꿔 찾거나 grep 을 써 보시기 바랍니다.",
                 }
             return {"count": len(hits), "results": hits}
         if name == "grep":

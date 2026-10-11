@@ -218,7 +218,7 @@
       submitBtn.addEventListener('click', async function () {
         const title = document.getElementById('newProjectTitle').value.trim();
         const desc = document.getElementById('newProjectDesc').value.trim();
-        if (!title) { toast('제목을 입력해 주세요', true); return; }
+        if (!title) { toast('제목을 입력해 주시기 바랍니다', true); return; }
         submitBtn.disabled = true;
         try {
           const project = await api('/api/projects', { method: 'POST', body: { title: title, description: desc } });

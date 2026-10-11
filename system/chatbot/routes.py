@@ -120,7 +120,7 @@ def _settle(uid: str, conv: dict) -> dict:
                 m.pop("pending", None)
                 m.update(
                     error=True,
-                    content="답변을 준비하던 중 서버가 다시 시작되어 중단되었어요. 다시 질문해 주세요.",
+                    content="답변을 준비하던 중 서버가 다시 시작되어 중단되었습니다. 다시 질문해 주시기 바랍니다.",
                 )
 
     return _update(uid, conv["id"], fix) or conv
@@ -207,7 +207,7 @@ def register(app, *, public: bool) -> None:
         if mode not in ("public", "member"):
             raise HTTPException(400, "잘못된 챗봇 종류입니다.")
         if mode == "public" and not public:
-            raise HTTPException(403, "이 사이트에서는 구성원용 챗봇만 쓸 수 있어요.")
+            raise HTTPException(403, "이 사이트에서는 구성원용 챗봇만 쓸 수 있습니다.")
         return mode
 
     @app.get(f"{base}/config", include_in_schema=False)
@@ -245,7 +245,7 @@ def register(app, *, public: bool) -> None:
         user = _require_user(request)
         conv = _load(user["uid"], cid)
         if not conv:
-            raise HTTPException(404, "대화를 찾을 수 없어요.")
+            raise HTTPException(404, "대화를 찾을 수 없습니다.")
         conv = _settle(user["uid"], conv)
         return JSONResponse(
             {**_summary(conv), "messages": _client_msgs(conv.get("messages", []))},
@@ -259,7 +259,7 @@ def register(app, *, public: bool) -> None:
         title = str((body or {}).get("title") or "").strip()[:80]
         conv = _update(user["uid"], cid, lambda c: c.update(title=title))
         if not conv:
-            raise HTTPException(404, "대화를 찾을 수 없어요.")
+            raise HTTPException(404, "대화를 찾을 수 없습니다.")
         return _summary(conv)
 
     @app.delete(f"{base}/conversations/{{cid}}", include_in_schema=False)
@@ -267,12 +267,12 @@ def register(app, *, public: bool) -> None:
         user = _require_user(request)
         conv = _load(user["uid"], cid)
         if not conv:
-            raise HTTPException(404, "대화를 찾을 수 없어요.")
+            raise HTTPException(404, "대화를 찾을 수 없습니다.")
         if any(
             m.get("pending") and m.get("job_id") in _live
             for m in conv.get("messages", [])
         ):
-            raise HTTPException(409, "답변을 준비하는 중에는 대화를 지울 수 없어요.")
+            raise HTTPException(409, "답변을 준비하는 중에는 대화를 지울 수 없습니다.")
         _conv_file(user["uid"], cid).unlink(missing_ok=True)
         return {"ok": True}
 
@@ -284,9 +284,9 @@ def register(app, *, public: bool) -> None:
         mode = mode_ok("member" if body.get("mode") == "member" else "public")
         question = str(body.get("question") or "").strip()
         if not question:
-            raise HTTPException(400, "질문을 입력해 주세요.")
+            raise HTTPException(400, "질문을 입력해 주시기 바랍니다.")
         if len(question) > 2000:
-            raise HTTPException(400, "질문이 너무 길어요(2,000자 이하).")
+            raise HTTPException(400, "질문이 너무 깁니다(2,000자 이하).")
         user = current_user(request)
         if mode == "member" and not user:
             raise HTTPException(401, "구성원용 챗봇은 로그인이 필요합니다.")
@@ -306,7 +306,9 @@ def register(app, *, public: bool) -> None:
             .strip()
         )
         if not _rate_ok(f"ip:{ip}", _PUBLIC_LIMIT):
-            raise HTTPException(429, "질문이 너무 잦아요. 잠시 후 다시 시도해 주세요.")
+            raise HTTPException(
+                429, "질문이 너무 빈번합니다. 잠시 후 다시 시도해 주시기 바랍니다."
+            )
         raw = body.get("history") if isinstance(body.get("history"), list) else []
         history = [h for h in raw if isinstance(h, dict)][-8:]
         job_id = uuid.uuid4().hex
@@ -340,7 +342,7 @@ def register(app, *, public: bool) -> None:
                 logger.exception("홈페이지 챗봇 실패")
                 job["status"], job["error"] = (
                     "error",
-                    str(e) or "답변을 만들지 못했어요.",
+                    str(e) or "답변을 만들지 못했습니다.",
                 )
 
         asyncio.create_task(worker())
@@ -349,14 +351,16 @@ def register(app, *, public: bool) -> None:
     async def _ask_saved(user: dict, mode: str, question: str, cid: str):
         uid = user["uid"]
         if not _rate_ok(f"u:{uid}", _USER_LIMIT):
-            raise HTTPException(429, "질문이 너무 잦아요. 잠시 후 다시 시도해 주세요.")
+            raise HTTPException(
+                429, "질문이 너무 빈번합니다. 잠시 후 다시 시도해 주시기 바랍니다."
+            )
         conv = _load(uid, cid) if _ID_RX.match(cid or "") else None
         if conv is None or conv.get("mode") != mode:
             conv = _create(uid, mode)
         conv = _settle(uid, conv)
         if any(m.get("pending") for m in conv["messages"]):
             raise HTTPException(
-                409, "이 대화에서 이전 질문에 대한 답변을 준비하고 있어요."
+                409, "이 대화에서 이전 질문에 대한 답변을 준비하고 있습니다."
             )
         history = [
             {"role": m["role"], "content": m["content"]}
@@ -427,7 +431,7 @@ def register(app, *, public: bool) -> None:
                 msg = {
                     "role": "assistant",
                     "error": True,
-                    "content": str(e) or "답변을 만들지 못했어요.",
+                    "content": str(e) or "답변을 만들지 못했습니다.",
                     "job_id": job_id,
                     "created_at": _now(),
                 }
@@ -456,7 +460,8 @@ def register(app, *, public: bool) -> None:
         job = _anon_jobs.get(job_id)
         if not job:
             raise HTTPException(
-                404, "작업을 찾을 수 없어요. 페이지를 새로 고쳐 다시 질문해 주세요."
+                404,
+                "작업을 찾을 수 없습니다. 페이지를 새로 고쳐 다시 질문해 주시기 바랍니다.",
             )
         return JSONResponse(
             {k: job[k] for k in ("status", "stage", "steps", "result", "error")},

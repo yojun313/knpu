@@ -175,7 +175,7 @@ async def create_project(request: Request):
     body = await request.json()
     title = (body.get("title") or "").strip()
     if not title:
-        raise HTTPException(400, "제목을 입력해 주세요")
+        raise HTTPException(400, "제목을 입력해 주시기 바랍니다")
 
     user = current_user(request)
     now = _now()
@@ -321,7 +321,7 @@ async def update_settings(project_id: str, request: Request):
             raise HTTPException(
                 409,
                 f"'{key}'는 이미 배포된 설문이 있어 변경할 수 없습니다. "
-                "새 collection으로 다시 시작해 주세요.",
+                "새 collection으로 다시 시작해 주시기 바랍니다.",
             )
         new_settings[key] = body[key]
 

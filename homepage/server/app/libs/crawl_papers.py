@@ -338,7 +338,7 @@ def _metadata_request(url: str, params: dict | None = None) -> dict | None:
         return payload
     except (requests.RequestException, ValueError) as exc:
         raise MetadataLookupError(
-            "논문 메타데이터 제공처에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+            "논문 메타데이터 제공처에 연결하지 못했습니다. 잠시 후 다시 시도해 주시기 바랍니다."
         ) from exc
 
 
@@ -516,7 +516,7 @@ def _fetch_international(
 ) -> dict | None:
     title = title.strip()
     if not title:
-        raise ValueError("논문 제목 또는 DOI를 입력해주세요.")
+        raise ValueError("논문 제목 또는 DOI를 입력해 주시기 바랍니다.")
     doi_match = re.fullmatch(
         r"(?:https?://(?:dx\.)?doi\.org/|doi:\s*)?(10\.\d{4,9}/\S+)",
         title,

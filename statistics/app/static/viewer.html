@@ -88,8 +88,8 @@
         <div id="loading"><div class="spin"></div><div>분석 결과를 불러오는 중...</div></div>
         <div id="emptyProject" class="empty-project">
           <div class="ep-icon">📊</div>
-          <div class="ep-title">프로젝트를 선택하세요</div>
-          <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드하세요.</div>
+          <div class="ep-title">프로젝트를 선택해 주시기 바랍니다</div>
+          <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드해 주시기 바랍니다.</div>
           <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트</button>
         </div>
 
@@ -128,7 +128,7 @@
       </div>
       <div id="sideEmpty" class="side-empty">
         <div class="side-empty-ico">✦</div>
-        <b>프로젝트를 선택하세요</b>
+        <b>프로젝트를 선택해 주시기 바랍니다</b>
         <p>저장된 통계표를 AI가 읽고 핵심 발견, 변수 관계, 방법상 한계를 정리해 드립니다.</p>
       </div>
 
@@ -141,7 +141,7 @@
             <button type="button" class="ai-mode" data-ai-mode="methods"><span class="ai-mode-ico">✓</span><span class="ai-mode-txt"><b>방법·한계 점검</b><small>가정·효과크기·편향</small></span></button>
           </div>
           <form id="aiQuestionForm" class="ai-compose">
-            <textarea id="aiQuestion" rows="2" maxlength="1000" placeholder="궁금한 점으로 리포트 만들기 (예: 성별·연령별 반응 차이가 유의한가요?)" aria-label="질문으로 리포트 만들기"></textarea>
+            <textarea id="aiQuestion" rows="2" maxlength="1000" placeholder="궁금한 점으로 리포트 만들기 (예: 성별·연령별 반응 차이가 유의합니까?)" aria-label="질문으로 리포트 만들기"></textarea>
             <button type="submit" class="ai-send" id="aiQuestionSend" title="리포트 만들기" aria-label="리포트 만들기">↑</button>
           </form>
           <p class="ai-tip">표 카드의 <b>✦</b> 버튼을 누르면 그 표 하나만 해석합니다. 결과는 프로젝트에 저장됩니다.</p>
@@ -153,13 +153,13 @@
       <section id="paneChat" class="side-pane" role="tabpanel" aria-labelledby="tabChat" hidden>
         <div id="aiChatMessages" class="chat-log side-scroll" role="log" aria-live="polite"></div>
         <div class="chat-suggest" id="chatSuggest">
-          <button type="button" data-chat-prompt="이 결과에서 가장 중요한 발견 3가지와 근거 표를 알려줘">핵심 발견</button>
-          <button type="button" data-chat-prompt="통계적으로 해석할 때 주의할 점을 알려줘">해석 주의점</button>
-          <button type="button" data-chat-prompt="집단 간 차이가 가장 큰 변수는 무엇이고 효과 크기는 어느 정도야?">집단 차이</button>
-          <button type="button" data-chat-prompt="다음에 해 보면 좋은 추가 분석을 제안해줘">다음 분석</button>
+          <button type="button" data-chat-prompt="이 결과에서 가장 중요한 발견 3가지와 근거 표를 제시해 주시기 바랍니다.">핵심 발견</button>
+          <button type="button" data-chat-prompt="통계적으로 해석할 때 유의할 사항을 안내해 주시기 바랍니다.">해석 주의점</button>
+          <button type="button" data-chat-prompt="집단 간 차이가 가장 큰 변수는 무엇이며 효과 크기는 어느 정도입니까?">집단 차이</button>
+          <button type="button" data-chat-prompt="후속 연구에 필요한 추가 분석을 제안해 주시기 바랍니다.">다음 분석</button>
         </div>
         <form id="aiChatForm" class="ai-compose chat-compose">
-          <textarea id="aiChatInput" rows="2" maxlength="1500" placeholder="통계 결과에 대해 물어보세요 (Enter 전송, Shift+Enter 줄바꿈)" aria-label="AI에게 질문"></textarea>
+          <textarea id="aiChatInput" rows="2" maxlength="1500" placeholder="통계 결과에 대해 질문해 주시기 바랍니다 (Enter 전송, Shift+Enter 줄바꿈)" aria-label="AI에게 질문"></textarea>
           <button id="aiChatSend" type="submit" class="ai-send" title="보내기" aria-label="보내기">↑</button>
         </form>
         <div class="chat-foot"><button type="button" id="aiChatClear">새 대화</button><span>원문·작성자·URL 열은 AI에 보내지 않습니다</span></div>
@@ -215,7 +215,7 @@
         <label id="modalDropzone" class="modal-dropzone" for="modalFileInput">
           <input type="file" id="modalFileInput" accept=".zip" hidden>
           <div class="dz-icon">＋</div>
-          <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택하세요</div>
+          <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택해 주시기 바랍니다</div>
           <div class="dz-sub">metadata.json / csv_files / graphs 가 들어있는 결과 zip</div>
         </label>
         <div id="zipProgress" class="upload-progress" hidden>
@@ -233,7 +233,7 @@
         <label id="analyzeDropzone" class="modal-dropzone modal-dropzone-sm" for="analyzeFileInput">
           <input type="file" id="analyzeFileInput" accept=".csv" hidden>
           <div class="dz-icon">＋</div>
-          <div class="dz-text" id="analyzeFileLabel">원본 CSV 파일을 선택하세요</div>
+          <div class="dz-text" id="analyzeFileLabel">원본 CSV 파일을 선택해 주시기 바랍니다</div>
           <div class="dz-sub">Naver News / Naver Cafe / Google YouTube 크롤링 결과 CSV</div>
         </label>
         <div id="analyzeProgress" class="upload-progress" hidden>
@@ -311,7 +311,7 @@
             </div>
             <div class="field"><label>최대 단어 수</label><input type="number" id="crawlWcMaxWords" value="100" min="10" max="500"></div>
             <div class="field"><label>제외 단어 (쉼표로 구분)</label><input type="text" id="crawlWcExclude" placeholder="예: 기자, 무단전재"></div>
-            <div class="wc-hint">토큰화된 CSV가 필요합니다 — 파일 목록에서 "토큰화" 종류를 선택하세요</div>
+            <div class="wc-hint">토큰화된 CSV가 필요합니다 — 파일 목록에서 "토큰화" 종류를 선택해 주시기 바랍니다</div>
           </div>
           <button class="btn primary" id="btnCrawlStartAnalyze">분석 시작</button>
         </div>
@@ -351,7 +351,7 @@
 <div class="field"><label for="exportFormat">저장 형식</label><select id="exportFormat"><option value="png">PNG (무손실)</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div>
 <div class="field"><label for="exportQuality">JPEG · WebP 품질</label><input id="exportQuality" type="range" min="50" max="100" value="95"></div>
 <div class="field"><label>세부 표시</label><div class="chk-row-export"><input type="checkbox" id="exportShowLegend" checked><label for="exportShowLegend">범례 표시</label></div><div class="chk-row-export"><input type="checkbox" id="exportShowTitle" checked><label for="exportShowTitle">제목 표시</label></div><div class="chk-row-export"><input type="checkbox" id="exportShowGrid" checked><label for="exportShowGrid">격자선 표시</label></div><div class="chk-row-export"><input type="checkbox" id="exportZero" checked><label for="exportZero">세로 축 0부터</label></div><div class="chk-row-export"><input type="checkbox" id="exportHeatValues" checked><label for="exportHeatValues">히트맵 수치 표시</label></div></div><button type="button" id="exportReset" class="btn">기본값</button><button type="button" class="btn primary" id="btnDownloadPng">이미지 다운로드</button></form>
-<section class="statistics-export-preview"><div class="statistics-preview-tools"><button type="button" id="exportFit" class="btn">전체 보기</button><button type="button" id="exportZoomMinus" class="btn" aria-label="축소">−</button><input id="exportZoomRange" type="range" min="25" max="1600" value="100" aria-label="미리보기 배율"><span id="exportZoomValue">100%</span><button type="button" id="exportZoomPlus" class="btn" aria-label="확대">+</button></div><p class="hint">스크롤·트랙패드 핀치로 확대하고 드래그로 이동하세요. 미리보기 배율은 저장 이미지에 영향을 주지 않습니다.</p><div id="exportPreviewStage"><img id="exportPreviewImage" alt="저장할 그래프 미리보기" draggable="false"></div><p id="exportPreviewStatus" class="hint" role="status"></p></section>
+<section class="statistics-export-preview"><div class="statistics-preview-tools"><button type="button" id="exportFit" class="btn">전체 보기</button><button type="button" id="exportZoomMinus" class="btn" aria-label="축소">−</button><input id="exportZoomRange" type="range" min="25" max="1600" value="100" aria-label="미리보기 배율"><span id="exportZoomValue">100%</span><button type="button" id="exportZoomPlus" class="btn" aria-label="확대">+</button></div><p class="hint">스크롤·트랙패드 핀치로 확대하고 드래그로 이동해 주시기 바랍니다. 미리보기 배율은 저장 이미지에 영향을 주지 않습니다.</p><div id="exportPreviewStage"><img id="exportPreviewImage" alt="저장할 그래프 미리보기" draggable="false"></div><p id="exportPreviewStatus" class="hint" role="status"></p></section>
 </div></div></div>
 
   <script src="/js/viewer.js"></script>

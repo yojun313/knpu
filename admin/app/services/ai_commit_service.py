@@ -63,20 +63,20 @@ def save_settings(base_url: str, model: str, token: str | None, language: str) -
     model = (model or "").strip()
     if base_url and not re.match(r"^https?://[^\s/?#]+(?:/[^\s?#]*)?$", base_url):
         raise ValueError(
-            "API 주소는 http:// 또는 https:// 로 시작해야 해요 (예: https://api.openai.com/v1)."
+            "API 주소는 http:// 또는 https:// 로 시작해야 합니다 (예: https://api.openai.com/v1)."
         )
     if len(base_url) > 500:
-        raise ValueError("API 주소가 너무 길어요.")
+        raise ValueError("API 주소가 너무 깁니다.")
     if model and not _MODEL.match(model):
-        raise ValueError("모델 이름이 올바르지 않아요.")
+        raise ValueError("모델 이름이 올바르지 않습니다.")
     if language not in LANGUAGES:
-        raise ValueError("언어 설정이 올바르지 않아요.")
+        raise ValueError("언어 설정이 올바르지 않습니다.")
     data = _read()
     data.update({"base_url": base_url, "model": model, "language": language})
     if token is not None:
         token = token.strip()
         if len(token) > 1000 or any(c in token for c in "\r\n"):
-            raise ValueError("토큰 형식이 올바르지 않아요.")
+            raise ValueError("토큰 형식이 올바르지 않습니다.")
         data["token"] = token
     path = _settings_file()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -91,9 +91,9 @@ def save_settings(base_url: str, model: str, token: str | None, language: str) -
 def _validated_base_url(base_url: str) -> str:
     base_url = (base_url or "").strip().rstrip("/")
     if not re.match(r"^https?://[^\s/?#]+(?:/[^\s?#]*)?$", base_url):
-        raise ValueError("API 주소는 http:// 또는 https:// 로 시작해야 해요.")
+        raise ValueError("API 주소는 http:// 또는 https:// 로 시작해야 합니다.")
     if len(base_url) > 500:
-        raise ValueError("API 주소가 너무 길어요.")
+        raise ValueError("API 주소가 너무 깁니다.")
     return base_url
 
 
@@ -112,20 +112,20 @@ def discover_model(base_url: str, token: str | None = None) -> dict:
         token = saved.get("token") or ""
     token = (token or "").strip()
     if len(token) > 1000 or any(char in token for char in "\r\n"):
-        raise ValueError("토큰 형식이 올바르지 않아요.")
+        raise ValueError("토큰 형식이 올바르지 않습니다.")
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     try:
         with httpx.Client(timeout=15.0, follow_redirects=False) as client:
             response = client.get(models_url, headers=headers)
     except httpx.TimeoutException as error:
-        raise AICommitError("모델 목록 조회 시간이 초과됐어요.") from error
+        raise AICommitError("모델 목록 조회 시간이 초과되었습니다.") from error
     except httpx.HTTPError as error:
         raise AICommitError(
-            f"모델 목록을 가져오지 못했어요: {type(error).__name__}"
+            f"모델 목록을 가져오지 못했습니다: {type(error).__name__}"
         ) from error
     if response.status_code >= 400:
         raise AICommitError(
-            f"모델 목록 조회 실패 ({response.status_code}). API 주소와 토큰을 확인해 주세요."
+            f"모델 목록 조회 실패 ({response.status_code}). API 주소와 토큰을 확인해 주시기 바랍니다."
         )
     try:
         payload = response.json()
@@ -141,10 +141,10 @@ def discover_model(base_url: str, token: str | None = None) -> dict:
             and isinstance(row.get("id") or row.get("name"), str)
         ]
     except (ValueError, TypeError, AttributeError) as error:
-        raise AICommitError("모델 목록 응답이 OpenAI 호환 형식이 아니에요.") from error
+        raise AICommitError("모델 목록 응답이 OpenAI 호환 형식이 아닙니다.") from error
     models = list(dict.fromkeys(model.strip() for model in models if model.strip()))
     if not models:
-        raise AICommitError("API 주소에서 사용 가능한 모델을 찾지 못했어요.")
+        raise AICommitError("API 주소에서 사용 가능한 모델을 찾지 못했습니다.")
     # 서버가 활성 모델을 표시하면 그것을 우선하고, 아니면 /models 첫 항목을 기본으로 쓴다.
     active = next(
         (
@@ -205,9 +205,9 @@ def collect_changes(repository_id: str, include_all: bool) -> dict:
         diff += f"\n(새 파일 {len(untracked) - MAX_UNTRACKED_FILES}개 더)\n"
     if not diff.strip():
         raise AICommitError(
-            "커밋할 변경이 없어요."
+            "커밋할 변경이 없습니다."
             if include_all
-            else "스테이징된 변경이 없어요. 파일을 스테이징하거나 '모든 변경 포함'을 켜 주세요."
+            else "스테이징된 변경이 없습니다. 파일을 스테이징하거나 '모든 변경 포함'을 켜 주시기 바랍니다."
         )
     truncated = len(diff) > MAX_DIFF_CHARS
     stat_args = (
@@ -276,7 +276,7 @@ def _generate_with_knpu_llm(uid: str | None, prompt: str) -> str:
             temperature=0.2,
         )
     except LLMError as error:
-        raise AICommitError(f"AI 커밋 메시지를 만들지 못했어요: {error}") from error
+        raise AICommitError(f"AI 커밋 메시지를 만들지 못했습니다: {error}") from error
     return call.result.text or ""
 
 
@@ -300,7 +300,7 @@ def generate(repository_id: str, include_all: bool, uid: str | None = None) -> d
     if use_knpu:
         message = _clean(_generate_with_knpu_llm(uid, prompt))
         if not message:
-            raise AICommitError("AI 가 빈 메시지를 돌려줬어요.")
+            raise AICommitError("AI 가 빈 메시지를 반환했습니다.")
         return {"message": message[:5000], "truncated": "생략" in changes["diff"][-40:]}
     headers = {"Content-Type": "application/json"}
     if settings.get("token"):
@@ -319,10 +319,10 @@ def generate(repository_id: str, include_all: bool, uid: str | None = None) -> d
                 _endpoint(settings["base_url"]), headers=headers, json=body
             )
     except httpx.TimeoutException as error:
-        raise AICommitError("AI 응답이 너무 늦어요 (60초 초과).") from error
+        raise AICommitError("AI 응답이 너무 늦습니다 (60초 초과).") from error
     except httpx.HTTPError as error:
         raise AICommitError(
-            f"AI 서버에 연결하지 못했어요: {type(error).__name__}"
+            f"AI 서버에 연결하지 못했습니다: {type(error).__name__}"
         ) from error
     if response.status_code >= 400:
         detail = ""
@@ -342,9 +342,9 @@ def generate(repository_id: str, include_all: bool, uid: str | None = None) -> d
         content = response.json()["choices"][0]["message"]["content"]
     except (ValueError, KeyError, IndexError, TypeError) as error:
         raise AICommitError(
-            "AI 응답 형식을 알 수 없어요 (OpenAI 호환 /chat/completions 인지 확인해 주세요)."
+            "AI 응답 형식을 알 수 없습니다 (OpenAI 호환 /chat/completions 인지 확인해 주시기 바랍니다)."
         ) from error
     message = _clean(content if isinstance(content, str) else "")
     if not message:
-        raise AICommitError("AI 가 빈 메시지를 돌려줬어요.")
+        raise AICommitError("AI 가 빈 메시지를 반환했습니다.")
     return {"message": message[:5000], "truncated": "생략" in changes["diff"][-40:]}

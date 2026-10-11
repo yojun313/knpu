@@ -385,7 +385,7 @@
     box.querySelector('[data-save]').onclick = function () {
       var v = box.querySelector('[data-dt]').value;
       var ms = v ? new Date(v).getTime() : NaN;
-      if (!isFinite(ms) || ms < Date.now() + 30000) { toast('예약 시각은 지금 이후로 지정해 주세요.', 'err'); return; }
+      if (!isFinite(ms) || ms < Date.now() + 30000) { toast('예약 시각은 지금 이후로 지정해 주시기 바랍니다.', 'err'); return; }
       act('PATCH', '', { scheduled_at: ms }, '예약 시각을 바꿨습니다.');
     };
   }
@@ -426,7 +426,7 @@
   function onAction(a, j, b) {
     if (a === 'cancel') {
       var running = j.status in RUNNING;
-      if (!confirm(running ? '실행 중인 분석을 중단할까요?\n분석 프로세스와 하위 프로세스를 모두 종료하고 자원을 회수합니다.' : '이 작업을 취소할까요?')) return;
+      if (!confirm(running ? '실행 중인 분석을 중단하시겠습니까?\n분석 프로세스와 하위 프로세스를 모두 종료하고 자원을 회수합니다.' : '이 작업을 취소하시겠습니까?')) return;
       b.disabled = true;
       act('POST', '/cancel', {}, running ? '중단 요청을 보냈습니다 — 프로세스를 정리하는 중입니다.' : '작업을 취소했습니다.');
     } else if (a === 'runnow') {
@@ -440,7 +440,7 @@
         open(nj.id, { autoOpenResult: true });
       }).catch(function (err) { b.disabled = false; toast(err.message, 'err'); });
     } else if (a === 'delete') {
-      if (!confirm('이 작업 기록을 삭제할까요? (만들어진 결과 프로젝트는 그대로 남습니다)')) return;
+      if (!confirm('이 작업 기록을 삭제하시겠습니까? (만들어진 결과 프로젝트는 그대로 남습니다)')) return;
       api('/' + encodeURIComponent(j.id), { method: 'DELETE' }).then(function () {
         close('kjDetail');
         loadList(true);
@@ -563,7 +563,7 @@
       dt.hidden = mode !== 'later';
       if (mode === 'later') {
         var ms = dt.value ? new Date(dt.value).getTime() : NaN;
-        hint.textContent = isFinite(ms) ? (ms > Date.now() ? relUntil(ms / 1000) + ' 자동으로 시작합니다. 예약은 작업 목록에서 바꾸거나 취소할 수 있습니다.' : '지금 이후의 시각을 골라 주세요.') : '';
+        hint.textContent = isFinite(ms) ? (ms > Date.now() ? relUntil(ms / 1000) + ' 자동으로 시작합니다. 예약은 작업 목록에서 바꾸거나 취소할 수 있습니다.' : '지금 이후의 시각을 골라 주시기 바랍니다.') : '';
       } else {
         hint.textContent = '서버에서 실행되므로 창을 닫아도 계속됩니다. 진행 상황은 작업 목록에서 볼 수 있습니다.';
       }
@@ -590,8 +590,8 @@
       validate: function () {
         if (mode !== 'later') return '';
         var ms = dt.value ? new Date(dt.value).getTime() : NaN;
-        if (!isFinite(ms)) return '예약 시각을 입력해 주세요.';
-        if (ms < Date.now() + 30000) return '예약 시각은 지금 이후로 지정해 주세요.';
+        if (!isFinite(ms)) return '예약 시각을 입력해 주시기 바랍니다.';
+        if (ms < Date.now() + 30000) return '예약 시각은 지금 이후로 지정해 주시기 바랍니다.';
         return '';
       },
       reset: function () { mode = 'now'; dt.value = ''; sync(); },

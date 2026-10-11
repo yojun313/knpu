@@ -91,7 +91,7 @@ class BwmPlugin:
             "kind": "bwm",
             "question_text": (
                 f"'{parent_name}' 하위 항목 중 가장 중요한 것과 가장 덜 중요한 것을 "
-                f"고른 뒤, 각각에 대한 상대적 중요도를 매겨 주세요."
+                f"고른 뒤, 각각에 대한 상대적 중요도를 매겨 주시기 바랍니다."
             ),
             "is_alternative": is_alternative,
         }

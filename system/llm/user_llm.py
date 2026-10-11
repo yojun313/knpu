@@ -72,7 +72,7 @@ def _fernet():
     secret = os.getenv("LLM_KEY_SECRET") or os.getenv("JWT_SECRET")
     if not secret:
         raise SettingsError(
-            "서버에 암호화 비밀값(LLM_KEY_SECRET)이 없어 API 키를 저장할 수 없습니다. 관리자에게 문의하세요."
+            "서버에 암호화 비밀값(LLM_KEY_SECRET)이 없어 API 키를 저장할 수 없습니다. 관리자에게 문의해 주시기 바랍니다."
         )
     key = base64.urlsafe_b64encode(
         hashlib.sha256(("knpu-llm-key:" + secret).encode()).digest()
@@ -147,7 +147,7 @@ def _check_key(api_key: str) -> None:
         status = getattr(e, "status_code", None)
         if status == 401:
             raise SettingsError(
-                "OpenAI가 이 API 키를 거부했습니다. 키를 다시 확인해 주세요."
+                "OpenAI가 이 API 키를 거부했습니다. 키를 다시 확인해 주시기 바랍니다."
             )
         raise SettingsError(f"API 키를 확인하지 못했습니다: {e}")
 
@@ -162,9 +162,9 @@ def save_settings(uid: str, body: dict) -> dict:
     try:
         limit = float(body.get("monthly_limit_usd", DEFAULT_LIMIT_USD))
     except (TypeError, ValueError):
-        raise SettingsError("월 사용 한도는 숫자로 입력해 주세요.")
+        raise SettingsError("월 사용 한도는 숫자로 입력해 주시기 바랍니다.")
     if not 0 <= limit <= 1000:
-        raise SettingsError("월 사용 한도는 0~1000 달러 사이로 입력해 주세요.")
+        raise SettingsError("월 사용 한도는 0~1000 달러 사이로 입력해 주시기 바랍니다.")
 
     update = {
         "mode": mode,
@@ -187,7 +187,7 @@ def save_settings(uid: str, body: dict) -> dict:
         "clear_key"
     )
     if mode != "local" and not has_key:
-        raise SettingsError("GPT API를 쓰려면 API 키를 입력해 주세요.")
+        raise SettingsError("GPT API를 쓰려면 API 키를 입력해 주시기 바랍니다.")
 
     col, _ = _collections()
     op = {"$set": update}
@@ -250,7 +250,7 @@ def plan(
         elif spent + need > limit:
             note = (
                 f"이번 호출 예상 비용(약 ${need:.4f})이 남은 한도(${limit - spent:.4f})를 넘어 "
-                "내 API를 쓰지 않았습니다. 설정에서 월 한도를 올릴 수 있어요."
+                "내 API를 쓰지 않았습니다. 설정에서 월 한도를 올릴 수 있습니다."
             )
         else:
             openai_target = Target(

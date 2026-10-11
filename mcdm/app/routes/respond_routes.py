@@ -148,7 +148,7 @@ async def verify_code(token: str, request: Request):
     if not consent:
         raise HTTPException(400, "참여에 동의해야 계속할 수 있습니다")
     if not code:
-        raise HTTPException(400, "접속 코드를 입력해 주세요")
+        raise HTTPException(400, "접속 코드를 입력해 주시기 바랍니다")
 
     respondent = await respondents_db.find_one(
         {
@@ -157,7 +157,9 @@ async def verify_code(token: str, request: Request):
         }
     )
     if not respondent:
-        raise HTTPException(404, "코드를 확인할 수 없습니다. 다시 확인해 주세요")
+        raise HTTPException(
+            404, "코드를 확인할 수 없습니다. 다시 확인해 주시기 바랍니다"
+        )
 
     update = (
         {"status": "in_progress"} if respondent.get("status") == "not_started" else {}
@@ -387,7 +389,9 @@ async def put_demographics(token: str, request: Request):
         raise HTTPException(400, " / ".join(errors[:5]))
     missing = validate_required(demographics, attributes)
     if missing:
-        raise HTTPException(400, f"필수 항목을 입력해 주세요: {', '.join(missing)}")
+        raise HTTPException(
+            400, f"필수 항목을 입력해 주시기 바랍니다: {', '.join(missing)}"
+        )
 
     await respondents_db.update_one(
         {"_id": payload["respondent_id"]}, {"$set": {"attributes": attributes}}

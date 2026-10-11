@@ -50,7 +50,7 @@ def main():
         }
     )
     print(
-        f"\n관리자 계정 '{username}'이(가) 생성되었습니다. {HOMEPAGE_URL}/login 에서 로그인하세요."
+        f"\n관리자 계정 '{username}'이(가) 생성되었습니다. {HOMEPAGE_URL}/login 에서 로그인해 주시기 바랍니다."
     )
 
 

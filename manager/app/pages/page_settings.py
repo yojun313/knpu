@@ -265,7 +265,7 @@ class Manager_Setting(BaseDialog):
         llm_option_layout = QHBoxLayout()
         llm_option_label = QLabel("LLM 모델")
         llm_option_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        llm_option_label.setToolTip("LLM 모델을 선택하세요: ")
+        llm_option_label.setToolTip("LLM 모델을 선택해 주시기 바랍니다: ")
 
         self.llm_option_selector = QComboBox()
 
@@ -309,7 +309,7 @@ class Manager_Setting(BaseDialog):
                 set_setting("GPT_Key", api_key)  # 설정에 저장
                 QMessageBox.information(self, "성공", "API Key가 저장되었습니다.")
             else:
-                QMessageBox.warning(self, "경고", "API Key를 입력하세요.")
+                QMessageBox.warning(self, "경고", "API Key를 입력해 주시기 바랍니다.")
 
         def enable_api_key_input():
             self.api_key_input.setDisabled(False)  # 입력창 활성화
@@ -635,7 +635,9 @@ class Manager_Setting(BaseDialog):
         help_title_label.setStyleSheet("font-weight: bold;")
         help_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
+        help_text_label = QLabel(
+            "아래 링크를 클릭하여 사용 설명서를 확인해 주시기 바랍니다."
+        )
         help_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link0_label = QLabel(
@@ -687,7 +689,9 @@ class Manager_Setting(BaseDialog):
         format_title_label.setStyleSheet("font-weight: bold;")
         format_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        format_text_label = QLabel("아래 링크를 클릭하여 CSV 양식을 다운로드하세요.")
+        format_text_label = QLabel(
+            "아래 링크를 클릭하여 CSV 양식을 다운로드해 주시기 바랍니다."
+        )
         format_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # === 문의 영역 ===

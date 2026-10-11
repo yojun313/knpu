@@ -101,7 +101,7 @@ class Manager_Database(Manager_Worker):
                     msgBox.setIcon(QMessageBox.Icon.Question)
                     msgBox.setWindowTitle("Confirm Action")
                     msgBox.setText(f"'{DBname}'는 현재 크롤링이 진행 중입니다.")
-                    msgBox.setInformativeText("수행하실 작업을 선택해주세요.")
+                    msgBox.setInformativeText("수행하실 작업을 선택해 주시기 바랍니다.")
 
                     # 버튼 정의
                     stopDeleteBtn = msgBox.addButton(
@@ -445,7 +445,7 @@ class Manager_Database(Manager_Worker):
                 selectedRow = self.main.database_tablewidget.currentRow()
                 if selectedRow < 0:
                     QMessageBox.warning(
-                        self.main, "Information", "DB를 먼저 선택해 주세요"
+                        self.main, "Information", "DB를 먼저 선택해 주시기 바랍니다"
                     )
                     return
 
@@ -726,7 +726,7 @@ class Manager_Database(Manager_Worker):
         self.main.database_statistics_button.clicked.connect(self.initStatisticsViewer)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
         self.main.database_searchDB_lineinput.setPlaceholderText(
-            "검색어를 입력하고 Enter키나 검색 버튼을 누르세요..."
+            "검색어를 입력하고 Enter키나 검색 버튼을 눌러 주시기 바랍니다..."
         )
 
         self.main.database_saveDB_button.clicked.connect(self.saveDB)

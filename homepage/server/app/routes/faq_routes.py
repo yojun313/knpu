@@ -41,7 +41,9 @@ def upsert_faq_category(category: FaqCategory, admin=Depends(get_current_user)):
     data = category.dict()
     data["name"] = (data.get("name") or "").strip()
     if not data["name"]:
-        raise HTTPException(status_code=400, detail="카테고리 이름을 입력해주세요.")
+        raise HTTPException(
+            status_code=400, detail="카테고리 이름을 입력해 주시기 바랍니다."
+        )
 
     existing = (
         admission_faq_categories_db.find_one({"uid": data["uid"]})
@@ -106,7 +108,7 @@ def delete_faq_category(
     if in_use:
         raise HTTPException(
             status_code=400,
-            detail=f"이 카테고리를 사용하는 FAQ가 {in_use}개 있습니다. 먼저 해당 FAQ의 분류를 바꾸거나 삭제해주세요.",
+            detail=f"이 카테고리를 사용하는 FAQ가 {in_use}개 있습니다. 먼저 해당 FAQ의 분류를 바꾸거나 삭제해 주시기 바랍니다.",
         )
 
     delete_content(admission_faq_categories_db, uid, admin)

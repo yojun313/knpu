@@ -104,7 +104,7 @@
     const demographics = survey.demographics || [];
     if (demographics.length) {
       let demo = '<div class="demo-block"><h2>인구통계 정보</h2>' +
-        '<div class="mb-q">아래 항목에 응답해 주세요.</div>';
+        '<div class="mb-q">아래 항목에 응답해 주시기 바랍니다.</div>';
       demographics.forEach(function (f) {
         demo += '<div class="demo-field"><div class="demo-label">' + esc(f.label) +
           (f.required ? ' <span class="demo-req">(필수)</span>' : '') + '</div>';

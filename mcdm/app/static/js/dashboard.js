@@ -93,7 +93,7 @@
     const badge = card ? card.querySelector('.badge').textContent : '';
     const closed = badge.indexOf('종료') !== -1;
     const next = closed ? 'active' : 'closed';
-    if (!closed && !confirm('"' + title + '"을(를) 종료할까요? 결과는 그대로 보이지만 완료된 프로젝트로 표시됩니다.')) return;
+    if (!closed && !confirm('"' + title + '"을(를) 종료하시겠습니까? 결과는 그대로 보이지만 완료된 프로젝트로 표시됩니다.')) return;
     try {
       await ahpApi('/api/projects/' + id, { method: 'PUT', body: { status: next } });
       ahpToast(closed ? '프로젝트를 다시 열었습니다' : '프로젝트를 종료했습니다');
@@ -106,7 +106,7 @@
   async function deleteProject(id) {
     const card = document.querySelector('.proj-card[data-id="' + id + '"]');
     const title = card ? card.querySelector('h3').textContent : '이 프로젝트';
-    if (!confirm('"' + title + '"을(를) 삭제할까요?\n계층·설문지·수집된 모든 응답이 함께 삭제되며 되돌릴 수 없습니다.')) return;
+    if (!confirm('"' + title + '"을(를) 삭제하시겠습니까?\n계층·설문지·수집된 모든 응답이 함께 삭제되며 되돌릴 수 없습니다.')) return;
     try {
       await ahpApi('/api/projects/' + id, { method: 'DELETE' });
       ahpToast('삭제했습니다');
