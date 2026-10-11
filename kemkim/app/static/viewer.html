@@ -77,19 +77,21 @@
         <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드해 주시기 바랍니다.</div>
         <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트</button>
       </div>
-      <div id="plotTabs">
-        <button id="tabKem" class="active" data-tab="dov" title="Keyword Emergence Map">KEM (DoV)</button>
-        <button id="tabKim" data-tab="dod" title="Keyword Issue Map">KIM (DoD)</button>
+      <div class="plot-bottom-controls">
+        <div id="plotTabs">
+          <button id="tabKem" class="active" data-tab="dov" title="Keyword Emergence Map">KEM (DoV)</button>
+          <button id="tabKim" data-tab="dod" title="Keyword Issue Map">KIM (DoD)</button>
+        </div>
+        <div class="plot-output-controls">
+          <label class="plot-label-control"><input id="showAllLabels" type="checkbox" checked> 모든 단어 표시</label>
+          <button type="button" class="btn" id="btnGraphAdjust">그래프 조정 · 저장</button>
+        </div>
       </div>
       <div id="zoombox">
         <button id="btnZoomIn" title="확대">+</button>
         <div id="zoomval">100%</div>
         <button id="btnZoomOut" title="축소">−</button>
         <button id="btnZoomReset" title="전체보기">⤢</button>
-      </div>
-      <div class="plot-output-controls">
-        <label class="plot-label-control"><input id="showAllLabels" type="checkbox" checked> 모든 단어 표시</label>
-        <button type="button" class="btn" id="btnGraphAdjust">그래프 조정 · 저장</button>
       </div>
       <div id="top">
         <button id="mobileRailBtn" class="mobile-icon-btn" title="프로젝트 목록">☰</button>
@@ -117,6 +119,13 @@
           <button class="btn primary graph-export-main-btn" id="btnExportPng">그래프 조정 · PNG 저장</button>
           <button class="btn" id="btnDownloadRaw">원본 결과 zip 다운로드</button>
         </div>
+      </details>
+
+      <details open id="detailSection">
+        <summary>단어 정보</summary>
+        <div class="sec-body"><div id="detail">
+          <div class="empty">산점도에서 점을 클릭하면<br>상세 지표와 기간별 추이가 표시됩니다</div>
+        </div></div>
       </details>
 
       <details open id="interpretSection">
@@ -191,13 +200,6 @@
       <details id="optionsSection" hidden>
         <summary>분석 설정</summary>
         <div class="sec-body"><div id="analysisOptions"></div></div>
-      </details>
-
-      <details open id="detailSection">
-        <summary>단어 정보</summary>
-        <div class="sec-body"><div id="detail">
-          <div class="empty">산점도에서 점을 클릭하면<br>상세 지표와 기간별 추이가 표시됩니다</div>
-        </div></div>
       </details>
 
       <details open id="groupSection">
