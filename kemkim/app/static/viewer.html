@@ -118,6 +118,14 @@
         </div>
       </div>
 
+      <details open id="exportSection">
+        <summary>그래프 조정 · 내보내기</summary>
+        <div class="sec-body">
+          <button class="btn primary graph-export-main-btn" id="btnExportPng">그래프 조정 · PNG 저장</button>
+          <button class="btn" id="btnDownloadRaw">원본 결과 zip 다운로드</button>
+        </div>
+      </details>
+
       <details open id="interpretSection">
         <summary>✦ AI 해석</summary>
         <div class="sec-body">
@@ -238,13 +246,7 @@
 
 
 
-      <details>
-        <summary>내보내기</summary>
-        <div class="sec-body">
-          <button class="btn" id="btnExportPng">그래프 조정 · PNG 저장</button>
-          <button class="btn" id="btnDownloadRaw">원본 결과 zip 다운로드</button>
-        </div>
-      </details>
+
 
     </div>
   </div>
@@ -472,7 +474,7 @@
 
 
   <dialog id="graphExportDialog" class="modal-card graph-export-dialog" aria-labelledby="graphExportTitle">
-    <div class="modal-head"><span id="graphExportTitle">그래프 조정 · PNG 저장</span><button type="button" id="graphExportClose" class="modal-close" aria-label="닫기">×</button></div>
+    <div class="modal-head"><span id="graphExportTitle">그래프 조정 · PNG 저장</span><div class="graph-modal-head-actions"><button class="btn primary" type="button" id="graphExportSave">PNG 저장…</button><button type="button" id="graphExportClose" class="modal-close" aria-label="닫기">×</button></div></div>
     <div class="graph-export-layout">
       <form id="graphExportForm" class="graph-export-controls">
         <label>그래프<select name="kind"><option value="dov">KEM (DoV)</option><option value="dod">KIM (DoD)</option></select></label>
@@ -488,10 +490,28 @@
         <div class="btn-row"><button type="button" id="graphExportAll" class="btn btn-sm">전체 선택</button><button type="button" id="graphExportNone" class="btn btn-sm">전체 해제</button></div>
         <div id="graphExportWords" class="graph-export-words"></div>
         <button class="btn" type="submit" id="graphExportPreviewBtn">미리보기 갱신</button>
-        <button class="btn primary" type="button" id="graphExportSave">PNG 저장</button>
         <div id="graphExportStatus" role="status" class="modal-status"></div>
       </form>
-      <div class="graph-export-preview"><div class="hint">전체 좌표로 그린 저장용 그래프입니다. 화면 확대·이동과 관계없이 저장됩니다.</div><div class="graph-export-image"><img id="graphExportImage" alt="저장할 그래프 미리보기" hidden></div></div>
+      <div class="graph-export-preview">
+        <div class="graph-preview-toolbar"><button type="button" class="btn btn-sm" data-preview-fit="export">전체보기</button><button type="button" class="btn btn-sm" data-preview-zoom="export:-">−</button><input id="exportZoomRange" type="range" min="25" max="1600" value="100" aria-label="미리보기 확대 배율"><output id="exportZoomValue">100%</output><button type="button" class="btn btn-sm" data-preview-zoom="export:+">＋</button></div>
+        <div class="hint">트랙패드 핀치·휠로 확대하고 드래그로 이동하세요. 미리보기 배율은 저장 이미지에 영향을 주지 않습니다.</div>
+        <div id="exportPreviewStage" class="graph-preview-stage"><img id="graphExportImage" alt="저장할 그래프 미리보기" hidden draggable="false"></div>
+      </div>
+    </div>
+  </dialog>
+
+
+  <dialog id="graphSaveDialog" class="modal-card graph-save-dialog" aria-labelledby="graphSaveTitle">
+    <div class="modal-head"><span id="graphSaveTitle">PNG 저장 범위</span><button type="button" id="graphSaveClose" class="modal-close" aria-label="닫기">×</button></div>
+    <div class="graph-save-body">
+      <div class="graph-save-options"><label><input type="radio" name="graphSaveMode" value="full" checked> 전체 그래프 저장</label><label><input type="radio" name="graphSaveMode" value="crop"> 선택 영역 크롭</label><label id="graphOutsideOption" hidden><input id="graphOutsideWords" type="checkbox"> 영역 밖 단어를 가장자리 여백에 표시</label></div>
+      <div class="hint" id="graphCropHint">전체 그래프가 저장됩니다.</div>
+      <div class="graph-preview-toolbar"><button type="button" class="btn btn-sm" data-preview-fit="crop">전체보기</button><button type="button" class="btn btn-sm" data-preview-zoom="crop:-">−</button><input id="cropZoomRange" type="range" min="25" max="1600" value="100" aria-label="크롭 미리보기 확대 배율"><output id="cropZoomValue">100%</output><button type="button" class="btn btn-sm" data-preview-zoom="crop:+">＋</button><button type="button" class="btn btn-sm" id="graphCropSelect">영역 선택</button><button type="button" class="btn btn-sm" id="graphCropReset">선택 초기화</button></div>
+      <div class="graph-save-previews">
+        <section><h3>원본 · 저장 영역 선택</h3><div id="cropPreviewStage" class="graph-preview-stage"><div id="cropPreviewContent" class="graph-preview-content"><img id="graphCropSource" alt="크롭 영역 선택용 원본" draggable="false"><div id="graphCropBox" hidden><i data-crop-handle="nw"></i><i data-crop-handle="ne"></i><i data-crop-handle="sw"></i><i data-crop-handle="se"></i></div></div></div></section>
+        <section><h3>저장 결과 미리보기</h3><div class="graph-preview-toolbar"><button type="button" class="btn btn-sm" data-preview-fit="result">전체보기</button><input id="resultZoomRange" type="range" min="25" max="1600" value="100" aria-label="저장 결과 확대 배율"><output id="resultZoomValue">100%</output></div><div id="resultPreviewStage" class="graph-preview-stage"><img id="graphSaveImage" alt="최종 저장 이미지 미리보기" hidden draggable="false"></div></section>
+      </div>
+      <div class="graph-save-footer"><div id="graphSaveStatus" role="status"></div><button type="button" class="btn primary" id="graphSaveDownload" disabled>이 미리보기로 PNG 저장</button></div>
     </div>
   </dialog>
 

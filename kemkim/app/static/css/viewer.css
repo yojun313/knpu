@@ -651,10 +651,12 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .plot-label-control{display:flex;align-items:center;gap:5px;font-size:12px;padding:0 8px;white-space:nowrap;color:var(--sidebar-text)}
 .plot-output-controls{position:absolute;bottom:22px;left:22px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--pill-bg);border:1px solid var(--sidebar-border);border-radius:10px;padding:6px}
 .plot-output-controls .btn{width:auto;margin:0;padding:8px;font-size:12px}
-dialog.graph-export-dialog{width:min(1440px,96vw);max-width:96vw;max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden}
+dialog.graph-export-dialog,dialog.graph-save-dialog{position:fixed!important;inset:0!important;margin:auto!important;transform:none!important;animation:none;width:min(1440px,96vw);max-width:96vw;height:min(940px,92dvh);max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden;box-sizing:border-box}
+dialog.graph-export-dialog[open],dialog.graph-save-dialog[open]{display:flex;flex-direction:column}
 dialog.graph-export-dialog:not([open]){display:none}
-dialog.graph-export-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filter:blur(4px)}
-.graph-export-layout{display:grid;grid-template-columns:320px minmax(0,1fr);height:calc(90dvh - 62px);min-height:0}
+dialog.graph-save-dialog:not([open]){display:none}
+dialog.graph-export-dialog::backdrop,dialog.graph-save-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filter:blur(4px)}
+.graph-export-layout{display:grid;grid-template-columns:320px minmax(0,1fr);flex:1;min-height:0}
 .graph-export-controls{display:flex;flex-direction:column;gap:12px;padding:18px;overflow:auto;border-right:1px solid var(--sidebar-border)}
 .graph-export-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--sidebar-text)}
 .graph-export-controls input:not([type="checkbox"]),.graph-export-controls select{width:100%;min-width:0;box-sizing:border-box;background:var(--sidebar-panel);color:var(--sidebar-text);border:1px solid var(--sidebar-border);border-radius:8px;padding:8px;font:inherit}
@@ -665,13 +667,46 @@ dialog.graph-export-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filt
 .graph-export-words summary{font-size:12px;font-weight:700;padding:5px;cursor:pointer}
 .graph-export-words label{flex-direction:row;align-items:center;padding:4px;overflow-wrap:anywhere}
 .graph-export-preview{display:flex;flex-direction:column;min-height:0;padding:18px;gap:12px;background:var(--sidebar-panel)}
-.graph-export-image{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto}
-.graph-export-image img{max-width:100%;max-height:100%;object-fit:contain}
+.graph-preview-stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;user-select:none;cursor:grab;background:var(--sidebar-panel);border:1px solid var(--sidebar-border);border-radius:10px}
+.graph-preview-stage:active{cursor:grabbing}
+.graph-preview-stage.selecting{cursor:crosshair}
+.graph-preview-stage>img,.graph-preview-content{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;will-change:transform}
+.graph-preview-content>img{display:block;width:100%;height:100%;pointer-events:none}
+.graph-preview-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.graph-preview-toolbar .btn{width:auto;margin:0;white-space:nowrap}
+.graph-preview-toolbar input[type="range"]{flex:1;min-width:80px;max-width:250px;accent-color:var(--accent)}
+.graph-preview-toolbar output{min-width:48px;font-size:12px;text-align:center}
+#exportSection{border:1px solid var(--accent);border-radius:12px;margin:12px 10px;overflow:hidden}
+#exportSection>summary{font-weight:800;color:var(--text-strong)}
+.graph-export-main-btn{font-weight:800!important;min-height:42px}
+.graph-modal-head-actions{display:flex;align-items:center;gap:14px}
+.graph-modal-head-actions .btn{width:auto;margin:0;min-height:38px;font-weight:800}
+.graph-save-body{display:flex;flex-direction:column;gap:12px;padding:18px;flex:1;min-height:0}
+.graph-save-options{display:flex;gap:12px 20px;flex-wrap:wrap;font-size:13px;align-items:center}
+.graph-save-options label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.graph-save-options [hidden]{display:none}
+.graph-save-previews{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;min-height:0}
+.graph-save-previews>section{display:flex;flex-direction:column;min-height:0;min-width:0;gap:8px}
+.graph-save-previews h3{margin:0;font-size:13px}
+.graph-save-result{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--sidebar-border);border-radius:10px;background:var(--sidebar-panel);padding:10px}
+.graph-save-result img{max-width:100%;max-height:100%;object-fit:contain}
+.graph-save-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;flex-shrink:0}
+.graph-save-footer .btn{width:auto;margin:0;min-height:42px;font-weight:800;white-space:nowrap}
+#graphCropBox{position:absolute;border:2px solid #2196ff;box-shadow:0 0 0 99999px rgba(0,0,0,.45);box-sizing:border-box;cursor:move}
+#graphCropBox[hidden]{display:none}
+#graphCropBox i{position:absolute;width:12px;height:12px;background:#fff;border:2px solid #2196ff;box-sizing:border-box}
+#graphCropBox i[data-crop-handle="nw"]{left:-6px;top:-6px;cursor:nwse-resize}
+#graphCropBox i[data-crop-handle="ne"]{right:-6px;top:-6px;cursor:nesw-resize}
+#graphCropBox i[data-crop-handle="sw"]{left:-6px;bottom:-6px;cursor:nesw-resize}
+#graphCropBox i[data-crop-handle="se"]{right:-6px;bottom:-6px;cursor:nwse-resize}
 @media(max-width:760px){
   .plot-output-controls{left:10px;bottom:16px;gap:0;flex-direction:column}
   dialog.graph-export-dialog{overflow-y:auto}
   .graph-export-layout{grid-template-columns:1fr;height:auto}
   .graph-export-controls{overflow:visible;border-right:0}
-  .graph-export-preview{min-height:320px}
-  .graph-export-image img{max-height:60dvh}
+  .graph-export-preview{min-height:420px;flex-shrink:0}
+  .graph-save-body{overflow:auto;flex:1}
+  .graph-save-previews{grid-template-columns:1fr;flex:none}
+  .graph-save-previews>section{height:340px}
+  .graph-save-footer{flex-direction:column;align-items:stretch}
 }

@@ -2011,6 +2011,170 @@
   var exportSelection = new Set(), exportPreviewUrl = null, exportRequest = 0;
   var exportAbort = null, exportTimer = null, exportInitialized = false;
 
+  var previewControllers = {}, saveSnapshot = null, saveProjectId = null;
+  var saveUrl = null, saveRequest = 0, saveAbort = null, saveTimer = null;
+  var cropRegion = {x:.15, y:.15, width:.7, height:.7}, cropSelecting = true;
+
+  // Each preview has its own transform; zoom never changes export coordinates.
+  function createGraphPreview(key, stageId, imageId, contentId) {
+    var stage = document.getElementById(stageId), image = document.getElementById(imageId);
+    var content = contentId ? document.getElementById(contentId) : image;
+    var state = {zoom:1, x:0, y:0, width:1, height:1}, drag = null, pointers = new Map(), pinch = null;
+    function apply() {
+      content.style.width = state.width + 'px'; content.style.height = state.height + 'px';
+      content.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px) scale(' + state.zoom + ')';
+      document.getElementById(key + 'ZoomRange').value = Math.round(state.zoom * 100);
+      document.getElementById(key + 'ZoomValue').textContent = Math.round(state.zoom * 100) + '%';
+    }
+    function fit() {
+      if (!image.naturalWidth || !stage.clientWidth || !stage.clientHeight) return;
+      var ratio = Math.min(stage.clientWidth / image.naturalWidth, stage.clientHeight / image.naturalHeight) * .96;
+      state.width = image.naturalWidth * ratio; state.height = image.naturalHeight * ratio;
+      state.zoom = 1; state.x = (stage.clientWidth - state.width) / 2; state.y = (stage.clientHeight - state.height) / 2; apply();
+    }
+    function zoom(value, x, y) {
+      var next = Math.max(.25, Math.min(16, value));
+      if (x == null) x = stage.clientWidth / 2;
+      if (y == null) y = stage.clientHeight / 2;
+      state.x = x - (x - state.x) * next / state.zoom;
+      state.y = y - (y - state.y) * next / state.zoom; state.zoom = next; apply();
+    }
+    function position(e) {
+      var r = stage.getBoundingClientRect();
+      return {x:Math.max(0, Math.min(1, (e.clientX - r.left - state.x) / (state.width * state.zoom))),
+        y:Math.max(0, Math.min(1, (e.clientY - r.top - state.y) / (state.height * state.zoom)))};
+    }
+    stage.addEventListener('wheel', function (e) {
+      e.preventDefault(); var r = stage.getBoundingClientRect();
+      zoom(state.zoom * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .002)), e.clientX - r.left, e.clientY - r.top);
+    }, {passive:false});
+    var gestureZoom = 1;
+    stage.addEventListener('gesturestart', function (e) { e.preventDefault(); gestureZoom = state.zoom; });
+    stage.addEventListener('gesturechange', function (e) { e.preventDefault(); zoom(gestureZoom * e.scale); });
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); stage.setPointerCapture(e.pointerId); pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (pointers.size === 2) { if(drag && drag.type==='crop'){cropRegion=drag.region;drawCropBox();queueSavePreview();} drag = null; var pts = Array.from(pointers.values()); pinch = {distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:state.zoom}; return; }
+      var handle = e.target.dataset.cropHandle;
+      if (key === 'crop' && cropMode() && (cropSelecting || handle)) {
+        var p = position(e);
+        drag = {type:'crop', start:p, region:Object.assign({},cropRegion), handle:handle,
+          move:!handle && e.target.closest('#graphCropBox')};
+        if (!handle && !drag.move) { cropRegion = {x:p.x,y:p.y,width:.005,height:.005}; drawCropBox(); }
+        invalidateSavePreview();
+      } else drag = {type:'pan', x:e.clientX, y:e.clientY, origX:state.x, origY:state.y};
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if (pinch && pointers.size === 2) {
+        var pts=Array.from(pointers.values()),r=stage.getBoundingClientRect();
+        zoom(pinch.zoom * Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y) / Math.max(1,pinch.distance), (pts[0].x+pts[1].x)/2-r.left, (pts[0].y+pts[1].y)/2-r.top); return;
+      }
+      if (!drag) return;
+      if (drag.type === 'pan') { state.x=drag.origX+e.clientX-drag.x;state.y=drag.origY+e.clientY-drag.y;apply();return; }
+      var p=position(e),r=drag.region;
+      if (drag.move) {
+        cropRegion.x=Math.max(0,Math.min(1-r.width,r.x+p.x-drag.start.x));
+        cropRegion.y=Math.max(0,Math.min(1-r.height,r.y+p.y-drag.start.y));
+      } else {
+        var anchor=drag.handle ? {x:drag.handle.indexOf('w')>=0?r.x+r.width:r.x,y:drag.handle.indexOf('n')>=0?r.y+r.height:r.y} : drag.start;
+        var x=Math.min(anchor.x,p.x),y=Math.min(anchor.y,p.y);
+        var w=Math.max(.005,Math.abs(p.x-anchor.x)),h=Math.max(.005,Math.abs(p.y-anchor.y));
+        cropRegion={x:Math.min(x,1-w),y:Math.min(y,1-h),width:w,height:h};
+      }
+      drawCropBox();
+    });
+    function end(e) {
+      pointers.delete(e.pointerId); if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
+      if (drag && drag.type==='crop') queueSavePreview();
+      drag=null;pinch=null;
+    }
+    stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);
+    image.addEventListener('load',fit);
+    document.getElementById(key+'ZoomRange').addEventListener('input',function(e){zoom(Number(e.target.value)/100);});
+    document.querySelectorAll('[data-preview-zoom^="'+key+':"]').forEach(function(btn){btn.onclick=function(){zoom(state.zoom*(btn.dataset.previewZoom.endsWith('+')?1.25:.8));};});
+    document.querySelector('[data-preview-fit="'+key+'"]').onclick=fit;
+    new ResizeObserver(fit).observe(stage);
+    return {fit:fit,zoom:zoom,state:state};
+  }
+
+  function cropMode() { return document.querySelector('input[name="graphSaveMode"]:checked').value === 'crop'; }
+  function drawCropBox() {
+    var box=document.getElementById('graphCropBox');box.hidden=!cropMode();
+    box.style.left=(cropRegion.x*100)+'%';box.style.top=(cropRegion.y*100)+'%';
+    box.style.width=(cropRegion.width*100)+'%';box.style.height=(cropRegion.height*100)+'%';
+    document.getElementById('graphOutsideOption').hidden=!cropMode();
+    document.getElementById('graphCropSelect').hidden=!cropMode();
+    document.getElementById('graphCropReset').hidden=!cropMode();
+    document.getElementById('cropPreviewStage').classList.toggle('selecting',cropMode()&&cropSelecting);
+    document.getElementById('graphCropSelect').classList.toggle('primary',cropSelecting);
+    document.getElementById('graphCropSelect').textContent=cropSelecting?'영역 선택 중 · 이동 모드로':'영역 선택';
+    document.getElementById('graphCropHint').textContent=cropMode()
+      ? '드래그로 영역을 그리거나 선택 상자·모서리를 움직이세요. 이동 모드에서는 그래프를 끌 수 있습니다. 영역 밖 단어는 방향별 여백에 묶어 표시됩니다.'
+      : '전체 그래프가 저장됩니다. 확대 배율은 저장 범위에 영향을 주지 않습니다.';
+  }
+  function invalidateSavePreview() {
+    document.getElementById('graphSaveDownload').disabled=true;
+    document.getElementById('graphSaveImage').hidden=true;
+    document.getElementById('graphSaveStatus').textContent='저장 미리보기를 갱신하고 있습니다…';
+    ++saveRequest; if(saveAbort)saveAbort.abort();
+  }
+  function queueSavePreview() {
+    invalidateSavePreview();clearTimeout(saveTimer);saveTimer=setTimeout(renderSavePreview,350);
+  }
+  function renderSavePreview() {
+    if(!document.getElementById('graphSaveDialog').open)return;
+    invalidateSavePreview(); var id=saveRequest;
+    var options=Object.assign({},saveSnapshot,{format:'png'});
+    if(cropMode()){options.crop=Object.assign({},cropRegion);options.include_outside_words=document.getElementById('graphOutsideWords').checked;}
+    saveAbort=new AbortController();
+    fetch('/api/projects/'+encodeURIComponent(saveProjectId)+'/graph/export',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(options),signal:saveAbort.signal
+    }).then(function(res){if(!res.ok)return readJson(res);return res.blob();}).then(function(blob){
+      if(id!==saveRequest||!document.getElementById('graphSaveDialog').open)return;
+      if(saveUrl)URL.revokeObjectURL(saveUrl);saveUrl=URL.createObjectURL(blob);
+      var image=document.getElementById('graphSaveImage');
+      image.onload=function(){if(id!==saveRequest)return;image.hidden=false;document.getElementById('graphSaveDownload').disabled=false;
+        document.getElementById('graphSaveStatus').textContent=image.naturalWidth+' × '+image.naturalHeight+' px · 이 미리보기 그대로 저장됩니다.';};
+      image.onerror=function(){if(id===saveRequest)document.getElementById('graphSaveStatus').textContent='미리보기 이미지를 불러오지 못했습니다.';};
+      image.src=saveUrl;
+    }).catch(function(err){if(id===saveRequest&&err.name!=='AbortError')document.getElementById('graphSaveStatus').textContent=err.message;});
+  }
+  function openGraphSave() {
+    clearTimeout(exportTimer);
+    var status=document.getElementById('graphExportStatus');
+    try{saveSnapshot=exportOptions('png');}catch(err){status.textContent=err.message;return;}
+    if(!saveSnapshot)return;
+    if(!exportPreviewUrl){status.textContent='미리보기가 완성된 뒤 저장 범위를 선택해 주세요.';return;}
+    saveProjectId=projectId;
+    var dialog=document.getElementById('graphSaveDialog');
+    document.querySelector('input[name="graphSaveMode"][value="full"]').checked=true;
+    document.getElementById('graphOutsideWords').checked=false;
+    cropRegion={x:.15,y:.15,width:.7,height:.7};cropSelecting=true;
+    document.getElementById('graphCropSource').src=exportPreviewUrl;
+    dialog.showModal();drawCropBox();previewControllers.crop.fit();renderSavePreview();
+  }
+  function initGraphSave() {
+    previewControllers.export=createGraphPreview('export','exportPreviewStage','graphExportImage');
+    previewControllers.crop=createGraphPreview('crop','cropPreviewStage','graphCropSource','cropPreviewContent');
+    previewControllers.result=createGraphPreview('result','resultPreviewStage','graphSaveImage');
+    var dialog=document.getElementById('graphSaveDialog');
+    document.getElementById('graphSaveClose').onclick=function(){dialog.close();};
+    dialog.addEventListener('close',function(){if(dialog.open)return;++saveRequest;clearTimeout(saveTimer);if(saveAbort)saveAbort.abort();if(saveUrl){URL.revokeObjectURL(saveUrl);saveUrl=null;}document.getElementById('graphExportSave').focus();});
+    document.querySelectorAll('input[name="graphSaveMode"]').forEach(function(el){el.onchange=function(){drawCropBox();queueSavePreview();};});
+    document.getElementById('graphOutsideWords').onchange=queueSavePreview;
+    document.getElementById('graphCropSelect').onclick=function(){cropSelecting=!cropSelecting;drawCropBox();};
+    document.getElementById('graphCropReset').onclick=function(){cropRegion={x:.15,y:.15,width:.7,height:.7};drawCropBox();queueSavePreview();};
+    document.getElementById('graphSaveDownload').onclick=function(){
+      if(!saveUrl||this.disabled)return;
+      var link=document.createElement('a');link.href=saveUrl;
+      link.download=(saveSnapshot.kind==='dov'?'KEM_graph':'KIM_graph')+(cropMode()?'_crop':'')+'.png';
+      document.body.appendChild(link);link.click();link.remove();
+      document.getElementById('graphSaveStatus').textContent='PNG를 저장했습니다.';
+    };
+  }
+
   function exportOptions(format) {
     var form = document.getElementById('graphExportForm');
     if (!form.reportValidity()) return null;
@@ -2085,6 +2249,7 @@
   }
 
   function queueExportPreview() {
+    document.getElementById('graphExportSave').disabled = true;
     clearTimeout(exportTimer);
     exportTimer = setTimeout(function () { requestExport('svg'); }, 500);
   }
@@ -2094,9 +2259,11 @@
     var dialog = document.getElementById('graphExportDialog'), form = document.getElementById('graphExportForm');
     if (!exportInitialized) {
       exportInitialized = true;
+      initGraphSave();
       document.getElementById('graphExportClose').onclick = function () { dialog.close(); };
       dialog.addEventListener('click', function (e) { if (e.target === dialog) { var r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } });
       dialog.addEventListener('close', function () {
+        if (dialog.open) return;
         ++exportRequest; clearTimeout(exportTimer); if (exportAbort) exportAbort.abort();
         if (exportPreviewUrl) { URL.revokeObjectURL(exportPreviewUrl); exportPreviewUrl = null; }
         document.getElementById('graphExportImage').hidden = true;
@@ -2116,7 +2283,7 @@
       document.getElementById('graphExportNone').onclick = function () { exportSelection.clear(); exportWordList(); queueExportPreview(); };
       document.getElementById('graphExportVisible').onclick = function () { selectExportWords(true); queueExportPreview(); };
       document.getElementById('graphExportDefaults').onclick = function () { var kind = form.elements.kind.value; form.reset(); form.elements.kind.value = kind; selectExportWords(false); queueExportPreview(); };
-      document.getElementById('graphExportSave').onclick = function () { clearTimeout(exportTimer); requestExport('png'); };
+      document.getElementById('graphExportSave').onclick = openGraphSave;
     }
     form.elements.kind.value = currentPlotTab;
     document.getElementById('graphExportSearch').value = '';
@@ -2315,7 +2482,7 @@
     document.getElementById('uploadModal').addEventListener('click', function (e) { if (e.target.id === 'uploadModal') closeUploadModal(); });
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      if (document.getElementById('graphExportDialog').open) return;
+      if (document.getElementById('graphExportDialog').open || document.getElementById('graphSaveDialog').open) return;
       if (!moveFolderMenu.hidden) closeMoveFolderMenu();
       else if (!ctxMenu.hidden) closeRailCtxMenu();
       else if (!document.getElementById('articleModal').hidden) document.getElementById('articleModal').hidden = true;
