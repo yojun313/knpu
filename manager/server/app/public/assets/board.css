@@ -16,7 +16,7 @@ body.board-app { margin:0; font:14px/1.6 var(--ud-font,system-ui,sans-serif); co
 .board-tab-label { white-space:nowrap; line-height:1.4; }
 .board-side-help { margin:24px 22px; font-size:12px; color:var(--sidebar-muted); line-height:1.8; }
 .board-rail .sb-bottom { margin-top:auto; }
-.board-main { padding:34px clamp(16px,3vw,48px); min-width:0; max-width:1500px; width:100%; margin:auto; align-self:start; }
+.board-main { padding:34px clamp(16px,3vw,48px); min-width:0; max-width:1500px; width:100%; margin:0 auto; align-self:start; }
 .board-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:25px; }
 .board-heading h1 { margin:5px 0 6px; font-size:29px; letter-spacing:-.04em; }
 .board-heading p { margin:0; color:var(--sidebar-muted); }
@@ -37,7 +37,7 @@ html[data-ui-theme-mode="dark"] .board-btn.danger { color:#ffaba5; }
 .board-feedback { padding:12px 22px; color:var(--sidebar-muted); }
 .board-feedback.error,.board-form-error { color:#b42318; }
 html[data-ui-theme-mode="dark"] .board-feedback.error,html[data-ui-theme-mode="dark"] .board-form-error { color:#ffaaa3; }
-.board-list { min-height:250px; }
+.board-list { min-height:0; }
 .board-row { display:flex; gap:16px; align-items:center; width:100%; padding:21px 24px; border:0; border-bottom:1px solid var(--ud-line); background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
 .board-row:hover { background:var(--ud-hover); }
 .board-row:last-child { border-bottom:0; }
@@ -47,7 +47,7 @@ html[data-ui-theme-mode="dark"] .board-feedback.error,html[data-ui-theme-mode="d
 .board-row-meta { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--sidebar-muted); }
 .board-tag { font-size:10px; padding:2px 7px; border-radius:6px; font-weight:700; background:var(--ud-active-bg); color:var(--ud-active-fg); white-space:nowrap; }
 .board-chevron { color:var(--sidebar-muted); font-size:22px; }
-.board-empty { text-align:center; padding:70px 20px; color:var(--sidebar-muted); }
+.board-empty { text-align:center; padding:36px 20px; color:var(--sidebar-muted); }
 .board-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-top:1px solid var(--ud-line); font-size:12px; color:var(--sidebar-muted); }
 .board-pagination>div { display:flex; align-items:center; gap:12px; }
 .board-dialog { width:min(1100px,calc(100vw - 40px)); max-width:none; max-height:calc(100dvh - 48px); padding:0; border:1px solid var(--ud-line); border-radius:18px; background:var(--ud-surface-strong); color:var(--text-strong); box-shadow:0 25px 100px rgba(0,0,0,.3); }
