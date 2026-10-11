@@ -2021,8 +2021,11 @@
     var content = contentId ? document.getElementById(contentId) : image;
     var state = {zoom:1, x:0, y:0, width:1, height:1}, drag = null, pointers = new Map(), pinch = null;
     function apply() {
-      content.style.width = state.width + 'px'; content.style.height = state.height + 'px';
-      content.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px) scale(' + state.zoom + ')';
+      // Resize the SVG itself so the browser rasterizes at the displayed resolution.
+      // Scaling a composited thumbnail instead makes vector labels look pixelated.
+      content.style.width = (state.width * state.zoom) + 'px';
+      content.style.height = (state.height * state.zoom) + 'px';
+      content.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px)';
       document.getElementById(key + 'ZoomRange').value = Math.round(state.zoom * 100);
       document.getElementById(key + 'ZoomValue').textContent = Math.round(state.zoom * 100) + '%';
     }
