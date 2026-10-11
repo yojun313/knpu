@@ -15,7 +15,7 @@
   var hasSource = false;
   var searchQuery = '';
 
-  // 웹에는 별도의 "조정" 단계가 없다 — 체크한 단어는 그래프에서 바로 꺼진다(숨김).
+  // 체크한 단어는 화면에서 바로 숨겨지며, 저장용 조정 창에도 표시 상태를 넘긴다.
   // 기본값은 전체 표시(hiddenWords 비어있음). 해석(interpret)의 검색 키워드는 이것과
   // 완전히 별개인 interpretKeywords로 관리한다(끄기=제외, 해석=검색이라 의미가 반대).
   var hiddenWords = {};
@@ -1124,7 +1124,7 @@
       if (pe.label) {
         var forced = searchQuery && matched;
         var withinBudget = pe.rank <= budget;
-        var showLabel = visible && (forced || withinBudget);
+        var showLabel = visible && (document.getElementById('showAllLabels').checked || forced || withinBudget);
         pe.label.style.display = showLabel ? '' : 'none';
         pe.label.style.opacity = (showLabel && searchQuery && !matched) ? '0.15' : '1';
       }
@@ -2008,40 +2008,120 @@
   // ---------------------------------------------------------------
   // PNG 내보내기
   // ---------------------------------------------------------------
+  var exportSelection = new Set(), exportPreviewUrl = null, exportRequest = 0;
+  var exportAbort = null, exportTimer = null, exportInitialized = false;
+
+  function exportOptions(format) {
+    var form = document.getElementById('graphExportForm');
+    if (!form.reportValidity()) return null;
+    var options = {format: format, words: Array.from(exportSelection)};
+    ['kind', 'background', 'foreground'].forEach(function (key) { options[key] = form.elements[key].value; });
+    ['width', 'height', 'font_size', 'dot_size', 'label_size', 'tick_size', 'dpi'].forEach(function (key) { options[key] = Number(form.elements[key].value); });
+    var pixels = Math.round(options.width * options.dpi) * Math.round(options.height * options.dpi);
+    document.getElementById('graphExportResolution').textContent = Math.round(options.width * options.dpi) + ' × ' + Math.round(options.height * options.dpi) + ' px';
+    if (pixels > 36000000) throw new Error('이미지는 최대 3,600만 픽셀입니다. 크기나 DPI를 줄여 주세요.');
+    if (!options.words.length) throw new Error('표시할 단어를 하나 이상 선택해 주세요.');
+    return options;
+  }
+
+  function exportWordList() {
+    var kind = document.getElementById('graphExportForm').elements.kind.value;
+    var section = graph[kind] || {}, coords = section.coordinates || {};
+    var query = document.getElementById('graphExportSearch').value.trim().toLowerCase();
+    var html = '';
+    SIGNAL_KEYS.forEach(function (key) {
+      var words = Object.keys(coords).sort().filter(function (word) {
+        return quadrantOf(coords[word][0], coords[word][1], section.axis[0], section.axis[1]) === key && word.toLowerCase().indexOf(query) >= 0;
+      });
+      if (!words.length) return;
+      html += '<details open><summary>' + SIGNAL_LABEL[key] + '</summary>';
+      words.forEach(function (word) { html += '<label><input type="checkbox" data-export-word="' + escAttr(word) + '"' + (exportSelection.has(word) ? ' checked' : '') + '><span>' + esc(word) + '</span></label>'; });
+      html += '</details>';
+    });
+    document.getElementById('graphExportWords').innerHTML = html;
+    document.getElementById('graphExportCount').textContent = exportSelection.size + ' / ' + Object.keys(coords).length;
+  }
+
+  function selectExportWords(visibleOnly) {
+    var kind = document.getElementById('graphExportForm').elements.kind.value;
+    var section = graph[kind] || {}, coords = section.coordinates || {};
+    exportSelection = new Set(Object.keys(coords).filter(function (word) {
+      return !visibleOnly || (!hiddenWords[word] && groupVisible[quadrantOf(coords[word][0], coords[word][1], section.axis[0], section.axis[1])]);
+    }));
+    exportWordList();
+  }
+
+  function requestExport(format) {
+    var options, status = document.getElementById('graphExportStatus');
+    try { options = exportOptions(format); } catch (err) { status.textContent = err.message; return; }
+    if (!options) return;
+    var id = ++exportRequest, targetProject = projectId;
+    if (exportAbort) exportAbort.abort();
+    exportAbort = new AbortController();
+    var save = document.getElementById('graphExportSave');
+    save.disabled = true;
+    status.textContent = format === 'png' ? 'PNG를 생성하고 있습니다…' : '미리보기를 그리고 있습니다…';
+    fetch('/api/projects/' + encodeURIComponent(targetProject) + '/graph/export', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(options), signal: exportAbort.signal
+    }).then(function (res) {
+      if (!res.ok) return readJson(res);
+      return res.blob();
+    }).then(function (blob) {
+      if (id !== exportRequest || !document.getElementById('graphExportDialog').open) return;
+      if (format === 'svg') {
+        if (exportPreviewUrl) URL.revokeObjectURL(exportPreviewUrl);
+        exportPreviewUrl = URL.createObjectURL(blob);
+        var image = document.getElementById('graphExportImage'); image.src = exportPreviewUrl; image.hidden = false;
+        status.textContent = '미리보기가 갱신되었습니다.';
+      } else {
+        var url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = options.kind === 'dov' ? 'KEM_graph.png' : 'KIM_graph.png';
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        status.textContent = 'PNG를 저장했습니다.';
+      }
+    }).catch(function (err) { if (id === exportRequest && err.name !== 'AbortError') status.textContent = err.message; })
+      .finally(function () { if (id === exportRequest) save.disabled = false; });
+  }
+
+  function queueExportPreview() {
+    clearTimeout(exportTimer);
+    exportTimer = setTimeout(function () { requestExport('svg'); }, 500);
+  }
+
   function exportPlotPng() {
-    try {
-      var svg = document.getElementById('plot');
-      var wrap = document.getElementById('plotWrap');
-      var w = wrap.clientWidth, h = wrap.clientHeight;
-      var clone = svg.cloneNode(true);
-      clone.setAttribute('width', w);
-      clone.setAttribute('height', h);
-      var svgStr = new XMLSerializer().serializeToString(clone);
-      var svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-      var url = URL.createObjectURL(svgBlob);
-      var img = new Image();
-      img.onload = function () {
-        var canvas = document.createElement('canvas');
-        var ratio = 2;
-        canvas.width = w * ratio; canvas.height = h * ratio;
-        var ctx = canvas.getContext('2d');
-        ctx.scale(ratio, ratio);
-        ctx.fillStyle = isDarkMode() ? '#212121' : '#ecf0f1';
-        ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(function (blob) {
-          var link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = 'kemkim_' + currentPlotTab + '_' + (projectId || 'export') + '.png';
-          document.body.appendChild(link); link.click(); document.body.removeChild(link);
-          setTimeout(function () { URL.revokeObjectURL(link.href); }, 4000);
-        });
-        toast('PNG로 저장했습니다');
-      };
-      img.onerror = function () { URL.revokeObjectURL(url); toast('PNG 저장 실패'); };
-      img.src = url;
-    } catch (err) { toast('PNG 저장 실패'); }
+    if (!graph || !projectId) { toast('프로젝트를 먼저 선택하세요.'); return; }
+    var dialog = document.getElementById('graphExportDialog'), form = document.getElementById('graphExportForm');
+    if (!exportInitialized) {
+      exportInitialized = true;
+      document.getElementById('graphExportClose').onclick = function () { dialog.close(); };
+      dialog.addEventListener('click', function (e) { if (e.target === dialog) { var r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } });
+      dialog.addEventListener('close', function () {
+        ++exportRequest; clearTimeout(exportTimer); if (exportAbort) exportAbort.abort();
+        if (exportPreviewUrl) { URL.revokeObjectURL(exportPreviewUrl); exportPreviewUrl = null; }
+        document.getElementById('graphExportImage').hidden = true;
+        document.getElementById('graphExportSave').disabled = false;
+        document.getElementById('btnExportPng').focus();
+      });
+      form.addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(exportTimer); requestExport('svg'); });
+      form.addEventListener('change', function (e) {
+        if (e.target.dataset.exportWord !== undefined) {
+          if (e.target.checked) exportSelection.add(e.target.dataset.exportWord); else exportSelection.delete(e.target.dataset.exportWord);
+          document.getElementById('graphExportCount').textContent = exportSelection.size + ' / ' + Object.keys(graph[form.elements.kind.value].coordinates).length;
+        } else if (e.target.name === 'kind') selectExportWords(false);
+        if (e.target.name || e.target.dataset.exportWord !== undefined) queueExportPreview();
+      });
+      document.getElementById('graphExportSearch').oninput = exportWordList;
+      document.getElementById('graphExportAll').onclick = function () { selectExportWords(false); queueExportPreview(); };
+      document.getElementById('graphExportNone').onclick = function () { exportSelection.clear(); exportWordList(); queueExportPreview(); };
+      document.getElementById('graphExportVisible').onclick = function () { selectExportWords(true); queueExportPreview(); };
+      document.getElementById('graphExportDefaults').onclick = function () { var kind = form.elements.kind.value; form.reset(); form.elements.kind.value = kind; selectExportWords(false); queueExportPreview(); };
+      document.getElementById('graphExportSave').onclick = function () { clearTimeout(exportTimer); requestExport('png'); };
+    }
+    form.elements.kind.value = currentPlotTab;
+    document.getElementById('graphExportSearch').value = '';
+    selectExportWords(true);
+    dialog.showModal(); requestExport('svg');
   }
 
   // ---------------------------------------------------------------
@@ -2235,6 +2315,7 @@
     document.getElementById('uploadModal').addEventListener('click', function (e) { if (e.target.id === 'uploadModal') closeUploadModal(); });
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
+      if (document.getElementById('graphExportDialog').open) return;
       if (!moveFolderMenu.hidden) closeMoveFolderMenu();
       else if (!ctxMenu.hidden) closeRailCtxMenu();
       else if (!document.getElementById('articleModal').hidden) document.getElementById('articleModal').hidden = true;
@@ -2375,6 +2456,8 @@
 
     // ---- 내보내기 ----
     document.getElementById('btnExportPng').addEventListener('click', exportPlotPng);
+    document.getElementById('btnGraphAdjust').addEventListener('click', exportPlotPng);
+    document.getElementById('showAllLabels').addEventListener('change', applyVisibility);
     document.getElementById('btnDownloadRaw').addEventListener('click', function () {
       if (!projectId) return;
       window.open('/api/projects/' + projectId + '/download', '_blank');

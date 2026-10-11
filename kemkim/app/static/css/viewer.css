@@ -648,3 +648,30 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .sig-loading>div{flex:1}
 .sig-llm{margin-top:14px;font-size:12px;color:var(--sidebar-muted)}
 .sig-llm b{color:var(--sidebar-text)}
+.plot-label-control{display:flex;align-items:center;gap:5px;font-size:12px;padding:0 8px;white-space:nowrap;color:var(--sidebar-text)}
+.plot-output-controls{position:absolute;bottom:22px;left:22px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--pill-bg);border:1px solid var(--sidebar-border);border-radius:10px;padding:6px}
+.plot-output-controls .btn{width:auto;margin:0;padding:8px;font-size:12px}
+dialog.graph-export-dialog{width:min(1440px,96vw);max-width:96vw;max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden}
+dialog.graph-export-dialog:not([open]){display:none}
+dialog.graph-export-dialog::backdrop{background:rgba(15,23,42,.65);backdrop-filter:blur(4px)}
+.graph-export-layout{display:grid;grid-template-columns:320px minmax(0,1fr);height:calc(90dvh - 62px);min-height:0}
+.graph-export-controls{display:flex;flex-direction:column;gap:12px;padding:18px;overflow:auto;border-right:1px solid var(--sidebar-border)}
+.graph-export-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--sidebar-text)}
+.graph-export-controls input:not([type="checkbox"]),.graph-export-controls select{width:100%;min-width:0;box-sizing:border-box;background:var(--sidebar-panel);color:var(--sidebar-text);border:1px solid var(--sidebar-border);border-radius:8px;padding:8px;font:inherit}
+.graph-export-controls input[type="color"]{height:36px;padding:3px}
+.graph-export-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.graph-export-word-head{display:flex;justify-content:space-between;font-size:12px}
+.graph-export-words{max-height:230px;min-height:130px;overflow:auto;flex-shrink:0;border:1px solid var(--sidebar-border);border-radius:8px;padding:8px}
+.graph-export-words summary{font-size:12px;font-weight:700;padding:5px;cursor:pointer}
+.graph-export-words label{flex-direction:row;align-items:center;padding:4px;overflow-wrap:anywhere}
+.graph-export-preview{display:flex;flex-direction:column;min-height:0;padding:18px;gap:12px;background:var(--sidebar-panel)}
+.graph-export-image{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto}
+.graph-export-image img{max-width:100%;max-height:100%;object-fit:contain}
+@media(max-width:760px){
+  .plot-output-controls{left:10px;bottom:16px;gap:0;flex-direction:column}
+  dialog.graph-export-dialog{overflow-y:auto}
+  .graph-export-layout{grid-template-columns:1fr;height:auto}
+  .graph-export-controls{overflow:visible;border-right:0}
+  .graph-export-preview{min-height:320px}
+  .graph-export-image img{max-height:60dvh}
+}
