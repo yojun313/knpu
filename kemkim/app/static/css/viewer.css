@@ -651,7 +651,12 @@ button.sig-term:hover{border-color:var(--accent);color:var(--accent)}
 .sig-llm{margin-top:14px;font-size:12px;color:var(--sidebar-muted)}
 .sig-llm b{color:var(--sidebar-text)}
 .plot-label-control{display:flex;align-items:center;gap:5px;font-size:12px;padding:0 8px;white-space:nowrap;color:var(--sidebar-text)}
-.plot-output-controls{position:absolute;bottom:22px;left:22px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--pill-bg);border:1px solid var(--sidebar-border);border-radius:10px;padding:6px}
+/* Tabs and export actions share one layout so they never occupy the same corner. */
+.plot-bottom-controls{position:absolute;bottom:22px;left:22px;right:84px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px;pointer-events:none}
+.plot-bottom-controls > *{pointer-events:auto;max-width:100%;box-sizing:border-box}
+.plot-bottom-controls #plotTabs{position:static;flex:0 0 auto}
+.plot-output-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--pill-bg);border:1px solid var(--pill-border);border-radius:10px;padding:6px;box-shadow:var(--pill-shadow);backdrop-filter:blur(8px)}
+@media(max-width:1100px){.plot-bottom-controls{bottom:16px;left:16px;right:76px}}
 .plot-output-controls .btn{width:auto;margin:0;padding:8px;font-size:12px}
 dialog.graph-export-dialog,dialog.graph-save-dialog,dialog.graph-word-dialog{position:fixed!important;inset:0!important;margin:auto!important;transform:none!important;animation:none;width:min(1440px,96vw);max-width:96vw;height:min(940px,92dvh);max-height:92dvh;padding:0;color:var(--sidebar-text);background:var(--sidebar-bg);overflow:hidden;box-sizing:border-box}
 dialog.graph-export-dialog[open],dialog.graph-save-dialog[open],dialog.graph-word-dialog[open]{display:flex;flex-direction:column}
