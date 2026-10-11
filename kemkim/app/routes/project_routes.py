@@ -20,9 +20,34 @@ from system import crawldata, uploads as upload_staging
 from system.jobs import submit as submit_job
 from system.jobs.routes import parse_schedule, status_compat as job_status_compat
 from app.db import user_logs_db
+from app.services.graph_export import GraphExportOptions, render_graph
 from system.logging.user_log import insert_log
 
 router = APIRouter()
+
+
+@router.post("/api/projects/{project_id}/graph/export")
+def project_graph_export(
+    project_id: str, request: Request, options: GraphExportOptions
+):
+    graph = _handle_store_error(
+        project_store.load_graph, _uid(request), project_id, _is_admin(request)
+    )
+    try:
+        content = render_graph(graph, options)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    filename = (
+        ("KEM_graph" if options.kind == "dov" else "KIM_graph") + "." + options.format
+    )
+    return Response(
+        content,
+        media_type="image/png" if options.format == "png" else "image/svg+xml",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 def _suggest_date_range(filename: str) -> tuple[str | None, str | None]:

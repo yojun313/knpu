@@ -94,6 +94,10 @@
         <button id="btnZoomOut" title="축소">−</button>
         <button id="btnZoomReset" title="전체보기">⤢</button>
       </div>
+      <div class="plot-output-controls">
+        <label class="plot-label-control"><input id="showAllLabels" type="checkbox" checked> 모든 단어 표시</label>
+        <button type="button" class="btn" id="btnGraphAdjust">그래프 조정 · 저장</button>
+      </div>
       <div id="top">
         <button id="mobileRailBtn" class="mobile-icon-btn" title="프로젝트 목록">☰</button>
         <div class="brandmark" id="backLink"><span class="dot3"></span><span id="projectName">KEMKIM Analyzer</span></div>
@@ -113,6 +117,75 @@
           <button class="icon-btn mobile-only" id="sideCloseBtn" title="닫기">✕</button>
         </div>
       </div>
+
+      <details open id="interpretSection">
+        <summary>✦ AI 해석</summary>
+        <div class="sec-body">
+          <div class="sig-ai-block">
+            <div class="sig-ai-title">✦ AI 신호 해석</div>
+            <div class="hint">단어가 약한 신호일 때 어떤 맥락에서 나타나 신호가 커지며 어떤 맥락으로 옮겨 갔는지
+              기간별로 분석합니다. 그래프에서 단어를 누르거나 아래에서 고르세요.</div>
+            <div class="sig-ai-row">
+              <input class="wl-search" id="sigWordInput" type="text" placeholder="단어 입력 (예: 딥페이크)" list="sigWordList" autocomplete="off">
+              <datalist id="sigWordList"></datalist>
+              <button class="btn primary" id="btnSigWord" type="button">단어 해석</button>
+            </div>
+            <div class="sig-ai-row">
+              <select id="sigGroupBasis" class="sig-select">
+                <option value="final">최종</option><option value="kem">KEM</option><option value="kim">KIM</option>
+              </select>
+              <select id="sigGroupSignal" class="sig-select">
+                <option value="weak_signal">약한 신호</option><option value="strong_signal">강한 신호</option>
+                <option value="latent_signal">잠재 신호</option><option value="well_known_signal">알려진 신호</option>
+              </select>
+              <button class="btn" id="btnSigGroup" type="button">신호군 종합 해석</button>
+            </div>
+          </div>
+
+
+          <div class="hint">해석에는 토큰화 전 원본(크롤링) CSV가 필요합니다. 크롤링 DB에서 바로
+            고르거나 파일을 올리면 프로젝트에 저장되어 이후 다시 첨부할 필요가 없습니다.</div>
+          <div id="sourceRef" class="source-ref" hidden></div>
+          <button class="btn primary source-suggest" id="btnSourceSuggest" type="button" hidden></button>
+          <button class="btn source-db-btn" id="btnSourceFromDb" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>
+            크롤링 DB에서 원본 선택
+          </button>
+          <div class="source-or">또는</div>
+          <label id="sourceDropzone" class="modal-dropzone modal-dropzone-sm" for="sourceFileInput">
+            <input type="file" id="sourceFileInput" accept=".csv" hidden>
+            <div class="dz-icon">＋</div>
+            <div class="dz-text" id="sourceFileLabel">원본(토큰화 전) CSV 업로드</div>
+            <div class="dz-sub">Title / Date / Text 열이 포함된 CSV</div>
+          </label>
+          <div id="sourceProgress" class="upload-progress" hidden>
+            <div class="upload-progress-bar"><div id="sourceProgressFill" class="upload-progress-fill"></div></div>
+            <div id="sourceProgressLabel" class="upload-progress-label">업로드 중... 0%</div>
+          </div>
+          <div id="sourceStatus" class="modal-status"></div>
+
+          <div class="row" style="margin-top:12px"><label>해석할 키워드 (<span id="interpKwCount">0</span>개)</label></div>
+          <input class="wl-search" id="interpKwSearch" type="text" placeholder="키워드 검색...">
+          <div class="signal-chips" id="interpKwChips" style="max-height:170px;margin-bottom:10px"></div>
+
+          <div class="chk-row" style="margin-top:4px">
+            <input type="radio" name="matchMode" id="matchOr" value="or" checked><label for="matchOr">선택 단어 중 하나라도 포함(OR)</label>
+          </div>
+          <div class="chk-row">
+            <input type="radio" name="matchMode" id="matchAnd" value="and"><label for="matchAnd">선택 단어 모두 포함(AND)</label>
+          </div>
+          <div class="chk-row">
+            <input type="checkbox" id="useAi"><label for="useAi">AI로 주제 요약 (제목 열 필요)</label>
+          </div>
+          <button class="btn primary" id="btnInterpret">선택 키워드로 해석 실행</button>
+          <div id="interpretStatus" class="modal-status"></div>
+
+          <div id="interpretResult" style="margin-top:12px"></div>
+
+          <div class="row" style="margin-top:14px"><label>이전 해석 결과</label></div>
+          <div id="interpretationList"></div>
+        </div>
+      </details>
 
       <details id="optionsSection" hidden>
         <summary>분석 설정</summary>
@@ -163,78 +236,12 @@
         </div>
       </details>
 
-      <details id="interpretSection">
-        <summary>해석</summary>
-        <div class="sec-body">
-          <div class="hint">해석에는 토큰화 전 원본(크롤링) CSV가 필요합니다. 크롤링 DB에서 바로
-            고르거나 파일을 올리면 프로젝트에 저장되어 이후 다시 첨부할 필요가 없습니다.</div>
-          <div id="sourceRef" class="source-ref" hidden></div>
-          <button class="btn primary source-suggest" id="btnSourceSuggest" type="button" hidden></button>
-          <button class="btn source-db-btn" id="btnSourceFromDb" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>
-            크롤링 DB에서 원본 선택
-          </button>
-          <div class="source-or">또는</div>
-          <label id="sourceDropzone" class="modal-dropzone modal-dropzone-sm" for="sourceFileInput">
-            <input type="file" id="sourceFileInput" accept=".csv" hidden>
-            <div class="dz-icon">＋</div>
-            <div class="dz-text" id="sourceFileLabel">원본(토큰화 전) CSV 업로드</div>
-            <div class="dz-sub">Title / Date / Text 열이 포함된 CSV</div>
-          </label>
-          <div id="sourceProgress" class="upload-progress" hidden>
-            <div class="upload-progress-bar"><div id="sourceProgressFill" class="upload-progress-fill"></div></div>
-            <div id="sourceProgressLabel" class="upload-progress-label">업로드 중... 0%</div>
-          </div>
-          <div id="sourceStatus" class="modal-status"></div>
 
-          <div class="sig-ai-block">
-            <div class="sig-ai-title">✦ AI 신호 해석</div>
-            <div class="hint">단어가 약한 신호일 때 어떤 맥락에서 나타나 신호가 커지며 어떤 맥락으로 옮겨 갔는지
-              기간별로 분석합니다. 그래프에서 단어를 누르거나 아래에서 고르세요.</div>
-            <div class="sig-ai-row">
-              <input class="wl-search" id="sigWordInput" type="text" placeholder="단어 입력 (예: 딥페이크)" list="sigWordList" autocomplete="off">
-              <datalist id="sigWordList"></datalist>
-              <button class="btn primary" id="btnSigWord" type="button">단어 해석</button>
-            </div>
-            <div class="sig-ai-row">
-              <select id="sigGroupBasis" class="sig-select">
-                <option value="final">최종</option><option value="kem">KEM</option><option value="kim">KIM</option>
-              </select>
-              <select id="sigGroupSignal" class="sig-select">
-                <option value="weak_signal">약한 신호</option><option value="strong_signal">강한 신호</option>
-                <option value="latent_signal">잠재 신호</option><option value="well_known_signal">알려진 신호</option>
-              </select>
-              <button class="btn" id="btnSigGroup" type="button">신호군 종합 해석</button>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px"><label>해석할 키워드 (<span id="interpKwCount">0</span>개)</label></div>
-          <input class="wl-search" id="interpKwSearch" type="text" placeholder="키워드 검색...">
-          <div class="signal-chips" id="interpKwChips" style="max-height:170px;margin-bottom:10px"></div>
-
-          <div class="chk-row" style="margin-top:4px">
-            <input type="radio" name="matchMode" id="matchOr" value="or" checked><label for="matchOr">선택 단어 중 하나라도 포함(OR)</label>
-          </div>
-          <div class="chk-row">
-            <input type="radio" name="matchMode" id="matchAnd" value="and"><label for="matchAnd">선택 단어 모두 포함(AND)</label>
-          </div>
-          <div class="chk-row">
-            <input type="checkbox" id="useAi"><label for="useAi">AI로 주제 요약 (제목 열 필요)</label>
-          </div>
-          <button class="btn primary" id="btnInterpret">선택 키워드로 해석 실행</button>
-          <div id="interpretStatus" class="modal-status"></div>
-
-          <div id="interpretResult" style="margin-top:12px"></div>
-
-          <div class="row" style="margin-top:14px"><label>이전 해석 결과</label></div>
-          <div id="interpretationList"></div>
-        </div>
-      </details>
 
       <details>
         <summary>내보내기</summary>
         <div class="sec-body">
-          <button class="btn" id="btnExportPng">현재 화면 PNG로 저장</button>
+          <button class="btn" id="btnExportPng">그래프 조정 · PNG 저장</button>
           <button class="btn" id="btnDownloadRaw">원본 결과 zip 다운로드</button>
         </div>
       </details>
@@ -462,6 +469,31 @@
       <div class="sec-body article-modal-body" id="articleModalBody" style="padding:16px 18px"></div>
     </div>
   </div>
+
+
+  <dialog id="graphExportDialog" class="modal-card graph-export-dialog" aria-labelledby="graphExportTitle">
+    <div class="modal-head"><span id="graphExportTitle">그래프 조정 · PNG 저장</span><button type="button" id="graphExportClose" class="modal-close" aria-label="닫기">×</button></div>
+    <div class="graph-export-layout">
+      <form id="graphExportForm" class="graph-export-controls">
+        <label>그래프<select name="kind"><option value="dov">KEM (DoV)</option><option value="dod">KIM (DoD)</option></select></label>
+        <div class="graph-export-grid"><label>가로 스케일 (인치)<input name="width" type="number" min="2" max="120" value="100" step="any" required></label><label>세로 스케일 (인치)<input name="height" type="number" min="2" max="120" value="100" step="any" required></label><label>단어 크기<input name="font_size" type="number" min="1" max="200" value="50" step="any" required></label><label>점 크기<input name="dot_size" type="number" min="0" max="500" value="20" step="any" required></label><label>축 제목 크기<input name="label_size" type="number" min="1" max="100" value="12" step="any" required></label><label>눈금 크기<input name="tick_size" type="number" min="1" max="100" value="10" step="any" required></label>
+          <label>배경색<input name="background" type="color" value="#ffffff"></label>
+          <label>글자·축 색<input name="foreground" type="color" value="#202020"></label>
+        </div>
+        <label>해상도 (DPI)<input name="dpi" type="number" min="30" max="300" value="60" required></label>
+        <div class="hint" id="graphExportResolution">6000 × 6000 px</div>
+        <div class="btn-row"><button type="button" id="graphExportDefaults" class="btn btn-sm">기본값</button><button type="button" id="graphExportVisible" class="btn btn-sm">현재 표시 단어 선택</button></div>
+        <div class="graph-export-word-head"><strong>표시할 단어</strong><span id="graphExportCount"></span></div>
+        <input id="graphExportSearch" type="search" placeholder="단어 검색" autocomplete="off">
+        <div class="btn-row"><button type="button" id="graphExportAll" class="btn btn-sm">전체 선택</button><button type="button" id="graphExportNone" class="btn btn-sm">전체 해제</button></div>
+        <div id="graphExportWords" class="graph-export-words"></div>
+        <button class="btn" type="submit" id="graphExportPreviewBtn">미리보기 갱신</button>
+        <button class="btn primary" type="button" id="graphExportSave">PNG 저장</button>
+        <div id="graphExportStatus" role="status" class="modal-status"></div>
+      </form>
+      <div class="graph-export-preview"><div class="hint">전체 좌표로 그린 저장용 그래프입니다. 화면 확대·이동과 관계없이 저장됩니다.</div><div class="graph-export-image"><img id="graphExportImage" alt="저장할 그래프 미리보기" hidden></div></div>
+    </div>
+  </dialog>
 
   <script src="/shared-ui/services.js"></script>
   <script src="/shared-ui/knpu.js"></script>
