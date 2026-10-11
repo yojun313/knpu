@@ -33,7 +33,7 @@ def Request(method, url, base_api=MANAGER_SERVER_API, **kwargs):
     response = requests.request(method.upper(), full_url, **kwargs)
     if response.status_code in (401, 403):
         message = (
-            "로그인이 만료되었습니다. 다시 로그인해주세요."
+            "로그인이 만료되었습니다. 다시 로그인해 주시기 바랍니다."
             if response.status_code == 401
             else "이 작업을 수행할 권한이 없습니다."
         )

@@ -208,7 +208,7 @@
           </span>
         </div>
         <div class="git-folder-body ml-3 space-y-1 border-l border-white/10 pl-2 ${collapsed ? 'hidden' : ''}" data-drop-folder="${escapeHtml(folder.id)}">
-          ${repos.map((repo) => repoItem(repo)).join('') || '<p class="px-2 py-2 text-[10px] text-white/30">여기로 저장소를 끌어다 놓으세요.</p>'}
+          ${repos.map((repo) => repoItem(repo)).join('') || '<p class="px-2 py-2 text-[10px] text-white/30">여기로 저장소를 끌어다 놓아 주시기 바랍니다.</p>'}
         </div>
       </div>`;
   }
@@ -332,7 +332,7 @@
         if (!name) return;
         folder.name = name.slice(0, 60);
       } else if (action === 'delete') {
-        if (!confirm(`"${folder.name}" 폴더를 삭제할까요? 안의 저장소는 미분류로 옮겨집니다.`)) return;
+        if (!confirm(`"${folder.name}" 폴더를 삭제하시겠습니까? 안의 저장소는 미분류로 옮겨집니다.`)) return;
         state.prefs.order = [...ungroupedIds(), ...folder.repositories];
         state.prefs.folders.splice(index, 1);
       } else if (action === 'up' || action === 'down') {
@@ -489,7 +489,7 @@
     banner.classList.toggle('hidden', !detail.operation);
     if (detail.operation) {
       const names = { merge: '병합', rebase: '리베이스', 'cherry-pick': '체리픽', revert: '되돌리기' };
-      $('gitOperationText').textContent = `${names[detail.operation] || detail.operation} 진행 중${counts.conflicts ? ` · 충돌 파일 ${counts.conflicts}개` : ''} — 충돌을 해결한 파일을 스테이징하고 커밋하거나, 작업을 중단하세요.`;
+      $('gitOperationText').textContent = `${names[detail.operation] || detail.operation} 진행 중${counts.conflicts ? ` · 충돌 파일 ${counts.conflicts}개` : ''} — 충돌을 해결한 파일을 스테이징하고 커밋하거나, 작업을 중단해 주시기 바랍니다.`;
     }
     $('gitUserWarning').classList.toggle('hidden', Boolean(detail.user.name && detail.user.email));
   }
@@ -580,7 +580,7 @@
     const local = detail.branches.filter((branch) => !branch.remote);
     const remote = detail.branches.filter((branch) => branch.remote);
     $('gitBranchList').innerHTML = local.map(branchRow).join('') || '<p class="p-6 text-center text-xs text-white/35">로컬 브랜치가 없습니다.</p>';
-    $('gitRemoteBranchList').innerHTML = remote.map(branchRow).join('') || '<p class="p-6 text-center text-xs text-white/35">원격 브랜치가 없습니다. Fetch 해 보세요.</p>';
+    $('gitRemoteBranchList').innerHTML = remote.map(branchRow).join('') || '<p class="p-6 text-center text-xs text-white/35">원격 브랜치가 없습니다. Fetch 해 보시기 바랍니다.</p>';
     const select = $('gitNewBranchStart');
     const previous = select.value;
     select.innerHTML = `<option value="">현재 HEAD (${escapeHtml(detail.head)})</option>` + detail.branches
@@ -825,8 +825,8 @@
   document.querySelectorAll('[data-git-action]').forEach((button) => button.addEventListener('click', () => {
     const action = button.dataset.gitAction;
     const detail = state.detail;
-    if (action === 'pull' && !confirm(`원격 변경을 가져와 ${$('gitRebase').checked ? 'rebase' : '병합'}할까요?`)) return;
-    if (action === 'push' && !confirm(`${detail?.branch || '현재 브랜치'}의 커밋 ${detail?.ahead || 0}개를 푸시할까요?`)) return;
+    if (action === 'pull' && !confirm(`원격 변경을 가져와 ${$('gitRebase').checked ? 'rebase' : '병합'}하시겠습니까?`)) return;
+    if (action === 'push' && !confirm(`${detail?.branch || '현재 브랜치'}의 커밋 ${detail?.ahead || 0}개를 푸시하시겠습니까?`)) return;
     runGit(action, { rebase: $('gitRebase').checked }, { showConsole: true });
   }));
 
@@ -846,16 +846,16 @@
     if (action === 'stash') {
       runGit('stash', { include_untracked: true });
     } else if (action === 'undo_commit') {
-      if (confirm('마지막 커밋을 취소할까요? 변경 내용은 스테이징된 상태로 남습니다.')) runGit('undo_commit');
+      if (confirm('마지막 커밋을 취소하시겠습니까? 변경 내용은 스테이징된 상태로 남습니다.')) runGit('undo_commit');
     } else if (action === 'force_push') {
-      if (confirm('원격 브랜치를 로컬 기록으로 덮어씁니다 (--force-with-lease). 계속할까요?')) runGit('push', { force: true }, { showConsole: true });
+      if (confirm('원격 브랜치를 로컬 기록으로 덮어씁니다 (--force-with-lease). 계속하시겠습니까?')) runGit('push', { force: true }, { showConsole: true });
     } else if (action === 'refresh') {
       state.detailJson = '';
       refreshDetail();
     }
   });
   $('gitAbortOperation').addEventListener('click', () => {
-    if (confirm('진행 중인 작업을 중단하고 이전 상태로 되돌릴까요?')) runGit('abort_operation');
+    if (confirm('진행 중인 작업을 중단하고 이전 상태로 되돌리시겠습니까?')) runGit('abort_operation');
   });
 
   // 변경사항 파일 목록
@@ -867,7 +867,7 @@
     const button = event.target.closest('[data-file-action]');
     if (!button) { loadDiff(path, staged); return; }
     const action = button.dataset.fileAction;
-    if (action === 'discard' && !confirm(`"${path}" 의 변경을 되돌릴까요? 되돌린 내용은 복구할 수 없습니다.`)) return;
+    if (action === 'discard' && !confirm(`"${path}" 의 변경을 되돌리시겠습니까? 되돌린 내용은 복구할 수 없습니다.`)) return;
     runGit(action, { paths: [path] });
   }
   $('gitStagedList').addEventListener('click', onFileListClick);
@@ -877,7 +877,7 @@
   $('gitDiscardAll').addEventListener('click', () => {
     const count = state.detail?.changes.filter((change) => change.unstaged && !change.conflict).length || 0;
     if (!count) return;
-    if (confirm(`스테이징하지 않은 변경 ${count}개를 모두 되돌릴까요? 새 파일도 삭제되며 복구할 수 없습니다.`)) runGit('discard', {});
+    if (confirm(`스테이징하지 않은 변경 ${count}개를 모두 되돌리시겠습니까? 새 파일도 삭제되며 복구할 수 없습니다.`)) runGit('discard', {});
   });
 
   // 커밋
@@ -924,12 +924,12 @@
     let modelTimer = null;
     UI().formSheet({
       title: 'AI 커밋 메시지 설정',
-      subtitle: 'OpenAI 호환 API 주소를 입력하면 /models 를 조회해 모델을 자동으로 선택해요. 토큰은 서버에만 저장돼요.',
+      subtitle: 'OpenAI 호환 API 주소를 입력하면 /models 를 조회해 모델을 자동으로 선택합니다. 토큰은 서버에만 저장됩니다.',
       fields: [
         { name: 'base_url', label: 'API 주소 (Base URL)', value: current.base_url, placeholder: 'https://api.openai.com/v1', maxlength: 500 },
         { name: 'token', label: `Bearer 토큰${current.token_set ? ' (저장됨 · 바꿀 때만 입력)' : ''}`, value: '', placeholder: current.token_set ? '••••••••  (비워 두면 그대로)' : 'sk-...', maxlength: 1000 },
       ],
-      extraHtml: `<div class="text-xs text-white/60" data-model-status>${current.model ? `현재 선택 모델: ${escapeHtml(current.model)}` : '주소를 입력하면 사용 가능한 모델을 자동으로 확인해요.'}</div>
+      extraHtml: `<div class="text-xs text-white/60" data-model-status>${current.model ? `현재 선택 모델: ${escapeHtml(current.model)}` : '주소를 입력하면 사용 가능한 모델을 자동으로 확인합니다.'}</div>
         <label>메시지 언어<select name="language">
           <option value="auto" ${current.language === 'auto' ? 'selected' : ''}>자동 (최근 커밋과 같은 언어)</option>
           <option value="ko" ${current.language === 'ko' ? 'selected' : ''}>한국어</option>
@@ -944,7 +944,7 @@
         const modelStatus = body.querySelector('[data-model-status]');
         const discover = async () => {
           const url = baseUrl.value.trim().replace(/\/+$/, '');
-          if (!url) { modelStatus.textContent = 'API 주소를 입력해 주세요.'; return false; }
+          if (!url) { modelStatus.textContent = 'API 주소를 입력해 주시기 바랍니다.'; return false; }
           const request = ++modelRequest;
           modelStatus.textContent = '사용 가능한 모델 확인 중…';
           try {
@@ -976,11 +976,11 @@
         const url = (values.base_url || '').trim().replace(/\/+$/, '');
         if (modelForUrl !== url || !selectedModel) {
           const discovered = await body._discoverModel();
-          if (!discovered || modelForUrl !== url) throw new Error('API 주소에서 모델을 확인한 뒤 저장해 주세요.');
+          if (!discovered || modelForUrl !== url) throw new Error('API 주소에서 모델을 확인한 뒤 저장해 주시기 바랍니다.');
         }
         const token = values.clear_token ? '' : (values.token ? values.token : null);
         await api('/api/git/ai/settings', { method: 'PUT', body: { base_url: values.base_url || '', model: selectedModel, token, language: values.language || 'auto' } });
-        toast('AI 설정을 저장했어요.', 'success');
+        toast('AI 설정을 저장했습니다.', 'success');
         if (thenGenerate) setTimeout(generateCommitMessage, 50);
       },
     });
@@ -993,7 +993,7 @@
       if (!settings.configured) { aiSettingsSheet({ thenGenerate: true }); return; }
     } catch (error) { toast(error.message, 'error'); return; }
     const input = $('gitCommitMessage');
-    if (input.value.trim() && !confirm('지금 쓴 커밋 메시지를 AI 가 쓴 것으로 바꿀까요?')) return;
+    if (input.value.trim() && !confirm('지금 쓴 커밋 메시지를 AI 가 쓴 것으로 변경하시겠습니까?')) return;
     button.disabled = true;
     button.classList.add('busy');
     button.querySelector('i').className = 'fas fa-circle-notch fa-spin';
@@ -1004,7 +1004,7 @@
       updateSummaryLength();
       saveDraft();
       input.focus();
-      if (result.truncated) toast('변경이 많아 앞부분만 보고 썼어요. 한 번 확인해 주세요.', 'info');
+      if (result.truncated) toast('변경이 많아 앞부분만 보고 사용했습니다. 한 번 확인해 주시기 바랍니다.', 'info');
     } catch (error) {
       toast(error.message, 'error');
     } finally {
@@ -1024,19 +1024,19 @@
     const amend = $('gitCommitAmend').checked;
     const stageAll = $('gitCommitStageAll').checked;
     if (!message.trim() && !amend && detail.operation !== 'merge') {
-      toast('커밋 메시지를 입력하세요.', 'error');
+      toast('커밋 메시지를 입력해 주시기 바랍니다.', 'error');
       $('gitCommitMessage').focus();
       return;
     }
     if (!stageAll && !amend && detail.operation !== 'merge' && !detail.counts.staged) {
-      toast('스테이징된 파일이 없습니다. 파일을 스테이징하거나 "모든 변경 포함"을 선택하세요.', 'error');
+      toast('스테이징된 파일이 없습니다. 파일을 스테이징하거나 "모든 변경 포함"을 선택해 주시기 바랍니다.', 'error');
       return;
     }
     let force = false;
     if (amend && pushAfter) {
       const pushedHead = detail.upstream && detail.commits[0]?.pushed;
       if (pushedHead) {
-        if (!confirm('이미 푸시된 커밋을 수정합니다. 강제 푸시(--force-with-lease)가 필요합니다. 계속할까요?')) return;
+        if (!confirm('이미 푸시된 커밋을 수정합니다. 강제 푸시(--force-with-lease)가 필요합니다. 계속하시겠습니까?')) return;
         force = true;
       }
     }
@@ -1069,7 +1069,7 @@
     if (!row) return;
     const hash = row.dataset.hash;
     if (event.target.closest('[data-commit-action="revert"]')) {
-      if (confirm(`${hash.slice(0, 7)} 커밋의 변경을 되돌리는 새 커밋을 만들까요?`)) runGit('revert', { commit: hash }, { showConsole: true });
+      if (confirm(`${hash.slice(0, 7)} 커밋의 변경을 되돌리는 새 커밋을 생성하시겠습니까?`)) runGit('revert', { commit: hash }, { showConsole: true });
       return;
     }
     openCommit(hash);
@@ -1084,23 +1084,23 @@
     const action = button.dataset.branchAction;
     const detail = state.detail;
     if (action === 'checkout') {
-      if (detail.dirty && !confirm('작업 트리에 변경사항이 있습니다. 충돌하면 전환이 실패할 수 있습니다. 계속할까요? (먼저 스태시하는 것을 권장)')) return;
+      if (detail.dirty && !confirm('작업 트리에 변경사항이 있습니다. 충돌하면 전환이 실패할 수 있습니다. 계속하시겠습니까? (먼저 스태시하는 것을 권장)')) return;
       runGit('checkout', { branch });
     } else if (action === 'merge') {
       const mode = mergeMode();
       const modeLabel = { default: '', no_ff: ' (--no-ff)', squash: ' (--squash)' }[mode];
-      if (!confirm(`${branch} → ${detail.branch} 병합${modeLabel}을 실행할까요?`)) return;
+      if (!confirm(`${branch} → ${detail.branch} 병합${modeLabel}을 실행하시겠습니까?`)) return;
       const result = await runGit('merge', { branch, no_ff: mode === 'no_ff', squash: mode === 'squash' }, { showConsole: true });
       if (result?.success && mode === 'squash') {
-        toast('squash 병합은 변경만 스테이징합니다. 커밋 메시지를 작성해 커밋하세요.');
+        toast('squash 병합은 변경만 스테이징합니다. 커밋 메시지를 작성해 커밋해 주시기 바랍니다.');
         $('gitCommitMessage').value = `Merge branch '${branch}' (squash)`;
         setTab('changes');
       }
     } else if (action === 'delete') {
-      if (!confirm(`로컬 브랜치 ${branch} 를 삭제할까요?`)) return;
+      if (!confirm(`로컬 브랜치 ${branch} 를 삭제하시겠습니까?`)) return;
       const result = await runGit('delete_branch', { branch });
       if (result && !result.success && /not fully merged/.test(result.output)
-        && confirm(`${branch} 는 아직 병합되지 않은 커밋이 있습니다. 강제로 삭제할까요? (커밋을 잃을 수 있음)`)) {
+        && confirm(`${branch} 는 아직 병합되지 않은 커밋이 있습니다. 강제로 삭제하시겠습니까? (커밋을 잃을 수 있음)`)) {
         runGit('delete_branch', { branch, force: true });
       }
     }
@@ -1130,7 +1130,7 @@
     if (!button) return;
     const ref = button.closest('[data-stash]').dataset.stash;
     const action = button.dataset.stashAction;
-    if (action === 'stash_drop' && !confirm(`${ref} 를 삭제할까요? 복구할 수 없습니다.`)) return;
+    if (action === 'stash_drop' && !confirm(`${ref} 를 삭제하시겠습니까? 복구할 수 없습니다.`)) return;
     runGit(action, { stash_ref: ref });
   });
 
@@ -1193,7 +1193,7 @@
     const current = sortMode();
     window.UnivDashUI.actionSheet({
       title: '저장소 정렬 기준',
-      subtitle: '즐겨찾기 · 폴더 · 미분류 안에서 정렬됩니다. 휴대폰 · PC 에 같이 적용돼요.',
+      subtitle: '즐겨찾기 · 폴더 · 미분류 안에서 정렬됩니다. 휴대폰 · PC 에 같이 적용됩니다.',
       actions: Object.entries(SORTS).map(([id, sort]) => ({
         icon: sort.icon, label: sort.label, desc: sort.desc, sub: id === current ? '✓' : '', current: id === current,
         onClick: () => { state.prefs.sort = id; renderList(); savePrefs(); },

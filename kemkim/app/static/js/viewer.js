@@ -44,7 +44,7 @@
       try { body = text ? JSON.parse(text) : {}; } catch (e) { body = null; }
       if (body === null) {
         var msg = (res.status === 504 || res.status === 524)
-          ? '서버 응답이 너무 오래 걸려 중간에서 끊겼습니다 (HTTP ' + res.status + '). 잠시 후 다시 시도해 주세요.'
+          ? '서버 응답이 너무 오래 걸려 중간에서 끊겼습니다 (HTTP ' + res.status + '). 잠시 후 다시 시도해 주시기 바랍니다.'
           : '서버가 올바르지 않은 응답을 보냈습니다 (HTTP ' + res.status + ').';
         throw new Error(msg);
       }
@@ -523,7 +523,7 @@
   }
 
   function deleteRailProject(p) {
-    if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    if (!confirm('"' + p.name + '" 프로젝트를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
       if (wasCurrent) localStorage.removeItem(LAST_PROJECT_KEY);
@@ -547,7 +547,7 @@
   // 폴더
   // ---------------------------------------------------------------
   function createFolder() {
-    var name = prompt('새 폴더 이름을 입력하세요');
+    var name = prompt('새 폴더 이름을 입력해 주시기 바랍니다');
     if (name === null) return;
     name = name.trim();
     if (!name) return;
@@ -582,7 +582,7 @@
   }
 
   function deleteFolder(f) {
-    if (!confirm('"' + f.name + '" 폴더를 삭제할까요?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
+    if (!confirm('"' + f.name + '" 폴더를 삭제하시겠습니까?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
     railApi('/api/folders/' + f.folder_id, { method: 'DELETE' }).then(function () {
       collapsedFolders.delete(f.folder_id);
       loadRailProjects();
@@ -666,7 +666,7 @@
     document.getElementById('analyzeStatus').textContent = '';
     document.getElementById('analyzeProgress').hidden = true;
     document.getElementById('analyzeForm').hidden = true;
-    document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택하세요';
+    document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택해 주시기 바랍니다';
     document.getElementById('crawlStatus').textContent = '';
     document.getElementById('crawlProgress').hidden = true;
     document.getElementById('crawlAnalyzeForm').hidden = true;
@@ -750,7 +750,7 @@
     var statusEl = document.getElementById('analyzeStatus');
     var sd = document.getElementById('optStartDate').value;
     var ed = document.getElementById('optEndDate').value;
-    if (!sd || !ed) { statusEl.textContent = '분석 시작일/종료일을 선택해주세요.'; return; }
+    if (!sd || !ed) { statusEl.textContent = '분석 시작일/종료일을 선택해 주시기 바랍니다.'; return; }
     var splitOption = document.getElementById('optSplit').value;
     var option = {
       startdate: sd.replace(/-/g, ''),
@@ -895,7 +895,7 @@
     var statusEl = document.getElementById('crawlStatus');
     var sd = document.getElementById('crawlOptStartDate').value;
     var ed = document.getElementById('crawlOptEndDate').value;
-    if (!sd || !ed) { statusEl.textContent = '분석 시작일/종료일을 선택해주세요.'; return; }
+    if (!sd || !ed) { statusEl.textContent = '분석 시작일/종료일을 선택해 주시기 바랍니다.'; return; }
     var splitOption = document.getElementById('crawlOptSplit').value;
     var option = {
       startdate: sd.replace(/-/g, ''),
@@ -1457,7 +1457,7 @@
       if (currentMeta) { currentMeta.has_source = true; currentMeta.source_ref = res.source_ref; }
       updateSourceStatusUI();
       closeSourceDbModal();
-      statusEl.textContent = '크롤링 DB의 원본을 첨부했습니다. 바로 해석할 수 있어요.'; statusEl.className = 'modal-status ok';
+      statusEl.textContent = '크롤링 DB의 원본을 첨부했습니다. 바로 해석할 수 있습니다.'; statusEl.className = 'modal-status ok';
     }).catch(function (err) {
       prog.hidden = true; suggestBtn.disabled = false;
       var msg = err.message || String(err);
@@ -1636,8 +1636,8 @@
   function doInterpret() {
     var keywords = Object.keys(interpretKeywords);
     var statusEl = document.getElementById('interpretStatus');
-    if (!keywords.length) { statusEl.textContent = '해석할 키워드를 위 목록에서 선택해주세요.'; statusEl.className = 'modal-status err'; return; }
-    if (!hasSource) { statusEl.textContent = '먼저 원본(토큰화 전) CSV를 업로드해주세요.'; statusEl.className = 'modal-status err'; return; }
+    if (!keywords.length) { statusEl.textContent = '해석할 키워드를 위 목록에서 선택해 주시기 바랍니다.'; statusEl.className = 'modal-status err'; return; }
+    if (!hasSource) { statusEl.textContent = '먼저 원본(토큰화 전) CSV를 업로드해 주시기 바랍니다.'; statusEl.className = 'modal-status err'; return; }
     var matchMode = document.querySelector('input[name=matchMode]:checked').value;
     var useAi = document.getElementById('useAi').checked;
     var btn = document.getElementById('btnInterpret');
@@ -1830,7 +1830,7 @@
         if (slot && job.prompt && !slot.firstChild) slot.innerHTML = promptHtml(job.prompt);
         if (job.status === 'done') { onDone(job.result); return; }
         if (job.status === 'error') { onError(new Error(job.error || '해석에 실패했습니다.')); return; }
-        if (tries > 450) { onError(new Error('해석이 15분 넘게 끝나지 않았습니다. 잠시 후 해석 목록을 확인해 주세요.')); return; }
+        if (tries > 450) { onError(new Error('해석이 15분 넘게 끝나지 않았습니다. 잠시 후 해석 목록을 확인해 주시기 바랍니다.')); return; }
         timer = setTimeout(tick, 2000);
       }).catch(function (err) {
         // 일시적인 네트워크 오류는 몇 번 더 시도한다
@@ -1843,7 +1843,7 @@
 
   function loadingBlockHtml(text) {
     return '<div class="sig-loading"><span class="sig-spin"></span><div><div id="sigStage">' + esc(text) + '</div>'
-      + '<div class="sig-meta">AI 해석은 1~2분 걸릴 수 있어요. 창을 닫아도 작업은 계속되고, 끝나면 해석 목록에 저장됩니다.</div></div></div>'
+      + '<div class="sig-meta">AI 해석은 1~2분 걸릴 수 있습니다. 창을 닫아도 작업은 계속되고, 끝나면 해석 목록에 저장됩니다.</div></div></div>'
       + '<div id="sigPromptSlot"></div>';
   }
 
@@ -1861,7 +1861,7 @@
     html += signalChartSvg(prof);
     html += '<div class="sig-section"><h4>기간별 신호 단계</h4>' + signalTimelineHtml(prof, ctx) + '</div>';
 
-    if (loading) html += loadingBlockHtml(typeof loading === 'string' ? loading : '해석을 준비하고 있어요');
+    if (loading) html += loadingBlockHtml(typeof loading === 'string' ? loading : '해석을 준비하고 있습니다');
     if (ai) {
       html += '<div class="sig-section"><h4>AI 해석</h4>'
         + (ai.headline ? '<div class="sig-headline">' + esc(ai.headline) + '</div>' : '')
@@ -1954,7 +1954,7 @@
         + '<div>' + esc(t.description) + '</div><div class="sig-terms">' + termChips(t.words, true) + '</div>' + evidenceHtml(t.evidence, snippets) + '</div>';
     }).join('') + '</div></div>';
     if ((ai.unassigned || []).length) html += '<div class="sig-section"><h4>테마에 묶이지 않은 단어</h4><div class="sig-terms">' + termChips(ai.unassigned, true) + '</div></div>';
-    if ((ai.not_in_source || []).length) html += '<div class="sig-section"><h4>원본 기사에서 찾지 못한 단어</h4><div class="hint">첨부한 원본 CSV에 이 단어가 들어간 기사가 없어 AI 해석에서 제외했습니다. 원본이 분석 데이터와 같은지 확인해 보세요.</div><div class="sig-terms">' + termChips(ai.not_in_source, false) + '</div></div>';
+    if ((ai.not_in_source || []).length) html += '<div class="sig-section"><h4>원본 기사에서 찾지 못한 단어</h4><div class="hint">첨부한 원본 CSV에 이 단어가 들어간 기사가 없어 AI 해석에서 제외했습니다. 원본이 분석 데이터와 같은지 확인해 보시기 바랍니다.</div><div class="sig-terms">' + termChips(ai.not_in_source, false) + '</div></div>';
     html += '<details class="sig-section"><summary style="cursor:pointer;font-weight:700">단어별 요약 보기</summary><table class="sig-table" style="margin-top:8px"><thead><tr><th>단어</th><th>기사</th><th>처음</th><th>정점</th><th>연관어</th></tr></thead><tbody>'
       + (it.items || []).map(function (x) {
         return '<tr><td><button type="button" class="sig-term" data-sigword="' + escAttr(x.word) + '">' + esc(x.word) + '</button></td><td>' + x.docs + '</td><td>' + esc(x.first || '-') + '</td><td>' + esc(x.peak || '-') + '</td><td>' + esc((x.terms || []).join(', ')) + '</td></tr>';
@@ -1972,14 +1972,14 @@
 
   function runGroupAnalysis() {
     var st = document.getElementById('interpretStatus');
-    if (!hasSource) { st.textContent = '신호군 해석에는 원본 CSV가 필요합니다. 먼저 원본을 첨부해 주세요.'; st.className = 'modal-status err'; return; }
+    if (!hasSource) { st.textContent = '신호군 해석에는 원본 CSV가 필요합니다. 먼저 원본을 첨부해 주시기 바랍니다.'; st.className = 'modal-status err'; return; }
     if (signalBusy) return;
     var basis = document.getElementById('sigGroupBasis').value;
     var signal = document.getElementById('sigGroupSignal').value;
     signalBusy = true;
     openSignalModal('신호군 종합 해석');
     var body = document.getElementById('signalModalBody');
-    body.innerHTML = loadingBlockHtml('신호군 해석을 준비하고 있어요');
+    body.innerHTML = loadingBlockHtml('신호군 해석을 준비하고 있습니다');
     var fail = function (err) {
       signalBusy = false;
       var ld = body.querySelector('.sig-loading'); if (ld) ld.remove();
@@ -2110,7 +2110,7 @@
     document.getElementById('graphCropSelect').classList.toggle('primary',cropSelecting);
     document.getElementById('graphCropSelect').textContent=cropSelecting?'영역 선택 중 · 이동 모드로':'영역 선택';
     document.getElementById('graphCropHint').textContent=cropMode()
-      ? '드래그로 영역을 그리거나 선택 상자·모서리를 움직이세요. 이동 모드에서는 그래프를 끌 수 있습니다. 영역 밖 단어는 방향별 여백에 묶어 표시됩니다.'
+      ? '드래그로 영역을 그리거나 선택 상자·모서리를 이동해 주시기 바랍니다. 이동 모드에서는 그래프를 끌 수 있습니다. 영역 밖 단어는 방향별 여백에 묶어 표시됩니다.'
       : '전체 그래프가 저장됩니다. 확대 배율은 저장 범위에 영향을 주지 않습니다.';
   }
   function invalidateSavePreview() {
@@ -2145,7 +2145,7 @@
     var status=document.getElementById('graphExportStatus');
     try{saveSnapshot=exportOptions('png');}catch(err){status.textContent=err.message;return;}
     if(!saveSnapshot)return;
-    if(!exportPreviewUrl){status.textContent='미리보기가 완성된 뒤 저장 범위를 선택해 주세요.';return;}
+    if(!exportPreviewUrl){status.textContent='미리보기가 완성된 뒤 저장 범위를 선택해 주시기 바랍니다.';return;}
     saveProjectId=projectId;
     var dialog=document.getElementById('graphSaveDialog');
     document.querySelector('input[name="graphSaveMode"][value="full"]').checked=true;
@@ -2182,8 +2182,8 @@
     ['width', 'height', 'font_size', 'dot_size', 'label_size', 'tick_size', 'dpi'].forEach(function (key) { options[key] = Number(form.elements[key].value); });
     var pixels = Math.round(options.width * options.dpi) * Math.round(options.height * options.dpi);
     document.getElementById('graphExportResolution').textContent = Math.round(options.width * options.dpi) + ' × ' + Math.round(options.height * options.dpi) + ' px';
-    if (pixels > 36000000) throw new Error('이미지는 최대 3,600만 픽셀입니다. 크기나 DPI를 줄여 주세요.');
-    if (!options.words.length) throw new Error('표시할 단어를 하나 이상 선택해 주세요.');
+    if (pixels > 36000000) throw new Error('이미지는 최대 3,600만 픽셀입니다. 크기나 DPI를 줄여 주시기 바랍니다.');
+    if (!options.words.length) throw new Error('표시할 단어를 하나 이상 선택해 주시기 바랍니다.');
     return options;
   }
 
@@ -2312,7 +2312,7 @@
   }
 
   function exportPlotPng() {
-    if (!graph || !projectId) { toast('프로젝트를 먼저 선택하세요.'); return; }
+    if (!graph || !projectId) { toast('프로젝트를 먼저 선택해 주시기 바랍니다.'); return; }
     var dialog = document.getElementById('graphExportDialog'), form = document.getElementById('graphExportForm');
     if (!exportInitialized) {
       exportInitialized = true;

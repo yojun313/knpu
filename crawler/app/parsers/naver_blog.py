@@ -655,7 +655,7 @@ def controller():
         6: "\n1. 기사\n2. 기사 + 댓글\n",
     }
     print("================ Crawler Controller ================")
-    name = input("본인의 이름을 입력하세요: ")
+    name = input("본인의 이름을 입력해 주시기 바랍니다: ")
 
     print("\n[ 크롤링 대상 ]\n")
     print(
@@ -667,7 +667,7 @@ def controller():
         if control_ask in [1, 2, 3, 4, 5, 6]:
             break
         else:
-            print("다시 입력하세요")
+            print("다시 입력해 주시기 바랍니다")
 
     startDate = input("\nStart Date (ex: 20230101): ")
     endDate = input("End Date (ex: 20231231): ")
@@ -680,7 +680,7 @@ def controller():
         if option in [1, 2, 3, 4]:
             break
         else:
-            print("다시 입력하세요")
+            print("다시 입력해 주시기 바랍니다")
 
     speed = input("\n속도를 입력하십시오(1~10):  ")
 

@@ -1091,7 +1091,7 @@
         if (busyEl) busyEl.textContent = notes.filter(n => n.status === 'queued' || n.status === 'processing').length;
 
         if (!filtered.length) {
-            list.innerHTML = `<div class="transcript-empty">${q ? '검색 결과가 없습니다' : '아직 노트가 없습니다.<br>파일을 업로드해 첫 노트를 만들어 보세요.'}</div>`;
+            list.innerHTML = `<div class="transcript-empty">${q ? '검색 결과가 없습니다' : '아직 노트가 없습니다.<br>파일을 업로드해 첫 노트를 만들어 보시기 바랍니다.'}</div>`;
             return;
         }
         list.innerHTML = filtered.map(n => {
@@ -1553,7 +1553,7 @@
     }
 
     async function startUpload() {
-        if (!pendingFiles.length) { alert('파일을 선택해 주세요'); return; }
+        if (!pendingFiles.length) { alert('파일을 선택해 주시기 바랍니다'); return; }
         const language = document.getElementById('upload-language').value;
         const model = document.getElementById('upload-model').value;
         const listEl = document.getElementById('upload-progress-list');

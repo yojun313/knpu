@@ -31,7 +31,7 @@
   function renderRespondents() {
     const box = document.getElementById('respondentList');
     if (!grid.respondents.length) {
-      box.innerHTML = '<p style="padding:10px;font-size:12px;color:var(--sidebar-muted)">응답자를 추가해 주세요.</p>';
+      box.innerHTML = '<p style="padding:10px;font-size:12px;color:var(--sidebar-muted)">응답자를 추가해 주시기 바랍니다.</p>';
       return;
     }
     box.innerHTML = grid.respondents.map(function (r) {
@@ -85,7 +85,7 @@
     updateSubmitButton();
     renderDemoEdit();
     if (!resp) {
-      box.innerHTML = '<p style="color:var(--sidebar-muted);font-size:12.5px">왼쪽에서 응답자를 선택하세요.</p>';
+      box.innerHTML = '<p style="color:var(--sidebar-muted);font-size:12.5px">왼쪽에서 응답자를 선택해 주시기 바랍니다.</p>';
       return;
     }
     if (!grid.groups.length) {
@@ -99,7 +99,7 @@
           '<div class="entry-matrix-head"><h4><span class="badge" style="margin-right:6px">' +
           ahpEsc(String(m.kind).toUpperCase()) + '</span>' + ahpEsc(m.parent_name) + '</h4></div>' +
           '<p style="color:var(--sidebar-muted);font-size:12px;padding:8px 4px">' +
-          '이 항목은 격자 입력을 지원하지 않습니다. <b>CSV 반입</b>으로 입력해 주세요.</p></div>';
+          '이 항목은 격자 입력을 지원하지 않습니다. <b>CSV 반입</b>으로 입력해 주시기 바랍니다.</p></div>';
       }
       const rows = m.pairs.map(function (p) {
         const pid = [p.uuid_a, p.uuid_b].sort().join(':');
@@ -131,7 +131,7 @@
     card.hidden = false;
     const resp = currentRespondent();
     document.getElementById('demoEditSaveBtn').disabled = !resp;
-    document.getElementById('demoEditWho').textContent = resp ? resp.label : '응답자를 선택하세요';
+    document.getElementById('demoEditWho').textContent = resp ? resp.label : '응답자를 선택해 주시기 바랍니다';
     const box = document.getElementById('demoEditForm');
     if (!resp) { box.innerHTML = ''; return; }
     const saved = resp.attributes || {};
@@ -225,7 +225,7 @@
   async function markSubmitted() {
     const resp = currentRespondent();
     if (!resp || resp.status === 'submitted') return;
-    if (!confirm(resp.label + '의 응답을 제출 완료로 표시할까요?')) return;
+    if (!confirm(resp.label + '의 응답을 제출 완료로 표시하시겠습니까?')) return;
     try {
       await ahpApi('/api/entry/' + collectionId + '/respondents/' + resp.id + '/submit', { method: 'POST' });
       resp.status = 'submitted';
@@ -284,7 +284,7 @@
     document.getElementById('respondentList').addEventListener('click', async function (e) {
       const del = e.target.closest('.er-del');
       if (del) {
-        if (!confirm('이 응답자를 삭제할까요?')) return;
+        if (!confirm('이 응답자를 삭제하시겠습니까?')) return;
         await ahpApi('/api/entry/' + collectionId + '/respondents/' + del.dataset.id, { method: 'DELETE' });
         if (selectedRespondentId === del.dataset.id) selectedRespondentId = null;
         await loadGrid();

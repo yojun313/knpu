@@ -408,7 +408,7 @@ async def import_csv(
             400,
             f"양식 열 개수가 설문지와 다릅니다 (설문지 {expected}개"
             f"{f' = 인구통계 {n_demo} + 응답 {len(slots)}' if n_demo else ''} / 파일 "
-            f"{max(data_cols, 0)}개). 최신 양식을 다시 받아 주세요.",
+            f"{max(data_cols, 0)}개). 최신 양식을 다시 받아 주시기 바랍니다.",
         )
 
     errors, by_respondent, demo_by_respondent = [], {}, {}

@@ -36,7 +36,7 @@ def list_folders() -> list[dict]:
 def create_folder(name: str) -> tuple[bool, str, dict | None]:
     name = (name or "").strip()
     if not name:
-        return False, "폴더 이름을 입력하세요.", None
+        return False, "폴더 이름을 입력해 주시기 바랍니다.", None
     if len(name) > MAX_NAME_LEN:
         return False, f"폴더 이름은 {MAX_NAME_LEN}자 이하여야 합니다.", None
 
@@ -53,7 +53,7 @@ def create_folder(name: str) -> tuple[bool, str, dict | None]:
 def rename_folder(folder_id: str, name: str) -> tuple[bool, str]:
     name = (name or "").strip()
     if not name:
-        return False, "폴더 이름을 입력하세요."
+        return False, "폴더 이름을 입력해 주시기 바랍니다."
     if len(name) > MAX_NAME_LEN:
         return False, f"폴더 이름은 {MAX_NAME_LEN}자 이하여야 합니다."
 

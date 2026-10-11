@@ -413,7 +413,7 @@ class Manager_Board:
 
         if handle_permission_error(self.main, error):
             return
-        message = "요청을 처리하지 못했습니다. 연결 상태를 확인하고 다시 시도해주세요."
+        message = "요청을 처리하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주시기 바랍니다."
         response = getattr(error, "response", None)
         if response is not None:
             try:

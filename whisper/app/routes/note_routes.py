@@ -166,7 +166,7 @@ def rename_note(uid: str, body: dict, user=Depends(get_current_user)):
     _get_owned_note(uid, user, {"_id": 0, "uid": 1, "userUid": 1})
     title = (body.get("title") or "").strip()
     if not title:
-        raise HTTPException(status_code=400, detail="제목을 입력해 주세요")
+        raise HTTPException(status_code=400, detail="제목을 입력해 주시기 바랍니다")
     notes_db.update_one({"uid": uid}, {"$set": {"title": title[:200]}})
     return {"ok": True}
 
@@ -178,7 +178,8 @@ def retry_note(uid: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=409, detail="이미 변환이 진행 중입니다")
     if not os.path.isfile(audio_path(doc)):
         raise HTTPException(
-            status_code=404, detail="음성 파일이 없습니다. 다시 업로드해 주세요"
+            status_code=404,
+            detail="음성 파일이 없습니다. 다시 업로드해 주시기 바랍니다",
         )
     start_transcription(uid)
     return {"ok": True}

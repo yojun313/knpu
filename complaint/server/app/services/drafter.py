@@ -62,6 +62,7 @@ def _precedent_block(precs: list[dict]) -> str:
 
 
 ANALYZE_SYSTEM = """너는 형사 고소 사건을 검토하는 법률 전문가다. 아래 [사실관계]를 [법령 원문]과 [판례 원문]에 비추어 검토한다.
+한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
 
 반드시 아래 형식의 JSON 객체 하나만 출력한다.
 {
@@ -92,7 +93,7 @@ async def analyze(
         f"[사실관계]\n{_facts_for_prompt(crime_id, facts)}\n\n"
         f"[검토할 구성요건]\n" + "\n".join(f"- {n}: {d}" for n, d in elements) + "\n\n"
         f"[법령 원문]\n{_statute_block(statutes)}\n\n"
-        f"[판례 원문]\n{_precedent_block(precedents)}\n\nJSON만 출력하세요."
+        f"[판례 원문]\n{_precedent_block(precedents)}\n\nJSON만 출력해 주시기 바랍니다."
     )
     data = await chat_json(
         [
@@ -178,6 +179,7 @@ def _clean_analysis(data: dict, crime, statutes: list[dict], elements) -> dict:
 
 
 DRAFT_SYSTEM = """너는 경찰청 표준 고소장 양식에 맞춰 고소장을 쓰는 법률 문서 작성자다. 변호사가 쓴 것처럼 정확하고 구체적으로 쓴다.
+한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
 
 반드시 아래 키를 가진 JSON 객체 하나만 출력한다(값은 문자열, 줄바꿈은 \\n).
 {"suspect_other": "...", "purpose": "...", "facts": "...", "reasons": "...", "evidence": "...", "others": "..."}
@@ -213,7 +215,7 @@ async def draft(
         f"[사건 유형] {crime.label}\n[죄명] {analysis['offense']}\n[적용 법조] {law_line}\n"
         f"[맺음 문장 형식] {crime.closing}\n\n"
         f"[사실관계]\n{_facts_for_prompt(crime_id, facts)}\n\n"
-        f"[구성요건 검토 결과 — 범죄사실에 각 요건의 사실이 드러나게 쓸 것]\n{weak}\n\nJSON만 출력하세요."
+        f"[구성요건 검토 결과 — 범죄사실에 각 요건의 사실이 드러나게 쓸 것]\n{weak}\n\nJSON만 출력해 주시기 바랍니다."
     )
     data = await chat_json(
         [
@@ -296,7 +298,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                     "section": "전체",
                     "level": "error",
                     "problem": f"검토하지 않은 조문(제{art}조)이 인용되었습니다.",
-                    "fix": "적용 법조 목록에 있는 조문만 인용하세요.",
+                    "fix": "적용 법조 목록에 있는 조문만 인용해 주시기 바랍니다.",
                 }
             )
 
@@ -310,7 +312,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                     "section": "4. 범죄사실",
                     "level": "warn",
                     "problem": f"피해 금액({kb.format_krw(amount)})이 범죄사실에 정확히 드러나지 않습니다.",
-                    "fix": "범죄사실에 피해 금액을 숫자로 명시하세요.",
+                    "fix": "범죄사실에 피해 금액을 숫자로 명시해 주시기 바랍니다.",
                 }
             )
 
@@ -320,7 +322,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 "section": "4. 범죄사실",
                 "level": "error",
                 "problem": "범죄사실이 너무 짧습니다.",
-                "fix": "일시·장소·피고소인의 행위·결과를 모두 적으세요.",
+                "fix": "일시·장소·피고소인의 행위·결과를 모두 작성해 주시기 바랍니다.",
             }
         )
 
@@ -332,7 +334,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                     "section": SECTION_LABELS[k],
                     "level": "error",
                     "problem": "빈칸 표시(○○ 등)가 남아 있습니다.",
-                    "fix": "실제 내용으로 채우거나 '불상'으로 쓰세요.",
+                    "fix": "실제 내용으로 채우거나 '불상'으로 작성해 주시기 바랍니다.",
                 }
             )
         bad = [ln for ln in re.split(r"(?<=[.])\s+", text) if _PLAIN_END_RE.search(ln)]
@@ -342,7 +344,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                     "section": SECTION_LABELS[k],
                     "level": "warn",
                     "problem": "평어체(~다.)로 끝나는 문장이 있습니다.",
-                    "fix": "'~습니다'체로 통일하세요.",
+                    "fix": "'~습니다'체로 통일해 주시기 바랍니다.",
                 }
             )
 
@@ -353,7 +355,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 "section": "4. 범죄사실",
                 "level": "warn",
                 "problem": "범죄사실에 합의·처벌 의사가 들어 있습니다.",
-                "fix": "합의 여부와 처벌 의사는 고소이유로 옮기세요.",
+                "fix": "합의 여부와 처벌 의사는 고소이유로 이동해 주시기 바랍니다.",
             }
         )
     if re.search(r"\d{4}-\d{2}-\d{2}", ft):
@@ -362,7 +364,7 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 "section": "4. 범죄사실",
                 "level": "warn",
                 "problem": "날짜가 '2026-03-02' 형식으로 쓰여 있습니다.",
-                "fix": "'2026. 3. 2. 15:00경'처럼 고치세요.",
+                "fix": "'2026. 3. 2. 15:00경'처럼 수정해 주시기 바랍니다.",
             }
         )
     if facts.get("punishment_wish") and "처벌" not in sections.get("reasons", ""):
@@ -371,13 +373,14 @@ def rule_check(sections: dict, facts: dict, allowed_articles: set[str]) -> list[
                 "section": "5. 고소이유",
                 "level": "warn",
                 "problem": "처벌 의사 문장이 없습니다.",
-                "fix": "고소이유 끝에 합의 여부와 처벌 의사를 적으세요.",
+                "fix": "고소이유 끝에 합의 여부와 처벌 의사를 작성해 주시기 바랍니다.",
             }
         )
     return issues
 
 
 REVIEW_SYSTEM = """너는 경찰 수사관의 시각으로 고소장 초안을 검토하는 검토자다.
+한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
 [사실관계]와 [초안]을 비교해 다음을 확인한다.
 1) 초안에 사실관계에 없는 내용(지어낸 날짜·금액·말·장소)이 들어갔는지
 2) 사실관계에 있는 중요한 사실(특히 구성요건에 해당하는 행위, 상대가 한 말의 원문, 피해 결과)이 빠졌는지
@@ -402,7 +405,7 @@ async def review(
             "\n".join(f"- {i['section']}: {i['problem']}" for i in rule_issues)
             or "(문제 없음)"
         )
-        + "\n\nJSON만 출력하세요."
+        + "\n\nJSON만 출력해 주시기 바랍니다."
     )
     data = await chat_json(
         [
@@ -464,7 +467,7 @@ def limitation_note(crime_id: str, analysis: dict, facts: dict) -> str:
     )
     return (
         f"{core['label']}의 법정형 기준 공소시효는 형사소송법 제249조 제1항에 따라 {years}년입니다.{until} "
-        "피해액·가중처벌 여부·범행 종료 시점에 따라 달라질 수 있으니 참고용으로만 보세요."
+        "피해액·가중처벌 여부·범행 종료 시점에 따라 달라질 수 있으니 참고용으로만 보시기 바랍니다."
     )
 
 
@@ -476,13 +479,13 @@ def complaint_deadline(crime, facts: dict) -> str:
         r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})", str(facts.get("known_date") or "")
     )
     if not m:
-        return "친고죄이므로 범인을 알게 된 날부터 6개월 안에 고소해야 합니다. 범인을 알게 된 날을 확인해 주세요."
+        return "친고죄이므로 범인을 알게 된 날부터 6개월 안에 고소해야 합니다. 범인을 알게 된 날을 확인해 주시기 바랍니다."
     y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
     mo += 6
     y, mo = y + (mo - 1) // 12, (mo - 1) % 12 + 1
     return (
         f"친고죄이므로 범인을 알게 된 날({m.group(1)}년 {int(m.group(2))}월 {d}일)부터 6개월, "
-        f"즉 {y}년 {mo}월 {d}일 무렵까지 고소해야 합니다(형사소송법 제230조). 기한이 가까우면 서둘러 제출하세요."
+        f"즉 {y}년 {mo}월 {d}일 무렵까지 고소해야 합니다(형사소송법 제230조). 기한이 가까우면 서둘러 제출해 주시기 바랍니다."
     )
 
 

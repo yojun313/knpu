@@ -181,7 +181,7 @@ class NginxService:
         if not os.path.exists(config_path):
             return (
                 False,
-                "해당 도메인이 존재하지 않습니다. '새 도메인 추가'로 먼저 생성하세요.",
+                "해당 도메인이 존재하지 않습니다. '새 도메인 추가'로 먼저 생성해 주시기 바랍니다.",
             )
 
         with open(config_path, "r") as f:

@@ -144,7 +144,7 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> tuple:
     if not pairs:
         raise ValueError(
             "nodes.csv / edges.csv 짝을 찾지 못했습니다. "
-            "네트워크 분석 결과 zip을 그대로 업로드해주세요."
+            "네트워크 분석 결과 zip을 그대로 업로드해 주시기 바랍니다."
         )
 
     analysis_options = _read_analysis_options(search_root)
@@ -253,7 +253,7 @@ def rename_project(uid: str, project_id: str, new_name: str) -> dict:
     _get_owned_doc(uid, project_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     network_projects_db.update_one(
         {"_id": project_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
@@ -301,7 +301,7 @@ def list_all_folders() -> list:
 def create_folder(uid: str, name: str) -> dict:
     name = (name or "").strip()
     if not name:
-        raise ValueError("폴더 이름을 입력해주세요.")
+        raise ValueError("폴더 이름을 입력해 주시기 바랍니다.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     doc = {
@@ -328,7 +328,7 @@ def rename_folder(uid: str, folder_id: str, new_name: str) -> dict:
     _get_owned_folder(uid, folder_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     network_folders_db.update_one(
         {"_id": folder_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},

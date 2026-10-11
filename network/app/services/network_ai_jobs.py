@@ -43,7 +43,7 @@ def _expire_stale():
             "$set": {
                 "status": "error",
                 "stage": "작업 중단",
-                "error": "서버가 재시작되어 분석이 중단되었습니다. 다시 분석해주세요.",
+                "error": "서버가 재시작되어 분석이 중단되었습니다. 다시 분석해 주시기 바랍니다.",
                 "updated_at": _now(),
             }
         },
@@ -112,17 +112,17 @@ async def _run(job_id, uid, project_id, payload, admin):
     prompt_holder = {}
     heartbeat = asyncio.create_task(_heartbeat(job_id))
     try:
-        _stage(job_id, "전체 그래프와 기간별 지표를 계산하고 있어요")
+        _stage(job_id, "전체 그래프와 기간별 지표를 계산하고 있습니다")
         profile, examples, note = await asyncio.to_thread(
             _prepare, uid, project_id, payload, admin
         )
         _stage(
-            job_id, f"근거 행 {len(examples)}개를 확인하고 AI 해석을 준비하고 있어요"
+            job_id, f"근거 행 {len(examples)}개를 확인하고 AI 해석을 준비하고 있습니다"
         )
 
         def on_prompt(prompt):
             prompt_holder.update(prompt)
-            _stage(job_id, "AI가 연결 구조와 원문 맥락을 해석하고 있어요", prompt)
+            _stage(job_id, "AI가 연결 구조와 원문 맥락을 해석하고 있습니다", prompt)
 
         try:
             interpretation = await network_ai.interpret(
@@ -138,7 +138,7 @@ async def _run(job_id, uid, project_id, payload, admin):
                 "prompt": prompt_holder or None,
             }
 
-        _stage(job_id, "해석 결과를 프로젝트에 저장하고 있어요")
+        _stage(job_id, "해석 결과를 프로젝트에 저장하고 있습니다")
         job = network_ai_jobs_db.find_one({"_id": job_id})
         saved = {
             "id": job_id,

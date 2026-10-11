@@ -30,7 +30,9 @@ def pop_any(uid: str, stage_id: str) -> dict:
     """올려 둔 항목을 꺼낸다. kind 가 'content'면 content, 'ref'면 ref 를 쓴다."""
     entry = _staged.pop(stage_id, None)
     if not entry or entry["uid"] != uid:
-        raise ValueError("업로드한 파일을 찾을 수 없습니다. 다시 업로드해주세요.")
+        raise ValueError(
+            "업로드한 파일을 찾을 수 없습니다. 다시 업로드해 주시기 바랍니다."
+        )
     return entry
 
 

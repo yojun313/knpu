@@ -537,7 +537,9 @@ def add_bug_reply(uid: str, data, userUid: str, board: str = "bug"):
             and r.get("text") == data.text
             for r in existing.get("replies", [])
         ):
-            raise HTTPException(409, "답변 요청이 충돌했습니다. 다시 시도해주세요.")
+            raise HTTPException(
+                409, "답변 요청이 충돌했습니다. 다시 시도해 주시기 바랍니다."
+            )
     else:
         log_user(userUid, f"manager.{board}.reply", f"Replied to bug: {uid}")
     return get_bug(uid, userUid) if board == "bug" else get_post(uid, userUid, board)
@@ -568,7 +570,9 @@ def add_comment(uid: str, data, userUid: str, board: str = "post"):
             and c.get("text") == data.text
             for c in existing.get("comments", [])
         ):
-            raise HTTPException(409, "댓글 요청이 충돌했습니다. 다시 시도해주세요.")
+            raise HTTPException(
+                409, "댓글 요청이 충돌했습니다. 다시 시도해 주시기 바랍니다."
+            )
     else:
         log_user(
             userUid, f"manager.{board}.comment.create", f"Commented on post: {uid}"

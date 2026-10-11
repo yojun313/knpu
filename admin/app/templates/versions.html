@@ -150,7 +150,7 @@
 
     async function submitVersion() {
         const versionName = document.getElementById('fVersionName').value.trim();
-        if (!versionName) { showBanner('버전 이름을 입력해주세요.', true); return; }
+        if (!versionName) { showBanner('버전 이름을 입력해 주시기 바랍니다.', true); return; }
 
         const payload = {
             versionName,
@@ -161,7 +161,7 @@
         };
 
         const isEdit = !!editingVersion;
-        if (!confirm(isEdit ? `'${versionName}' 버전을 수정할까요?` : `'${versionName}' 버전을 새로 배포할까요?\n(디스코드로 공지가 발송됩니다)`)) return;
+        if (!confirm(isEdit ? `'${versionName}' 버전을 수정하시겠습니까?` : `'${versionName}' 버전을 새로 배포하시겠습니까?\n(디스코드로 공지가 발송됩니다)`)) return;
 
         hideBanner();
         try {
@@ -184,7 +184,7 @@
     }
 
     async function deleteVersion(versionName) {
-        if (!confirm(`'${versionName}' 버전을 삭제할까요?`)) return;
+        if (!confirm(`'${versionName}' 버전을 삭제하시겠습니까?`)) return;
         hideBanner();
         try {
             const res = await fetch(`/api/versions/${encodeURIComponent(versionName)}`, { method: 'DELETE' });

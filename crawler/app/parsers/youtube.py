@@ -178,7 +178,7 @@ class YouTubeCrawler:
     def _rotate_api_key(self):
         if self.api_num >= len(self.api_list):
             raise RuntimeError(
-                "모든 YouTube API 키의 할당량이 초과되었습니다. 1일 후 재시도하세요."
+                "모든 YouTube API 키의 할당량이 초과되었습니다. 1일 후 재시도해 주시기 바랍니다."
             )
         self.api_num += 1
         self.api_obj = build(

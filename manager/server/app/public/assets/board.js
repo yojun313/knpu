@@ -3,10 +3,10 @@
 const $ = id => document.getElementById(id);
 const escape = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const config = {
- version: {title:'MANAGER 패치노트', description:'매니저 업데이트와 변경 사항을 확인하세요.', create:'＋ MANAGER 패치노트 추가'},
- bug: {title:'버그리포트', description:'문제를 알려주시고 관리자 답변을 확인하세요.', create:'＋ 버그리포트 작성'},
- suggestion: {title:'건의·제안사항', description:'새로운 기능이나 더 편리한 사용 방법을 개발자에게 제안하세요.', create:'＋ 제안 작성'},
- post: {title:'자유게시판', description:'연구 이야기와 소식을 함께 나누세요.', create:'＋ 글 작성'}
+ version: {title:'MANAGER 패치노트', description:'매니저 업데이트와 변경 사항을 확인해 주시기 바랍니다.', create:'＋ MANAGER 패치노트 추가'},
+ bug: {title:'버그리포트', description:'문제를 알려주시고 관리자 답변을 확인해 주시기 바랍니다.', create:'＋ 버그리포트 작성'},
+ suggestion: {title:'건의·제안사항', description:'새로운 기능이나 더 편리한 사용 방법을 개발자에게 제안해 주시기 바랍니다.', create:'＋ 제안 작성'},
+ post: {title:'자유게시판', description:'연구 이야기와 소식을 함께 나누어 주시기 바랍니다.', create:'＋ 글 작성'}
 };
 const suggestionCategories={feature:'기능 추가',workflow:'사용 방법 개선',other:'기타 제안'};
 const suggestionStatuses={new:'접수',reviewing:'검토 중',planned:'반영 예정',done:'반영 완료',declined:'보류'};
@@ -20,7 +20,7 @@ function toast(message) { $('board-toast').textContent=message; $('board-toast')
 async function api(url,method='GET',data) {
  const res=await fetch(url,{method,credentials:'include',cache:'no-store',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});
  let payload={};try {payload=await res.json();}catch(e){}
- if(!res.ok){if(res.status===401)throw new Error('로그인이 만료되었습니다. 새로고침 후 다시 로그인해주세요.');let message=payload.detail || payload.message;if(Array.isArray(message))message=message.map(e=>e.msg).join(' / ');throw new Error(message || '요청을 처리하지 못했습니다. 다시 시도해주세요.');}
+ if(!res.ok){if(res.status===401)throw new Error('로그인이 만료되었습니다. 새로고침 후 다시 로그인해 주시기 바랍니다.');let message=payload.detail || payload.message;if(Array.isArray(message))message=message.map(e=>e.msg).join(' / ');throw new Error(message || '요청을 처리하지 못했습니다. 다시 시도해 주시기 바랍니다.');}
  return Object.prototype.hasOwnProperty.call(payload,'data')?payload.data:payload;
 }
 function date(value) { if(!value)return ''; const raw=String(value);if(raw.includes('T')){const d=new Date(raw);if(!isNaN(d))return d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}return raw; }
@@ -58,7 +58,7 @@ function renderList() {
   const tag=tab==='suggestion'?(suggestionStatuses[d.status]||'접수'):tab==='bug'?(d.replyCount?'답변 '+d.replyCount:'답변 대기'):tab==='version'?(user.role==='admin'?(d.fullUpdate?'전체 업데이트':'업데이트'):''):(!d.readByMe&&d.writerUid!==user.uid?'NEW':'');
   const meta=tab==='suggestion'?[suggestionCategories[d.category]||'기타 제안',d.writerName,date(d.datetime),'댓글 '+(d.commentCount||0)]:tab==='version'?[d.releaseDate,d.publisher]:tab==='bug'?[d.writerName,'v'+(d.versionName||'—'),date(d.datetime)]:[d.writerName,date(d.datetime),'조회 '+(d.viewCnt||0),'댓글 '+(d.commentCount||0)];
   return '<button type="button" class="board-row" data-open="'+escape(key(d))+'"><span class="board-row-main"><span class="board-row-title"><strong>'+escape(title)+'</strong>'+(tag?'<span class="board-tag">'+escape(tag)+'</span>':'')+'</span><span class="board-row-meta">'+meta.filter(Boolean).map(v=>'<span>'+escape(v)+'</span>').join('')+'</span></span><span class="board-chevron" aria-hidden="true">›</span></button>';
- }).join(''):'<div class="board-empty">'+($('board-search').value?'검색 조건에 맞는 글이 없습니다.':'게시글이 없습니다. 첫 글을 작성해보세요.')+'</div>';
+ }).join(''):'<div class="board-empty">'+($('board-search').value?'검색 조건에 맞는 글이 없습니다.':'게시글이 없습니다. 첫 글을 작성해 주시기 바랍니다.')+'</div>';
 }
 function connection(ok) {const status=$('board-connection');status.classList.toggle('ok',ok);status.classList.toggle('bad',!ok);status.querySelector('.conn-label').textContent=ok?'서버 연결됨':'연결 오류';}
 $('board-theme').onclick=()=>{if(window.KNPUSettings)KNPUSettings.open('appearance');};
@@ -93,8 +93,8 @@ function renderDetail(doc) {
  }
  if(!version){const items=bug?(doc.replies||[]):(doc.comments||[]);html+='<section class="board-discussion"><h3 class="board-section-title">'+(bug?'관리자 답변':'댓글')+' · '+items.length+'</h3>';
  html+=items.map(c=>'<article class="board-comment"><div class="board-comment-meta"><strong>'+escape(c.writerName)+'</strong>'+(bug||(tab==='suggestion'&&c.writerRole==='admin')?'<span class="board-tag">관리자</span>':'')+'<span>'+escape(date(c.datetime))+'</span>'+(c.editedAt?'<span>수정됨</span>':'')+(!bug&&canEdit(c)?'<span class="board-comment-actions"><button type="button" data-comment-edit="'+escape(c.uid)+'">수정</button><button type="button" data-comment-delete="'+escape(c.uid)+'">삭제</button></span>':'')+'</div><div class="board-comment-text">'+escape(c.text)+'</div>'+(bug&&c.mailStatus?'<small>'+escape({pending:'메일 알림 대기',sending:'메일 전송 중',sent:'메일 알림 전송됨',retry:'메일 알림 재시도 대기',skipped:'작성자 이메일 없음'}[c.mailStatus]||'')+'</small>':'')+'</article>').join('');
- if(!items.length)html+='<p class="board-detail-meta">'+(bug?'아직 등록된 관리자 답변이 없습니다.':'첫 댓글을 남겨보세요.')+'</p>';
- if(!bug||user.role==='admin')html+='<form id="board-compose" class="board-editor board-compose"><label>'+(bug?'관리자 답변':'댓글 작성')+'<textarea name="text" maxlength="'+(bug?'20000':'10000')+'" required placeholder="'+(bug?'답변을 등록하면 작성자에게 이메일 알림이 발송됩니다.':'댓글을 입력하세요.')+'"></textarea></label><div class="board-form-error" role="alert"></div><div class="board-form-actions"><button class="board-btn primary" type="submit">'+(bug?'답변 등록':'댓글 등록')+'</button></div></form>';
+ if(!items.length)html+='<p class="board-detail-meta">'+(bug?'아직 등록된 관리자 답변이 없습니다.':'첫 댓글을 작성해 주시기 바랍니다.')+'</p>';
+ if(!bug||user.role==='admin')html+='<form id="board-compose" class="board-editor board-compose"><label>'+(bug?'관리자 답변':'댓글 작성')+'<textarea name="text" maxlength="'+(bug?'20000':'10000')+'" required placeholder="'+(bug?'답변을 등록하면 작성자에게 이메일 알림이 발송됩니다.':'댓글을 입력해 주시기 바랍니다.')+'"></textarea></label><div class="board-form-error" role="alert"></div><div class="board-form-actions"><button class="board-btn primary" type="submit">'+(bug?'답변 등록':'댓글 등록')+'</button></div></form>';
  html+='</section>';}
  $('board-dialog-body').innerHTML=html;
  const replyForm=$('suggestion-reply-compose');if(replyForm){const requestId=uid();replyForm.onsubmit=async e=>{e.preventDefault();const text=replyForm.elements.text.value.trim();if(!text)return;await formRequest(replyForm,()=>api(path(doc)+'/replies','POST',{text,requestId}),async()=>{toast('답변이 등록되었습니다. 이메일 알림이 예약되었습니다.');await openDetail(doc.uid);refresh(true);});};}
@@ -109,7 +109,7 @@ function openEditor(doc=null) {
  if(version)html+=editorField('versionName','버전',doc?.versionName||'')+editorField('changeLog','변경 사항',doc?.changeLog||'',true)+editorField('features','주요 기능',doc?.features||'',true)+editorField('details','상세 내용',doc?.details||'',true)+'<label class="board-checkbox"><input name="fullUpdate" type="checkbox" '+(doc?.fullUpdate?'checked':'')+'>전체 업데이트</label><p class="board-detail-meta">새 MANAGER 패치노트를 등록하면 업데이트 공지가 발송됩니다.</p>';
  else if(bug)html+=editorField('versionName','발생 버전',doc?.versionName||lists.version[0]?.versionName||'')+editorField('bugTitle','제목',doc?.bugTitle||'')+editorField('bugText','문제 내용과 재현 방법',doc?.bugText||'',true);
  else html+=editorField('title','제목',doc?.title||'')+editorField('text','내용',doc?.text||'',true)+(doc||tab==='suggestion'?'':'<label class="board-checkbox"><input type="checkbox" name="broadcastNotify">전체 공지 알림 보내기</label>');
- if(tab==='suggestion')html+='<p class="board-detail-meta">필요한 기능이나 불편한 사용 과정, 원하는 개선 방법을 구체적으로 적어주세요.</p>';
+ if(tab==='suggestion')html+='<p class="board-detail-meta">필요한 기능이나 불편한 사용 과정, 원하는 개선 방법을 구체적으로 작성해 주시기 바랍니다.</p>';
  html+='<div class="board-form-error" role="alert"></div><div class="board-form-actions"><button type="button" class="board-btn" data-action="cancel-edit">취소</button><button type="submit" class="board-btn primary">저장</button></div></form>';
  $('board-dialog-body').innerHTML=html;
  const form=$('board-editor');form.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(form));Object.keys(payload).forEach(k=>payload[k]=payload[k].trim());if(version)payload.fullUpdate=form.elements.fullUpdate.checked;else if(bug){payload.writerUid=user.uid;payload.programLog='';}else if(tab==='post'){payload.writerUid=user.uid;payload.broadcastNotify=!!form.elements.broadcastNotify?.checked;}
@@ -128,6 +128,6 @@ $('board-dialog-body').addEventListener('click',async e=>{
 $('board-list').addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openDetail(b.dataset.open);});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
 $('board-search').oninput=()=>{page=1;renderList();};$('board-filter').onchange=()=>{page=1;renderList();};$('board-prev').onclick=()=>{page--;renderList();};$('board-next').onclick=()=>{page++;renderList();};$('board-refresh').onclick=()=>refresh();$('board-create').onclick=()=>{selected=null;openEditor();};
-$('board-logout').onclick=async()=>{try{await fetch(KNPU.logoutUrl(),{method:'POST',credentials:'include'});location.href=KNPU.loginUrl();}catch(e){toast('로그아웃하지 못했습니다. 다시 시도해주세요.');}};
+$('board-logout').onclick=async()=>{try{await fetch(KNPU.logoutUrl(),{method:'POST',credentials:'include'});location.href=KNPU.loginUrl();}catch(e){toast('로그아웃하지 못했습니다. 다시 시도해 주시기 바랍니다.');}};
 (async()=>{try{user=await api('/api/board/me');$('board-user-name').textContent=user.name||'사용자';const params=new URLSearchParams(location.search),initialTab=params.get('tab'),initialUid=params.get('uid');selectTab(initialTab||'post');await refresh();if(initialUid)await openDetail(initialUid);setInterval(()=>{if(!document.hidden)refresh(true);},30000);}catch(e){$('board-feedback').textContent=e.message;$('board-feedback').classList.add('error');$('board-create').disabled=true;}})();
 })();

@@ -71,7 +71,7 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
         "응답자: ______________________    소속/경력: ______________________    일자: ______________________"
     )
     doc.add_paragraph(
-        "※ 아래 각 항목 쌍에서 두 항목의 상대적 중요도를 비교해, 해당하는 칸에 표시(○ 또는 ✓)해 주세요. "
+        "※ 아래 각 항목 쌍에서 두 항목의 상대적 중요도를 비교해, 해당하는 칸에 표시(○ 또는 ✓)해 주시기 바랍니다. "
         "가운데(1)는 두 항목이 동일하게 중요함을 뜻합니다."
     )
 
@@ -180,7 +180,7 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
         doc.add_paragraph()
         h = doc.add_heading("인구통계 정보", level=1)
         h.paragraph_format.keep_with_next = True
-        doc.add_paragraph("아래 항목에 응답해 주세요.")
+        doc.add_paragraph("아래 항목에 응답해 주시기 바랍니다.")
         for f in demographics:
             p = doc.add_paragraph()
             p.paragraph_format.keep_with_next = True

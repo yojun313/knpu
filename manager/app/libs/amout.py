@@ -25,7 +25,7 @@ def count_py_lines(directory: str) -> None:
 
 
 if __name__ == "__main__":
-    target_dir = input("디렉토리 경로를 입력하세요: ").strip()
+    target_dir = input("디렉토리 경로를 입력해 주시기 바랍니다: ").strip()
     if os.path.isdir(target_dir):
         count_py_lines(target_dir)
     else:

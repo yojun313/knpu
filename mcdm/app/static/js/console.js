@@ -316,7 +316,7 @@
     }, true);
 
     document.getElementById('advanceRoundBtn').addEventListener('click', async function () {
-      if (!confirm('다음 라운드를 시작할까요? 제출 완료된 참여자도 다시 응답할 수 있게 됩니다.')) return;
+      if (!confirm('다음 라운드를 시작하시겠습니까? 제출 완료된 참여자도 다시 응답할 수 있게 됩니다.')) return;
       try {
         await ahpApi('/api/collections/' + collectionId + '/advance-round', { method: 'POST' });
       } catch (e) {
@@ -333,7 +333,7 @@
     document.getElementById('sectionUnlockBtn').addEventListener('click', async function () {
       const matrix = currentSectionMatrix();
       if (!matrix) return;
-      if (!confirm('"' + nodeNameFromHierarchy(matrix.parent_uuid) + '" 섹션을 다시 열까요? 이미 제출한 참여자도 이 항목만 다시 응답할 수 있게 됩니다.')) return;
+      if (!confirm('"' + nodeNameFromHierarchy(matrix.parent_uuid) + '" 섹션을 다시 여시겠습니까? 이미 제출한 참여자도 이 항목만 다시 응답할 수 있게 됩니다.')) return;
       try {
         await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.group_id + '/unlock', { method: 'POST' });
         ahpToast('섹션을 다시 열었습니다');
@@ -360,7 +360,7 @@
       const rid = btn.dataset.rid;
       const path = '/api/collections/' + collectionId + '/sections/' + matrix.group_id + '/' + btn.dataset.act + '/' + rid;
       if (btn.dataset.act === 'request-revision' &&
-        !confirm('이 참여자에게만 이 섹션을 다시 조정하도록 요청할까요?')) return;
+        !confirm('이 참여자에게만 이 섹션을 다시 조정하도록 요청하시겠습니까?')) return;
       try {
         await ahpApi(path, { method: 'POST' });
         ahpToast(btn.dataset.act === 'reveal-individual' ? '이 참여자에게 결과를 공개했습니다' : '재조정을 요청했습니다');
@@ -371,7 +371,7 @@
 
     // ── 실시간 세션 진행 제어 ──────────────────────────────────────────
     document.getElementById('startSessionBtn').addEventListener('click', async function () {
-      if (!confirm('설문을 시작할까요? 대기 중인 참여자에게 첫 섹션이 열립니다.')) return;
+      if (!confirm('설문을 시작하시겠습니까? 대기 중인 참여자에게 첫 섹션이 열립니다.')) return;
       try {
         await ahpApi('/api/collections/' + collectionId + '/session/start', { method: 'POST' });
         sessionStarted = true;
@@ -385,7 +385,7 @@
 
     document.getElementById('advanceSectionBtn').addEventListener('click', async function () {
       const isLast = activeSectionIndex >= totalSections - 1;
-      if (!confirm(isLast ? '마지막 섹션입니다. 진행하면 라운드가 종료됩니다. 계속할까요?' : '다음 섹션을 열까요?')) return;
+      if (!confirm(isLast ? '마지막 섹션입니다. 진행하면 라운드가 종료됩니다. 계속하시겠습니까?' : '다음 섹션을 여시겠습니까?')) return;
       try {
         const res = await ahpApi('/api/collections/' + collectionId + '/sections/advance', { method: 'POST' });
         activeSectionIndex = res.section_index;
@@ -437,7 +437,7 @@
         return;
       }
       if (btn.dataset.act === 'delete') {
-        if (!confirm('이 참여자를 삭제할까요? 지금까지의 응답도 함께 삭제됩니다.')) return;
+        if (!confirm('이 참여자를 삭제하시겠습니까? 지금까지의 응답도 함께 삭제됩니다.')) return;
         try {
           await ahpApi('/api/collections/' + collectionId + '/respondents/' + rid, { method: 'DELETE' });
           await loadRespondents();

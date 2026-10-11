@@ -130,8 +130,8 @@
   async function loadLanding() {
     const res = await fetch('/api/respond/' + accessToken);
     if (!res.ok) {
-      if (res.status === 404) showError('링크를 찾을 수 없습니다', '주소가 정확한지 확인해 주세요.');
-      else showError('연결할 수 없습니다', '잠시 후 다시 시도해 주세요.');
+      if (res.status === 404) showError('링크를 찾을 수 없습니다', '주소가 정확한지 확인해 주시기 바랍니다.');
+      else showError('연결할 수 없습니다', '잠시 후 다시 시도해 주시기 바랍니다.');
       throw new Error('landing failed');
     }
     landing = await res.json();
@@ -266,7 +266,7 @@
       currentMatrixIndex = 0;
       startSurvey();
     } catch (e) {
-      errEl.textContent = '연결에 실패했습니다. 다시 시도해 주세요';
+      errEl.textContent = '연결에 실패했습니다. 다시 시도해 주시기 바랍니다';
       errEl.hidden = false;
     } finally {
       btn.disabled = false;
@@ -366,7 +366,7 @@
             '" data-item="worst" data-v="' + u + '">' + esc(nm[u] || u) + '</button>';
         }).join('') + '</div></div>';
     } else {
-      h += '<p class="bwm-hint">먼저 가장 중요한 항목을 고르세요.</p>';
+      h += '<p class="bwm-hint">먼저 가장 중요한 항목을 선택해 주시기 바랍니다.</p>';
     }
 
     // 3) Best-to-Others · 4) Others-to-Worst 벡터 (Best·Worst 모두 고른 뒤)
@@ -634,7 +634,7 @@
   }
 
   async function handleRoundAdvanced(msg) {
-    showNotice((msg.round) + '라운드가 시작되었습니다. 이어서 응답해 주세요.');
+    showNotice((msg.round) + '라운드가 시작되었습니다. 이어서 응답해 주시기 바랍니다.');
     if (landing.collection.mode === 'realtime') {
       try {
         const res = await fetch('/api/respond/' + accessToken);
@@ -685,14 +685,14 @@
     if (landing.collection.mode === 'realtime') {
       revisionGroupId = msg.group_id;
       revisionWorst = [];
-      showNotice('연구자가 "' + name + '" 항목을 전원에게 다시 열었습니다. 이어서 응답해 주세요.');
+      showNotice('연구자가 "' + name + '" 항목을 전원에게 다시 열었습니다. 이어서 응답해 주시기 바랍니다.');
       enterRealtimeFlow();
       return;
     }
     pendingReopenGroupId = msg.group_id;
     const onDone = document.getElementById('viewDone').hidden === false;
     showNotice('연구자가 "' + name + '" 항목을 다시 열었습니다. ' +
-      (onDone ? '아래 항목을 눌러 조정해 주세요.' : '이어서 응답해 주세요.'));
+      (onDone ? '아래 항목을 눌러 조정해 주시기 바랍니다.' : '이어서 응답해 주시기 바랍니다.'));
   }
 
   // 진행자가 콘솔에서 이 참여자 답을 고침 → 로컬에 즉시 반영(원복 방지).
@@ -730,8 +730,8 @@
         const warn = crWarningIfNeeded(m.group_id);
         if (warn) {
           const msg = '이 기준의 응답이 다소 일관되지 않습니다 (CR ' + warn.cr.toFixed(2) + ').';
-          if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주세요.'); return false; }
-          if (!confirm(msg + ' 계속 진행할까요?')) return false;
+          if (landing.survey.cr_action === 'block') { alert(msg + ' 아래에서 다시 조정해 주시기 바랍니다.'); return false; }
+          if (!confirm(msg + ' 계속 진행하시겠습니까?')) return false;
         }
       }
     }
@@ -786,7 +786,7 @@
       localStorage.setItem(STORAGE_SUBMITTED_KEY, '1');
       await showDone();
     } catch (e) {
-      alert('제출 중 문제가 발생했습니다. 다시 시도해 주세요.');
+      alert('제출 중 문제가 발생했습니다. 다시 시도해 주시기 바랍니다.');
     }
   }
 
@@ -1009,7 +1009,7 @@
         return '<button type="button" class="rg-row" data-item="BO:' + c + '">' +
           '<span class="rg-rank">' + (i + 1) + '</span>' +
           '<span class="rg-body"><span class="rg-pair">' + esc(nm) + '</span>' +
-          '<span class="rg-move">' + (parts.join('<br>') || '이 기준의 응답을 재검토해 주세요') + '</span></span>' +
+          '<span class="rg-move">' + (parts.join('<br>') || '이 기준의 응답을 재검토해 주시기 바랍니다') + '</span></span>' +
           '<span class="rg-go">이동 ▸</span></button>';
       }).join('');
   }

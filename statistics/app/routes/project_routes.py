@@ -89,7 +89,7 @@ async def api_create_project(
     request: Request, file: UploadFile = File(...), name: str = Form(None)
 ):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "통계분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(400, "통계분석 결과 zip 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     project_name = name or os.path.splitext(file.filename)[0]
     uid = _uid(request)
@@ -113,7 +113,7 @@ async def api_create_project(
 @router.post("/api/projects/upload-zip")
 async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "통계분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(400, "통계분석 결과 zip 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     return JSONResponse(
@@ -369,7 +369,7 @@ def _settle_jobs(owner: str, project_id: str) -> list:
             if j.get("status") == "running" and j.get("id") not in _ai_live:
                 j["status"] = "error"
                 j["error"] = (
-                    "서버가 다시 시작되어 작업이 중단되었습니다. 다시 실행해 주세요."
+                    "서버가 다시 시작되어 작업이 중단되었습니다. 다시 실행해 주시기 바랍니다."
                 )
                 j["updated_at"] = _now_iso()
                 changed = True
@@ -416,7 +416,7 @@ async def project_ai_analysis(project_id: str, request: Request):
         raise HTTPException(400, "지원하지 않는 AI 분석 방식입니다.")
     question = str(body.get("question") or "").strip()[:2000]
     if mode in ("question", "chat") and not question:
-        raise HTTPException(400, "AI에게 물어볼 질문을 입력해주세요.")
+        raise HTTPException(400, "AI에게 물어볼 질문을 입력해 주시기 바랍니다.")
     owner = _handle_store_error(project_store.project_owner, uid, project_id, is_admin)
     base = _handle_store_error(project_store.load_base, uid, project_id, is_admin)
     table_id = body.get("table_id") if mode == "table" else None
@@ -429,13 +429,15 @@ async def project_ai_analysis(project_id: str, request: Request):
     running = [j for j in _ai_live.values() if j["uid"] == uid]
     if len(running) >= 3:
         raise HTTPException(
-            429, "진행 중인 AI 분석이 3개 있습니다. 끝난 뒤 다시 요청해 주세요."
+            429,
+            "진행 중인 AI 분석이 3개 있습니다. 끝난 뒤 다시 요청해 주시기 바랍니다.",
         )
     if mode == "chat" and any(
         j["project_id"] == project_id and j["kind"] == "chat" for j in running
     ):
         raise HTTPException(
-            409, "이전 질문에 대한 답변을 준비하고 있습니다. 끝난 뒤 다시 보내 주세요."
+            409,
+            "이전 질문에 대한 답변을 준비하고 있습니다. 끝난 뒤 다시 보내 주시기 바랍니다.",
         )
 
     job_id = uuid.uuid4().hex
@@ -862,7 +864,7 @@ async def api_crawl_db_select(uid: str, request: Request):
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "원본 CSV 파일을 업로드해주세요.")
+        raise HTTPException(400, "원본 CSV 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     return JSONResponse(
@@ -885,7 +887,7 @@ async def api_analyze_start(request: Request):
     category = (body.get("category") or "").strip()
     platform = (body.get("platform") or "").strip()
     if not category or not platform:
-        raise HTTPException(400, "분석 종류와 플랫폼을 선택해주세요.")
+        raise HTTPException(400, "분석 종류와 플랫폼을 선택해 주시기 바랍니다.")
 
     project_name = (body.get("name") or "").strip() or os.path.splitext(filename)[0]
     extra_options = (

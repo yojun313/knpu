@@ -27,7 +27,7 @@
     </div>
     <div id="danglingList" class="space-y-1.5 text-xs font-mono text-orange-200/80">
         {% for d in dangling %}
-        <div>:{{ d.port }} &rarr; {% for dm in d.domains %}{{ dm.domain }}{{ dm.path if dm.path != '/' else '' }}{% if not loop.last %}, {% endif %}{% endfor %} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인하세요)</span></div>
+        <div>:{{ d.port }} &rarr; {% for dm in d.domains %}{{ dm.domain }}{{ dm.path if dm.path != '/' else '' }}{% if not loop.last %}, {% endif %}{% endfor %} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인해 주시기 바랍니다)</span></div>
         {% endfor %}
     </div>
 </div>
@@ -121,7 +121,7 @@ function renderDangling(dangling) {
     card.classList.remove('hidden');
     list.innerHTML = dangling.map(d => {
         const names = (d.domains || []).map(dm => esc(dm.domain) + (dm.path !== '/' ? esc(dm.path) : '')).join(', ');
-        return `<div>:${esc(d.port)} &rarr; ${names} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인하세요)</span></div>`;
+        return `<div>:${esc(d.port)} &rarr; ${names} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인해 주시기 바랍니다)</span></div>`;
     }).join('');
 }
 

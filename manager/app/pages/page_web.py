@@ -144,7 +144,7 @@ class Manager_Web:
                 self.main,
                 "논문 식별자 누락",
                 "이 논문의 식별자가 없습니다. 목록을 새로고침합니다. "
-                "논문을 다시 선택해주세요. 계속되면 홈페이지 서버 업데이트가 필요합니다.",
+                "논문을 다시 선택해 주시기 바랍니다. 계속되면 홈페이지 서버 업데이트가 필요합니다.",
             )
             self.refreshPaperBoard()
             return None
@@ -379,7 +379,7 @@ class Manager_Web:
                 confirmName, ok = QInputDialog.getText(
                     self.main,
                     "Security Check",
-                    f"삭제 확인을 위해 멤버의 이름({targetName})을 정확히 입력해주세요.",
+                    f"삭제 확인을 위해 멤버의 이름({targetName})을 정확히 입력해 주시기 바랍니다.",
                 )
 
                 # 3. 입력값이 일치할 때만 삭제 진행

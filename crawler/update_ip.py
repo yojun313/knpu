@@ -91,12 +91,12 @@ class UploadWorker(QObject):
                 raise RuntimeError(
                     f"{res.status_code} 리다이렉트: {res.request.url} → {res.headers.get('Location')}\n"
                     "인증 미들웨어가 이 요청을 API 요청으로 인식하지 못해 로그인 페이지로 돌려보냈습니다.\n"
-                    "이 스크립트 파일이 최신 버전인지 확인해주세요 (저장소에서 crawler/update_ip.py를 다시 받아보세요)."
+                    "이 스크립트 파일이 최신 버전인지 확인해 주시기 바랍니다 (저장소에서 crawler/update_ip.py를 다시 확인해 주시기 바랍니다)."
                 )
             if res.status_code == 404:
                 raise RuntimeError(
                     f"404 Not Found: {res.request.url}\n"
-                    "서버 URL이 올바른지 확인해주세요 (예: http://localhost:3001, 끝에 /api를 붙이지 마세요)."
+                    "서버 URL이 올바른지 확인해 주시기 바랍니다 (예: http://localhost:3001, 끝에 /api를 붙이지 마시기 바랍니다)."
                 )
             res.raise_for_status()
             try:
@@ -294,10 +294,12 @@ class MainWindow(QMainWindow):
         api_key = self.api_key_edit.text().strip()
 
         if not proxy_file:
-            QMessageBox.warning(self, "입력 오류", "프록시 파일 경로를 입력해주세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "프록시 파일 경로를 입력해 주시기 바랍니다."
+            )
             return
         if not server_url:
-            QMessageBox.warning(self, "입력 오류", "서버 URL을 입력해주세요.")
+            QMessageBox.warning(self, "입력 오류", "서버 URL을 입력해 주시기 바랍니다.")
             return
 
         self.log_edit.clear()

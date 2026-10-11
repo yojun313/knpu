@@ -241,7 +241,8 @@ def delete_db(uid: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")
     if doc.get("status") == "running":
         raise HTTPException(
-            status_code=409, detail="진행 중인 작업은 먼저 중단한 뒤 삭제해주세요"
+            status_code=409,
+            detail="진행 중인 작업은 먼저 중단한 뒤 삭제해 주시기 바랍니다",
         )
     check_owner_or_admin(user, doc)
 

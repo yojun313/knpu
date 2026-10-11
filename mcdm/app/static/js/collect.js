@@ -201,7 +201,7 @@
         await ahpApi('/api/collections/' + id + '/reopen', { method: 'POST' });
         await load();
       } else if (act === 'delete') {
-        if (!confirm('이 수집과 관련 응답 데이터를 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+        if (!confirm('이 수집과 관련 응답 데이터를 모두 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
         await ahpApi('/api/collections/' + id, { method: 'DELETE' });
         await load();
       }
@@ -226,7 +226,7 @@
       const rid = btn.dataset.id;
       const act = btn.dataset.act;
       if (act === 'reissue') {
-        if (!confirm('이 응답자의 접속 코드를 재발급할까요? 기존 코드는 즉시 무효화됩니다.')) return;
+        if (!confirm('이 응답자의 접속 코드를 재발급하시겠습니까? 기존 코드는 즉시 무효화됩니다.')) return;
         try {
           const res = await ahpApi(
             '/api/collections/' + activeCollectionForRespondents + '/respondents/' + rid + '/reissue-code',
@@ -238,7 +238,7 @@
           ahpToast(err.message || '재발급에 실패했습니다', true);
         }
       } else if (act === 'remove-resp') {
-        if (!confirm('이 응답자를 삭제할까요? 진행 중이던 응답도 함께 삭제되며 되돌릴 수 없습니다.')) return;
+        if (!confirm('이 응답자를 삭제하시겠습니까? 진행 중이던 응답도 함께 삭제되며 되돌릴 수 없습니다.')) return;
         try {
           await ahpApi(
             '/api/collections/' + activeCollectionForRespondents + '/respondents/' + rid,

@@ -541,7 +541,7 @@ class AddBugDialog(BaseDialog):
             multiline=True,
         )
         self.bug_detail_input.setPlaceholderText(
-            "버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다"
+            "버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해 주시기 바랍니다\n오류 로그는 자동으로 전송됩니다"
         )
 
         # Submit
@@ -556,13 +556,15 @@ class AddBugDialog(BaseDialog):
         bug_detail = self.bug_detail_input.toPlainText().strip()
 
         if not bug_title:
-            QMessageBox.warning(self, "입력 오류", "버그 제목을 입력해주세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "버그 제목을 입력해 주시기 바랍니다."
+            )
             self.bug_title_input.setFocus()
             return
 
         if not bug_detail:
             QMessageBox.warning(
-                self, "입력 오류", "버그 상세 내용을 자세히 입력해주세요."
+                self, "입력 오류", "버그 상세 내용을 자세히 입력해 주시기 바랍니다."
             )
             self.bug_detail_input.setFocus()
             return
@@ -661,15 +663,13 @@ class SuggestionEditorDialog(BaseDialog):
         layout.addWidget(QLabel("제목"))
         self.title_input = QLineEdit(doc.get("title", ""))
         self.title_input.setMaxLength(300)
-        self.title_input.setPlaceholderText(
-            "어떤 기능이나 사용 방법을 개선하면 좋을까요?"
-        )
+        self.title_input.setPlaceholderText("개선할 기능 또는 사용 방법")
         layout.addWidget(self.title_input)
         layout.addWidget(QLabel("제안 내용"))
         self.text_input = QTextEdit()
         self.text_input.setPlainText(doc.get("text", ""))
         self.text_input.setPlaceholderText(
-            "현재 불편한 점, 필요한 기능, 원하는 개선 방법을 구체적으로 적어주세요."
+            "현재 불편한 점, 필요한 기능, 원하는 개선 방법을 구체적으로 작성해 주시기 바랍니다."
         )
         layout.addWidget(self.text_input)
         actions = QHBoxLayout()
@@ -687,12 +687,14 @@ class SuggestionEditorDialog(BaseDialog):
         )
         if not title or not text:
             QMessageBox.warning(
-                self, "건의·제안사항", "제목과 제안 내용을 입력해주세요."
+                self, "건의·제안사항", "제목과 제안 내용을 입력해 주시기 바랍니다."
             )
             return
         if len(text) > 20000:
             QMessageBox.warning(
-                self, "건의·제안사항", "제안 내용은 20,000자 이내로 입력해주세요."
+                self,
+                "건의·제안사항",
+                "제안 내용은 20,000자 이내로 입력해 주시기 바랍니다.",
             )
             return
         self.data = {
@@ -730,9 +732,9 @@ class BoardDiscussionWidget(QWidget):
         if not self.reply_mode or getattr(main, "user_role", None) == "admin":
             self.editor = QTextEdit()
             self.editor.setPlaceholderText(
-                "댓글을 입력하세요."
+                "댓글을 입력해 주시기 바랍니다."
                 if not self.reply_mode
-                else "관리자 답변을 입력하세요. 등록하면 작성자에게 이메일 알림이 발송됩니다."
+                else "관리자 답변을 입력해 주시기 바랍니다. 등록하면 작성자에게 이메일 알림이 발송됩니다."
             )
             self.editor.setMaximumHeight(100)
             self.layout_box.addWidget(self.editor)
@@ -818,7 +820,7 @@ class BoardDiscussionWidget(QWidget):
             from services.api import handle_permission_error
 
             if not handle_permission_error(self, error):
-                message = "요청을 처리하지 못했습니다. 다시 시도해주세요."
+                message = "요청을 처리하지 못했습니다. 다시 시도해 주시기 바랍니다."
                 if (
                     isinstance(error, requests.exceptions.HTTPError)
                     and error.response is not None
@@ -1019,7 +1021,7 @@ class ViewPostDialog(BaseDialog):
                 QMessageBox.warning(
                     self,
                     "건의·제안사항",
-                    "검토 상태를 저장하지 못했습니다. 다시 시도해주세요.",
+                    "검토 상태를 저장하지 못했습니다. 다시 시도해 주시기 바랍니다.",
                 )
 
 
@@ -1485,7 +1487,7 @@ class MergeOptionDialog(BaseDialog):
 
     def accept(self):
         if not self.csv_paths:
-            QMessageBox.warning(self, "입력 오류", "CSV 파일을 선택하세요.")
+            QMessageBox.warning(self, "입력 오류", "CSV 파일을 선택해 주시기 바랍니다.")
             return
 
         wrong = [p for p in self.csv_paths if not p.lower().endswith(".csv")]
@@ -1505,7 +1507,9 @@ class MergeOptionDialog(BaseDialog):
 
         mergedfilename = self.name_edit.text().strip()
         if not mergedfilename:
-            QMessageBox.warning(self, "입력 오류", "병합 파일명을 입력하세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "병합 파일명을 입력해 주시기 바랍니다."
+            )
             return
 
         save_dir = self.save_dir or os.path.dirname(self.csv_paths[0])
@@ -1645,14 +1649,14 @@ class WordcloudDialog(BaseDialog):
         layout.setSpacing(10)  # 위젯 간 간격 설정
 
         # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
-        self.startdate_label = QLabel("분석 시작 일자를 선택하세요: ")
+        self.startdate_label = QLabel("분석 시작 일자")
         self.startdate_input = QDateEdit(calendarPopup=True)
         self.startdate_input.setDisplayFormat("yyyyMMdd")
         self.startdate_input.setDate(self.startdate)
         layout.addWidget(self.startdate_label)
         layout.addWidget(self.startdate_input)
 
-        self.enddate_label = QLabel("분석 종료 일자를 선택하세요: ")
+        self.enddate_label = QLabel("분석 종료 일자")
         self.enddate_input = QDateEdit(calendarPopup=True)
         self.enddate_input.setDisplayFormat("yyyyMMdd")
         self.enddate_input.setDate(self.enddate)
@@ -1673,7 +1677,7 @@ class WordcloudDialog(BaseDialog):
         self.period_option_menu.addItem("1일 (Daily)")
         layout.addWidget(self.period_option_menu)
 
-        self.topword_label = QLabel("최대 단어 개수를 입력하세요: ")
+        self.topword_label = QLabel("최대 단어 개수")
         self.topword_input = QLineEdit()
         self.topword_input.setText("200")  # 기본값 설정
         layout.addWidget(self.topword_label)
@@ -1868,14 +1872,14 @@ class RunKemkimDialog(BaseDialog):
         layout.setSpacing(10)  # 위젯 간 간격 설정
 
         # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
-        self.startdate_label = QLabel("분석 시작 일자를 선택하세요: ")
+        self.startdate_label = QLabel("분석 시작 일자")
         self.startdate_input = QDateEdit(calendarPopup=True)
         self.startdate_input.setDisplayFormat("yyyyMMdd")
         self.startdate_input.setDate(self.startdate)
         layout.addWidget(self.startdate_label)
         layout.addWidget(self.startdate_input)
 
-        self.enddate_label = QLabel("분석 종료 일자를 선택하세요: ")
+        self.enddate_label = QLabel("분석 종료 일자")
         self.enddate_input = QDateEdit(calendarPopup=True)
         self.enddate_input.setDisplayFormat("yyyyMMdd")
         self.enddate_input.setDate(self.enddate)
@@ -1895,14 +1899,14 @@ class RunKemkimDialog(BaseDialog):
         self.period_option_menu.addItem("1일 (Daily)")
         layout.addWidget(self.period_option_menu)
 
-        self.topword_label = QLabel("상위 단어 개수를 입력하세요: ")
+        self.topword_label = QLabel("상위 단어 개수")
         self.topword_input = QLineEdit()
         self.topword_input.setText("500")  # 기본값 설정
         layout.addWidget(self.topword_label)
         layout.addWidget(self.topword_input)
 
         # Time Weight 입력 필드 생성 및 레이아웃에 추가
-        self.weight_label = QLabel("시간 가중치(tw)를 입력하세요: ")
+        self.weight_label = QLabel("시간 가중치(tw)")
         self.weight_input = QLineEdit()
         self.weight_input.setText("0.1")  # 기본값 설정
         layout.addWidget(self.weight_label)
@@ -1911,9 +1915,7 @@ class RunKemkimDialog(BaseDialog):
         # Period Option Menu 선택 시 시간 가중치 변경 함수 연결
         self.period_option_menu.currentIndexChanged.connect(self.update_weight)
 
-        self.wordcnt_label = QLabel(
-            "그래프 애니메이션에 띄울 단어의 개수를 입력하세요: "
-        )
+        self.wordcnt_label = QLabel("그래프 애니메이션 표시 단어 수")
         self.wordcnt_input = QLineEdit()
         self.wordcnt_input.setText("10")  # 기본값 설정
         layout.addWidget(self.wordcnt_label)
@@ -2054,7 +2056,7 @@ class RunKemkimDialog(BaseDialog):
         layout.addWidget(self.dropdown_menu)
 
         # 추가 입력창 (QLineEdit), 초기에는 숨김
-        self.additional_input_label = QLabel("숫자를 입력하세요")
+        self.additional_input_label = QLabel("숫자 입력")
         self.additional_input = QLineEdit()
         self.additional_input.setPlaceholderText("입력")
         self.additional_input_label.hide()
@@ -2234,7 +2236,7 @@ class InterpretKemkimDialog(BaseDialog):
 
         # 창 설정
         self.setLayout(final_layout)
-        self.setWindowTitle("크롤링 데이터 CSV 필터링 기준 단어를 선택하세요")
+        self.setWindowTitle("크롤링 CSV 필터링 기준 단어 선택")
         self.resize(800, 600)
         self.show()
 
@@ -2310,7 +2312,7 @@ class ModifyKemkimDialog(BaseDialog):
         container_widget = QDialog()
         main_layout = QVBoxLayout(container_widget)
 
-        self.info_label = QLabel("제외할 키워드를 선택하세요\n")
+        self.info_label = QLabel("제외할 키워드를 선택해 주시기 바랍니다\n")
         main_layout.addWidget(self.info_label)
 
         # 체크박스를 배치할 각 그룹 박스 생성
@@ -2565,7 +2567,7 @@ class SelectColumnsDialog(BaseDialog):
         # ───────── 전체 레이아웃 ─────────
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("분석 대상 열을 선택하세요:"))
+        layout.addWidget(QLabel("분석 대상 열"))
 
         # ───────── 스크롤 영역 ─────────
         scroll = QScrollArea()
@@ -2866,10 +2868,14 @@ class YouTubeDownloadDialog(BaseDialog):
             u.strip() for u in self.url_edit.toPlainText().splitlines() if u.strip()
         ]
         if not urls:
-            QMessageBox.warning(self, "입력 오류", "YouTube URL을 입력하세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "YouTube URL을 입력해 주시기 바랍니다."
+            )
             return
         if not self.save_dir:
-            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "저장 경로를 선택해 주시기 바랍니다."
+            )
             return
 
         self.data = {
@@ -3022,10 +3028,12 @@ class DetectOptionDialog(BaseDialog):
 
     def accept(self):
         if not self.file_paths:
-            QMessageBox.warning(self, "입력 오류", "파일을 선택하세요.")
+            QMessageBox.warning(self, "입력 오류", "파일을 선택해 주시기 바랍니다.")
             return
         if not self.save_dir:
-            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "저장 경로를 선택해 주시기 바랍니다."
+            )
             return
 
         run_dino = self.dino_check.isChecked()
@@ -3034,7 +3042,9 @@ class DetectOptionDialog(BaseDialog):
         if run_dino:
             prompt = (self.dino_prompt.toPlainText() or "").strip()
             if not prompt:
-                QMessageBox.warning(self, "입력 오류", "DINO prompt를 입력하세요.")
+                QMessageBox.warning(
+                    self, "입력 오류", "DINO prompt를 입력해 주시기 바랍니다."
+                )
                 return
 
         self.data = {
@@ -3211,7 +3221,9 @@ class NetworkAnalysisDialog(BaseDialog):
 
     def validate_and_accept(self):
         if not self.save_dir:
-            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "저장 경로를 선택해 주시기 바랍니다."
+            )
             return
 
         scope = "document" if self.scope_combo.currentIndex() == 0 else "window"
@@ -3340,7 +3352,10 @@ class EditHomeMemberDialog(BaseDialog):
             object_name = self.data.get("name", "")
             if not object_name:
                 object_name, ok = QInputDialog.getText(
-                    None, "파일명 입력", "성함을 입력하세요:", text="merged_file"
+                    None,
+                    "파일명 입력",
+                    "성함을 입력해 주시기 바랍니다:",
+                    text="merged_file",
                 )
                 if not ok or not object_name:
                     return
@@ -3504,7 +3519,9 @@ class EditHomePaperDialog(BaseDialog):
     def crawl_metadata(self):
         title = self.in_title.text().strip()
         if not title:
-            QMessageBox.warning(self, "입력 오류", "제목을 먼저 입력해주세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "제목을 먼저 입력해 주시기 바랍니다."
+            )
             return
 
         try:
@@ -3561,14 +3578,16 @@ class EditHomePaperDialog(BaseDialog):
         QMessageBox.information(
             self,
             "크롤링 완료",
-            f"'{record.get('title')}' 메타데이터를 불러왔습니다.\n확인 후 저장하세요.",
+            f"'{record.get('title')}' 메타데이터를 불러왔습니다.\n확인 후 저장해 주시기 바랍니다.",
         )
 
     def get_payload(self) -> dict:
         try:
             year = int(self.in_year.text().strip())
         except ValueError:
-            QMessageBox.warning(self, "입력 오류", "연도는 숫자로 입력해주세요.")
+            QMessageBox.warning(
+                self, "입력 오류", "연도는 숫자로 입력해 주시기 바랍니다."
+            )
             return {}
 
         authors_raw = self.in_authors.text().strip()

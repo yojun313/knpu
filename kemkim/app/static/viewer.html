@@ -73,8 +73,8 @@
       <div id="loading"><div class="spin"></div><div>분석 결과를 불러오는 중...</div></div>
       <div id="emptyProject" class="empty-project" hidden>
         <div class="ep-icon">🗂</div>
-        <div class="ep-title">프로젝트를 선택하세요</div>
-        <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드하세요.</div>
+        <div class="ep-title">프로젝트를 선택해 주시기 바랍니다</div>
+        <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드해 주시기 바랍니다.</div>
         <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트</button>
       </div>
       <div id="plotTabs">
@@ -125,7 +125,7 @@
           <div class="sig-ai-block">
             <div class="sig-ai-title">✦ AI 신호 해석</div>
             <div class="hint">단어가 약한 신호일 때 어떤 맥락에서 나타나 신호가 커지며 어떤 맥락으로 옮겨 갔는지
-              기간별로 분석합니다. 그래프에서 단어를 누르거나 아래에서 고르세요.</div>
+              기간별로 분석합니다. 그래프에서 단어를 누르거나 아래에서 선택해 주시기 바랍니다.</div>
             <div class="sig-ai-row">
               <input class="wl-search" id="sigWordInput" type="text" placeholder="단어 입력 (예: 딥페이크)" list="sigWordList" autocomplete="off">
               <datalist id="sigWordList"></datalist>
@@ -217,7 +217,7 @@
         <summary><span>단어 끄기 (<span id="selCount">0</span>개 숨김)</span></summary>
         <div class="sec-body">
           <div class="hint">체크하면 그래프에서 해당 단어가 바로 숨겨집니다. 기본값은 전체
-            표시입니다 — 끄고 싶은 단어만 체크하세요.</div>
+            표시입니다 — 끄고 싶은 단어만 체크해 주시기 바랍니다.</div>
           <input class="wl-search" id="wlSearch" type="text" placeholder="목록 내 검색...">
           <div class="btn-row">
             <button class="btn btn-sm" id="wlAll">전체 끄기</button>
@@ -310,7 +310,7 @@
         <label id="modalDropzone" class="modal-dropzone" for="modalFileInput">
           <input type="file" id="modalFileInput" accept=".zip" hidden>
           <div class="dz-icon">＋</div>
-          <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택하세요</div>
+          <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택해 주시기 바랍니다</div>
           <div class="dz-sub">kemkim_info.txt / Result / Data 가 들어있는 결과 zip</div>
         </label>
         <div id="zipProgress" class="upload-progress" hidden>
@@ -328,7 +328,7 @@
         <label id="analyzeDropzone" class="modal-dropzone modal-dropzone-sm" for="analyzeFileInput">
           <input type="file" id="analyzeFileInput" accept=".csv" hidden>
           <div class="dz-icon">＋</div>
-          <div class="dz-text" id="analyzeFileLabel">토큰화된 CSV 파일을 선택하세요</div>
+          <div class="dz-text" id="analyzeFileLabel">토큰화된 CSV 파일을 선택해 주시기 바랍니다</div>
           <div class="dz-sub">token_*.csv</div>
         </label>
         <div id="analyzeProgress" class="upload-progress" hidden>
@@ -488,7 +488,7 @@
       </form>
       <div class="graph-export-preview">
         <div class="graph-preview-toolbar"><button type="button" class="btn btn-sm" data-preview-fit="export">전체보기</button><button type="button" class="btn btn-sm" data-preview-zoom="export:-">−</button><input id="exportZoomRange" type="range" min="25" max="1600" value="100" aria-label="미리보기 확대 배율"><output id="exportZoomValue">100%</output><button type="button" class="btn btn-sm" data-preview-zoom="export:+">＋</button></div>
-        <div class="hint">트랙패드 핀치·휠로 확대하고 드래그로 이동하세요. 미리보기 배율은 저장 이미지에 영향을 주지 않습니다.</div>
+        <div class="hint">트랙패드 핀치·휠로 확대하고 드래그로 이동해 주시기 바랍니다. 미리보기 배율은 저장 이미지에 영향을 주지 않습니다.</div>
         <div id="exportPreviewStage" class="graph-preview-stage"><img id="graphExportImage" alt="저장할 그래프 미리보기" hidden draggable="false"></div>
       </div>
     </div>

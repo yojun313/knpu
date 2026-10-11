@@ -32,7 +32,7 @@ def _parse_csv_header(content: bytes) -> list[str]:
 
 def _check_source_csv(content: bytes):
     if len(content) > 250 * 1024 * 1024:
-        raise HTTPException(413, "원본 CSV는 250MB 이하로 업로드해주세요.")
+        raise HTTPException(413, "원본 CSV는 250MB 이하로 업로드해 주시기 바랍니다.")
     try:
         columns = pd.read_csv(
             io.BytesIO(content), nrows=0, encoding="utf-8-sig"
@@ -125,7 +125,9 @@ async def api_create_project(
     request: Request, file: UploadFile = File(...), name: str = Form(None)
 ):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "네트워크 분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(
+            400, "네트워크 분석 결과 zip 파일을 업로드해 주시기 바랍니다."
+        )
     content = await file.read()
     project_name = name or os.path.splitext(file.filename)[0]
     uid = _uid(request)
@@ -149,7 +151,9 @@ async def api_create_project(
 @router.post("/api/projects/upload-zip")
 async def api_upload_zip_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "네트워크 분석 결과 zip 파일을 업로드해주세요.")
+        raise HTTPException(
+            400, "네트워크 분석 결과 zip 파일을 업로드해 주시기 바랍니다."
+        )
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     return JSONResponse(
@@ -371,11 +375,11 @@ async def project_ai_analysis(project_id: str, request: Request):
     try:
         community = int(payload.get("community")) if mode == "community" else None
     except (TypeError, ValueError):
-        raise HTTPException(400, "커뮤니티를 선택해주세요.")
+        raise HTTPException(400, "커뮤니티를 선택해 주시기 바랍니다.")
     if mode in ("word", "pair") and not word:
-        raise HTTPException(400, "분석할 단어를 선택해주세요.")
+        raise HTTPException(400, "분석할 단어를 선택해 주시기 바랍니다.")
     if mode == "pair" and (not other or other == word):
-        raise HTTPException(400, "서로 다른 두 단어를 선택해주세요.")
+        raise HTTPException(400, "서로 다른 두 단어를 선택해 주시기 바랍니다.")
     uid, admin = _uid(request), _is_admin(request)
     _handle_store_error(project_store.get_project, uid, project_id, admin)
     normalized = {
@@ -449,7 +453,7 @@ async def project_upload_source(
     project_id: str, request: Request, file: UploadFile = File(...)
 ):
     if not (file.filename or "").lower().endswith(".csv"):
-        raise HTTPException(400, "원문 CSV 파일을 업로드해주세요.")
+        raise HTTPException(400, "원문 CSV 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     _check_source_csv(content)
     uid = _uid(request)
@@ -481,7 +485,7 @@ async def project_source_from_crawl_db(project_id: str, request: Request):
         or not name.endswith(".parquet")
         or name.startswith("token_")
     ):
-        raise HTTPException(400, "크롤링 DB의 원본 파일을 선택해주세요.")
+        raise HTTPException(400, "크롤링 DB의 원본 파일을 선택해 주시기 바랍니다.")
     try:
         response = requests.get(
             f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{crawl_uid}/file",
@@ -627,7 +631,7 @@ async def api_crawl_db_select(uid: str, request: Request):
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "토큰화된 CSV 파일을 업로드해주세요.")
+        raise HTTPException(400, "토큰화된 CSV 파일을 업로드해 주시기 바랍니다.")
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
     return JSONResponse(
@@ -649,7 +653,7 @@ async def api_analyze_start(request: Request):
 
     built_option = analyze_service.build_option(body.get("option") or {})
     if not built_option.get("text_col"):
-        raise HTTPException(400, "분석할 열(대상 열)을 선택해주세요.")
+        raise HTTPException(400, "분석할 열(대상 열)을 선택해 주시기 바랍니다.")
     if crawl_file:
         # 워커가 크롤 parquet 을 직접 읽어 CSV 로 변환한다(입력 사본을 만들지 않는다).
         built_option = {**built_option, "_crawl_file": crawl_file}

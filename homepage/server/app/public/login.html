@@ -218,9 +218,9 @@
             <i class="fa-solid fa-fingerprint"></i>패스키로 로그인
           </button>
           <div class="auth-switch">
-            <a href="#" id="show-forgot">비밀번호를 잊으셨나요?</a>
+            <a href="#" id="show-forgot">비밀번호를 잊으셨습니까?</a>
             <br />
-            아직 계정이 없으신가요? <a href="/signup">회원가입</a>
+            아직 계정이 없습니까? <a href="/signup">회원가입</a>
           </div>
         </div>
       </div>
@@ -268,7 +268,7 @@
       <div class="card auth-card">
         <div class="auth-card-accent"></div>
         <div class="auth-card-body">
-          <h2><i class="fa-solid fa-fingerprint"></i>패스키를 등록하시겠어요?</h2>
+          <h2><i class="fa-solid fa-fingerprint"></i>패스키를 등록하시겠습니까?</h2>
           <p class="meta-line mb-3" style="font-size:0.85rem;color:#6c757d;">
             다음부터 비밀번호 없이 지문·얼굴 인식이나 보안키로 더 빠르고 안전하게 로그인할 수 있습니다.
           </p>
@@ -369,7 +369,7 @@
         // create()부터 호출해야 Safari에서 포커스 문제로 실패하지 않는다 —
         // 이름은 성공한 뒤에 물어본다.
         const serialized = await createPasskeyCredential();
-        const deviceName = prompt('이 패스키를 구분할 이름을 입력하세요 (예: 내 아이폰, 사무실 노트북)', guessDeviceName()) || guessDeviceName();
+        const deviceName = prompt('이 패스키를 구분할 이름을 입력해 주시기 바랍니다 (예: 내 아이폰, 사무실 노트북)', guessDeviceName()) || guessDeviceName();
         await verifyPasskeyRegistration(serialized, deviceName);
       } catch (err) {
         reportPasskeyError('register', err);
@@ -462,7 +462,7 @@
           showAlert(errorEl, data.detail || '재설정에 실패했습니다');
           return;
         }
-        showAlert(successEl, '비밀번호가 재설정되었습니다. 로그인해주세요.');
+        showAlert(successEl, '비밀번호가 재설정되었습니다. 로그인해 주시기 바랍니다.');
         setTimeout(() => {
           document.getElementById('forgot-panel').style.display = 'none';
           document.getElementById('login-panel').style.display = 'block';

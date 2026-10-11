@@ -140,7 +140,7 @@ async def chat(case_id: str, body: ChatIn, request: Request):
                 logger.exception("채팅 처리 중 오류")
                 yield {
                     "type": "error",
-                    "message": "답변을 만드는 중 오류가 발생했어요. 잠시 후 다시 보내 주세요.",
+                    "message": "답변을 만드는 중 오류가 발생했습니다. 잠시 후 다시 보내 주시기 바랍니다.",
                 }
             finally:
                 store.save(case)
@@ -214,7 +214,7 @@ def _merge_party(case: dict, body: PartyIn) -> dict:
     if not c["name"].strip() or not c["phone"].strip() or not c["address"].strip():
         raise HTTPException(400, "고소인 성명·주소·연락처는 반드시 입력해야 합니다.")
     if not c["rrn"]:
-        raise HTTPException(400, "고소인 주민등록번호를 입력해 주세요.")
+        raise HTTPException(400, "고소인 주민등록번호를 입력해 주시기 바랍니다.")
     party["filing_date"] = party["filing_date"] or date.today().isoformat()
     return party
 
@@ -241,7 +241,7 @@ async def generate(case_id: str, body: PartyIn, request: Request):
     if not any(str(case["facts"].get(k, "")).strip() for k in act_keys):
         raise HTTPException(
             400,
-            "고소장을 쓰기에 사건 내용이 부족합니다. 상대방이 언제, 무엇을 했는지 먼저 알려 주세요.",
+            "고소장을 쓰기에 사건 내용이 부족합니다. 상대방이 언제, 무엇을 했는지 먼저 알려 주시기 바랍니다.",
         )
     party = _merge_party(case, body)
 
@@ -257,7 +257,7 @@ async def generate(case_id: str, body: PartyIn, request: Request):
                 logger.error("고소장 생성 실패: %s", e)
                 yield {
                     "type": "error",
-                    "message": "AI 서버 응답에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+                    "message": "AI 서버 응답에 실패했습니다. 잠시 후 다시 시도해 주시기 바랍니다.",
                 }
             except Exception:
                 logger.exception("고소장 생성 중 오류")
@@ -282,7 +282,7 @@ async def rerender(case_id: str, body: RenderIn, request: Request):
     async with _case_locks[case_id]:
         case = _load_or_404(case_id)
         if not case.get("draft") or not case.get("party"):
-            raise HTTPException(400, "먼저 고소장을 생성해 주세요.")
+            raise HTTPException(400, "먼저 고소장을 생성해 주시기 바랍니다.")
         sections = {
             k: (body.sections.get(k, case["draft"].get(k, "")) or "")[:20000]
             for k in drafter.SECTION_KEYS
@@ -324,7 +324,7 @@ async def email(case_id: str, body: EmailIn, request: Request):
     case = _load_or_404(case_id)
     files = case.get("files")
     if not files:
-        raise HTTPException(400, "먼저 고소장을 생성해 주세요.")
+        raise HTTPException(400, "먼저 고소장을 생성해 주시기 바랍니다.")
     if not _EMAIL_RE.match(body.to.strip()):
         raise HTTPException(400, "이메일 주소 형식이 올바르지 않습니다.")
     name = (case.get("party") or {}).get("complainant", {}).get("name", "")
@@ -333,9 +333,9 @@ async def email(case_id: str, body: EmailIn, request: Request):
     if body.kind == "self":
         title = "[FPEI AI 고소장] 고소장 초안이 준비되었습니다"
         text = (
-            "안녕하세요.\n요청하신 AI 고소장 초안을 첨부해 드립니다.\n\n"
+            "안녕하십니까.\n요청하신 AI 고소장 초안을 첨부해 드립니다.\n\n"
             "첨부된 문서는 AI가 작성한 초안입니다. 제출 전 사실관계와 표현을 반드시 다시 확인하시고, "
-            "고소인 서명·날인 후 제출해 주세요.\n\n감사합니다."
+            "고소인 서명·날인 후 제출해 주시기 바랍니다.\n\n감사합니다."
         )
     else:
         title = f"[FPEI AI 고소장 제출] {name}님의 고소장입니다"
@@ -347,7 +347,7 @@ async def email(case_id: str, body: EmailIn, request: Request):
     except Exception as e:
         logger.error("메일 발송 실패: %s", e)
         raise HTTPException(
-            502, "메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요."
+            502, "메일을 보내지 못했습니다. 잠시 후 다시 시도해 주시기 바랍니다."
         )
     finally:
         named.unlink(missing_ok=True)

@@ -89,7 +89,7 @@ def _measure_hate_via_gpu(df: pd.DataFrame, pid: str, log=None) -> pd.DataFrame:
     text_col = next((c for c in df.columns if "text" in str(c).lower()), None)
     if text_col is None:
         raise ValueError(
-            "혐오도 측정에는 'Text' 열이 필요합니다 (원본 크롤링 CSV를 사용해 주세요)."
+            "혐오도 측정에는 'Text' 열이 필요합니다 (원본 크롤링 CSV를 사용해 주시기 바랍니다)."
         )
 
     (log or (lambda t: _send_progress(pid, t)))(
@@ -162,7 +162,7 @@ def run_job(ctx) -> dict:
     )
     if result is None:
         raise JobError(
-            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주세요."
+            "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주시기 바랍니다."
         )
     if isinstance(result, JSONResponse):
         body = json.loads(bytes(result.body))

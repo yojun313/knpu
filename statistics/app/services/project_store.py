@@ -57,7 +57,7 @@ def _find_result_root(extract_dir: str) -> str:
             return candidate
 
     raise ValueError(
-        "metadata.json을 찾지 못했습니다. 통계분석 결과 zip을 그대로 업로드해주세요."
+        "metadata.json을 찾지 못했습니다. 통계분석 결과 zip을 그대로 업로드해 주시기 바랍니다."
     )
 
 
@@ -229,7 +229,7 @@ def _spss_description(stem: str) -> str | None:
     if stem == "spss_reliability_summary":
         return (
             "선택된 수치형 변수들을 하나의 척도로 봤을 때의 내적 일관성 신뢰도(Cronbach's Alpha)입니다. "
-            "통상 0.7 이상이면 신뢰할 만하다고 봅니다. 설문 척도 데이터가 아닌 경우 참고용으로만 활용하세요."
+            "통상 0.7 이상이면 신뢰할 만하다고 봅니다. 설문 척도 데이터가 아닌 경우 참고용으로만 활용해 주시기 바랍니다."
         )
     if stem == "spss_reliability_items":
         return "각 변수를 제외했을 때 신뢰도(alpha)가 어떻게 바뀌는지, 그리고 나머지 변수 합계와의 상관을 보여줍니다."
@@ -463,7 +463,7 @@ def rename_project(uid: str, project_id: str, new_name: str) -> dict:
     _get_owned_doc(uid, project_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     statistics_projects_db.update_one(
         {"_id": project_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
@@ -511,7 +511,7 @@ def list_all_folders() -> list:
 def create_folder(uid: str, name: str) -> dict:
     name = (name or "").strip()
     if not name:
-        raise ValueError("폴더 이름을 입력해주세요.")
+        raise ValueError("폴더 이름을 입력해 주시기 바랍니다.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     doc = {
@@ -538,7 +538,7 @@ def rename_folder(uid: str, folder_id: str, new_name: str) -> dict:
     _get_owned_folder(uid, folder_id)
     new_name = (new_name or "").strip()
     if not new_name:
-        raise ValueError("이름을 입력해주세요.")
+        raise ValueError("이름을 입력해 주시기 바랍니다.")
     statistics_folders_db.update_one(
         {"_id": folder_id},
         {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},

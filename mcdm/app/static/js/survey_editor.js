@@ -66,7 +66,7 @@
     const box = document.getElementById('matricesList');
     if (!survey.groups.length) {
       box.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div>' +
-        '<h2>비교할 항목이 없습니다</h2><p>계층 설계에서 최상위 기준을 2개 이상 추가해 주세요.</p></div>';
+        '<h2>비교할 항목이 없습니다</h2><p>계층 설계에서 최상위 기준을 2개 이상 추가해 주시기 바랍니다.</p></div>';
       return;
     }
     box.innerHTML = survey.groups.map(function (m) {
@@ -142,7 +142,7 @@
   }
 
   async function publish() {
-    if (!confirm('설문지를 발행하면 수집(온라인/실시간 배포, 오프라인 입력)을 시작할 수 있습니다. 계속할까요?')) return;
+    if (!confirm('설문지를 발행하면 수집(온라인/실시간 배포, 오프라인 입력)을 시작할 수 있습니다. 계속하시겠습니까?')) return;
     try {
       await ahpApi('/api/projects/' + projectId + '/survey/publish', { method: 'POST' });
       ahpToast('발행했습니다');

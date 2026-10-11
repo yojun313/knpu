@@ -144,7 +144,7 @@ def signup(data) -> dict:
     )
 
     return {
-        "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증 링크를 눌러주세요"
+        "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증 링크를 눌러 주시기 바랍니다"
     }
 
 
@@ -275,7 +275,9 @@ def login(data) -> dict:
         )
 
     if user["status"] == "pending_email":
-        raise HTTPException(status_code=403, detail="이메일 인증을 먼저 완료해주세요")
+        raise HTTPException(
+            status_code=403, detail="이메일 인증을 먼저 완료해 주시기 바랍니다"
+        )
     if user["status"] == "pending_approval":
         raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다")
     if user["status"] == "rejected":
@@ -345,7 +347,8 @@ def update_my_member_photo(uid: str, image_url: str) -> dict:
     result = members_db.update_one(query, {"$set": {"image": image_url}})
     if not result.matched_count:
         raise HTTPException(
-            status_code=409, detail="콘텐츠가 변경되었습니다. 목록을 새로고침해주세요."
+            status_code=409,
+            detail="콘텐츠가 변경되었습니다. 목록을 새로고침해 주시기 바랍니다.",
         )
     if old_image and can_delete_image(r2.object_name_from_url(old_image), actor):
         try:

@@ -79,7 +79,7 @@ def recrawl_job(
     if doc.get("status") == "running":
         raise HTTPException(
             status_code=409,
-            detail="진행 중인 작업은 먼저 중단한 뒤 재크롤링해주세요",
+            detail="진행 중인 작업은 먼저 중단한 뒤 재크롤링해 주시기 바랍니다",
         )
     check_owner_or_admin(user, doc)
 

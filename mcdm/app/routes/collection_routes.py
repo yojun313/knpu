@@ -110,7 +110,7 @@ async def create_collection(request: Request):
         {"project_id": project_id, "status": "published"}, sort=[("version", -1)]
     )
     if not survey:
-        raise HTTPException(400, "설문지를 먼저 발행해 주세요")
+        raise HTTPException(400, "설문지를 먼저 발행해 주시기 바랍니다")
 
     doc = {
         "_id": uuid.uuid4().hex,
@@ -530,7 +530,7 @@ async def advance_section(collection_id: str, request: Request):
     if doc["mode"] != "realtime":
         raise HTTPException(400, "실시간 수집에서만 섹션을 진행할 수 있습니다")
     if not doc.get("session_started"):
-        raise HTTPException(400, "세션을 먼저 시작해 주세요")
+        raise HTTPException(400, "세션을 먼저 시작해 주시기 바랍니다")
 
     survey = await surveys_db.find_one({"_id": doc["survey_id"]})
     next_index = doc.get("active_section_index", 0) + 1

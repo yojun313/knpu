@@ -87,6 +87,7 @@ def current_respondent(request: Request) -> dict:
     payload = verify_respondent_token(auth_header[len("Bearer ") :])
     if not payload:
         raise HTTPException(
-            401, "세션이 만료되었거나 유효하지 않습니다. 코드를 다시 입력해 주세요"
+            401,
+            "세션이 만료되었거나 유효하지 않습니다. 코드를 다시 입력해 주시기 바랍니다",
         )
     return payload

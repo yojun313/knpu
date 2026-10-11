@@ -558,7 +558,7 @@ async def _ask_json(
                     {"role": "assistant", "content": res.text[:6000]},
                     {
                         "role": "user",
-                        "content": "설명 없이 올바른 JSON 객체 하나만 다시 출력하세요.",
+                        "content": "설명 없이 올바른 JSON 객체 하나만 다시 출력해 주시기 바랍니다.",
                     },
                 ]
                 res2 = await achat(
@@ -584,6 +584,7 @@ async def _ask_json(
 
 
 WORD_SYSTEM = """너는 뉴스 빅데이터로 미래 이슈의 징후를 찾는 KEMKIM(Keyword Emergence Map / Keyword Issue Map) 분석 전문가다.
+한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
 KEMKIM에서 약한 신호는 아직 빈도는 낮지만 빠르게 늘고 있는 단어, 강한 신호는 빈도와 증가율이 모두 높은 단어,
 잠재 신호는 빈도와 증가율이 모두 낮은 단어, 알려진 신호는 빈도는 높지만 증가율이 낮은(이미 익숙해진) 단어다.
 
@@ -644,7 +645,7 @@ def _word_user_prompt(profile: dict, ctx: dict, analysis_meta: dict) -> str:
             lines.append(
                 f"  {sid} [{s['date']}] {s['title'][:60]} :: {s['context'][:300]}"
             )
-    lines.append("\nJSON만 출력하세요.")
+    lines.append("\nJSON만 출력해 주시기 바랍니다.")
     return "\n".join(lines)
 
 
@@ -698,7 +699,7 @@ async def analyze_word(
     """progress(stage, prompt=None): 진행 단계와(만들어졌다면) AI에 보낼 프롬프트를 알린다."""
     import asyncio
 
-    progress("기간별 신호 단계를 계산하고 있어요")
+    progress("기간별 신호 단계를 계산하고 있습니다")
     profile = signal_profile(graph, word)
     if not any(s["DoV"] is not None or s["DoD"] is not None for s in profile["series"]):
         raise ValueError(f"'{word}'은(는) 이 분석의 기간별 데이터에 없는 단어입니다.")
@@ -716,7 +717,7 @@ async def analyze_word(
             "원본 CSV가 없어 맥락 해석은 건너뛰었습니다. 원본을 첨부하면 AI 해석을 받을 수 있습니다."
         )
         return result
-    progress("원본 기사에서 기간별 맥락과 연관어를 뽑고 있어요")
+    progress("원본 기사에서 기간별 맥락과 연관어를 뽑고 있습니다")
     df = await asyncio.to_thread(prepare_source, source_df, graph)
     ctx = await asyncio.to_thread(word_contexts, df, profile)
     result["context"] = ctx
@@ -728,7 +729,7 @@ async def analyze_word(
         "user": _word_user_prompt(profile, ctx, graph.get("metadata") or {}),
     }
     result["prompt"] = prompt
-    progress("AI가 국면별 맥락을 해석하고 있어요", prompt)
+    progress("AI가 국면별 맥락을 해석하고 있습니다", prompt)
     try:
         data, used = await _ask_json(
             prompt["system"],
@@ -745,6 +746,7 @@ async def analyze_word(
 
 # ── 신호군 종합 해석 ────────────────────────────────────────────────────────
 GROUP_SYSTEM = """너는 KEMKIM 분석 전문가다. 같은 신호군(예: 약한 신호)에 속한 단어들과 각 단어의 연관어·대표 문맥을 보고,
+한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
 이 단어들이 어떤 '떠오르는 이슈' 몇 개로 묶이는지 정리한다.
 
 반드시 아래 형식의 JSON 객체 하나만 출력한다.
@@ -829,7 +831,7 @@ async def analyze_group(
     if not words:
         raise ValueError("선택한 신호군에 단어가 없습니다.")
     words = words[:40]
-    progress(f"신호군 단어 {len(words)}개의 맥락을 모으고 있어요")
+    progress(f"신호군 단어 {len(words)}개의 맥락을 모으고 있습니다")
     df = await asyncio.to_thread(prepare_source, source_df, graph)
     items, snippets = await asyncio.to_thread(_group_contexts, df, graph, words)
     lines = [
@@ -842,11 +844,11 @@ async def analyze_group(
     if missing:
         lines.insert(
             1,
-            f"(원본 기사에서 찾지 못해 제외한 단어 {len(missing)}개는 테마에 넣지 마세요)",
+            f"(원본 기사에서 찾지 못해 제외한 단어 {len(missing)}개는 테마에 넣지 마시기 바랍니다)",
         )
     if len(missing) == len(items):
         raise ValueError(
-            "원본 기사에서 이 신호군의 단어를 하나도 찾지 못했습니다. 원본 CSV가 분석 데이터와 같은지 확인해 주세요."
+            "원본 기사에서 이 신호군의 단어를 하나도 찾지 못했습니다. 원본 CSV가 분석 데이터와 같은지 확인해 주시기 바랍니다."
         )
     for it in items:
         if not it["docs"]:
@@ -859,7 +861,7 @@ async def analyze_group(
             lines.append(
                 f"    {s['id']} [{s['date']}] {s['title'][:50]} :: {s['context'][:220]}"
             )
-    lines.append("\nJSON만 출력하세요.")
+    lines.append("\nJSON만 출력해 주시기 바랍니다.")
     result = {
         "kind": "signal_group",
         "signal": signal,
@@ -872,7 +874,7 @@ async def analyze_group(
     }
     prompt = {"system": GROUP_SYSTEM, "user": "\n".join(lines)}
     result["prompt"] = prompt
-    progress("AI가 떠오르는 이슈를 묶고 있어요", prompt)
+    progress("AI가 떠오르는 이슈를 묶고 있습니다", prompt)
     try:
         data, used = await _ask_json(
             prompt["system"],

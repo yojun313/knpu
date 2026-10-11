@@ -156,7 +156,7 @@
       + '<div class="st-group"><div class="st-group-title">AI 챗봇</div>'
       + switchRow('themeChatbotSwitch', 'AI 챗봇 버튼 표시', '모든 사이트 오른쪽 아래의 동그라미 버튼')
       + '<div class="st-row"><div><b>탭 전체로 열기</b><span>챗봇을 브라우저 탭 하나에 크게 띄웁니다</span></div><a class="st-btn" href="/shared-ui/chatbot.html" target="_blank" rel="noopener">새 탭에서 열기</a></div>'
-      + '<div class="st-row"><div><b>이 브라우저의 비로그인 대화 지우기</b><span>로그인한 대화는 계정에 저장되며 챗봇의 대화 목록에서 지울 수 있어요</span></div><button type="button" class="st-btn" id="stClearAnon">지우기</button></div>'
+      + '<div class="st-row"><div><b>이 브라우저의 비로그인 대화 지우기</b><span>로그인한 대화는 계정에 저장되며 챗봇의 대화 목록에서 지울 수 있습니다</span></div><button type="button" class="st-btn" id="stClearAnon">지우기</button></div>'
       + '</div>'
       + '<p class="st-note">홈페이지에서는 외부인용 "홈페이지 안내"와 구성원용을 전환할 수 있고, 다른 사이트에서는 로그인한 구성원용만 보입니다.</p>'
       + '</section>'
@@ -263,7 +263,7 @@
       + (u.recent && u.recent.length ? '<details class="llm-recent"><summary>최근 사용 내역</summary><ul>' + u.recent.map(function (r) {
           return '<li><span>' + llmEsc((r.at || '').replace('T', ' ').slice(0, 16)) + ' · ' + llmEsc(r.purpose || r.model) + '</span><b>$' + Number(r.cost_usd).toFixed(4) + '</b></li>';
         }).join('') + '</ul></details>' : '')
-      + '<div class="llm-usage-meta">토큰 수 × 모델 요금으로 계산한 추정치입니다. 실제 청구액은 OpenAI 대시보드에서 확인하세요.</div>';
+      + '<div class="llm-usage-meta">토큰 수 × 모델 요금으로 계산한 추정치입니다. 실제 청구액은 OpenAI 대시보드에서 확인해 주시기 바랍니다.</div>';
     syncLlmMode();
     var clear = document.getElementById('llmClearKey');
     if (clear) clear.addEventListener('click', function () { saveLlmSettings({ clear_key: true }); });
@@ -364,23 +364,23 @@
       var base = info.base_url, token = info.token || '';
       var tokenShown = token ? token : '(서버 .env 에 LAB_LLM_PUBLIC_TOKEN 이 아직 없습니다)';
       var model = 'MODEL_ID';
-      var curl = 'curl ' + base + '/chat/completions \\\n  -H "Authorization: Bearer ' + (token || 'TOKEN') + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model": "' + model + '", "messages": [{"role": "user", "content": "안녕하세요"}]}\'';
-      var py = 'from openai import OpenAI\n\nclient = OpenAI(base_url="' + base + '", api_key="' + (token || 'TOKEN') + '")\nmodel = client.models.list().data[0].id  # 서버에 올라간 모델 자동 선택\nres = client.chat.completions.create(\n    model=model,\n    messages=[{"role": "user", "content": "안녕하세요"}],\n)\nprint(res.choices[0].message.content)';
-      var js = 'const res = await fetch("' + base + '/chat/completions", {\n  method: "POST",\n  headers: { "Authorization": "Bearer ' + (token || 'TOKEN') + '", "Content-Type": "application/json" },\n  body: JSON.stringify({ model: "' + model + '", messages: [{ role: "user", content: "안녕하세요" }] }),\n});\nconsole.log((await res.json()).choices[0].message.content);';
+      var curl = 'curl ' + base + '/chat/completions \\\n  -H "Authorization: Bearer ' + (token || 'TOKEN') + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model": "' + model + '", "messages": [{"role": "user", "content": "안녕하십니까"}]}\'';
+      var py = 'from openai import OpenAI\n\nclient = OpenAI(base_url="' + base + '", api_key="' + (token || 'TOKEN') + '")\nmodel = client.models.list().data[0].id  # 서버에 올라간 모델 자동 선택\nres = client.chat.completions.create(\n    model=model,\n    messages=[{"role": "user", "content": "안녕하십니까"}],\n)\nprint(res.choices[0].message.content)';
+      var js = 'const res = await fetch("' + base + '/chat/completions", {\n  method: "POST",\n  headers: { "Authorization": "Bearer ' + (token || 'TOKEN') + '", "Content-Type": "application/json" },\n  body: JSON.stringify({ model: "' + model + '", messages: [{ role: "user", content: "안녕하십니까" }] }),\n});\nconsole.log((await res.json()).choices[0].message.content);';
       host.innerHTML =
-        '<p class="st-note">연구실 GPU 서버의 로컬 LLM을 <b>OpenAI API 형식</b>으로 쓸 수 있어요. OpenAI SDK·LangChain 등에서 주소와 토큰만 바꾸면 됩니다. 비용은 들지 않지만 연구실 공용 자원이니 대량 요청은 자제해 주세요.</p>'
+        '<p class="st-note">연구실 GPU 서버의 로컬 LLM은 <b>OpenAI API 형식</b>으로 이용할 수 있습니다. OpenAI SDK·LangChain 등에서 접속 주소와 토큰을 설정하여 사용합니다. 이용 비용은 발생하지 않습니다. 연구실 공용 자원이므로 대량 요청은 자제해 주시기 바랍니다.</p>'
         + '<div class="st-group"><div class="st-group-title">접속 정보</div>'
         + '<div class="st-kv"><span>Base URL</span><code id="labBase">' + stEsc(base) + '</code><button type="button" class="st-btn sm" data-copy="base">복사</button></div>'
         + '<div class="st-kv"><span>토큰</span><code id="labToken" class="st-secret">' + stEsc(token ? token.replace(/./g, '•').slice(0, 24) : tokenShown) + '</code>'
         + (token ? '<button type="button" class="st-btn sm" id="labShow">보기</button><button type="button" class="st-btn sm" data-copy="token">복사</button>' : '') + '</div>'
         + '<div class="st-kv"><span>모델</span><code id="labModels">연결 테스트로 확인</code><button type="button" class="st-btn sm" id="labTest">연결 테스트</button></div>'
-        + '<p class="st-note">토큰은 개인에게 발급된 것이 아니라 연구실 공용 토큰입니다. 외부에 공개하거나 저장소에 올리지 마세요. 모델 이름은 <code>/models</code>로 조회해 쓰면 서버 모델이 바뀌어도 코드를 고칠 필요가 없어요.</p>'
+        + '<p class="st-note">토큰은 개인에게 발급된 것이 아니라 연구실 공용 토큰입니다. 외부에 공개하거나 저장소에 올리지 마시기 바랍니다. 모델 이름은 <code>/models</code>로 조회해 쓰면 서버 모델이 바뀌어도 코드를 고칠 필요가 없습니다.</p>'
         + '</div>'
         + '<div class="st-group"><div class="st-group-title">사용 예시</div>'
         + '<div class="st-tabs"><button type="button" class="on" data-ex="py">Python (openai)</button><button type="button" data-ex="curl">curl</button><button type="button" data-ex="js">JavaScript</button></div>'
         + '<pre class="st-code" data-ex="py">' + stEsc(py) + '</pre><pre class="st-code" data-ex="curl" hidden>' + stEsc(curl) + '</pre><pre class="st-code" data-ex="js" hidden>' + stEsc(js) + '</pre>'
         + '<div class="st-actions"><button type="button" class="st-btn sm" id="labCopyEx">예시 복사</button></div>'
-        + '<p class="st-note">추론 모델(gpt-oss 등)은 답을 쓰기 전에 생각하는 데도 토큰을 씁니다. 답이 비어 있으면 <code>max_tokens</code>를 넉넉히(예: 4000 이상) 주세요.</p>'
+        + '<p class="st-note">추론 모델(gpt-oss 등)은 답을 쓰기 전에 생각하는 데도 토큰을 씁니다. 답이 비어 있으면 <code>max_tokens</code>를 넉넉히(예: 4000 이상) 주시기 바랍니다.</p>'
         + '</div>';
       host.querySelectorAll('[data-copy]').forEach(function (b) {
         b.addEventListener('click', function () { copyText(b.getAttribute('data-copy') === 'token' ? token : base, b); });
@@ -410,8 +410,8 @@
       });
     }).catch(function (err) {
       host.innerHTML = err.status === 401
-        ? loginBox('로컬 AI API 접속 정보는 로그인한 연구실 구성원에게만 보여요.')
-        : '<div class="st-empty">접속 정보를 불러오지 못했어요: ' + stEsc(err.message) + '</div>';
+        ? loginBox('로컬 AI API 접속 정보는 로그인한 연구실 구성원에게만 표시됩니다.')
+        : '<div class="st-empty">접속 정보를 불러오지 못했습니다: ' + stEsc(err.message) + '</div>';
     });
   }
 
@@ -434,17 +434,17 @@
         + (me.created_at ? '<em class="muted">가입 ' + stEsc(me.created_at.slice(0, 10)) + '</em>' : '') + '</span></div></div>'
         + '<div class="st-group"><div class="st-group-title">이름</div>'
         + '<div class="st-inline"><input type="text" id="accName" maxlength="40" value="' + stEsc(me.name) + '"><button type="button" class="st-btn primary" id="accNameSave">변경</button></div>'
-        + '<p class="st-note">홈페이지 구성원 소개에 표시되는 정보(사진·연구·학력 등)는 홈페이지 계정 화면에서 바꿀 수 있어요.</p></div>'
+        + '<p class="st-note">홈페이지 구성원 소개에 표시되는 정보(사진·연구·학력 등)는 홈페이지 계정 화면에서 바꿀 수 있습니다.</p></div>'
         + '<div class="st-group"><div class="st-group-title">비밀번호 변경</div>'
         + '<div class="st-form"><input type="password" id="accCur" placeholder="현재 비밀번호" autocomplete="current-password">'
         + '<input type="password" id="accNew" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">'
         + '<input type="password" id="accNew2" placeholder="새 비밀번호 확인" autocomplete="new-password"></div>'
         + '<div class="st-actions"><span class="llm-status" id="accPwStatus"></span><button type="button" class="st-btn primary" id="accPwSave">비밀번호 변경</button></div>'
-        + '<p class="st-note">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요.</p></div>'
+        + '<p class="st-note">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃됩니다.</p></div>'
         + '<div class="st-group"><div class="st-group-title">패스키</div><div id="accPasskeys"><div class="st-empty sm">불러오는 중…</div></div>'
         + '<div class="st-actions"><a class="st-btn" href="' + stEsc(homeOrigin()) + '/account" target="_blank" rel="noopener">새 패스키 등록 (홈페이지 계정 화면)</a></div></div>'
         + '<div class="st-group"><div class="st-group-title">로그인</div>'
-        + '<div class="st-row"><div><b>모든 기기에서 로그아웃</b><span>분실한 기기나 공용 PC에 남은 로그인을 모두 끊어요. 이 기기도 로그아웃됩니다.</span></div><button type="button" class="st-btn danger" id="accLogoutAll">모두 로그아웃</button></div>'
+        + '<div class="st-row"><div><b>모든 기기에서 로그아웃</b><span>분실한 기기나 공용 PC에 남은 로그인을 모두 종료합니다. 이 기기도 로그아웃됩니다.</span></div><button type="button" class="st-btn danger" id="accLogoutAll">모두 로그아웃</button></div>'
         + '<div class="st-row"><div><b>이 기기에서 로그아웃</b></div><button type="button" class="st-btn" id="accLogout">로그아웃</button></div></div>';
       var avatarImg = host.querySelector('.st-avatar img');
       if (avatarImg) {
@@ -465,12 +465,12 @@
         var btn = e.currentTarget, st = document.getElementById('accPwStatus');
         var cur = document.getElementById('accCur').value, nw = document.getElementById('accNew').value, nw2 = document.getElementById('accNew2').value;
         function say(t, k) { st.textContent = t; st.className = 'llm-status' + (k ? ' ' + k : ''); }
-        if (!cur || !nw) return say('현재 비밀번호와 새 비밀번호를 입력하세요.', 'err');
-        if (nw.length < 8) return say('새 비밀번호는 8자 이상이어야 해요.', 'err');
-        if (nw !== nw2) return say('새 비밀번호 확인이 일치하지 않아요.', 'err');
+        if (!cur || !nw) return say('현재 비밀번호와 새 비밀번호를 입력해 주시기 바랍니다.', 'err');
+        if (nw.length < 8) return say('새 비밀번호는 8자 이상이어야 합니다.', 'err');
+        if (nw !== nw2) return say('새 비밀번호 확인이 일치하지 않습니다.', 'err');
         btn.disabled = true; say('변경하는 중…');
         stFetch('/shared-ui/account/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current_password: cur, new_password: nw }) })
-          .then(function () { say('변경했어요. 잠시 후 다시 로그인해 주세요.', 'ok'); setTimeout(function () { location.href = loginHref(); }, 1600); })
+          .then(function () { say('변경했습니다. 잠시 후 다시 로그인해 주시기 바랍니다.', 'ok'); setTimeout(function () { location.href = loginHref(); }, 1600); })
           .catch(function (err) { btn.disabled = false; say(err.message, 'err'); });
       });
       document.getElementById('accLogoutAll').addEventListener('click', function (e) {
@@ -484,14 +484,14 @@
       });
       loadPasskeys();
     }).catch(function (err) {
-      host.innerHTML = err.status === 401 ? loginBox('로그인하면 계정 정보를 관리할 수 있어요.') : '<div class="st-empty">계정 정보를 불러오지 못했어요: ' + stEsc(err.message) + '</div>';
+      host.innerHTML = err.status === 401 ? loginBox('로그인하면 계정 정보를 관리할 수 있습니다.') : '<div class="st-empty">계정 정보를 불러오지 못했습니다: ' + stEsc(err.message) + '</div>';
     });
   }
   function loadPasskeys() {
     var host = document.getElementById('accPasskeys');
     stFetch('/shared-ui/account/api/passkeys').then(function (r) {
       var items = r.passkeys || [];
-      if (!items.length) { host.innerHTML = '<div class="st-empty sm">등록된 패스키가 없어요. 패스키를 등록하면 비밀번호 없이 지문·얼굴 인식으로 로그인할 수 있어요.</div>'; return; }
+      if (!items.length) { host.innerHTML = '<div class="st-empty sm">등록된 패스키가 없습니다. 패스키를 등록하면 비밀번호 없이 지문·얼굴 인식으로 로그인할 수 있습니다.</div>'; return; }
       host.innerHTML = items.map(function (p) {
         return '<div class="st-row"><div><b>' + stEsc(p.device_name) + (p.backed_up ? ' <em class="st-chip">동기화</em>' : '') + '</b>'
           + '<span>등록 ' + stEsc(p.created_at || '') + (p.last_used_at ? ' · 마지막 사용 ' + stEsc(p.last_used_at) : '') + '</span></div>'
@@ -503,7 +503,7 @@
           stFetch('/shared-ui/account/api/passkeys/' + encodeURIComponent(b.getAttribute('data-pk')), { method: 'DELETE' }).then(loadPasskeys).catch(function (err) { alert(err.message); });
         });
       });
-    }).catch(function () { host.innerHTML = '<div class="st-empty sm">패스키 목록을 불러오지 못했어요.</div>'; });
+    }).catch(function () { host.innerHTML = '<div class="st-empty sm">패스키 목록을 불러오지 못했습니다.</div>'; });
   }
 
   // ── 바로가기: 연구실 서비스와 설명서 ────────────────────────────────────────────
@@ -525,7 +525,7 @@
       return '<div class="st-link"><a href="' + stEsc(url) + '"><b>' + stEsc(l.name) + '</b><span>' + stEsc(l.desc) + '</span></a>'
         + (l.manual ? '<a class="st-btn sm" href="' + stEsc(url + l.manual) + '" target="_blank" rel="noopener">설명서</a>' : '') + '</div>';
     }).join('') + '</div>'
-      + '<p class="st-note">사용법이 궁금하면 오른쪽 아래 AI 챗봇(구성원용)에게 물어보세요. 코드를 직접 읽고 화면 기준으로 알려 줍니다.</p>';
+      + '<p class="st-note">사용법이 궁금하면 오른쪽 아래 AI 챗봇(구성원용)에게 질문해 주시기 바랍니다. 코드를 직접 읽고 화면 기준으로 알려 줍니다.</p>';
   }
 
   // 사이드바 아래 연결 상태 점(.sb-conn): 로그인 API를 주기적으로 확인한다.
@@ -670,7 +670,7 @@
     });
     overlay.querySelector('#stClearAnon').addEventListener('click', function (e) {
       try { localStorage.removeItem('knpu_chatbot_public_v1'); } catch (err) { }
-      e.currentTarget.textContent = '지웠어요';
+      e.currentTarget.textContent = '삭제했습니다';
     });
     function close() { overlay.hidden = true; }
 

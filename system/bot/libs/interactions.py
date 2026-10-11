@@ -24,7 +24,8 @@ class BotView(discord.ui.View):
         # Reply before reporting: logging must never consume the response deadline.
         try:
             await reply(
-                interaction, "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                interaction,
+                "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시기 바랍니다.",
             )
         except discord.HTTPException:
             logger.exception("Could not send interaction error reply")

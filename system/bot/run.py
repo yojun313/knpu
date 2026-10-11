@@ -127,7 +127,9 @@ class MyBot(commands.Bot):
         )
         print(f"[BOT] App command error in `{interaction.command}`:\n{tb}")
         try:
-            await reply(interaction, "오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+            await reply(
+                interaction, "오류가 발생했습니다. 잠시 후 다시 시도해 주시기 바랍니다."
+            )
         except discord.HTTPException:
             logging.exception("Could not reply to slash command error")
         await self._report_error(f"slash command `{interaction.command}`", tb)

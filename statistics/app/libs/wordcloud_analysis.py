@@ -90,12 +90,12 @@ def run_wordcloud(
     text_col = next((c for c in data.columns if "text" in str(c).lower()), None)
     if text_col is None:
         raise ValueError(
-            "'Text' 열을 찾을 수 없습니다. 토큰화된 CSV(크롤링 DB의 token_ 파일)를 사용해 주세요."
+            "'Text' 열을 찾을 수 없습니다. 토큰화된 CSV(크롤링 DB의 token_ 파일)를 사용해 주시기 바랍니다."
         )
     date_col = next((c for c in data.columns if "date" in str(c).lower()), None)
     if period != "total" and date_col is None:
         raise ValueError(
-            "기간 분할에는 'Date' 열이 필요합니다. 기간을 '전체'로 선택해 주세요."
+            "기간 분할에는 'Date' 열이 필요합니다. 기간을 '전체'로 선택해 주시기 바랍니다."
         )
 
     font_path = _korean_font()
@@ -150,7 +150,7 @@ def run_wordcloud(
 
     if made == 0:
         raise ValueError(
-            "생성할 단어가 없습니다. Text 열이 쉼표로 구분된 토큰인지 확인해 주세요."
+            "생성할 단어가 없습니다. Text 열이 쉼표로 구분된 토큰인지 확인해 주시기 바랍니다."
         )
     if pid:
         send_message(pid, f"[워드클라우드] 완료 — {made}개 기간 생성")

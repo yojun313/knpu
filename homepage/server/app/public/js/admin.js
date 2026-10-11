@@ -89,7 +89,7 @@
     var record = target ? recordFor(target[1], target[2]) : null;
     if (!canManage(record)) {
       var detail = record && record.created_by ? '다른 작성자가 추가한 항목입니다. 작성자와 관리자만 수정·삭제할 수 있습니다.' : permissionNote;
-      if (record && !record.uid) detail = '식별자가 누락되어 수정할 수 없습니다. 목록을 새로고침해주세요.';
+      if (record && !record.uid) detail = '식별자가 누락되어 수정할 수 없습니다. 목록을 새로고침해 주시기 바랍니다.';
       return '<span class="content-lock" tabindex="0" title="' + escAttr(detail) + '" aria-label="' + escAttr(detail) + '"><i class="fa-solid fa-lock" aria-hidden="true"></i>읽기 전용</span>';
     }
     return '<span class="row-actions"' + (currentUser.role !== 'admin' ? ' title="내가 추가한 항목"' : '') + '>' + contentActionButtons(editFn, deleteFn) + '</span>';
@@ -323,7 +323,7 @@
     $('content-role-label').textContent = user.role === 'admin' ? 'KNPU FPEI · ADMIN' : 'KNPU FPEI · CONTENT';
     $('content-permission-note').textContent = user.role === 'admin'
       ? '관리자는 모든 콘텐츠를 추가·수정·삭제할 수 있습니다. 행을 누르면 편집할 수 있습니다.'
-      : '새 콘텐츠를 자유롭게 추가하세요. ' + permissionNote + ' 본인 항목의 행을 누르면 편집할 수 있습니다.';
+      : '새 콘텐츠를 자유롭게 추가해 주시기 바랍니다. ' + permissionNote + ' 본인 항목의 행을 누르면 편집할 수 있습니다.';
     $('admin-loading').style.display = 'none';
     $('admin-content').style.display = 'block';
     bindPanelControls();
@@ -367,7 +367,7 @@
     setTabCount('papers', papersData.length);
     setFilterOptions('papers', papersData.map(function (p) { return String(p.year || ''); }), true);
     if (!papersData.length) {
-      tbody.innerHTML = emptyRow(6, 'file-lines', '등록된 논문이 없습니다. 오른쪽 위 \'논문 추가\'로 시작하세요.');
+      tbody.innerHTML = emptyRow(6, 'file-lines', '등록된 논문이 없습니다. 오른쪽 위 \'논문 추가\'로 시작해 주시기 바랍니다.');
       applyFilters('papers');
       return;
     }
@@ -403,7 +403,7 @@
 
   window.crawlPaperMetadata = function () {
     var title = $('paper-title').value.trim();
-    if (!title) { showModalError('paper-error', '제목을 먼저 입력해주세요.'); return; }
+    if (!title) { showModalError('paper-error', '제목을 먼저 입력해 주시기 바랍니다.'); return; }
     var type = $('paper-journal-type').value;
     var btn = $('paper-crawl-btn');
     var html = btn.innerHTML;
@@ -418,16 +418,16 @@
         $('paper-authors').value = (record.authors || []).join(', ');
         $('paper-venue').value = record.venue || '';
         $('paper-url').value = record.url || '';
-        toast('메타데이터를 채웠습니다. 확인 후 저장하세요.');
+        toast('메타데이터를 채웠습니다. 확인 후 저장해 주시기 바랍니다.');
       })
       .catch(function (err) { showModalError('paper-error', err.message || '메타데이터를 가져오지 못했습니다.'); })
       .then(function () { btn.disabled = false; btn.innerHTML = html; });
   };
 
   window.savePaper = function () {
-    if (!$('paper-title').value.trim()) { showModalError('paper-error', '제목을 입력해주세요.'); return; }
+    if (!$('paper-title').value.trim()) { showModalError('paper-error', '제목을 입력해 주시기 바랍니다.'); return; }
     var year = parseInt($('paper-year').value, 10);
-    if (!year) { showModalError('paper-error', '연도는 숫자로 입력해주세요.'); return; }
+    if (!year) { showModalError('paper-error', '연도는 숫자로 입력해 주시기 바랍니다.'); return; }
     var done = setBusy('paperModal');
     if (!done) return;
     var authors = $('paper-authors').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -546,7 +546,7 @@
 
   window.saveMember = function () {
     var name = $('member-name').value.trim();
-    if (!name) { showModalError('member-error', '이름을 입력해주세요.'); return; }
+    if (!name) { showModalError('member-error', '이름을 입력해 주시기 바랍니다.'); return; }
     var done = setBusy('memberModal');
     if (!done) return;
     var payload = {
@@ -573,7 +573,7 @@
 
   window.deleteMember = function (uid, name) {
     if (!confirm('[' + name + '] 멤버를 정말 삭제하시겠습니까?')) return;
-    var confirmName = prompt('삭제 확인을 위해 멤버의 이름(' + name + ')을 정확히 입력해주세요.');
+    var confirmName = prompt('삭제 확인을 위해 멤버의 이름(' + name + ')을 정확히 입력해 주시기 바랍니다.');
     if (confirmName === null) return;
     if (confirmName !== name) { toast('이름이 일치하지 않아 삭제를 취소했습니다.', 'err'); return; }
     apiDelete('/api/members/?uid=' + encodeURIComponent(uid)).then(function () {
@@ -644,7 +644,7 @@
 
   window.saveNews = function () {
     var title = $('news-title').value.trim();
-    if (!title) { showModalError('news-error', '제목을 입력해주세요.'); return; }
+    if (!title) { showModalError('news-error', '제목을 입력해 주시기 바랍니다.'); return; }
     var done = setBusy('newsModal');
     if (!done) return;
     var payload = {
@@ -775,7 +775,7 @@
 
   window.saveGallery = function () {
     var title = $('gallery-title').value.trim();
-    if (!title) { showModalError('gallery-error', '제목을 입력해주세요.'); return; }
+    if (!title) { showModalError('gallery-error', '제목을 입력해 주시기 바랍니다.'); return; }
     if (galleryExistingPhotos.length + galleryNewFiles.length < 1) {
       showModalError('gallery-error', '사진을 최소 1장 이상 등록해야 합니다.');
       return;
@@ -904,7 +904,7 @@
 
   window.savePopup = function () {
     var title = $('popup-title').value.trim();
-    if (!title) { showModalError('popup-error', '제목을 입력해주세요.'); return; }
+    if (!title) { showModalError('popup-error', '제목을 입력해 주시기 바랍니다.'); return; }
     var start = $('popup-start').value.trim(), end = $('popup-end').value.trim();
     if (start && end && end < start) { showModalError('popup-error', '종료일이 시작일보다 빠릅니다.'); return; }
     var done = setBusy('popupModal');
@@ -1016,9 +1016,9 @@
 
   window.saveFaqCategory = function () {
     var name = $('faq-category-name').value.trim();
-    if (!name) { showModalError('faq-category-error', '이름을 입력해주세요.'); return; }
+    if (!name) { showModalError('faq-category-error', '이름을 입력해 주시기 바랍니다.'); return; }
     var order = parseInt($('faq-category-order').value, 10);
-    if (isNaN(order)) { showModalError('faq-category-error', '순서는 숫자로 입력해주세요.'); return; }
+    if (isNaN(order)) { showModalError('faq-category-error', '순서는 숫자로 입력해 주시기 바랍니다.'); return; }
     var done = setBusy('faqCategoryModal');
     if (!done) return;
     apiPost('/api/faq/categories', {
@@ -1113,9 +1113,9 @@
 
   window.saveFaq = function () {
     var question = $('faq-question').value.trim();
-    if (!question) { showModalError('faq-error', '질문을 입력해주세요.'); return; }
+    if (!question) { showModalError('faq-error', '질문을 입력해 주시기 바랍니다.'); return; }
     var order = parseInt($('faq-order').value, 10);
-    if (isNaN(order)) { showModalError('faq-error', '순서는 숫자로 입력해주세요.'); return; }
+    if (isNaN(order)) { showModalError('faq-error', '순서는 숫자로 입력해 주시기 바랍니다.'); return; }
     var done = setBusy('faqModal');
     if (!done) return;
     var payload = {

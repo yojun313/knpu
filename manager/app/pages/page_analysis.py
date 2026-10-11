@@ -485,17 +485,19 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            printStatus(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요")
+            printStatus(
+                self.main, "워드클라우드 데이터를 저장할 위치를 선택해 주시기 바랍니다"
+            )
             save_path = QFileDialog.getExistingDirectory(
                 self.main,
-                "워드클라우드 데이터를 저장할 위치를 선택하세요",
+                "워드클라우드 데이터를 저장할 위치를 선택해 주시기 바랍니다",
                 self.main.localDirectory,
             )
             if save_path == "":
                 printStatus(self.main)
                 return
 
-            printStatus(self.main, "워드클라우드 옵션을 설정하세요")
+            printStatus(self.main, "워드클라우드 옵션을 설정해 주시기 바랍니다")
             dialog = WordcloudDialog(os.path.basename(filepath))
             dialog.exec()
             if dialog.data is None:
@@ -523,12 +525,14 @@ class Manager_Analysis(Manager_Worker):
             exception_word_list_path = "N"
             if except_yes_selected:
                 QMessageBox.information(
-                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요"
+                    self.main,
+                    "Information",
+                    f"예외어 사전(CSV)을 선택해 주시기 바랍니다",
                 )
-                printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
+                printStatus(self.main, f"예외어 사전(CSV)을 선택해 주시기 바랍니다")
                 exception_word_list_path = QFileDialog.getOpenFileName(
                     self.main,
-                    "예외어 사전(CSV)를 선택하세요",
+                    "예외어 사전(CSV)를 선택해 주시기 바랍니다",
                     self.main.localDirectory,
                     "CSV Files (*.csv);;All Files (*)",
                 )[0]
@@ -638,17 +642,19 @@ class Manager_Analysis(Manager_Worker):
 
             tokenfile_name = os.path.basename(filepath)
 
-            printStatus(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요")
+            printStatus(
+                self.main, "KEM KIM 데이터를 저장할 위치를 선택해 주시기 바랍니다"
+            )
             save_path = QFileDialog.getExistingDirectory(
                 self.main,
-                "KEM KIM 데이터를 저장할 위치를 선택하세요",
+                "KEM KIM 데이터를 저장할 위치를 선택해 주시기 바랍니다",
                 self.main.localDirectory,
             )
             if save_path == "":
                 printStatus(self.main)
                 return
 
-            printStatus(self.main, "KEM KIM 옵션을 설정하세요")
+            printStatus(self.main, "KEM KIM 옵션을 설정해 주시기 바랍니다")
             while True:
                 dialog = RunKemkimDialog(tokenfile_name)
                 result = dialog.exec()
@@ -682,7 +688,7 @@ class Manager_Analysis(Manager_Worker):
                         QMessageBox.warning(
                             self.main,
                             "Wrong Form",
-                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력하세요.",
+                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력해 주시기 바랍니다.",
                         )
                         continue
 
@@ -816,12 +822,14 @@ class Manager_Analysis(Manager_Worker):
             exception_word_list_path = "N"
             if except_yes_selected == True:
                 QMessageBox.information(
-                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요"
+                    self.main,
+                    "Information",
+                    f"예외어 사전(CSV)을 선택해 주시기 바랍니다",
                 )
-                printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
+                printStatus(self.main, f"예외어 사전(CSV)을 선택해 주시기 바랍니다")
                 exception_word_list_path = QFileDialog.getOpenFileName(
                     self.main,
-                    "예외어 사전(CSV)를 선택하세요",
+                    "예외어 사전(CSV)를 선택해 주시기 바랍니다",
                     self.main.localDirectory,
                     "CSV Files (*.csv);;All Files (*)",
                 )
@@ -978,7 +986,7 @@ class Manager_Analysis(Manager_Worker):
                 word_list = ast.literal_eval(word_list_str)
                 all_keyword.append(word_list)
 
-            printStatus(self.main, "옵션을 선택하세요")
+            printStatus(self.main, "옵션을 선택해 주시기 바랍니다")
 
             self.word_selector = ModifyKemkimDialog(all_keyword)
             if self.word_selector.exec() == QDialog.DialogCode.Accepted:
@@ -1006,12 +1014,14 @@ class Manager_Analysis(Manager_Worker):
                     QMessageBox.information(
                         self.main,
                         "Information",
-                        f"키워드-영단어 사전(CSV)를 선택하세요",
+                        f"키워드-영단어 사전(CSV)를 선택해 주시기 바랍니다",
                     )
-                    printStatus(self.main, "키워드-영단어 사전(CSV)를 선택하세요")
+                    printStatus(
+                        self.main, "키워드-영단어 사전(CSV)를 선택해 주시기 바랍니다"
+                    )
                     eng_keyword_list_path = QFileDialog.getOpenFileName(
                         self.main,
-                        "키워드-영단어 사전(CSV)를 선택하세요",
+                        "키워드-영단어 사전(CSV)를 선택해 주시기 바랍니다",
                         self.main.localDirectory,
                         "CSV Files (*.csv);;All Files (*)",
                     )
@@ -1316,11 +1326,11 @@ class Manager_Analysis(Manager_Worker):
             QMessageBox.information(
                 self.main,
                 "Information",
-                f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요',
+                f'Keyword를 추출할 CSV 파일을 선택해 주시기 바랍니다\n\n"{recommend_csv_name}"를 선택해 주시기 바랍니다',
             )
             object_csv_path = QFileDialog.getOpenFileName(
                 self.main,
-                "Keyword 추출 대상 CSV 파일을 선택하세요",
+                "Keyword 추출 대상 CSV 파일을 선택해 주시기 바랍니다",
                 self.main.localDirectory,
                 "CSV Files (*.csv);;All Files (*)",
             )
@@ -1551,10 +1561,10 @@ class Manager_Analysis(Manager_Worker):
 
                     merged_title = " ".join(random_titles.tolist())
                     gpt_query = (
-                        "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
+                        "한국어로 답변해 주시기 바랍니다. 설명은 공식적인 문체(입니다·합니다·습니다)로 작성하고 해요체나 반말을 사용하지 않습니다. 아래 텍스트는 신문기사 제목 목록입니다.\n\n"
                         f"{merged_title}\n\n"
-                        f"이 신문기사 제목들은 검색창에 {topic}이라고 검색했을 때 나온 신문기사 제목이야"
-                        "제시된 여러 개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
+                        f"이 신문기사 제목들은 검색창에 {topic}을 검색하여 수집한 결과입니다. "
+                        "제시된 뉴스기사 제목을 바탕으로 관련 토픽(주제)을 추출하고 요약해 주시기 바랍니다. 토픽은 1개 이상 5개 이하로 제시하며, 응답 형식은 다음과 같습니다.\n"
                         "토픽 1. ~~: (여기에 내용 기입)\n"
                         "토픽 2. ~~: (여기에 내용 기입)\n"
                         "...\n"
@@ -1743,10 +1753,12 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            printStatus(self.main, "조정된 토큰 데이터를 저장할 위치를 선택하세요")
+            printStatus(
+                self.main, "조정된 토큰 데이터를 저장할 위치를 선택해 주시기 바랍니다"
+            )
             save_path = QFileDialog.getExistingDirectory(
                 self.main,
-                "토큰 데이터를 저장할 위치를 선택하세요",
+                "토큰 데이터를 저장할 위치를 선택해 주시기 바랍니다",
                 os.path.dirname(token_filepath),
             )
             if save_path == "":
@@ -1755,7 +1767,7 @@ class Manager_Analysis(Manager_Worker):
 
             column_names = getCSVHeaders(token_filepath)
 
-            printStatus(self.main, "토큰 데이터가 있는 열을 선택하세요")
+            printStatus(self.main, "토큰 데이터가 있는 열을 선택해 주시기 바랍니다")
             dialog = SelectColumnsDialog(column_names, parent=self.main)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
@@ -1766,7 +1778,11 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             window_size, ok = QInputDialog.getInt(
-                self.main, "윈도우 크기 입력", "토큰 윈도우 크기를 입력하세요:", 1, 1
+                self.main,
+                "윈도우 크기 입력",
+                "토큰 윈도우 크기를 입력해 주시기 바랍니다:",
+                1,
+                1,
             )
             if not ok:
                 printStatus(self.main)
@@ -1826,10 +1842,10 @@ class Manager_Analysis(Manager_Worker):
             # ───── 1) 토큰 CSV 반복 선택 ─────────────────────────────
             token_paths = []
             while True:
-                printStatus(self.main, "토큰 CSV 파일을 하나씩 선택하세요")
+                printStatus(self.main, "토큰 CSV 파일을 하나씩 선택해 주시기 바랍니다")
                 fpath, _ = QFileDialog.getOpenFileName(
                     self.main,
-                    "토큰 CSV 파일을 선택하세요",
+                    "토큰 CSV 파일을 선택해 주시기 바랍니다",
                     self.main.localDirectory
                     if not token_paths
                     else os.path.dirname(token_paths[-1]),
@@ -1874,7 +1890,7 @@ class Manager_Analysis(Manager_Worker):
             period_choice, ok = QInputDialog.getItem(
                 self.main,
                 "기간 선택",
-                "토큰을 묶을 기간을 선택하세요:",
+                "토큰을 묶을 기간을 선택해 주시기 바랍니다:",
                 period_options,
                 0,
                 False,
@@ -1884,9 +1900,11 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             # 3) 결과 저장 폴더 선택 -------------------------------------------------
-            printStatus(self.main, "결과를 저장할 위치를 선택하세요")
+            printStatus(self.main, "결과를 저장할 위치를 선택해 주시기 바랍니다")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "결과를 저장할 위치를 선택하세요", self.main.localDirectory
+                self.main,
+                "결과를 저장할 위치를 선택해 주시기 바랍니다",
+                self.main.localDirectory,
             )
             if save_path == "":
                 printStatus(self.main)
@@ -1895,7 +1913,7 @@ class Manager_Analysis(Manager_Worker):
             file_name, ok = QInputDialog.getText(
                 self.main,
                 "파일명 입력",
-                "저장할 CSV 파일명을 입력하세요:",
+                "저장할 CSV 파일명을 입력해 주시기 바랍니다:",
                 text=f"common_tokens_{period_choice}",
             )
             if not ok or not file_name.strip():
@@ -1913,7 +1931,7 @@ class Manager_Analysis(Manager_Worker):
                 return
             token_columns = dialog.get_selected_columns()
             if not token_columns:
-                printStatus(self.main, "❗ 토큰 열을 하나 이상 선택해 주세요.")
+                printStatus(self.main, "❗ 토큰 열을 하나 이상 선택해 주시기 바랍니다.")
                 return
 
             missing_info = []  # (파일명, 빠진 열) 리스트
@@ -2108,7 +2126,7 @@ class Manager_Analysis(Manager_Worker):
 
             csv_fname = os.path.basename(csv_path)
 
-            printStatus(self.main, "결과 CSV를 저장할 위치를 선택하세요")
+            printStatus(self.main, "결과 CSV를 저장할 위치를 선택해 주시기 바랍니다")
             save_dir = QFileDialog.getExistingDirectory(
                 self.main, "결과 파일 저장 위치 선택", os.path.dirname(csv_path)
             )
@@ -2127,7 +2145,9 @@ class Manager_Analysis(Manager_Worker):
             sel_cols = dialog.get_selected_columns()
             if len(sel_cols) != 1:
                 QMessageBox.warning(
-                    self.main, "Wrong Selection", "텍스트 열을 하나만 선택해 주세요."
+                    self.main,
+                    "Wrong Selection",
+                    "텍스트 열을 하나만 선택해 주시기 바랍니다.",
                 )
                 printStatus(self.main)
                 return
@@ -2241,7 +2261,7 @@ class Manager_Analysis(Manager_Worker):
 
             audio_fname = os.path.basename(audio_path)
 
-            printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
+            printStatus(self.main, "결과 파일 저장 위치를 선택해 주시기 바랍니다")
             save_dir = QFileDialog.getExistingDirectory(
                 self.main, "결과 파일 저장 위치 선택", os.path.dirname(audio_path)
             )
@@ -2709,7 +2729,7 @@ class Manager_Analysis(Manager_Worker):
             selected_files = self.file_dialog.selectedFiles()
 
             if not selected_files:
-                raise ValueError("CSV 파일을 선택하세요")
+                raise ValueError("CSV 파일을 선택해 주시기 바랍니다")
 
             file_path = selected_files[0]
 
@@ -2725,7 +2745,7 @@ class Manager_Analysis(Manager_Worker):
             return file_path
 
         except Exception:
-            printStatus(self.main, "CSV 파일을 선택하세요")
+            printStatus(self.main, "CSV 파일을 선택해 주시기 바랍니다")
             file_path, _ = QFileDialog.getOpenFileName(
                 self.main, "CSV 파일 선택", "", "CSV Files (*.csv);;All Files (*)"
             )
@@ -2753,7 +2773,7 @@ class Manager_Analysis(Manager_Worker):
             selected_files = self.file_dialog.selectedFiles()
 
             if not selected_files:
-                raise ValueError("오디오 파일을 선택하세요")
+                raise ValueError("오디오 파일을 선택해 주시기 바랍니다")
 
             file_path = selected_files[0]
 
@@ -2768,7 +2788,7 @@ class Manager_Analysis(Manager_Worker):
             return file_path
 
         except Exception:
-            printStatus(self.main, "오디오 파일을 선택하세요")
+            printStatus(self.main, "오디오 파일을 선택해 주시기 바랍니다")
             file_path, _ = QFileDialog.getOpenFileName(
                 self.main,
                 "오디오 파일 선택",

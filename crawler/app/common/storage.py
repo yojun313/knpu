@@ -181,7 +181,7 @@ def validateCrawlRange(startDate, endDate):
         s = datetime.strptime(startDate, "%Y%m%d").date()
         e = datetime.strptime(endDate, "%Y%m%d").date()
     except (TypeError, ValueError):
-        raise ValueError("날짜는 YYYYMMDD 형식으로 입력해주세요")
+        raise ValueError("날짜는 YYYYMMDD 형식으로 입력해 주시기 바랍니다")
     if e < s:
         raise ValueError(f"종료일({endDate})이 시작일({startDate})보다 빠릅니다")
 
@@ -240,7 +240,7 @@ def validateResumeRange(startDate, endDate):
     if e < s:
         raise ValueError(
             f"종료일({endDate})이 이어받기 시작일({startDate})보다 빠릅니다. "
-            f"더 늦은 날짜를 종료일로 입력해주세요."
+            f"더 늦은 날짜를 종료일로 입력해 주시기 바랍니다."
         )
 
 

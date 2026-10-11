@@ -638,7 +638,7 @@ def _write_viewer_readme(out_dir):
             f"이 폴더(zip)를 통째로 {NETWORK_VIEWER_URL} 에 업로드하면\n"
             "마우스로 확대·검색·필터가 되는 인터랙티브 네트워크를 바로 확인할 수 있습니다.\n"
             "(nodes.csv, edges.csv 를 읽어 서버에서 그래프를 구성합니다.)\n\n"
-            "자세한 사용법은 매뉴얼의 '인터랙티브 뷰어' 장을 참고하세요:\n"
+            "자세한 사용법은 매뉴얼의 '인터랙티브 뷰어' 장을 참고해 주시기 바랍니다:\n"
             f"{HOMEPAGE_URL}/manual/network\n"
         )
 
