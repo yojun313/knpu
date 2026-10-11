@@ -540,7 +540,7 @@ def _start_signal_job(
         project_id=project_id,
         title=title,
         kind=kind,
-        path="/view/" + project_id,
+        path="/viewer/" + project_id,
     )
     activity.start()
     activity.update(prompt=None, result=None, error=None)

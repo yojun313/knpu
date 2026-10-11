@@ -244,7 +244,7 @@ def start_job(uid, project_id, payload, admin=False):
         project_id=project_id,
         title=title,
         kind="network_ai",
-        path="/view/" + project_id,
+        path="/viewer/" + project_id,
         outcome=lambda: network_ai_jobs_db.find_one({"_id": job_id}) or {},
     )
     return job_id
