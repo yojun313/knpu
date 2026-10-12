@@ -1404,7 +1404,7 @@
       });
     }
 
-    html += '<button class="btn primary" id="detailSigBtn" type="button" style="width:100%;margin-top:14px">✦ AI 신호 해석 — 어떤 맥락으로 커졌나</button>';
+    html += '<button class="btn primary" id="detailSigBtn" type="button" style="width:100%;margin-top:14px">✦ AI 신호 해석</button>';
     html += '<div class="chk-row" style="margin-top:14px">'
       + '<input type="checkbox" id="detailSelectChk" ' + (hiddenWords[word] ? 'checked' : '') + '>'
       + '<label for="detailSelectChk">이 단어 끄기 (그래프에서 숨기기)</label></div>';

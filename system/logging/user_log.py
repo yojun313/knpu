@@ -1,4 +1,5 @@
 import logging
+import contextvars
 import time
 import uuid
 from datetime import datetime, timezone
@@ -13,6 +14,39 @@ logger = logging.getLogger(__name__)
 SCHEMA_VERSION = 2
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 KST = ZoneInfo("Asia/Seoul")
+_log_client = contextvars.ContextVar("user_log_client", default=None)
+
+
+def manager_client(scope: Scope) -> str:
+    """Classify log origin, including desktop releases predating the client header.
+
+    This is diagnostic metadata, not an authentication or authorization check.
+    """
+    request = Request(scope)
+    if request.headers.get("sec-fetch-mode") or request.cookies.get("session"):
+        return "web"
+    if request.headers.get("x-knpu-client") == "manager-app":
+        return "manager-app"
+    if request.headers.get("authorization", "").startswith(
+        "Bearer "
+    ) and request.headers.get("user-agent", "").lower().startswith("python-requests/"):
+        return "manager-app"
+    return "web"
+
+
+class ManagerLogClientMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        token = _log_client.set(manager_client(scope))
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            _log_client.reset(token)
 
 
 def _now_kst():
@@ -69,6 +103,22 @@ def insert_log(
     **kwargs,
 ) -> None:
     try:
+        client = _log_client.get()
+        if service == "manager" and client:
+            kwargs["metadata"] = {**(kwargs.get("metadata") or {}), "client": client}
+            if client == "web":
+                board_action = action.startswith(
+                    (
+                        "manager.version.",
+                        "manager.bug.",
+                        "manager.post.",
+                        "manager.free.",
+                        "manager.suggestion.",
+                    )
+                )
+                service = "board" if board_action else "manager_web"
+                if action.startswith("manager."):
+                    action = service + action[len("manager") :]
         entry = build_entry(user_uid, action, service, **kwargs)
         collection.insert_one(entry)
     except Exception:

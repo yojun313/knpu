@@ -14,7 +14,7 @@ from app.routes.site_routes import router as site_router
 from app.db import user_logs_db
 from system.auth.middleware import AuthMiddleware
 from system.notify.discord import notify_discord
-from system.logging.user_log import AuditLogMiddleware
+from system.logging.user_log import AuditLogMiddleware, ManagerLogClientMiddleware
 from system.shared_ui import mount_shared_ui
 import gc
 import asyncio
@@ -121,6 +121,7 @@ app.add_middleware(
     collection=user_logs_db,
     identity_extractor=_extract_identity,
 )
+app.add_middleware(ManagerLogClientMiddleware)
 
 
 @app.on_event("startup")
