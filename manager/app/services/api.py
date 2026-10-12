@@ -10,7 +10,7 @@ PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 def get_api_headers():
     token = get_setting("auth_token")
-    return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {token}", "X-KNPU-Client": "manager-app"}
 
 
 class APIPermissionError(requests.exceptions.HTTPError):
