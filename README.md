@@ -81,8 +81,6 @@ Research System for **FPEI** at **Korea National Police University**
 
 ## POLYDECISION
 
-AHP 기반 다기준 의사결정 플랫폼 — 계층 설계부터 설문 배포·응답 수집·가중치 분석까지 지원합니다.
-
 <img src="homepage/server/app/public/assets/imgs/systems/polydecision.png" alt="PolyDecision Service" width="700">
 
 [![Open POLYDECISION](https://img.shields.io/badge/Open-mcdm.knpu.re.kr-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://mcdm.knpu.re.kr)
@@ -94,8 +92,6 @@ AHP 기반 다기준 의사결정 플랫폼 — 계층 설계부터 설문 배�
 <div align="center">
 
 ## WHISPER
-
-AI 음성 인식(STT) 노트 — 음성·영상을 실시간 진행률과 함께 전사하고, 구간별 재생·검색·내보내기를 지원합니다.
 
 <img src="homepage/server/app/public/assets/imgs/systems/whisper.png" alt="Whisper Service" width="700">
 
