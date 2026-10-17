@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.routes import api_router
 from app.routes.frontend_routes import router as frontend_router
+from app.routes.asset_routes import router as asset_router
 from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
 from app.auth.jwt import decode_token
@@ -114,6 +115,7 @@ def shared_me(user=Depends(get_current_user)):
 
 app.include_router(api_router, prefix="/api", tags=["api"])
 app.include_router(frontend_router, tags=["frontend"])
+app.include_router(asset_router, tags=["assets"])
 
 # 위 라우트들과 겹치지 않는 나머지 정적 파일(css/js/assets/manuals 및
 # about.html·manager.html처럼 직접 경로로도 접근되던 파일들)은 예전 Express 정적 서빙과
