@@ -11036,7 +11036,7 @@ header.masthead_paper {
   padding-bottom: 6rem;
   text-align: center;
   color: #fff;
-  background-image: url("../assets/imgs/header-bg-paper.jpg");
+  background-image: url("../assets/imgs/backgrounds/publications.jpg");
   background-repeat: no-repeat;
   background-attachment: scroll;
   background-position: center center;
@@ -11354,7 +11354,7 @@ header.masthead_paper .masthead_paper-heading {
 
 section#contact {
   background-color: #212529;
-  background-image: url("../assets/imgs/map-image.png");
+  background-image: url("../assets/imgs/backgrounds/contact-map.png");
   background-repeat: no-repeat;
   background-position: center;
 }

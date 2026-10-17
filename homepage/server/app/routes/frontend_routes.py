@@ -223,4 +223,4 @@ def manual_yolo():
 
 @router.get("/favicon.ico")
 def favicon():
-    return _page("assets/imgs/fpei_logo_favicon.ico")
+    return RedirectResponse(url="/shared-ui/favicon.ico", status_code=308)
