@@ -1,6 +1,7 @@
 import argparse
 
 from _conn import get_client
+from system.db.names import database_name
 
 # (source_db, source_collection, target_db, target_collection)
 PROD_MAPPING = [
@@ -25,19 +26,6 @@ PROD_MAPPING = [
     ("manager", "statistics-projects", "statistics", "projects"),
     ("manager", "statistics-folders", "statistics", "folders"),
     ("crawler", "youtube_api", "crawler", "youtube-api"),
-]
-
-# dev 모드 전용 (systems_dev/network_dev/kemkim_dev/statistics_dev로).
-# manager_dev에는 kemkim/network/statistics-projects/folders가 애초에 없으므로
-# (아직 웹 서비스가 분리되기 전 dev 환경에서 만들어진 적이 없다) 그 매핑은 뺀다.
-DEV_MAPPING = [
-    ("manager_dev", "user-logs", "systems_dev", "user-logs"),
-    ("manager_dev", "user-bugs", "systems_dev", "user-bugs"),
-    ("manager_dev", "sessions", "systems_dev", "sessions"),
-    ("manager_dev", "auth", "systems_dev", "legacy-auth-codes"),
-    ("manager_dev", "auth_config", "systems_dev", "bot-config"),
-    ("manager_dev", "users", "systems_dev", "legacy-users"),
-    ("crawler_dev", "youtube_api", "crawler_dev", "youtube-api"),
 ]
 
 
@@ -88,22 +76,18 @@ def main():
     parser.add_argument(
         "--force", action="store_true", help="대상이 비어있지 않아도 지우고 덮어쓴다"
     )
-    parser.add_argument(
-        "--skip-dev", action="store_true", help="dev DB(manager_dev 등)는 건너뛴다"
-    )
     args = parser.parse_args()
 
     client = get_client()
     existing_dbs = set(client.list_database_names())
 
     mapping = list(PROD_MAPPING)
-    if not args.skip_dev:
-        mapping += DEV_MAPPING
 
     if not args.apply:
         print("=== DRY RUN (--apply 없이 실행 중, 아무것도 쓰지 않음) ===\n")
 
     for src_db, src_coll, dst_db, dst_coll in mapping:
+        dst_db = database_name(dst_db)
         if src_db not in existing_dbs:
             print(f"[skip] {src_db}.{src_coll}: 원본 DB 없음")
             continue

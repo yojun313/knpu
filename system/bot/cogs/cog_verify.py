@@ -30,7 +30,7 @@ class VerifyButtonView(BotView):
     ):
         await interaction.response.defer(ephemeral=True, thinking=True)
         token = secrets.token_urlsafe(24)
-        await self.bot.homepage_db["discord-link-requests"].insert_one(
+        await self.bot.discord_link_requests_db.insert_one(
             {
                 "token": token,
                 "discord_id": interaction.user.id,
@@ -149,7 +149,7 @@ class VerificationCog(commands.Cog):
         await channel.send(embed=embed)
 
     async def _complete_link(self, doc: dict):
-        col = self.bot.homepage_db["discord-link-requests"]
+        col = self.bot.discord_link_requests_db
 
         guild = self.bot.get_guild(doc["guild_id"])
         if not guild:
@@ -194,9 +194,7 @@ class VerificationCog(commands.Cog):
 
     @tasks.loop(seconds=3.0)
     async def poll_links(self):
-        cursor = self.bot.homepage_db["discord-link-requests"].find(
-            {"status": "linked"}
-        )
+        cursor = self.bot.discord_link_requests_db.find({"status": "linked"})
         docs = await cursor.to_list(length=20)
         for doc in docs:
             try:
@@ -205,7 +203,7 @@ class VerificationCog(commands.Cog):
                 raise  # Let the task loop retry transient database failures.
             except Exception as error:
                 print(f"인증 처리 실패: {error}")
-                await self.bot.homepage_db["discord-link-requests"].update_one(
+                await self.bot.discord_link_requests_db.update_one(
                     {"_id": doc["_id"]},
                     {"$set": {"status": "failed", "error": str(error)}},
                 )

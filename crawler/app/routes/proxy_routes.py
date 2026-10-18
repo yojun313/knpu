@@ -1,3 +1,4 @@
+from system.db import crawlIpList_db
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import List
@@ -16,7 +17,7 @@ class ProxyUpdatePayload(BaseModel):
 @router.post("/proxy/update")
 def update_proxy_list(payload: ProxyUpdatePayload):
     try:
-        collection = crawler_db["ip-list"]
+        collection = crawlIpList_db
         collection.update_one(
             {"_id": "proxy_list"}, {"$set": {"list": payload.proxies}}, upsert=True
         )

@@ -1,61 +1,17 @@
 import os
-import socket
-import warnings
 
-from dotenv import load_dotenv
-from pymongo import MongoClient
+from .connection import client, get_async_client, close_connections
+from .names import DATABASE_NAMES, database_name
 
-load_dotenv()
-
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
-
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
-hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
-
-if is_server:
-    # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-    )
-else:
-    warnings.filterwarnings("ignore", module="paramiko")
-    from sshtunnel import SSHTunnelForwarder
-
-    # 외부에서 실행 → SSH 터널 사용
-    _tunnel = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT),
-    )
-    _tunnel.start()
-
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@127.0.0.1:{_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-    )
-
-# dev(MODE=0)도 아래 DB를 그대로 쓴다. 예전엔 MODE=0일 때 "_dev" 접미사를 붙였는데
-# 그 DB들이 실제로 만들어진 적이 없어서, dev 사이트는 논문/구성원 같은 콘텐츠가 통째로
-# 비어 보였고 systems_dev에 계정이 없으니 dev-* 서브도메인은 세션 검증에 실패해
-# 로그인 페이지로 무한히 되돌아갔다.
-systems_db = client["systems"]
-manager_db = client["manager"]
-crawler_db = client["crawler"]
-homepage_db = client["homepage"]
-network_db = client["network"]
-kemkim_db = client["kemkim"]
-statistics_db = client["statistics"]
+systems_db = client[DATABASE_NAMES["systems"]]
+manager_db = client[DATABASE_NAMES["manager"]]
+crawler_db = client[DATABASE_NAMES["crawler"]]
+homepage_db = client[DATABASE_NAMES["homepage"]]
+network_db = client[DATABASE_NAMES["network"]]
+kemkim_db = client[DATABASE_NAMES["kemkim"]]
+statistics_db = client[DATABASE_NAMES["statistics"]]
+whisper_db = client[DATABASE_NAMES["whisper"]]
+admin_db = client[DATABASE_NAMES["admin"]]
 
 user_db = systems_db["users"]
 auth_codes_db = systems_db["auth-codes"]
@@ -80,6 +36,12 @@ auth_config_db = systems_db["bot-config"]
 user_logs_db = systems_db["user-logs"]
 user_bugs_db = systems_db["user-bugs"]
 identities_db = systems_db["identities"]
+analysis_jobs_db = systems_db["analysis_jobs"]
+llm_activity_db = systems_db["llm_activity"]
+llm_user_settings_db = systems_db["llm_user_settings"]
+llm_user_usage_db = systems_db["llm_user_usage"]
+admin_settings_db = admin_db["settings"]
+whisper_notes_db = whisper_db["notes"]
 
 # ── 웹 BOARD와 매니저 앱이 공유하는 게시판 ──
 version_board_db = manager_db["version-board"]

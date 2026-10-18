@@ -1,3 +1,4 @@
+from system.db import crawlList_db, crawlLog_db
 import gc
 import itertools
 import multiprocessing
@@ -32,9 +33,6 @@ from app.utils.csv_export import (
     apply_word_filter,
     process_table_task,
 )
-
-crawlList_db = crawler_db["db-list"]
-crawlLog_db = crawler_db["log-list"]
 
 
 def _log(user_uid: str, action: str, message: str, target_id: str) -> None:

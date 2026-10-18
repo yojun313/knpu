@@ -1,3 +1,4 @@
+from system.db import crawlList_db
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.job_model import (
     JobSubmitRequest,
@@ -44,7 +45,7 @@ def resume_job(
     req: ResumeRequest = ResumeRequest(),
     user=Depends(get_current_user),
 ):
-    doc = crawler_db["db-list"].find_one({"uid": db_uid})
+    doc = crawlList_db.find_one({"uid": db_uid})
     if not doc:
         raise HTTPException(
             status_code=404, detail=f"크롤링 작업을 찾을 수 없습니다: {db_uid}"
@@ -71,7 +72,7 @@ def recrawl_job(
     req: RecrawlRequest = RecrawlRequest(),
     user=Depends(get_current_user),
 ):
-    doc = crawler_db["db-list"].find_one({"uid": db_uid})
+    doc = crawlList_db.find_one({"uid": db_uid})
     if not doc:
         raise HTTPException(
             status_code=404, detail=f"크롤링 작업을 찾을 수 없습니다: {db_uid}"

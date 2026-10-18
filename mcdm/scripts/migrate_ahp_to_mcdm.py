@@ -34,14 +34,11 @@ for _p in (_REPO_ROOT, _AHP_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from app.db import mongo_client  # noqa: E402  (연결/터널 설정 재사용)
+from app.db import mongo_client, DB_NAME  # noqa: E402  (연결/터널 설정 재사용)
 
 # 기본: 운영 ahp → mcdm.
-# 개발 시드는  MODE=0 AHP_SRC_DB=ahp_dev  로 실행 → ahp_dev → mcdm_dev.
 SRC_NAME = os.getenv("AHP_SRC_DB", "ahp")
-DST_NAME = os.getenv("AHP_DB_NAME") or (
-    "mcdm_dev" if os.getenv("MODE", "1") == "0" else "mcdm"
-)
+DST_NAME = DB_NAME
 
 COLLECTIONS = [
     "projects",
@@ -106,7 +103,7 @@ async def main() -> None:
     tag = "[dry-run] " if dry_run else ""
 
     if DST_NAME == SRC_NAME:
-        sys.exit(f"대상 DB 이름이 원본과 같습니다({SRC_NAME}) — AHP_DB_NAME 확인")
+        sys.exit(f"대상 DB 이름이 원본과 같습니다({SRC_NAME}) — 원본 DB 설정 확인")
 
     src = mongo_client[SRC_NAME]
     dst = mongo_client[DST_NAME]
@@ -156,7 +153,7 @@ async def main() -> None:
     )
     if left_matrices or left_rev or left_kind:
         sys.exit("변환이 완전하지 않습니다 — 확인 필요")
-    print("done. 이제 앱을 mcdm DB로 기동하면 된다 (AHP_DB_NAME 기본값=mcdm).")
+    print("done. 변환 결과는 mcdm DB에 저장되었습니다.")
 
 
 if __name__ == "__main__":

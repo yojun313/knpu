@@ -1,3 +1,4 @@
+from system.db import crawlJobQueue_db, crawlList_db, crawlLog_db
 from datetime import datetime, timedelta, timezone
 import time
 import os
@@ -13,9 +14,6 @@ from db import crawler_db, add_userlog
 from db.util import makeDBname
 
 logger = logging.getLogger(__name__)
-
-crawlList_db = crawler_db["db-list"]
-crawlLog_db = crawler_db["log-list"]
 
 
 def makeDB(
@@ -203,7 +201,7 @@ def purgeCrawlDb(DBuid):
 
     crawlList_db.delete_one({"uid": DBuid})
     crawlLog_db.delete_one({"uid": DBuid})
-    crawler_db["job-queue"].delete_many({"db_uid": DBuid})
+    crawlJobQueue_db.delete_many({"db_uid": DBuid})
 
     logger.info(f"재크롤링 준비: 기존 DB 삭제 ({DBname}, uid: {DBuid})")
     return doc

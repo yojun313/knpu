@@ -1,3 +1,4 @@
+from system.db import crawlList_db, crawlLog_db
 import io
 import json
 import os
@@ -23,9 +24,6 @@ router = APIRouter()
 
 # CSV 스트리밍 한 조각의 행 수. 크면 메모리, 작으면 오버헤드가 늘어난다.
 CSV_STREAM_ROWS = 50_000
-
-crawlList_db = crawler_db["db-list"]
-crawlLog_db = crawler_db["log-list"]
 
 
 @router.get("/db-list")

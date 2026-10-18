@@ -4,11 +4,8 @@ import os
 import sys
 import asyncio
 import logging
-import socket
 import traceback
-import warnings
 from dotenv import load_dotenv
-import motor.motor_asyncio
 
 _REPO_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +15,7 @@ if _REPO_ROOT not in sys.path:
 
 from config import CHANNEL_IDS
 from libs.interactions import reply
+from system.db.bot import get_bot_storage
 
 load_dotenv()
 # test
@@ -25,23 +23,12 @@ load_dotenv()
 # 환경 변수 로드
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
-
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 
 
 class MyBot(commands.Bot):
-    def __init__(self, mongo_uri):
+    def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -49,20 +36,16 @@ class MyBot(commands.Bot):
 
         super().__init__(command_prefix="!", intents=intents, help_command=None)
 
-        # 외부에서 생성된 URI로 DB 연결
-        self.mongo_client = motor.motor_asyncio.AsyncIOMotorClient(
-            mongo_uri,
-            serverSelectionTimeoutMS=10000,
-            connectTimeoutMS=10000,
-            socketTimeoutMS=20000,
-        )
-
-        # dev/prod는 DB를 공유한다(system/db/__init__.py 참고) — MODE로 "_dev"
-        # DB를 갈라 보던 옛 동작은 실제로 존재하지 않는 DB를 가리키고 있었다.
-        self.systems_db = self.mongo_client["systems"]
-        self.crawler_db = self.mongo_client["crawler"]
-        self.homepage_db = self.mongo_client["systems"]
-        self.notifications_db = self.mongo_client["systems"]["discord-notifications"]
+        storage = get_bot_storage()
+        self.mongo_client = storage.mongo_client
+        self.systems_db = storage.systems_db
+        self.crawler_db = storage.crawler_db
+        self.homepage_db = storage.homepage_db
+        self.notifications_db = storage.notifications_db
+        self.auth_config_db = storage.auth_config_db
+        self.user_bugs_db = storage.user_bugs_db
+        self.legacy_users_db = storage.legacy_users_db
+        self.discord_link_requests_db = storage.discord_link_requests_db
 
         print(f"MongoDB 연결 설정 완료")
 
@@ -136,41 +119,9 @@ class MyBot(commands.Bot):
 
 
 async def main():
-    hostname = socket.gethostname()
-    is_server = "knpu" in hostname or "server" in hostname
-    ssh_tunnel = None
-
-    if is_server:
-        mongo_uri = (
-            f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-            f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-        )
-    else:
-        from sshtunnel import SSHTunnelForwarder
-
-        warnings.filterwarnings("ignore", module="paramiko")
-
-        ssh_tunnel = SSHTunnelForwarder(
-            (SSH_HOST, SSH_PORT),
-            ssh_username=SSH_USER,
-            ssh_pkey=SSH_KEY,
-            remote_bind_address=(MONGO_HOST, MONGO_PORT),
-        )
-        ssh_tunnel.start()
-
-        mongo_uri = (
-            f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-            f"@127.0.0.1:{ssh_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-        )
-
-    bot = MyBot(mongo_uri)
-
-    try:
-        async with bot:
-            await bot.start(TOKEN)
-    finally:
-        if ssh_tunnel:
-            ssh_tunnel.stop()
+    bot = MyBot()
+    async with bot:
+        await bot.start(TOKEN)
 
 
 if __name__ == "__main__":

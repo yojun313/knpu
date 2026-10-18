@@ -6,15 +6,9 @@ from bson import json_util
 
 from _conn import get_client
 
-TARGET_DBS = [
-    "manager",
-    "manager_dev",
-    "homepage",
-    "crawler",
-    "crawler_dev",
-    "discord",
-    "audit",
-]
+from system.db.names import DATABASE_NAMES
+
+TARGET_DBS = list(DATABASE_NAMES.values())
 
 BACKUP_ROOT = os.path.expanduser("~/knpu_db_backup")
 
