@@ -1,5 +1,6 @@
 from system.db import (
     client,
+    admin_settings_db as admin_settings_col,
     user_logs_db as user_logs_col,
     user_bugs_db as user_bugs_col,
     bug_board_db as bug_board_col,
@@ -11,7 +12,6 @@ from system.db import (
     discord_notifications_db as discord_notifications_col,
 )
 
-admin_settings_col = client["admin"]["settings"]
 
 __all__ = [
     "user_logs_col",

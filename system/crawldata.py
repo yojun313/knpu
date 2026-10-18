@@ -24,9 +24,9 @@ def available() -> bool:
 
 def db_doc(uid: str) -> dict | None:
     """크롤링 DB 문서(uid → name/status). 같은 Mongo 를 쓰므로 직접 조회한다."""
-    from system.db import crawler_db
+    from system.db import crawlList_db
 
-    return crawler_db["db-list"].find_one({"uid": uid}, {"name": 1, "status": 1})
+    return crawlList_db.find_one({"uid": uid}, {"name": 1, "status": 1})
 
 
 def _folder(uid: str) -> tuple[str, str]:

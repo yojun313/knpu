@@ -1,132 +1,37 @@
-# PolyDecision 확장 — 배포 시 필요한 작업 (누적)
+# PolyDecision 배포 및 DB 운영
 
-> 0단계(추상화 도입) 리팩터링을 운영에 반영할 때 **코드 배포 외에** 해야 하는 작업.
-> 전체 설계는 `~/.claude/plans/ahp-compiled-shore.md` 참조.
->
-> 공통 전제: 단일 워커(인메모리 WS 허브) → 배포는 **코드 반영 + `pm2 restart ahp`** 로
-> 진행하며, 그 순간 접속 중이던 실시간 세션은 끊긴다. 실시간 세션 진행 중 배포 금지.
+## DB 연결과 데이터베이스 선택
 
----
+- MongoDB 접속 정보, SSH 터널과 동기·비동기 클라이언트는 `system/db/connection.py`에서 관리합니다. DB 이름 접두사는 `system/db/names.py`에서 관리합니다.
+- 서비스는 `system.db`의 `client` 또는 `get_async_client()`를 사용합니다.
+- DB·컬렉션 이름은 `system/db/mcdm.py`, 인덱스 초기화·DB 헬퍼는 `mcdm/app/db.py`에서 관리합니다.
+- PolyDecision은 실행 모드와 관계없이 **`knpu-mcdm` DB**를 사용합니다. 별도 개발 DB나 DB 이름 재정의 환경변수는 사용하지 않습니다.
+- `MODE`는 서비스 주소·포트 구분에 사용하며 데이터베이스를 분리하지 않습니다.
+- `ahp` 방법명, 기존 브라우저 저장소 키와 `ahp_db` 호환 별칭은 유지합니다. `ahp_db`도 `knpu-mcdm`을 가리킵니다.
 
-## 개명 대조표 · 적용 현황
+## DB 이름 규칙
 
-`ahp` → `mcdm`(PolyDecision) 개명이 5개 층에 걸쳐 있다. **dev 는 적용 완료,
-운영은 미적용** — 아래 체크리스트의 "운영(prod)" 절을 배포 창구에서 수행한다.
+모든 애플리케이션 DB는 `knpu-` 접두사를 사용합니다. MongoDB 인증 DB(`MONGO_AUTH_DB`)는 애플리케이션 DB 이름과 별개입니다.
 
-| 층 | 구 | 신 | dev | prod |
-|---|---|---|---|---|
-| `services.json` 서비스 키 | `ahp` | `mcdm` | ✅ | ✅ (코드) |
-| 리포지터리 디렉터리 | `ahp/` | `mcdm/` | ✅ | ✅ (코드) |
-| pm2 앱 이름 | `ahp-dev` / `ahp` | `mcdm-dev` / `mcdm` | ✅ 적용 | ⬜ 미적용 |
-| MongoDB | `ahp_dev` / `ahp` | `mcdm_dev` / `mcdm` | ✅ 시드 완료 | ⬜ 미적용 |
-| 도메인 | `dev.mcdm.knpu.re.kr` | `dev.mcdm.knpu.re.kr` | ⬜ nginx 미적용 | 변경 없음 (`mcdm.knpu.re.kr`) |
-| 화면 문구 | "AHP" | "PolyDecision" | ✅ | ✅ (코드) |
+코드는 준비된 DB 이름을 참조하며, DB 이름 변경을 위한 데이터 복사·이전·삭제를 자동으로 수행하지 않습니다.
 
-- **코드**(services.json·디렉터리·문구)는 머지되면 dev/prod 모두 자동 반영.
-- **런타임**(pm2 앱 이름·DB)은 각 스택에서 수동 전환이 필요하다.
-- 도메인·포트(8007)는 운영 기준 그대로라 **운영 nginx 는 손대지 않는다**.
-- 내부 식별자(`localStorage ahp_*`, JS 전역 `ahpApi`/`AHPHierarchyDiagram`,
-  `"ahp"` 방법명)는 의도적으로 유지 — 기능적이고, localStorage 키를 바꾸면
-  응답자의 저장된 임시 답이 버려진다.
+## 배포 확인
 
-**롤백**: 구 DB(`ahp`/`ahp_dev`)를 그대로 남기므로, 코드를 이전 커밋으로 되돌리고
-pm2 앱을 옛 이름으로 다시 띄우면 원복된다(§롤백 절 참조).
+1. 실시간 세션이 진행되지 않는 시간에 코드를 반영합니다. 현재 WebSocket 허브는 프로세스 메모리를 사용합니다.
+2. 공통 MongoDB 접속 환경변수를 확인하고 해당 PolyDecision 프로세스를 재시작합니다.
+3. 로그인, 프로젝트 목록, 설문 응답과 결과 화면을 확인합니다. 인덱스는 앱 시작 시 기존 정의로 초기화합니다.
+4. 다른 모드로 실행하는 프로세스도 같은 데이터를 사용하므로 변경 내용이 함께 반영됩니다.
 
----
+## 이전 AHP 자료의 변환 도구
 
-## 핵심: 새 DB 로 이전 (구 DB는 그대로 보존)
-
-0단계부터 앱은 새 DB 이름을 쓴다(`app/db.py`). **MODE 로 dev/prod 를 가른다**
-(`AHP_DB_NAME` 으로 명시 재정의 가능):
-
-| | 새 DB | 구 DB(보존) | pm2 스택 |
-|---|---|---|---|
-| 운영 (MODE=1) | `mcdm` | `ahp` | `/home/lab/knpu`, `pm2` (user `lab`) |
-| 개발 (MODE=0) | `mcdm_dev` | `ahp_dev` | `/home/wcchoi/knpu`, `pm2` (user `wcchoi`) |
-
-구 DB 는 **한 글자도 건드리지 않고** 롤백·이력용으로 남긴다.
-`scripts/migrate_ahp_to_mcdm.py` 가 **변환 복사**한다(개명·백필 포함):
-- 운영: (기본) `ahp` → `mcdm`
-- 개발: `MODE=0 AHP_SRC_DB=ahp_dev ...` → `ahp_dev` → `mcdm_dev`
-
-> `system/db/__init__.py` 의 `systems`(인증) DB 는 dev/prod 공유 그대로 — 콘텐츠 DB 만 분리한다.
-
-## 배포 체크리스트
-
-### 개발(dev) — `/home/wcchoi/knpu`, `pm2` (user `wcchoi`), MODE=0
-
-1. [ ] `cd /home/wcchoi/knpu && git pull`
-2. [ ] `mongosh --quiet --eval 'db.getMongo().getDBNames()'` — dev 데이터가 `ahp_dev` 인지 `ahp` 인지 확인
-3. [ ] **`ahp_dev` → `mcdm_dev` 변환 복사**
-       ```bash
-       MODE=0 AHP_SRC_DB=ahp_dev PYTHONPATH=/home/wcchoi/knpu:/home/wcchoi/knpu/mcdm \
-         /home/wcchoi/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
-       # 카운트 확인 후 --dry-run 제거하고 실행
-       ```
-4. [ ] `pm2 restart mcdm-dev --update-env && pm2 save`
-5. [ ] nginx: `dev.mcdm.knpu.re.kr` 전용 server 블록(→ `localhost:18007`) + `certbot -d dev.mcdm.knpu.re.kr`,
-       `dev.ahp` 는 301, 443 `default_server` 명시. (아래 "nginx" 절)
-6. [ ] 스모크: `curl -sI https://dev.mcdm.knpu.re.kr/` → 302, 로그인 후 프로젝트 목록 표시
-
-### 운영(prod) — `/home/lab/knpu`, `pm2` (user `lab`), MODE=1  *(나중, 이번 아님)*
-
-1. [ ] `mongodump -d ahp` (관례상 스냅샷 — `ahp` 는 안 건드림)
-2. [ ] 실시간 세션 없는 시간대
-3. [ ] `cd /home/lab/knpu && git pull`
-4. [ ] **`ahp` → `mcdm` 변환 복사**
-       ```bash
-       PYTHONPATH=/home/lab/knpu:/home/lab/knpu/mcdm \
-         /home/lab/knpu/.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
-       # → 없이 실행
-       ```
-5. [ ] `pm2 delete ahp 2>/dev/null; pm2 delete mcdm 2>/dev/null; pm2 start ecosystem.prod.config.js --only mcdm && pm2 save`
-       (구 pm2 앱 이름은 `ahp` — 서비스·폴더 개명이 이번에 한꺼번에 적용된다.
-        MODE=1 → DB `mcdm`. 기동 시 `ensure_indexes()` 가 `mcdm` 에 인덱스 생성.)
-6. [ ] 도메인 `mcdm.knpu.re.kr`:8007 유지라 nginx 무변경. 스모크: `/` 302, 결과 화면 가중치·CR 배포 전과 동일 1건 대조.
-
-- **멱등**: 재실행하면 대상 문서가 최신 변환으로 `_id` 기준 덮어써짐. 완전 재동기화는 대상 DB drop 후 재실행.
-- 스크립트 끝에 잔존 검증(대상에 `surveys.matrices` / `revision_matrix_id` / `groups.kind` 누락 0), 실패 시 non-zero.
-- dry-run 기준(`ahp`, 확인 시점): projects 7 · hierarchies 22 · surveys 9 · collections 8 ·
-  respondents 14 · responses 14 · submissions 13 · results 0 · imports 1 (= 88 docs). `ahp_dev` 는 실행 시 확인.
-
-## nginx — dev.mcdm 전용 블록 + 폴백 차단
-
-배경: `*.knpu.re.kr` DNS 와일드카드 + `dev.mcdm` server 블록 부재 + 443 `default_server` 부재
-→ `dev.mcdm`(및 아무 미정의 서브도메인)이 알파벳 첫 443 블록 = **운영 `mcdm.knpu.re.kr:8007`** 로
-폴백되고 운영 인증서를 제시(브라우저 이름 경고). 아래로 정리:
+기존 `ahp` 자료를 변환할 때만 `mcdm/scripts/migrate_ahp_to_mcdm.py`를 명시적으로 실행합니다. 일반 배포 과정에서 실행하는 작업은 아닙니다. 대상은 항상 `knpu-mcdm`이며, 원본 자료는 삭제하지 않습니다.
 
 ```bash
-# 1) dev.mcdm 전용 블록 (dev.ahp 복사 → server_name 만 교체, proxy_pass localhost:18007 유지)
-sudo cp /etc/nginx/sites-available/dev.mcdm.knpu.re.kr /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
-sudo sed -i 's/dev\.ahp\.knpu\.re\.kr/dev.mcdm.knpu.re.kr/g' /etc/nginx/sites-available/dev.mcdm.knpu.re.kr
-sudo ln -sf /etc/nginx/sites-available/dev.mcdm.knpu.re.kr /etc/nginx/sites-enabled/
-sudo certbot --nginx -d dev.mcdm.knpu.re.kr        # 전용 인증서 → 이름 경고 해소
-
-# 2) dev.ahp 은퇴 → 301 (location / 만 교체)
-#    location / { return 301 https://dev.mcdm.knpu.re.kr$request_uri; }
-
-# 3) 443 기본 서버 명시 — 오타/미정의 서브도메인이 운영으로 새는 것 차단
-#    sites-available/00-default-ssl (알파벳 맨 앞) :
-#      server { listen 443 ssl default_server; listen [::]:443 ssl default_server;
-#        server_name _;
-#        ssl_certificate /etc/letsencrypt/live/mcdm.knpu.re.kr/fullchain.pem;
-#        ssl_certificate_key /etc/letsencrypt/live/mcdm.knpu.re.kr/privkey.pem;
-#        return 444; }
-#    sudo ln -sf .../00-default-ssl /etc/nginx/sites-enabled/
-
-sudo nginx -t && sudo systemctl reload nginx
+cd /home/yojun/knpu
+.venv/bin/python mcdm/scripts/migrate_ahp_to_mcdm.py --dry-run
 ```
 
-## 롤백
-
-`mcdm` 은 새로 만든 것이고 `ahp` 는 온전하므로 롤백이 단순하다:
-
-1. 코드를 0단계 이전 커밋으로 되돌린다(구 코드는 `_client["ahp"]` 를 본다).
-2. `pm2 restart ahp`.
-3. `mcdm` DB 는 나중에 정리(drop)하면 된다.
-
-(구 코드로 `mcdm` 을 보게 하거나, 새 코드로 `ahp` 를 보게 하지 말 것 — 스키마가 안 맞는다.
-`AHP_DB_NAME` 은 로컬에서 구 DB 를 읽기 전용으로 들여다볼 때만.)
+`--dry-run`은 조회만 수행합니다. 옵션 없이 실행하면 변환 자료를 대상 DB에 `_id` 기준으로 반영합니다.
 
 ---
 

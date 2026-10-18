@@ -63,9 +63,9 @@ class SettingsError(ValueError):
 
 # ── 저장소 ─────────────────────────────────────────────────────────────────
 def _collections():
-    from system.db import systems_db  # 지연 import: DB 없이도 모듈을 불러올 수 있게
+    from system.db import llm_user_settings_db, llm_user_usage_db  # 지연 import
 
-    return systems_db["llm_user_settings"], systems_db["llm_user_usage"]
+    return llm_user_settings_db, llm_user_usage_db
 
 
 def _fernet():

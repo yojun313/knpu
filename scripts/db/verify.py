@@ -6,6 +6,7 @@ import sys
 from bson import json_util
 
 from _conn import get_client
+from system.db.names import database_name
 
 BACKUP_ROOT = os.path.expanduser("~/knpu_db_backup")
 
@@ -33,13 +34,6 @@ CHECKS = [
     ("manager", "statistics-projects", "statistics", "projects"),
     ("manager", "statistics-folders", "statistics", "folders"),
     ("crawler", "youtube_api", "crawler", "youtube-api"),
-    ("manager_dev", "user-logs", "systems_dev", "user-logs"),
-    ("manager_dev", "user-bugs", "systems_dev", "user-bugs"),
-    ("manager_dev", "sessions", "systems_dev", "sessions"),
-    ("manager_dev", "auth", "systems_dev", "legacy-auth-codes"),
-    ("manager_dev", "auth_config", "systems_dev", "bot-config"),
-    ("manager_dev", "users", "systems_dev", "legacy-users"),
-    ("crawler_dev", "youtube_api", "crawler_dev", "youtube-api"),
 ]
 
 # 위치가 전혀 바뀌지 않은 것들 — manifest 수치와 현재 수치가 그대로 같은지만 확인.
@@ -48,16 +42,9 @@ UNCHANGED = [
     ("crawler", "log-list"),
     ("crawler", "job-queue"),
     ("crawler", "ip-list"),
-    ("crawler_dev", "db-list"),
-    ("crawler_dev", "log-list"),
-    ("crawler_dev", "job-queue"),
-    ("crawler_dev", "ip-list"),
     ("manager", "version-board"),
     ("manager", "bug-board"),
     ("manager", "free-board"),
-    ("manager_dev", "version-board"),
-    ("manager_dev", "bug-board"),
-    ("manager_dev", "free-board"),
     ("homepage", "members"),
     ("homepage", "news"),
     ("homepage", "papers"),
@@ -99,6 +86,7 @@ def main():
 
     print("=== 이관된 컬렉션 ===")
     for src_db, src_coll, dst_db, dst_coll in CHECKS:
+        dst_db = database_name(dst_db)
         expected = manifest.get("databases", {}).get(src_db, {}).get(src_coll)
         if expected is None:
             print(
@@ -131,7 +119,7 @@ def main():
         if expected is None:
             print(f"[skip] {db}.{coll}: manifest에 없음")
             continue
-        actual = client[db][coll].estimated_document_count()
+        actual = client[database_name(db)][coll].estimated_document_count()
         status = "OK" if actual == expected else "MISMATCH"
         if status == "MISMATCH":
             ok = False

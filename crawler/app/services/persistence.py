@@ -10,9 +10,9 @@ def _get_collection():
     global _collection
     if _collection is None:
         try:
-            from db import client
+            from system.db import crawlJobQueue_db, crawlLog_db, crawlList_db
 
-            _collection = client["crawler"]["job-queue"]
+            _collection = crawlJobQueue_db
         except Exception as e:
             logger.warning(f"MongoDB 연결 실패, 영속화 비활성화: {e}")
             return None
@@ -121,9 +121,9 @@ class JobPersistence:
         if not job_doc or "db_uid" not in job_doc:
             return []
         try:
-            from db import client
+            from system.db import crawlJobQueue_db, crawlLog_db, crawlList_db
 
-            log_doc = client["crawler"]["log-list"].find_one({"uid": job_doc["db_uid"]})
+            log_doc = crawlLog_db.find_one({"uid": job_doc["db_uid"]})
             return log_doc.get("logs", []) if log_doc else []
         except Exception as e:
             logger.warning(f"로그 조회 실패 (job_id: {job_id}): {e}")
@@ -137,9 +137,9 @@ class JobPersistence:
 
     def _update_db_list_status(self, db_uid: str, state: str):
         try:
-            from db import client
+            from system.db import crawlJobQueue_db, crawlLog_db, crawlList_db
 
-            db_list_col = client["crawler"]["db-list"]
+            db_list_col = crawlList_db
             db_list_col.update_one({"uid": db_uid}, {"$set": {"status": state}})
         except Exception as e:
             logger.error(f"db-list 상태 동기화 실패: {e}")

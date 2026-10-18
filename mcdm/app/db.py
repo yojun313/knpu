@@ -1,78 +1,23 @@
-import os
-import socket
-import warnings
-
-from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import OperationFailure
 
-# 삭제 금지
-from system.db import user_db, user_logs_db, get_user_names  # noqa: F401  (재수출)
-
-load_dotenv()
-
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
-
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
-hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname
-
-if is_server:
-    _mongo_uri = (
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-    )
-else:
-    warnings.filterwarnings("ignore", module="paramiko")
-    from sshtunnel import SSHTunnelForwarder
-
-    _tunnel = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT),
-    )
-    _tunnel.start()
-    _mongo_uri = (
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@127.0.0.1:{_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-    )
-
-mongo_client = _client = AsyncIOMotorClient(_mongo_uri)
-
-# PolyDecision 0단계부터 새 DB 이름을 쓴다. 구 `ahp`(운영) / `ahp_dev`(개발) DB는
-# 롤백·이력용으로 손대지 않고 남기고, scripts/migrate_ahp_to_mcdm.py 가 변환 복사한다.
-#   운영(MODE=1): `mcdm`      ← ahp
-#   개발(MODE=0): `mcdm_dev`  ← ahp_dev   (개발 테스트가 운영 데이터를 건드리지 않게 분리.
-#                                          이 서비스는 원래 ahp_dev 로 dev DB 가 분리돼 있었다.)
-# AHP_DB_NAME 으로 명시 재정의 가능(로컬에서 특정 DB 를 직접 볼 때 등).
-try:
-    from system.endpoints import IS_DEV as _IS_DEV
-except Exception:  # endpoints 미로딩 환경 방어
-    _IS_DEV = os.getenv("MODE", "1") == "0"
-DB_NAME = os.getenv("AHP_DB_NAME") or ("mcdm_dev" if _IS_DEV else "mcdm")
-
-mcdm_db = _client[DB_NAME]
-projects_db = mcdm_db["projects"]
-hierarchies_db = mcdm_db["hierarchies"]
-surveys_db = mcdm_db["surveys"]
-collections_db = mcdm_db["collections"]
-respondents_db = mcdm_db["respondents"]
-responses_db = mcdm_db["responses"]
-submissions_db = mcdm_db["submissions"]
-results_db = mcdm_db["results"]
-imports_db = mcdm_db["imports"]
-
-# 하위호환 별칭 — 예전 코드가 참조할 수 있으니 유지(둘 다 같은 DB를 가리킨다).
-ahp_db = mcdm_db
+# Keep service-specific helpers and indexes here; names/connections are shared.
+from system.db import user_db, user_logs_db, get_user_names  # noqa: F401
+from system.db.mcdm import (  # noqa: F401
+    DB_NAME,
+    mongo_client,
+    _client,
+    mcdm_db,
+    ahp_db,
+    projects_db,
+    hierarchies_db,
+    surveys_db,
+    collections_db,
+    respondents_db,
+    responses_db,
+    submissions_db,
+    results_db,
+    imports_db,
+)
 
 
 async def ensure_indexes():

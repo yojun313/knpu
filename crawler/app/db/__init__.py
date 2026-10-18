@@ -1,14 +1,22 @@
 import logging
 from datetime import datetime
 
-from system.db import client, discord_notifications_db, user_db
+from system.db import (
+    client,
+    discord_notifications_db,
+    user_db,
+    user_logs_db,
+    crawler_db,
+    homepage_db,
+    crawlList_db,
+    crawlLog_db,
+    crawlJobQueue_db,
+    crawlIpList_db,
+    crawlYoutubeApi_db,
+)
 
 logger = logging.getLogger(__name__)
 
-crawler_db_name = "crawler"
-
-crawler_db = client[crawler_db_name]
-homepage_db = client["homepage"]
 
 __all__ = [
     "client",
@@ -25,20 +33,18 @@ __all__ = [
     "recordDB",
 ]
 
-user_logs_db = client["systems"]["user-logs"]
-
 
 def load_proxy_list():
-    return client[crawler_db_name]["ip-list"].find_one({"_id": "proxy_list"})["list"]
+    return crawlIpList_db.find_one({"_id": "proxy_list"})["list"]
 
 
 def checkState(dbUid: str):
-    crawlDbList = client[crawler_db_name]["db-list"]
+    crawlDbList = crawlList_db
     targetDB = crawlDbList.find_one({"uid": dbUid})
     if targetDB:
         return targetDB["status"]
     else:
-        crawler_db["job-queue"].update_one(
+        crawlJobQueue_db.update_one(
             {"db_uid": dbUid},
             {"$set": {"state": "stopped", "finished_at": datetime.now()}},
         )
@@ -86,5 +92,5 @@ def add_userlog(userUid: str, dbname: str):
 
 
 def recordDB(dbUid: str, status: str):
-    crawlDbList = client[crawler_db_name]["db-list"]
+    crawlDbList = crawlList_db
     crawlDbList.update_one({"uid": dbUid}, {"$set": {"status": status}})

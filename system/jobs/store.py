@@ -15,9 +15,9 @@ JOBS_DIR = os.path.expanduser(os.getenv("KNPU_JOBS_DIR") or "~/.knpu_jobs")
 
 
 def collection():
-    from system.db import systems_db
+    from system.db import analysis_jobs_db
 
-    return systems_db["analysis_jobs"]
+    return analysis_jobs_db
 
 
 _indexed = False

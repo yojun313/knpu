@@ -1,3 +1,4 @@
+from system.db import crawlJobQueue_db
 import os
 import pandas as pd
 from datetime import datetime, timedelta
@@ -110,7 +111,7 @@ def stopOperator(
     requester=None,
 ):
     try:
-        job_col = crawler_db["job-queue"]
+        job_col = crawlJobQueue_db
         job_col.update_one(
             {"db_uid": DBuid},
             {"$set": {"state": "stopped", "finished_at": datetime.now()}},

@@ -17,9 +17,9 @@ STALE_SECONDS = 180
 
 
 def collection():
-    from system.db import systems_db
+    from system.db import llm_activity_db
 
-    return systems_db["llm_activity"]
+    return llm_activity_db
 
 
 def ensure_indexes():

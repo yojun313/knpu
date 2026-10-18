@@ -1,3 +1,4 @@
+from system.db import crawlYoutubeApi_db
 import time
 import json
 import re
@@ -167,7 +168,7 @@ class YouTubeCrawler:
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _load_api_keys(self):
-        collection = crawler_db["youtube-api"]
+        collection = crawlYoutubeApi_db
         api_list = []
         cursor = collection.find({}, {"_id": 0, "API code": 1})
         for doc in cursor:

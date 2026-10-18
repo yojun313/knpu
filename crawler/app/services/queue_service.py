@@ -1,3 +1,4 @@
+from system.db import crawlList_db
 import heapq
 import threading
 from uuid import uuid4
@@ -44,7 +45,7 @@ class QueueManager:
         return job_id
 
     def enqueue_resume(self, db_uid: str, end_date: str = None) -> str:
-        doc = crawler_db["db-list"].find_one({"uid": db_uid})
+        doc = crawlList_db.find_one({"uid": db_uid})
         if not doc:
             raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {db_uid}")
         status = doc.get("status")
@@ -92,7 +93,7 @@ class QueueManager:
     ) -> str:
         from common.storage import purgeCrawlDb, validateCrawlRange
 
-        doc = crawler_db["db-list"].find_one({"uid": db_uid})
+        doc = crawlList_db.find_one({"uid": db_uid})
         if not doc:
             raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {db_uid}")
         if doc.get("status") == "running":
