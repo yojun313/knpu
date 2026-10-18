@@ -159,6 +159,7 @@
                 <tr class="domain-row{{ ' in-folder' if g.id else '' }} border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer"
                     draggable="true"
                     data-domain="{{ d.domain }}"
+                    data-primary-port="{{ d.primary_port if d.primary_port is not none else '' }}"
                     data-search="{{ d.domain }} {{ d.filename }} {{ d.primary_port or '' }} {{ d.paths|map(attribute='path')|join(' ') }}{% if 'dashboard.' in d.domain %} admin{% endif %}"
                     data-ports="{{ d.paths|map(attribute='port')|select('ne', 'N/A')|unique|join(',') }}"
                     onclick="toggleDomainPaths('{{ d.domain }}')">
@@ -615,6 +616,18 @@ function setRowTreeIndent(row, inFolder) {
     }
 }
 
+function compareDomainRows(a, b) {
+    function port(row) {
+        const value = row.getAttribute('data-primary-port');
+        const number = value ? Number(value) : Infinity;
+        return Number.isFinite(number) ? number : Infinity;
+    }
+    const aPort = port(a), bPort = port(b);
+    if (aPort !== bPort) return aPort - bPort;
+    const aName = a.getAttribute('data-domain'), bName = b.getAttribute('data-domain');
+    return aName < bName ? -1 : aName > bName ? 1 : 0;
+}
+
 async function moveDomainToGroup(row, group) {
     const source = row.parentElement;
     if (source === group) return;
@@ -624,11 +637,14 @@ async function moveDomainToGroup(row, group) {
     const pathsRow = document.getElementById(`paths-row-${domain}`);
 
     // 먼저 화면을 옮기고(직접 조작이라 즉시 반응해야 한다), 실패하면 새로고침으로 되돌린다.
-    const anchor = group.querySelector('tr.folder-empty-row');
+    const emptyRow = group.querySelector('tr.folder-empty-row');
+    const anchor = [...group.querySelectorAll('tr.domain-row')].find(function (other) {
+        return compareDomainRows(row, other) < 0;
+    }) || emptyRow;
     group.insertBefore(row, anchor);
     if (pathsRow) group.insertBefore(pathsRow, anchor);
     setRowTreeIndent(row, !!folderId);
-    if (anchor) anchor.classList.toggle('in-folder', !!folderId);
+    if (emptyRow) emptyRow.classList.toggle('in-folder', !!folderId);
 
     if (group.classList.contains('folder-collapsed')) setFolderCollapsed(group, false);
     row.style.display = '';

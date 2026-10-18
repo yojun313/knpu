@@ -124,7 +124,16 @@ def rename_domain(old_domain: str, new_domain: str) -> None:
         _save(folders)
 
 
+def _domain_sort_key(domain: dict) -> tuple:
+    try:
+        port = int(domain.get("primary_port"))
+    except (TypeError, ValueError):
+        port = None
+    return port is None, port or 0, domain["domain"]
+
+
 def group_domains(domains: list[dict]) -> list[dict]:
+    domains = sorted(domains, key=_domain_sort_key)
     by_domain = {d["domain"]: d for d in domains}
     grouped = []
     claimed: set[str] = set()
@@ -137,6 +146,7 @@ def group_domains(domains: list[dict]) -> list[dict]:
                 continue
             members.append(d)
             claimed.add(name)
+        members.sort(key=_domain_sort_key)
         grouped.append(
             {
                 "id": f["id"],
