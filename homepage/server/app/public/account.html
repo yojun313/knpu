@@ -26,9 +26,8 @@
     }
 
     .account-hero {
-      padding-top: 7rem;
-      padding-bottom: 4.5rem;
-      text-align: center;
+      padding-top: 8rem;
+      padding-bottom: 2.5rem;
       color: #fff;
       background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
     }
@@ -44,7 +43,8 @@
       width: 84px;
       height: 84px;
       border-radius: 50%;
-      margin: 0.9rem auto 0.75rem;
+      margin: 0;
+      flex-shrink: 0;
       object-fit: cover;
       background: rgba(255, 255, 255, 0.12);
       border: 3px solid rgba(255, 255, 255, 0.25);
@@ -78,8 +78,52 @@
     }
 
     .account-wrap {
-      max-width: 640px;
-      margin: -2.75rem auto 5rem;
+      margin: 1.5rem auto 3rem;
+    }
+
+    .account-shell {
+      width: calc(100% - 64px);
+      max-width: 1440px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .account-hero-inner {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .account-hero .eyebrow { color: #ccd6e3; margin-bottom: 0.4rem; }
+    .account-hero-copy { min-width: 0; overflow-wrap: anywhere; }
+    .account-hero-copy p { color: #d5dee8; margin: 0.65rem 0 0; font-size: 0.9rem; }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .account-column { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+    .account-logout { margin-top: 1.75rem; text-align: right; }
+    .account-wrap .meta-line, .account-wrap .passkey-name { overflow-wrap: anywhere; }
+    .passkey-item > div { min-width: 0; }
+    .passkey-item .btn-passkey-delete { flex-shrink: 0; }
+    .photo-row > div:last-child { min-width: 0; }
+
+    @media (max-width: 767px) {
+      .account-shell { width: calc(100% - 32px); }
+      .account-hero { padding-top: 6.5rem; padding-bottom: 1.75rem; }
+      .account-avatar { width: 64px; height: 64px; font-size: 1.5rem; }
+      .account-hero h1 { font-size: 1.35rem; }
+      .account-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+      .account-column { gap: 1rem; }
+      .account-wrap .account-card .card-body { padding: 1.25rem; }
+      .account-wrap .content-manage-card .card-body { flex-direction: column; align-items: stretch; }
+      .account-wrap .btn-content-manage { width: 100%; }
+      .account-logout { text-align: center; }
     }
 
     .account-card {
@@ -87,7 +131,7 @@
       border-radius: 14px;
       box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
       background-color: #fff;
-      margin-bottom: 1.25rem;
+      margin-bottom: 0;
       overflow: hidden;
     }
 
@@ -242,11 +286,14 @@
     }
 
     .content-manage-card { border-top: 4px solid #2458c6; }
+    .content-manage-card .card-body { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+    .content-manage-copy { min-width: 0; }
+    .content-manage-card .meta-line { margin-bottom: 0; }
     .content-manage-card h2 { margin-bottom: 0.65rem; }
     .content-manage-card .content-icon { color: #2458c6; }
     .btn-content-manage {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      width: 100%; padding: 0.9rem 1rem; border-radius: 10px;
+      flex-shrink: 0; padding: 0.9rem 1rem; border-radius: 10px;
       background: #2458c6; color: #fff; font-weight: 700;
     }
     .btn-content-manage:hover, .btn-content-manage:focus-visible {
@@ -278,22 +325,48 @@
   <div id="nav-placeholder"></div>
 
   <header class="account-hero">
-    <div class="container">
-      <div class="eyebrow">KNPU FPEI</div>
+    <div class="container account-shell account-hero-inner">
       <div class="account-avatar" id="account-avatar">?</div>
-      <h1 id="account-heading">마이페이지</h1>
-      <span class="account-role-badge" id="account-role-badge" style="display:none;"></span>
+      <div class="account-hero-copy">
+        <div class="eyebrow">KNPU FPEI · MY PAGE</div>
+        <h1 id="account-heading">마이페이지</h1>
+        <span class="account-role-badge" id="account-role-badge" style="display:none;"></span>
+        <p>프로필과 로그인 보안, 연구 시스템 연결을 관리합니다.</p>
+      </div>
     </div>
   </header>
 
-  <div class="container">
+  <main class="container account-shell">
     <div class="account-wrap" id="account-content" style="display:none;">
 
       <div class="card account-card content-manage-card" id="content-manage-card">
         <div class="card-body">
-          <h2><i class="fa-solid fa-pen-to-square content-icon"></i>홈페이지 수정</h2>
-          <p class="meta-line mb-3" id="content-permission-note">논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 추가할 수 있습니다. 본인이 추가한 항목만 수정·삭제할 수 있습니다.</p>
+          <div class="content-manage-copy">
+            <h2><i class="fa-solid fa-pen-to-square content-icon"></i>홈페이지 수정</h2>
+            <p class="meta-line" id="content-permission-note">논문·멤버·뉴스·갤러리·팝업·입시 FAQ를 추가할 수 있습니다. 본인이 추가한 항목만 수정·삭제할 수 있습니다.</p>
+          </div>
           <a href="/content" class="btn btn-content-manage"><i class="fa-solid fa-pen-to-square"></i>홈페이지 수정하기<i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <div class="account-grid">
+        <div class="account-column" aria-label="프로필 및 연결">
+          <div class="card account-card">
+            <div class="card-body">
+              <h2><i class="fa-solid fa-id-card"></i>프로필</h2>
+              <div class="alert alert-success auth-alert" id="profile-success"></div>
+              <div class="alert alert-danger auth-alert" id="profile-error"></div>
+
+              <div class="meta-line">아이디: <strong id="p-username"></strong></div>
+              <div class="meta-line">이메일: <span id="p-email"></span></div>
+
+              <form id="profile-form" class="mt-3">
+                <div class="mb-3">
+                  <label class="form-label" for="p-name">이름</label>
+                  <input type="text" class="form-control" id="p-name" required />
+                </div>
+                <button type="submit" class="btn btn-account-primary text-white">프로필 저장</button>
+              </form>
         </div>
       </div>
 
@@ -326,44 +399,26 @@
           </a>
         </div>
       </div>
-
-      <div class="card account-card">
-        <div class="card-body">
-          <h2><i class="fa-solid fa-id-card"></i>프로필</h2>
-          <div class="alert alert-success auth-alert" id="profile-success"></div>
-          <div class="alert alert-danger auth-alert" id="profile-error"></div>
-
-          <div class="meta-line">아이디: <strong id="p-username"></strong></div>
-          <div class="meta-line">이메일: <span id="p-email"></span></div>
-
-          <form id="profile-form" class="mt-3">
-            <div class="mb-3">
-              <label class="form-label" for="p-name">이름</label>
-              <input type="text" class="form-control" id="p-name" required />
-            </div>
-            <button type="submit" class="btn btn-account-primary text-white">프로필 저장</button>
-          </form>
         </div>
-      </div>
+        <div class="account-column" aria-label="로그인 보안 및 관리">
+          <div class="card account-card">
+            <div class="card-body">
+              <h2><i class="fa-solid fa-lock"></i>비밀번호 변경</h2>
+              <div class="alert alert-success auth-alert" id="pw-success"></div>
+              <div class="alert alert-danger auth-alert" id="pw-error"></div>
 
-      <div class="card account-card">
-        <div class="card-body">
-          <h2><i class="fa-solid fa-lock"></i>비밀번호 변경</h2>
-          <div class="alert alert-success auth-alert" id="pw-success"></div>
-          <div class="alert alert-danger auth-alert" id="pw-error"></div>
-
-          <form id="password-form">
-            <div class="mb-3">
-              <label class="form-label" for="pw-current">현재 비밀번호</label>
-              <input type="password" class="form-control" id="pw-current" required autocomplete="current-password" />
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="pw-new">새 비밀번호</label>
-              <input type="password" class="form-control" id="pw-new" required minlength="8"
-                autocomplete="new-password" />
-            </div>
-            <button type="submit" class="btn btn-outline-dark btn-sm">비밀번호 변경</button>
-          </form>
+              <form id="password-form">
+                <div class="mb-3">
+                  <label class="form-label" for="pw-current">현재 비밀번호</label>
+                  <input type="password" class="form-control" id="pw-current" required autocomplete="current-password" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="pw-new">새 비밀번호</label>
+                  <input type="password" class="form-control" id="pw-new" required minlength="8"
+                    autocomplete="new-password" />
+                </div>
+                <button type="submit" class="btn btn-outline-dark btn-sm">비밀번호 변경</button>
+              </form>
         </div>
       </div>
 
@@ -393,14 +448,16 @@
           <a href="https://dashboard.knpu.re.kr/users" class="btn btn-account-primary text-white me-2 mb-2">가입 요청 관리로 이동</a>
         </div>
       </div>
+        </div>
+      </div>
 
-      <div class="text-center">
+      <div class="account-logout">
         <a href="#" id="logout-link" class="text-danger">로그아웃</a>
       </div>
     </div>
 
     <div id="account-loading"><i class="fa-solid fa-spinner fa-spin"></i>불러오는 중...</div>
-  </div>
+  </main>
 
   <footer class="footer py-4">
     <div class="container text-center">Copyright &copy; KNPU FPEI</div>
