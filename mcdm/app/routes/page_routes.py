@@ -30,10 +30,8 @@ async def index(request: Request):
 
 
 @router.get("/manual", response_class=HTMLResponse)
-async def manual_page(request: Request):
-    return templates.TemplateResponse(
-        request, "manual.html", {"active_stage": None}, headers=_NO_CACHE
-    )
+async def manual_page():
+    return _respond_page("manual.html")
 
 
 @router.get("/design/{project_id}", response_class=HTMLResponse)
