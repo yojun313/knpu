@@ -79,6 +79,50 @@ def _needs_hate_measurement(df: pd.DataFrame) -> bool:
     return len(present) < 8
 
 
+def _measure_hate_local(df: pd.DataFrame, pid: str, log=None) -> pd.DataFrame:
+    """이 서버에서 직접 kor-unsmile 을 돌려 혐오도 점수를 매긴다.
+
+    원격 GPU 서버로 CSV 전체를 올렸다 받는 왕복이 사라지고, 원격 GPU 를 쓰는
+    다른 기능(사이트의 LLM 등)과 경합하지도 않는다.
+    """
+    from system import hate
+
+    say = log or (lambda t: _send_progress(pid, t))
+    return hate.measure(df, text_col=None, log=say)
+
+
+def _hate_backend() -> str:
+    """혐오도 측정을 어디서 할지. .env 의 HATE_BACKEND (local | gpu | auto).
+
+    auto 는 '로컬 GPU 로 돌릴 수 있을 때만' 로컬을 쓴다. 로컬 CPU 추론은 댓글
+    수만 건이면 원격 GPU 왕복보다 오히려 느리기 때문에, 모델만 있고 GPU 가
+    없으면 원격 GPU 서버를 그대로 쓴다. CPU 로 강제하려면 HATE_BACKEND=local.
+    """
+    from system import hate
+
+    choice = (os.getenv("HATE_BACKEND") or "auto").strip().lower()
+    if choice in ("local", "gpu"):
+        return choice
+    if hate.is_available() and hate.resolve_device() >= 0:
+        return "local"
+    return "gpu" if GPU_SERVER_URL else "local"
+
+
+def _measure_hate(df: pd.DataFrame, pid: str, log=None) -> pd.DataFrame:
+    """설정에 따라 로컬 또는 원격 GPU 서버로 혐오도를 측정한다."""
+    from system import hate
+
+    say = log or (lambda t: _send_progress(pid, t))
+    if _hate_backend() == "local":
+        if not hate.is_available():
+            raise ValueError(
+                f"HATE_BACKEND=local 인데 모델이 없습니다: {hate.model_path()}\n"
+                "smilegate-ai/kor_unsmile 을 내려받거나 HATE_BACKEND=gpu 로 바꿔 주세요."
+            )
+        return _measure_hate_local(df, pid, log=say)
+    return _measure_hate_via_gpu(df, pid, log=say)
+
+
 def _measure_hate_via_gpu(df: pd.DataFrame, pid: str, log=None) -> pd.DataFrame:
     """GPU 서버의 kor-unsmile 모델로 혐오도 레이블 점수(option_num=2)를 측정해
     점수 열이 붙은 DataFrame을 돌려준다. 진행 메시지는 GPU가 같은 pid로 쏜다."""
@@ -147,12 +191,16 @@ def run_job(ctx) -> dict:
     df = pd.read_csv(input_path, encoding="utf-8")
     ctx.log(f"데이터 {len(df):,}행 · {len(df.columns)}열")
 
-    # 혐오도 분석: 점수 열이 없는 원본 CSV면 GPU에서 먼저 측정한 뒤
-    # 곧바로 통계 분석까지 이어서 진행한다.
+    # 혐오도 분석: 점수 열이 없는 원본 CSV면 먼저 측정한 뒤
+    # 곧바로 통계 분석까지 이어서 진행한다 (측정 위치는 HATE_BACKEND 설정).
     if category == HATE_CATEGORY and _needs_hate_measurement(df):
-        ctx.stage("GPU 혐오도 측정 중")
+        ctx.stage(
+            "혐오도 측정 중 (로컬)"
+            if _hate_backend() == "local"
+            else "혐오도 측정 중 (GPU 서버)"
+        )
         try:
-            df = _measure_hate_via_gpu(df, pid, log=ctx.log)
+            df = _measure_hate(df, pid, log=ctx.log)
         except ValueError as e:
             raise JobError(str(e))
         ctx.log("[혐오도 분석] 측정 완료 — 통계 분석 시작")
