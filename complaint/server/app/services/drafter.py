@@ -492,8 +492,11 @@ def complaint_deadline(crime, facts: dict) -> str:
 
 
 @tracked("AI 고소장 작성", service="complaint")
-async def generate(case: dict):
-    """NDJSON 이벤트를 흘려보내며 case를 채운다. 마지막에 result 이벤트."""
+async def generate(case: dict, key: bytes):
+    """NDJSON 이벤트를 흘려보내며 case를 채운다. 마지막에 result 이벤트.
+
+    key는 생성된 문서를 암호화할 사건 키다.
+    """
     crime_id = case["crime_type"]
     facts = case["facts"]
     crime = CRIMES[crime_id]
@@ -502,7 +505,8 @@ async def generate(case: dict):
     statutes = kb.statutes_for_case(crime_id, facts)
     query = kb.case_query(facts)
     precedents = kb.search_precedents(query, crime_id, k=3)
-    live = await asyncio.to_thread(kb.live_precedents, f"{crime.label} {query[:40]}", 2)
+    # 외부(법령정보센터)로는 사건 유형만 보내고 사용자가 쓴 사실관계는 보내지 않는다
+    live = await asyncio.to_thread(kb.live_precedents, crime.label, 2)
     precedents = (
         precedents + [p for p in live if p["id"] not in {x["id"] for x in precedents}]
     )[:4]
@@ -562,7 +566,7 @@ async def generate(case: dict):
     try:
         rv = await review(crime_id, facts, sections, issues)
     except LLMError as e:
-        logger.warning("교차 검토 실패(초안 유지): %s", e)
+        logger.warning("교차 검토 실패(초안 유지): %s", type(e).__name__)
         rv = {"issues": [], "revised": None}
     revised_applied = False
     if rv["revised"]:
@@ -587,7 +591,7 @@ async def generate(case: dict):
 
     yield {"type": "step", "step": "render", "status": "start"}
     files = await asyncio.to_thread(
-        document.render, case["party"], facts, sections, crime.label
+        document.render, case["party"], facts, sections, crime.label, key
     )
     yield {"type": "step", "step": "render", "status": "done"}
 

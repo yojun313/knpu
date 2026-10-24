@@ -1,22 +1,35 @@
 """IP별 간단한 요청 제한 — 공개 서비스라 LLM 호출 남용을 막는다."""
 
+import ipaddress
 import time
 from collections import defaultdict, deque
 
 from fastapi import HTTPException, Request
 
+# IP는 메모리에만 두고 디스크·로그에 남기지 않는다
 _hits: dict[tuple[str, str], deque] = defaultdict(deque)
 
 
+def _trusted_proxy(host: str | None) -> bool:
+    try:
+        ip = ipaddress.ip_address(host or "")
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_private
+
+
 def client_ip(request: Request) -> str:
-    for header in ("cf-connecting-ip", "x-real-ip"):
-        v = request.headers.get(header)
-        if v:
-            return v.strip()
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    peer = request.client.host if request.client else None
+    # 전달 헤더는 앞단 프록시(nginx 등)를 거친 요청에서만 믿는다 — 직접 접속이면 위조할 수 있다
+    if _trusted_proxy(peer):
+        for header in ("cf-connecting-ip", "x-real-ip"):
+            v = request.headers.get(header)
+            if v:
+                return v.strip()
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return fwd.split(",")[-1].strip()
+    return peer or "unknown"
 
 
 def check(request: Request, bucket: str, limit: int, window_sec: float) -> None:

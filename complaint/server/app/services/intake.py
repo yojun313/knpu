@@ -376,7 +376,7 @@ def merge_extraction(
             ):
                 continue
             if not is_negative and not _grounded(k, v, corpus):
-                logger.info("대화에 근거가 없는 추출 값 무시: %s=%s", k, v[:40])
+                logger.info("대화에 근거가 없는 추출 값 무시: %s", k)
                 continue
             v = _normalize_choice(k, v)[:4000]
             if case["facts"].get(k) != v:
@@ -547,7 +547,7 @@ async def chat_turn(case: dict, user_text: str):
         data = await extract(case, user_text)
         changed = merge_extraction(case, data, user_text, asked)
     except Exception as e:  # 추출이 실패해도 대화는 이어간다
-        logger.warning("사실 추출 실패: %s", e)
+        logger.warning("사실 추출 실패: %s", type(e).__name__)
 
     state = case_state(case)
     yield {"type": "state", "changed": changed, **state}
@@ -572,7 +572,7 @@ async def chat_turn(case: dict, user_text: str):
             reply += piece
             yield {"type": "delta", "text": piece}
     except LLMError as e:
-        logger.error("응답 생성 실패: %s", e)
+        logger.error("응답 생성 실패: %s", type(e).__name__)
         if not reply:
             yield {
                 "type": "error",
