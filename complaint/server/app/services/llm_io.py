@@ -115,7 +115,8 @@ async def chat_json(
     try:
         return parse_json_object(res.text)
     except ValueError:
-        logger.warning("JSON 파싱 실패, 복구 요청: %s", res.text[:300])
+        # 응답에는 사건 내용이 들어 있어 로그에 남기지 않는다
+        logger.warning("JSON 파싱 실패, 복구 요청 (응답 %d자)", len(res.text))
     repair = messages + [
         {"role": "assistant", "content": res.text[:6000]},
         {

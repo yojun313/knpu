@@ -13,7 +13,7 @@ from docx.shared import Pt
 from docx.text.paragraph import Paragraph
 
 from app.libs.pdf import get_libreoffice_cmd
-from app.services.store import DOCS_DIR
+from app.services import store
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +85,13 @@ def _set_cell_text(table, placeholder: str, value: str):
                     para.text = value or ""
 
 
-def render(party: dict, facts: dict, sections: dict, offense_label: str) -> dict:
-    """문서를 만들어 {token, docx, pdf, filename} 을 돌려준다."""
+def render(
+    party: dict, facts: dict, sections: dict, offense_label: str, case_key: bytes
+) -> dict:
+    """문서를 만들어 사건 키로 암호화해 저장하고 {token, pdf, filename, created} 를 돌려준다.
+
+    평문 docx·pdf는 메모리 파일시스템의 임시 폴더에서만 만들고 바로 지운다.
+    """
     doc = Document(TEMPLATE)
     comp = party.get("complainant", {})
     susp = party.get("suspect", {})
@@ -161,9 +166,15 @@ def render(party: dict, facts: dict, sections: dict, offense_label: str) -> dict
         _insert_lines_after(tail, f"\n{station} 귀중", align=WD_ALIGN_PARAGRAPH.RIGHT)
 
     token = secrets.token_urlsafe(18)
-    docx_path = DOCS_DIR / f"{token}.docx"
-    doc.save(docx_path)
-    pdf_ok = _to_pdf(docx_path)
+    with store.scratch_dir() as work:
+        docx_path = work / "complaint.docx"
+        doc.save(docx_path)
+        pdf_ok = _to_pdf(docx_path)
+        store.write_doc(token, "docx", docx_path.read_bytes(), case_key)
+        if pdf_ok:
+            store.write_doc(
+                token, "pdf", docx_path.with_suffix(".pdf").read_bytes(), case_key
+            )
 
     stamp = datetime.now().strftime("%Y%m%d")
     return {
@@ -182,6 +193,8 @@ def _to_pdf(docx_path: Path) -> bool:
                 "--headless",
                 "--convert-to",
                 "pdf",
+                # 사용자 프로필도 임시 폴더에 둬 최근 문서 기록·백업이 남지 않게 한다
+                f"-env:UserInstallation=file://{docx_path.parent / 'lo-profile'}",
                 str(docx_path),
                 "--outdir",
                 str(docx_path.parent),

@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def sendEmail(receiver, title, text, attachment_path=None):
+def sendEmail(receiver, title, text, attachment=None):
+    """attachment: (파일명, bytes). 첨부 내용을 디스크에 쓰지 않고 메모리에서 바로 보낸다."""
     sender = "knpubigmac2024@gmail.com"
     MailPassword = os.getenv("MAIL_PASSWORD")
 
@@ -20,26 +21,18 @@ def sendEmail(receiver, title, text, attachment_path=None):
 
     msg.attach(MIMEText(text, "plain"))
 
-    if attachment_path and os.path.exists(attachment_path):
-        try:
-            with open(attachment_path, "rb") as attachment:
-                part = MIMEBase("application", "octet-stream")
-                part.set_payload(attachment.read())
-
-            encoders.encode_base64(part)
-
-            filename = os.path.basename(attachment_path)
-
-            part.add_header("Content-Disposition", "attachment", filename=filename)
-
-            msg.attach(part)
-        except Exception as e:
-            print(f"파일 첨부 중 오류 발생: {e}")
+    if attachment:
+        filename, data = attachment
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(data)
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", "attachment", filename=filename)
+        msg.attach(part)
 
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
 
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
+    with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
         server.starttls()
         server.login(sender, MailPassword)
         server.sendmail(sender, receiver, msg.as_string())

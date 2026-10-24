@@ -234,6 +234,12 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.03em; line-height: 1.3; color: va
 .mode-card .badge { position: absolute; top: 20px; right: 20px; }
 .resume-banner { display: flex; align-items: center; gap: 14px; margin-top: 22px; max-width: 880px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface); border: 1px dashed var(--line-strong); }
 .resume-banner .i { font-size: 20px; color: var(--primary); }
+.privacy-notice { margin-top: 22px; max-width: 880px; padding: 16px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.privacy-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; }
+.privacy-head .i { font-size: 18px; color: var(--success); }
+.privacy-notice ul, .privacy-list { margin: 10px 0 0; padding-left: 20px; font-size: 13.5px; line-height: 1.65; color: var(--ink-2); }
+.privacy-notice li + li, .privacy-list li + li { margin-top: 4px; }
+.privacy-list { margin: 4px 0 18px; font-size: 14px; }
 .steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; counter-reset: s; }
 .step4 { padding: 20px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
 .step4 .num { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--surface-3); color: var(--ink-2); margin-bottom: 12px; }

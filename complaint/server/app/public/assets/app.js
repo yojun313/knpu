@@ -46,18 +46,19 @@
   const fmtDate = (s) => (s && s.length === 8 ? `${s.slice(0, 4)}. ${+s.slice(4, 6)}. ${+s.slice(6)}.` : s || '');
   const isTouch = matchMedia('(pointer: coarse)').matches;
 
-  const LS_KEY = 'complaint.caseId';
-  const store = {
-    get: () => { try { return localStorage.getItem(LS_KEY); } catch (e) { return null; } },
-    set: (v) => { try { localStorage.setItem(LS_KEY, v); } catch (e) {} },
-    clear: () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} },
-  };
+  // 개인정보 보호: 사건 id와 암호화 키는 이 탭의 메모리에만 둔다. localStorage·sessionStorage·
+  // 쿠키·URL 어디에도 남기지 않으므로 새로 고침하거나 탭을 닫으면 작성 내용을 다시 열 수 없다.
+  // 서버는 키를 보관하지 않고 이 키로 암호화된 내용만 가지고 있다.
+  const vault = { key: null };
+  const authHeaders = () => (vault.key ? { 'X-Case-Key': vault.key } : {});
 
   async function api(path, opts = {}) {
     const res = await fetch('/api' + path, {
       method: opts.method || 'GET',
-      headers: opts.body ? { 'Content-Type': 'application/json' } : {},
+      headers: { ...authHeaders(), ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
+      cache: 'no-store',
+      credentials: 'same-origin',
     });
     let data = null;
     try { data = await res.json(); } catch (e) {}
@@ -71,7 +72,8 @@
 
   async function ndjson(path, body, onEvent, signal) {
     const res = await fetch('/api' + path, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal,
+      method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal,
+      cache: 'no-store', credentials: 'same-origin',
     });
     if (!res.ok) {
       let msg = `요청에 실패했습니다 (${res.status})`;
@@ -93,6 +95,34 @@
       }
     }
     if (buf.trim()) { try { onEvent(JSON.parse(buf)); } catch (e) {} }
+  }
+
+  // 문서는 fetch로 받아 메모리(blob)에서만 연다 — 파일 주소가 방문 기록·캐시에 남지 않는다
+  const blobUrls = new Set();
+  function revokeBlobs() { blobUrls.forEach((u) => URL.revokeObjectURL(u)); blobUrls.clear(); }
+  async function fileBlobUrl(kind) {
+    const res = await fetch(`/api/files/${S.case.id}/${kind}`, { headers: authHeaders(), cache: 'no-store', credentials: 'same-origin' });
+    if (!res.ok) throw new Error('파일을 불러오지 못했습니다.');
+    const url = URL.createObjectURL(await res.blob());
+    blobUrls.add(url);
+    return url;
+  }
+  async function downloadFile(kind) {
+    const url = await fileBlobUrl(kind);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${S.case.files.filename || '고소장'}.${kind}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // 작성 내용을 서버에서 지우고 이 탭의 메모리에서도 비운다
+  async function discardCase() {
+    if (S.case && vault.key) { try { await api(`/cases/${S.case.id}`, { method: 'DELETE' }); } catch (e) {} }
+    S.case = null;
+    vault.key = null;
+    revokeBlobs();
   }
 
   function toast(msg, kind = '') {
@@ -155,14 +185,13 @@
   $('#themeBtn').addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('complaint.theme', next); } catch (e) {}
     setThemeCookie(next);
     paintThemeBtn();
   });
   paintThemeBtn();
 
   // ── 상태 ────────────────────────────────────────────────────────────────
-  const S = { meta: null, case: null, pendingParty: null, busy: false };
+  const S = { meta: null, case: null, pendingParty: null, busy: false, resultTab: 'doc', noticeAck: false };
   const app = $('#app');
 
   const crimeById = (id) => (S.meta ? S.meta.crimes.find((c) => c.id === id) : null);
@@ -172,29 +201,30 @@
     if (!S.meta) S.meta = await api('/meta');
     return S.meta;
   }
-  async function loadCase(id, force = false) {
-    if (!force && S.case && S.case.id === id) return S.case;
-    S.case = await api(`/cases/${id}`);
-    store.set(id);
+  async function loadCase() {
+    S.case = await api(`/cases/${S.case.id}`);
     return S.case;
   }
 
   function go(hash) { if (location.hash !== hash) location.hash = hash; else route(); }
 
   function caseHome(c) {
-    if (c.files) return `#/result/${c.id}`;
-    if (c.mode === 'chat') return `#/chat/${c.id}`;
-    return c.state.crime_type ? `#/form/${c.id}/facts` : `#/form/${c.id}/type`;
+    if (c.files) return `#/result`;
+    if (c.mode === 'chat') return `#/chat`;
+    return c.state.crime_type ? `#/form/facts` : `#/form/type`;
   }
 
   async function startCase(mode, crimeType) {
     if (S.busy) return;
+    if (!(await ackNotice())) return;
     S.busy = true;
     try {
+      if (S.case) await discardCase();
       const c = await api('/cases', { method: 'POST', body: { mode, crime_type: crimeType || null } });
+      vault.key = c.key;
+      delete c.key;
       S.case = c;
-      store.set(c.id);
-      go(mode === 'chat' ? `#/chat/${c.id}` : (crimeType ? `#/form/${c.id}/facts` : `#/form/${c.id}/type`));
+      go(mode === 'chat' ? `#/chat` : (crimeType ? `#/form/facts` : `#/form/type`));
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -209,13 +239,18 @@
     $$('.panel-scrim').forEach((el) => el.remove());
     document.body.style.overflow = '';
     window.scrollTo(0, 0);
+    revokeBlobs();
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-    const [view, id, sub] = parts;
-    $('#resumeBtn').hidden = true;
+    const [view, sub] = parts;
     try {
       await loadMeta();
       if (!view) return renderHome();
-      await loadCase(id, true);
+      if (!S.case || !vault.key) {
+        toast('새로 고침하거나 다시 접속하면 이전 작성 내용은 열 수 없습니다. 처음부터 작성해 주시기 바랍니다.', 'error');
+        location.replace('#/');
+        return;
+      }
+      await loadCase();
       if (view === 'chat') return renderChat();
       if (view === 'form') return renderForm(sub || 'type');
       if (view === 'party') return renderParty();
@@ -224,12 +259,14 @@
       return renderHome();
     } catch (e) {
       if (e.status === 404) {
-        store.clear();
-        toast('작성하던 내용을 찾을 수 없습니다. 보존 기간이 지나 삭제되었을 수 있습니다.', 'error');
-        location.hash = '#/';
+        S.case = null;
+        vault.key = null;
+        toast('작성하던 내용을 찾을 수 없습니다. 보존 시간이 지나 삭제되었을 수 있습니다.', 'error');
+        location.replace('#/');
         return;
       }
-      app.innerHTML = `<div class="container narrow page"><div class="card card-pad"><h2 class="page-title">불러오지 못했습니다</h2><p class="page-sub">${esc(e.message)}</p><div class="row" style="margin-top:18px"><button class="btn btn-primary" onclick="location.reload()">${icon('refresh')}다시 시도</button><a class="btn btn-outline" href="#/">처음으로</a></div></div></div>`;
+      app.innerHTML = `<div class="container narrow page"><div class="card card-pad"><h2 class="page-title">불러오지 못했습니다</h2><p class="page-sub">${esc(e.message)}</p><div class="row" style="margin-top:18px"><button class="btn btn-primary" id="retryRoute">${icon('refresh')}다시 시도</button><a class="btn btn-outline" href="#/">처음으로</a></div></div></div>`;
+      $('#retryRoute').addEventListener('click', route);
     }
   }
   addEventListener('hashchange', route);
@@ -238,16 +275,52 @@
   const notesHtml = (notes) => (notes && notes.length
     ? `<div class="callout warn" style="margin-bottom:16px"><span class="i">${icon('info')}</span><div>${notes.map((n) => `<div>${esc(n)}</div>`).join('')}</div></div>` : '');
 
+  // ── 개인정보 보호 안내 ───────────────────────────────────────────────────
+  const retentionText = () => {
+    const h = (S.meta && S.meta.retention_hours) || 3;
+    return h >= 1 ? `${Math.round(h * 10) / 10}시간` : `${Math.round(h * 60)}분`;
+  };
+  const privacyPoints = () => [
+    '작성 내용은 <b>이 브라우저 탭의 메모리에만</b> 머무르며, 브라우저 저장소·캐시·방문 기록에 저장하지 않습니다.',
+    '서버에는 <b>이 탭만 가진 암호화 키로 암호화된 상태</b>로만 저장되며, 서버는 키를 보관하지 않습니다. 고소장을 만드는 동안에만 잠시 복호화해 처리합니다.',
+    '<b>새로 고침하거나 탭을 닫거나 다시 접속하면</b> 이전 작성 내용을 다시 열 수 없습니다. 완성된 고소장은 반드시 파일로 내려받거나 메일로 받아 두시기 바랍니다.',
+    `페이지를 떠나면 서버의 암호화된 내용도 즉시 삭제를 요청하며, 남아 있더라도 마지막 활동 후 <b>${retentionText()}</b>이 지나면 자동으로 삭제됩니다.`,
+    '접속 기록(IP·주소)은 서버 로그에 남기지 않습니다. 공용 PC에서는 내려받은 파일을 사용 후 삭제해 주시기 바랍니다.',
+  ];
+  const privacyNotice = () => `<div class="privacy-notice" role="note">
+      <div class="privacy-head">${icon('shield')}<b>개인정보 보호 안내</b><span class="badge badge-primary">기록이 남지 않습니다</span></div>
+      <ul>${privacyPoints().map((x) => `<li>${x}</li>`).join('')}</ul>
+    </div>`;
+
+  // 작성을 시작할 때마다(이 탭에서 처음 한 번) 안내를 확인받는다
+  function ackNotice() {
+    if (S.noticeAck) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      openSheet(`<h3>${icon('shield')} 작성 전에 확인해 주시기 바랍니다</h3>
+        <ul class="privacy-list">${privacyPoints().map((x) => `<li>${x}</li>`).join('')}</ul>
+        <div class="sheet-actions"><button class="btn btn-outline" data-a="no">취소</button>
+        <button class="btn btn-primary" data-a="yes">${icon('check')}확인했습니다</button></div>`, {
+        onMount: (sh) => sh.addEventListener('click', (e) => {
+          const a = e.target.closest('[data-a]');
+          if (!a) return;
+          closeSheet();
+          S.noticeAck = a.dataset.a === 'yes';
+          resolve(S.noticeAck);
+        }),
+      });
+    });
+  }
+
   // ── 홈 ──────────────────────────────────────────────────────────────────
   async function renderHome() {
     const m = S.meta;
-    const savedId = store.get();
     app.innerHTML = `<div class="view">
       <section class="hero"><div class="container">
         <span class="eyebrow">${icon('shield')}경찰청 표준 양식 · 국가법령정보센터 원문 기반</span>
         <h1>범죄 피해, <em>AI와 대화하며</em><br>고소장으로 정리할 수 있습니다</h1>
         <p class="lead">사기·명예훼손·폭행·스토킹·성범죄·임금체불까지, 있었던 일을 편하게 말씀해 주시면 AI가 법령과 판례를 근거로 꼭 필요한 내용을 되묻고 경찰청 표준 양식의 고소장 초안을 만들어 드립니다.</p>
         <div id="resumeSlot"></div>
+        ${privacyNotice()}
         <div class="mode-grid">
           <button class="mode-card featured" data-start="chat">
             <span class="badge badge-primary">추천</span>
@@ -290,7 +363,7 @@
             <p>AI가 만든 문서는 법률 자문이 아닌 초안입니다. 제출 전에 사실관계를 반드시 직접 확인해 주시기 바랍니다. 허위 사실로 고소하면 무고죄(형법 제156조)로 처벌받을 수 있습니다.</p></div></div>
         </div>
       </div></section>
-      <footer class="app-footer"><div class="container"><span>경찰대학 데이터사이언스전공 미래치안공학연구원(FPEI)</span><span>입력한 정보는 작성 후 ${72}시간이 지나면 자동으로 삭제됩니다.</span></div></footer>
+      <footer class="app-footer"><div class="container"><span>경찰대학 데이터사이언스전공 미래치안공학연구원(FPEI)</span><span>입력한 정보는 브라우저에 남지 않으며, 서버의 암호화된 내용도 마지막 활동 후 ${retentionText()} 이내에 삭제됩니다.</span></div></footer>
     </div>`;
 
     $$('[data-start]', app).forEach((b) => b.addEventListener('click', () => startCase(b.dataset.start)));
@@ -310,24 +383,23 @@
     })); }
     showCat(m.categories[0]);
 
-    if (savedId) {
+    if (S.case && vault.key) {
+      // 같은 탭 안에서 홈으로 돌아온 경우에만 이어서 작성할 수 있다(메모리에만 있으므로)
       try {
-        const c = await api(`/cases/${savedId}`);
-        S.case = c;
+        const c = await loadCase();
         const label = c.state.crime_label ? `${c.state.crime_label} · ` : '';
         const where = c.files ? '완성된 고소장이 있습니다' : `작성 중 (${Math.round(c.state.completeness * 100)}%)`;
-        $('#resumeSlot').innerHTML = `<div class="resume-banner">${icon('clock')}<div class="grow"><b>이어서 작성할 수 있습니다</b><div class="muted small">${esc(label + where)}</div></div>
+        $('#resumeSlot').innerHTML = `<div class="resume-banner">${icon('clock')}<div class="grow"><b>이 탭에서 작성 중인 내용이 있습니다</b><div class="muted small">${esc(label + where)} · 탭을 닫으면 사라집니다</div></div>
           <a class="btn btn-soft btn-sm" href="${caseHome(c)}">${c.files ? '고소장 보기' : '이어서 작성'}</a>
           <button class="btn btn-ghost btn-sm btn-icon" id="forgetBtn" aria-label="지우기">${icon('x')}</button></div>`;
         $('#forgetBtn').addEventListener('click', async () => {
-          if (!(await confirmSheet({ title: '작성 내용을 삭제하시겠습니까?', message: '서버에 저장된 대화·사건 정리·문서를 지금 바로 삭제합니다.', ok: '삭제', danger: true }))) return;
-          try { await api(`/cases/${savedId}`, { method: 'DELETE' }); } catch (e) {}
-          store.clear();
+          if (!(await confirmSheet({ title: '작성 내용을 삭제하시겠습니까?', message: '서버에 암호화되어 저장된 대화·사건 정리·문서를 지금 바로 삭제합니다.', ok: '삭제', danger: true }))) return;
+          await discardCase();
           $('#resumeSlot').innerHTML = '';
           toast('삭제했습니다.', 'ok');
         });
       } catch (e) {
-        if (e.status === 404) store.clear();
+        if (e.status === 404) { S.case = null; vault.key = null; }
       }
     }
   }
@@ -484,7 +556,7 @@
       if (!ok) return;
     }
     togglePanel(false);
-    go(`#/party/${S.case.id}`);
+    go(`#/party`);
   }
 
   // ── 채팅 ────────────────────────────────────────────────────────────────
@@ -649,7 +721,7 @@
         try {
           const r = await api(`/cases/${c.id}/facts`, { method: 'PUT', body: { crime_type: typeId, facts: {} } });
           c.state = r.state;
-          go(`#/form/${c.id}/facts`);
+          go(`#/form/facts`);
         } catch (e) { toast(e.message, 'error'); }
       };
       $('#toChat').addEventListener('click', (e) => { e.preventDefault(); startCase('chat'); });
@@ -668,11 +740,11 @@
     };
     app.innerHTML = `<div class="container narrow page view">${stepper(1)}
       <div class="page-head row between wrap"><div><h1 class="page-title">${esc(crime.label)} 내용 입력</h1><p class="page-sub">입력한 내용은 자동으로 저장됩니다. <span class="req">*</span> 표시는 꼭 필요한 항목입니다.</p></div>
-        <a class="btn btn-ghost btn-sm" href="#/form/${c.id}/type">유형 바꾸기</a></div>
+        <a class="btn btn-ghost btn-sm" href="#/form/type">유형 바꾸기</a></div>
       ${notesHtml(crime.notes)}
       ${groups.map((g) => `<div class="card form-section"><div class="card-head"><h3>${icon(g.icon)}${esc(g.title)}</h3></div><div class="card-body grid-2">${g.keys.map(fieldHtml).join('')}</div></div>`).join('')}
       <div class="callout"><span class="i">${icon('info')}</span><div>상대방이 한 말은 <b>따옴표로 그대로</b>, 금액과 날짜는 <b>숫자로 정확히</b> 적을수록 좋은 고소장이 됩니다. 확인되지 않은 부분은 “모름”으로 작성할 수 있습니다.</div></div>
-      <div class="sticky-actions"><div class="form-actions" style="margin:0"><a class="btn btn-outline" href="#/form/${c.id}/type">${icon('left')}이전</a>
+      <div class="sticky-actions"><div class="form-actions" style="margin:0"><a class="btn btn-outline" href="#/form/type">${icon('left')}이전</a>
         <button class="btn btn-primary btn-lg" id="formNext">다음: 당사자 정보 ${icon('right')}</button></div></div></div>`;
     wireChoices(app);
 
@@ -706,7 +778,7 @@
       try {
         const r = await api(`/cases/${c.id}/facts`, { method: 'PUT', body: { facts: { ...dirty } } });
         c.state = r.state;
-        go(`#/party/${c.id}`);
+        go(`#/party`);
       } catch (e) { toast(e.message, 'error'); }
     });
   }
@@ -768,7 +840,7 @@
         <label class="check"><input type="checkbox" id="agree2"><span>입력한 내용은 사실이며, 허위 사실로 고소하면 <b>무고죄(형법 제156조)</b>로 처벌받을 수 있음을 알고 있습니다.</span></label>
       </div>
       <div class="sticky-actions"><div class="form-actions" style="margin:0">
-        <a class="btn btn-outline" href="${c.mode === 'chat' ? `#/chat/${c.id}` : `#/form/${c.id}/facts`}">${icon('left')}사건 내용으로</a>
+        <a class="btn btn-outline" href="${c.mode === 'chat' ? `#/chat` : `#/form/facts`}">${icon('left')}사건 내용으로</a>
         <button class="btn btn-primary btn-lg" id="genBtn">${icon('spark')}고소장 생성하기</button></div></div></div>`;
 
     // 주소 검색
@@ -857,7 +929,7 @@
       }
       if (!$('#agree1').checked || !$('#agree2').checked) return toast('안내 사항 두 가지에 동의해 주시기 바랍니다.', 'error');
       S.pendingParty = body;
-      go(`#/generating/${c.id}`);
+      go(`#/generating`);
     });
   }
 
@@ -874,7 +946,7 @@
     const c = S.case;
     if (!S.pendingParty) {
       // 새로고침 등으로 입력값이 없어졌다면 결과 또는 입력 화면으로
-      return go(c.files ? `#/result/${c.id}` : `#/party/${c.id}`);
+      return go(c.files ? `#/result` : `#/party`);
     }
     const party = S.pendingParty;
     app.innerHTML = `<div class="container view"><div class="gen-wrap"><div class="card gen-card" style="text-align:center">
@@ -898,7 +970,7 @@
     const fail = (msg) => {
       if (running) setStep(running, 'fail');
       $('#genErr').innerHTML = `<div class="issue error" style="margin-top:18px;text-align:left"><span class="i">${icon('alert')}</span><div>${esc(msg)}</div></div>
-        <div class="row" style="justify-content:center;margin-top:14px"><a class="btn btn-outline" href="#/party/${c.id}">정보 수정</a><button class="btn btn-primary" id="retry">${icon('refresh')}다시 시도</button></div>`;
+        <div class="row" style="justify-content:center;margin-top:14px"><a class="btn btn-outline" href="#/party">정보 수정</a><button class="btn btn-primary" id="retry">${icon('refresh')}다시 시도</button></div>`;
       $('#retry').addEventListener('click', () => { S.pendingParty = party; renderGenerating(); });
     };
     try {
@@ -919,7 +991,7 @@
     if (done) {
       S.pendingParty = null;
       toast('고소장 초안이 완성되었습니다.', 'ok');
-      setTimeout(() => go(`#/result/${c.id}`), 500);
+      setTimeout(() => go(`#/result`), 500);
     }
   }
 
@@ -929,19 +1001,18 @@
 
   function renderResult(tab) {
     const c = S.case;
-    if (!c.files || !c.draft) return go(`#/party/${c.id}`);
-    tab = tab || sessionStorage.getItem('resultTab') || 'doc';
+    if (!c.files || !c.draft) return go(`#/party`);
+    tab = tab || S.resultTab || 'doc';
     const a = c.analysis || {};
     const issues = (c.review && c.review.issues) || [];
-    const fileUrl = (k, dl) => `/api/files/${c.id}/${k}?v=${encodeURIComponent(c.files.token)}${dl ? '&download=1' : ''}`;
     app.innerHTML = `<div class="container page view">
       <div class="card result-hero">
         <div class="ok">${icon('check')}</div>
         <div class="grow"><h1 class="page-title" style="font-size:22px">고소장 초안이 완성되었습니다</h1>
           <div class="muted small">${esc(a.offense || '')} · ${esc(c.state.crime_label || '')} · 고소인 서명·날인 후 제출해 주시기 바랍니다</div></div>
         <div class="row wrap">
-          ${c.files.pdf ? `<a class="btn btn-primary" href="${fileUrl('pdf', true)}">${icon('download')}PDF</a>` : ''}
-          <a class="btn btn-outline" href="${fileUrl('docx', true)}">${icon('download')}Word</a>
+          ${c.files.pdf ? `<button class="btn btn-primary" data-dl="pdf">${icon('download')}PDF</button>` : ''}
+          <button class="btn btn-outline" data-dl="docx">${icon('download')}Word</button>
           <button class="btn btn-outline" id="mailBtn">${icon('mail')}메일로 받기</button>
         </div>
       </div>
@@ -952,7 +1023,11 @@
       </div>
       <div id="tabBody"></div>
     </div>`;
-    $$('[data-tab]', app).forEach((b) => b.addEventListener('click', () => { sessionStorage.setItem('resultTab', b.dataset.tab); renderResult(b.dataset.tab); }));
+    $$('[data-tab]', app).forEach((b) => b.addEventListener('click', () => { S.resultTab = b.dataset.tab; renderResult(b.dataset.tab); }));
+    $$('[data-dl]', app).forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await downloadFile(b.dataset.dl); } catch (err) { toast(err.message, 'error'); } finally { b.disabled = false; }
+    }));
     $('#mailBtn').addEventListener('click', mailSheet);
     const body = $('#tabBody');
     if (tab === 'legal') return renderLegal(body, a);
@@ -971,14 +1046,17 @@
             <div class="row"><button class="btn btn-outline" id="cancelEdit">취소</button><button class="btn btn-primary" id="saveEdit">${icon('refresh')}문서 다시 만들기</button></div></div></div>
         </div>
         <div class="row wrap" style="margin-top:16px">
-          <a class="btn btn-ghost" href="#/party/${c.id}">${icon('user')}당사자 정보 수정 후 다시 생성</a>
-          <a class="btn btn-ghost" href="${c.mode === 'chat' ? `#/chat/${c.id}` : `#/form/${c.id}/facts`}">${icon('chat')}사건 내용 보완하기</a>
+          <a class="btn btn-ghost" href="#/party">${icon('user')}당사자 정보 수정 후 다시 생성</a>
+          <a class="btn btn-ghost" href="${c.mode === 'chat' ? `#/chat` : `#/form/facts`}">${icon('chat')}사건 내용 보완하기</a>
           <button class="btn btn-ghost" id="newBtn">${icon('plus')}새 고소장</button>
         </div>
       </div>
-      <div class="card preview-frame">${c.files.pdf ? `<iframe title="고소장 미리보기" src="${fileUrl('pdf')}#view=FitH"></iframe>` : `<div class="card-body muted">PDF 미리보기를 만들지 못했습니다. Word 파일을 받아 확인해 주시기 바랍니다.</div>`}</div>
+      <div class="card preview-frame">${c.files.pdf ? `<iframe title="고소장 미리보기" id="pdfPreview"></iframe>` : `<div class="card-body muted">PDF 미리보기를 만들지 못했습니다. Word 파일을 받아 확인해 주시기 바랍니다.</div>`}</div>
     </div>`;
     if (errs.length) $('#docCard').scrollIntoView({ block: 'nearest' });
+    if (c.files.pdf) {
+      fileBlobUrl('pdf').then((u) => { const f = $('#pdfPreview'); if (f) f.src = `${u}#view=FitH`; }).catch((err) => toast(err.message, 'error'));
+    }
 
     $('#editBtn').addEventListener('click', () => {
       $$('.doc-section', body).forEach((sec) => {
@@ -1001,9 +1079,8 @@
       } catch (err) { toast(err.message, 'error'); e.target.disabled = false; }
     });
     $('#newBtn').addEventListener('click', async () => {
-      if (!(await confirmSheet({ title: '새 고소장을 작성하시겠습니까?', message: '지금 고소장은 보존 기간 동안 서버에 남아 있지만, 이 기기에서 바로 이어서 열 수는 없게 됩니다. 필요하면 먼저 파일을 받아 두어 주시기 바랍니다.', ok: '새로 작성' }))) return;
-      store.clear();
-      S.case = null;
+      if (!(await confirmSheet({ title: '새 고소장을 작성하시겠습니까?', message: '지금 고소장은 서버에서 즉시 삭제되며 다시 열 수 없습니다. 필요하면 먼저 파일을 받아 두시기 바랍니다.', ok: '삭제하고 새로 작성', danger: true }))) return;
+      await discardCase();
       go('#/');
     });
   }
@@ -1059,14 +1136,12 @@
       </div></div>
       <div class="callout"><span class="i">${icon('info')}</span><div><b>피해금 돌려받기</b><div>형사재판에서 법원에 배상명령을 신청하면 별도 민사소송 없이 피해금 배상 판결을 받을 수도 있습니다(소송촉진 등에 관한 특례법 제25조·제26조). 보이스피싱 피해라면 즉시 112와 송금한 은행에 지급정지를 요청해 주시기 바랍니다.</div></div></div>
       <div class="callout warn"><span class="i">${icon('alert')}</span><div><b>무고죄 주의</b><div>사실과 다른 내용으로 고소하면 형법 제156조의 무고죄로 처벌받을 수 있습니다. 모르는 부분은 추측하지 말고 ‘불상’ 또는 ‘모름’으로 작성해 주시기 바랍니다.</div></div></div>
-      <div class="card card-pad row between wrap"><div><b>개인정보 삭제</b><div class="muted small">입력한 정보와 문서는 72시간 후 자동으로 삭제됩니다. 지금 바로 지울 수도 있습니다.</div></div>
+      <div class="card card-pad row between wrap"><div><b>개인정보 삭제</b><div class="muted small">입력한 정보와 문서는 이 탭을 닫으면 삭제되며, 남아 있더라도 마지막 활동 후 ${retentionText()}이 지나면 자동으로 삭제됩니다. 지금 바로 지울 수도 있습니다.</div></div>
         <button class="btn btn-danger-ghost" id="delBtn">${icon('trash')}지금 삭제</button></div>
     </div>`;
     $('#delBtn').addEventListener('click', async () => {
       if (!(await confirmSheet({ title: '모든 정보를 삭제하시겠습니까?', message: '대화·사건 정리·당사자 정보·생성된 문서가 서버에서 즉시 삭제되며 되돌릴 수 없습니다.', ok: '삭제', danger: true }))) return;
-      try { await api(`/cases/${S.case.id}`, { method: 'DELETE' }); } catch (e) {}
-      store.clear();
-      S.case = null;
+      await discardCase();
       toast('삭제했습니다.', 'ok');
       go('#/');
     });
@@ -1075,7 +1150,7 @@
   function mailSheet() {
     const c = S.case;
     const email = (c.party && c.party.complainant && c.party.complainant.email) || '';
-    openSheet(`<h3>메일로 받기</h3><p class="muted small" style="margin:0 0 16px">Word 파일을 첨부해 보내 드립니다.</p>
+    openSheet(`<h3>메일로 받기</h3><p class="muted small" style="margin:0 0 16px">Word 파일을 첨부해 보내 드립니다. 메일은 전자우편 서버를 거쳐 전송되므로 본인이 관리하는 주소로 받으시기 바랍니다.</p>
       <label class="field"><span class="field-label">받는 주소</span><input class="input" id="mailTo" type="email" value="${esc(email)}" placeholder="name@example.com"></label>
       <div class="field"><span class="field-label">용도</span><div class="seg" id="mailKind" data-choice="k"><button type="button" aria-pressed="true" data-v="self">본인 보관용</button><button type="button" aria-pressed="false" data-v="submit">제출용(기관 등)</button></div></div>
       <div class="sheet-actions"><button class="btn btn-outline" data-a="no">취소</button><button class="btn btn-primary" data-a="send">${icon('send')}보내기</button></div>`, {
@@ -1095,6 +1170,39 @@
       },
     });
   }
+
+  // ── 브라우저에 입력값이 남지 않게 ─────────────────────────────────────────
+  // 자동 완성·입력 기록·맞춤법 검사 서버 전송을 끈다(새로 그려지는 입력칸에도 적용)
+  function hardenInputs(root) {
+    $$('input, textarea, select', root).forEach((el) => {
+      if (el.dataset.hardened) return;
+      el.dataset.hardened = '1';
+      el.setAttribute('autocomplete', el.type === 'password' ? 'new-password' : 'off');
+      el.setAttribute('autocorrect', 'off');
+      el.setAttribute('autocapitalize', 'off');
+      el.setAttribute('spellcheck', 'false');
+      el.setAttribute('data-lpignore', 'true');
+      el.setAttribute('data-1p-ignore', 'true');
+      el.setAttribute('data-form-type', 'other');
+    });
+  }
+  hardenInputs(document);
+  new MutationObserver((records) => {
+    records.forEach((r) => r.addedNodes.forEach((n) => { if (n.nodeType === 1) hardenInputs(n.parentNode || n); }));
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // 작성 중에 페이지를 떠나려 하면 경고한다(새로 고침도 내용이 사라진다)
+  addEventListener('beforeunload', (e) => {
+    if (S.case && vault.key) { e.preventDefault(); e.returnValue = ''; }
+  });
+  // 페이지를 떠나면 서버의 암호화된 내용도 바로 지운다. sendBeacon은 헤더를 못 붙여 키를 본문으로 보낸다.
+  addEventListener('pagehide', (e) => {
+    if (e.persisted || !S.case || !vault.key) return;
+    try { navigator.sendBeacon(`/api/cases/${S.case.id}/discard`, new Blob([vault.key], { type: 'text/plain' })); } catch (err) {}
+    S.case = null;
+    vault.key = null;
+    revokeBlobs();
+  });
 
   route();
 })();
