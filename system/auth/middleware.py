@@ -1,7 +1,7 @@
 import logging
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
-from starlette.requests import Request
+from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, RedirectResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -25,6 +25,9 @@ class AuthMiddleware:
         self.public_paths = PUBLIC_PATHS + (extra_public_paths or [])
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] == "websocket":
+            await self._websocket(scope, receive, send)
+            return
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -96,3 +99,35 @@ class AuthMiddleware:
             )
 
         await response(scope, receive, send)
+
+    async def _websocket(self, scope: Scope, receive: Receive, send: Send):
+        """웹소켓도 같은 세션으로 인증한다. 브라우저는 웹소켓에 CORS를 적용하지 않으므로
+        다른 사이트가 사용자의 쿠키로 연결을 여는 것(CSWSH)도 Origin으로 막는다."""
+        conn = HTTPConnection(scope)
+        path = conn.url.path
+        if any(
+            path == p if p == "/" else path.startswith(p) for p in self.public_paths
+        ):
+            await self.app(scope, receive, send)
+            return
+
+        origin = conn.headers.get("origin")
+        if origin and urlsplit(origin).netloc != conn.headers.get("host"):
+            live = None
+        else:
+            token = conn.cookies.get("session")
+            live = revalidate_session(decode_token(token), user_db) if token else None
+        if live:
+            scope["state"] = {
+                "user": {
+                    "uid": live["sub"],
+                    "name": live["name"],
+                    "role": live.get("role"),
+                }
+            }
+            await self.app(scope, receive, send)
+            return
+
+        message = await receive()
+        if message["type"] == "websocket.connect":
+            await send({"type": "websocket.close", "code": 1008})

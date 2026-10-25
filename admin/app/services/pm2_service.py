@@ -15,8 +15,7 @@ class PM2Service:
         try:
             # jlist 호출
             result = subprocess.run(
-                f"{pm2_path} jlist",
-                shell=True,
+                [pm2_path, "jlist"],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -124,7 +123,7 @@ class PM2Service:
     def save_processes():
         pm2_path = shutil.which("pm2")
         try:
-            subprocess.run(f"{pm2_path} save", shell=True, check=True)
+            subprocess.run([pm2_path, "save"], check=True)
             return True
         except:
             return False
@@ -134,7 +133,7 @@ class PM2Service:
         pm2_path = shutil.which("pm2")
         try:
             result = subprocess.run(
-                f"{pm2_path} startup", shell=True, capture_output=True, text=True
+                [pm2_path, "startup"], capture_output=True, text=True
             )
             return (
                 "already configured" in result.stdout.lower()

@@ -18,6 +18,8 @@ from app.libs.jwt import decode_token
 from system.logging.user_log import insert_log
 from system.auth.session import revalidate_session
 import os
+import re
+from urllib.parse import urlsplit
 
 
 class PathAddRequest(BaseModel):
@@ -221,9 +223,44 @@ async def check_rename_domain(
     return {"success": True, "message": "변경 가능한 도메인입니다."}
 
 
+EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+
+
+def _invalid_console_input(action, data):
+    if action not in ("add", "rename", "delete"):
+        return None
+    domains = (
+        [data.get("old_domain"), data.get("new_domain")]
+        if action == "rename"
+        else [data.get("domain")]
+    )
+    if not all(isinstance(d, str) and NginxService.is_valid_domain(d) for d in domains):
+        return "유효하지 않은 도메인입니다."
+    if action in ("add", "rename") and not (
+        isinstance(data.get("email"), str) and EMAIL_RE.match(data["email"])
+    ):
+        return "유효하지 않은 이메일입니다."
+    if action == "add":
+        port = data.get("port")
+        if not (isinstance(port, str) and port.isdigit() and 1 <= int(port) <= 65535):
+            return "유효하지 않은 포트입니다."
+        path = data.get("path") or "/"
+        if not isinstance(path, str) or NginxService.normalize_path(path) is None:
+            return "유효하지 않은 경로입니다."
+        data["path"] = NginxService.normalize_path(path)
+    return None
+
+
 @router.websocket("/ws/console")
 async def nginx_console_ws(websocket: WebSocket):
     await websocket.accept()
+
+    # 브라우저는 웹소켓에 CORS를 적용하지 않으므로, 다른 사이트에서 연 연결은 직접 막는다
+    origin = urlsplit(websocket.headers.get("origin") or "").netloc
+    if not origin or origin != websocket.headers.get("host"):
+        await websocket.send_text("허용되지 않은 요청입니다")
+        await websocket.close()
+        return
 
     token = websocket.cookies.get("session")
     payload = decode_token(token) if token else None
@@ -238,6 +275,13 @@ async def nginx_console_ws(websocket: WebSocket):
         data = await websocket.receive_json()
         action = data.get("action")
         rename_stdin = None
+
+        # root 권한으로 실행하는 스크립트·명령에 넘기므로 모든 값을 먼저 검증한다
+        error = _invalid_console_input(action, data)
+        if error:
+            await websocket.send_text(f"에러 발생: {error}")
+            await websocket.close()
+            return
 
         if action == "add":
             cmd = [
@@ -346,9 +390,17 @@ async def nginx_console_ws(websocket: WebSocket):
             domain_folder_service.rename_domain(data["old_domain"], data["new_domain"])
             await websocket.send_text("폴더 소속을 새 도메인으로 옮겼습니다.")
         if action == "delete":
-            os.system(f"sudo rm -f /etc/nginx/sites-enabled/{data['domain']}")
-            os.system(f"sudo rm -f /etc/nginx/sites-available/{data['domain']}")
-            os.system("sudo systemctl reload nginx")
+            for base in (NginxService.SITES_ENABLED, NginxService.SITES_AVAILABLE):
+                await (
+                    await asyncio.create_subprocess_exec(
+                        "sudo", "rm", "-f", "--", os.path.join(base, data["domain"])
+                    )
+                ).wait()
+            await (
+                await asyncio.create_subprocess_exec(
+                    "sudo", "systemctl", "reload", "nginx"
+                )
+            ).wait()
             await websocket.send_text("Nginx configuration removed and reloaded.")
 
         await websocket.send_text("작업이 완료되었습니다.")
