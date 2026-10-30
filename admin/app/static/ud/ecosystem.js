@@ -1,5 +1,5 @@
 // UnivDash server.js 의 Ecosystem 부분을 KNPU 관리자 대시보드(/process)용으로 옮김
-// ── ecosystem.config.js: 등록된 앱 목록 · 새 앱 추가 · 시작 ─────────────────────
+// ── ecosystem.config.js: 등록된 앱 목록 · 새 앱 추가 · 시작 · 수정 · 삭제 ─────────────────────
 (function () {
   'use strict';
   const list = document.getElementById('ecoList');
@@ -34,6 +34,8 @@
           <p class="mt-0.5 truncate font-mono text-[10px] text-white/40">${escapeHtml([app.cwd, [app.interpreter ? app.interpreter.split('/').pop() : '', app.script, app.args || ''].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</p>
         </div>
         ${app.status ? '' : `<button type="button" data-eco-start="${escapeHtml(app.name)}" class="flex-shrink-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-xs font-bold text-white"><i class="fas fa-play mr-1"></i>시작</button>`}
+        <button type="button" data-eco-edit="${escapeHtml(app.name)}" class="flex-shrink-0 w-9 h-9 rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition" title="수정" aria-label="${escapeHtml(app.name)} 수정"><i class="fas fa-pen text-xs"></i></button>
+        ${app.self ? '' : `<button type="button" data-eco-delete="${escapeHtml(app.name)}" class="flex-shrink-0 w-9 h-9 rounded-xl bg-white/5 text-red-400/70 hover:bg-red-500/15 hover:text-red-400 transition" title="삭제" aria-label="${escapeHtml(app.name)} 삭제"><i class="fas fa-trash text-xs"></i></button>`}
       </article>`).join('');
   }
 
@@ -49,9 +51,74 @@
       load();
     } catch (error) { ui().toast(error.message, 'error', null, 8000); }
   }
+  async function remove(name) {
+    const app = apps.find((item) => item.name === name);
+    const check = app?.status ? { label: 'pm2 에서도 지우기', desc: '돌고 있는 프로세스를 멈추고 pm2 목록에서 뺍니다.', checked: true } : null;
+    if (!await ui().confirmSheet({ title: `${name} 삭제`, message: `${ecoFile} 에서 이 항목을 지웁니다. 원본은 .bak 으로 백업됩니다.`, confirmLabel: '삭제', danger: true, check })) return;
+    try {
+      const pm2 = check?.checked ? '?pm2=true' : '';
+      const result = await api(`/process/api/ecosystem/apps/${encodeURIComponent(name)}${pm2}`, { method: 'DELETE' });
+      if (result.pm2_deleted === false) ui().toast(`${name} 을(를) ecosystem 에서 지웠지만 pm2 에서는 지우지 못했습니다.`, 'error', null, 8000);
+      else ui().toast(`${name} 을(를) 지웠습니다${result.pm2_deleted ? ' · pm2 에서도 삭제' : ''}.`, 'ok', result.pm2_deleted ? { label: '새로고침', onClick: () => location.reload() } : null, 6000);
+      load();
+    } catch (error) { ui().toast(error.message, 'error', null, 8000); }
+  }
+
+  async function edit(name) {
+    let app;
+    try { app = await api(`/process/api/ecosystem/apps/${encodeURIComponent(name)}`); } catch (error) { ui().toast(error.message, 'error', null, 8000); return; }
+    const running = !!apps.find((item) => item.name === name)?.status;
+    const notes = [
+      app.kept.length ? `폼에 없는 설정(${app.kept.join(', ')})은 그대로 둡니다.` : '',
+      app.watch_custom ? 'watch 가 폴더 목록으로 되어 있습니다. 체크를 풀지 않으면 그대로 둡니다.' : '',
+      app.env_editable ? '' : 'env 가 객체가 아니라 여기서 고칠 수 없습니다.',
+    ].filter(Boolean);
+    ui().formSheet({
+      title: `${name} 수정`,
+      subtitle: '바꾼 설정만 고칩니다. 원본은 .bak 으로 백업됩니다.',
+      fields: [
+        { name: 'name', label: '앱 이름', value: app.name, maxlength: 64 },
+        { name: 'cwd', label: '작업 폴더 (cwd)', value: app.cwd, maxlength: 1024 },
+        { name: 'script', label: '실행 파일 (script)', value: app.script, maxlength: 500 },
+        { name: 'interpreter', label: '인터프리터 (비우면 pm2 기본값)', value: app.interpreter, maxlength: 500 },
+        { name: 'args', label: '실행 인자 (선택)', value: app.args, maxlength: 500 },
+      ],
+      extraHtml: `
+        <label>환경 변수 (한 줄에 KEY=VALUE)<textarea name="env" rows="3" maxlength="20000" autocapitalize="off" spellcheck="false" ${app.env_editable ? '' : 'disabled'}>${escapeHtml(app.env)}</textarea></label>
+        <div class="grid gap-2">
+          <label class="check-row"><input type="checkbox" name="watch" ${app.watch ? 'checked' : ''}> 파일이 바뀌면 자동 재시작 (watch)</label>
+          <label class="check-row"><input type="checkbox" name="time" ${app.time ? 'checked' : ''}> 로그에 시간 표시 (time)</label>
+          ${running && !app.self ? '<label class="check-row"><input type="checkbox" name="apply" checked> 저장한 뒤 새 설정으로 다시 시작</label>' : ''}
+        </div>
+        ${app.self ? '<p class="text-[11px] text-amber-300/80">이 대시보드 자신입니다. 이름은 바꿀 수 없고, 저장한 설정은 직접 다시 시작해야 반영됩니다. 잘못 고치면 대시보드가 켜지지 않을 수 있습니다.</p>' : ''}
+        ${notes.map((note) => `<p class="text-[11px] opacity-60">${escapeHtml(note)}</p>`).join('')}`,
+      submitLabel: '저장',
+      onMount(body) {
+        if (app.self) body.querySelector('[name="name"]').readOnly = true;
+      },
+      async onSubmit(values) {
+        const payload = {
+          name: values.name.trim(), cwd: values.cwd.trim(), script: values.script.trim(),
+          interpreter: values.interpreter.trim(), args: values.args.trim(),
+          env: app.env_editable ? (values.env || '') : app.env,
+          watch: values.watch === 'on', time: values.time === 'on', apply: values.apply === 'on',
+        };
+        const result = await api(`/process/api/ecosystem/apps/${encodeURIComponent(name)}`, { method: 'PUT', body: payload });
+        if (!result.changed.length) ui().toast('바뀐 설정이 없습니다.', 'ok');
+        else if (result.applied === false) ui().toast(`저장했지만 다시 시작하지 못했습니다:\n${result.output || ''}`, 'error', null, 9000);
+        else if (result.applied === 'self') ui().toast(`저장했습니다. 반영하려면 pm2 delete ${name} && pm2 start ${ecoFile} --only ${name} 를 직접 실행해 주시기 바랍니다.`, 'ok', null, 10000);
+        else ui().toast(`${payload.name} 설정을 저장했습니다${result.applied ? ' · 새 설정으로 다시 시작' : ''}.`, 'ok', result.applied ? { label: '새로고침', onClick: () => location.reload() } : null, 6000);
+        load();
+      },
+    });
+  }
+
   list.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-eco-start]');
-    if (button) start(button.dataset.ecoStart);
+    const button = event.target.closest('[data-eco-start], [data-eco-edit], [data-eco-delete]');
+    if (!button) return;
+    if (button.dataset.ecoStart) start(button.dataset.ecoStart);
+    else if (button.dataset.ecoEdit) edit(button.dataset.ecoEdit);
+    else remove(button.dataset.ecoDelete);
   });
 
   document.getElementById('ecoAddBtn').addEventListener('click', () => {

@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 from starlette.background import BackgroundTask
 import psutil
-from app.services.pm2_service import PM2Service
+from app.services.pm2_service import PM2Service, process_flags
 from app.routes.dependencies import get_current_user
 from app.libs.jwt import decode_token
 from app.services import settings_service
@@ -56,7 +56,11 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse(
         request=request,
         name="process.html",
-        context={"processes": processes, "active_page": "process"},
+        context={
+            "processes": processes,
+            "flags": process_flags(processes),
+            "active_page": "process",
+        },
     )
 
 
@@ -128,6 +132,60 @@ async def control_process(action: str, name: str, user=Depends(get_current_user)
         raise HTTPException(status_code=500, detail="Command failed")
 
     return {"status": "success"}
+
+
+def _check_name(name: str) -> None:
+    if not name or name.startswith("-") or len(name) > 200:
+        raise HTTPException(status_code=400, detail="잘못된 앱 이름입니다.")
+
+
+@router.post("/uv-sync/{name}")
+async def uv_sync_process(name: str, user=Depends(get_current_user)):
+    """uv 로 구성된 pm2 앱의 프로젝트 폴더에서 `uv sync`. 재시작은 하지 않는다."""
+    _check_name(name)
+    try:
+        ok, output = await asyncio.to_thread(PM2Service.uv_sync, name)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error.args[0]) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.pm2.uv_sync",
+        "admin",
+        message=f"uv sync: {name}",
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if ok else "failure",
+    )
+    return {"ok": ok, "output": output}
+
+
+@router.post("/git-pull/{name}")
+async def git_pull_process(name: str, user=Depends(get_current_user)):
+    """pm2 앱이 들어 있는 저장소에서 `git pull --ff-only`. 재시작은 하지 않는다."""
+    _check_name(name)
+    try:
+        result = await asyncio.to_thread(PM2Service.git_pull, name)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error.args[0]) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.pm2.git_pull",
+        "admin",
+        message=f"git pull: {name} ({result.get('repo', '-')})"
+        + (f" — {len(result['changed'])}개 파일 변경" if result.get("updated") else ""),
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if result["ok"] else "failure",
+    )
+    return result
 
 
 @router.get("/status")
@@ -355,8 +413,10 @@ async def get_ecosystem(user=Depends(get_current_user)):
         proc.get("name"): (proc.get("pm2_env") or {}).get("status")
         for proc in await asyncio.to_thread(PM2Service.get_processes)
     }
+    self_name = PM2Service.self_name()
     for app in apps:
         app["status"] = running.get(app.get("name"))
+        app["self"] = self_name is not None and app.get("name") == self_name
     return {"path": str(path), "exists": path.exists(), "apps": apps}
 
 
@@ -388,6 +448,112 @@ async def add_ecosystem_app(body: EcosystemAppRequest, user=Depends(get_current_
         message=f"ecosystem 앱 추가: {body.name} ({body.cwd})",
         target={"type": "pm2_process", "id": body.name},
         outcome="success",
+    )
+    return result
+
+
+class EcosystemUpdateRequest(EcosystemAppRequest):
+    start: bool = False
+    apply: bool = True
+
+
+def _log_eco(user, action: str, name: str, message: str, ok: bool = True) -> None:
+    insert_log(
+        user_logs_col,
+        user.get("uid") or user.get("sub"),
+        f"admin.pm2.ecosystem_{action}",
+        "admin",
+        message=message,
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if ok else "failure",
+    )
+
+
+@router.get("/api/ecosystem/apps/{name}")
+async def get_ecosystem_app(name: str, user=Depends(get_current_user)):
+    _check_name(name)
+    try:
+        app = await asyncio.to_thread(ecosystem_service.get_app, name)
+    except (KeyError, EcosystemError) as error:
+        _ecosystem_error(error)
+    app["self"] = name == PM2Service.self_name()
+    return app
+
+
+@router.put("/api/ecosystem/apps/{name}")
+async def update_ecosystem_app(
+    name: str, body: EcosystemUpdateRequest, user=Depends(get_current_user)
+):
+    """항목을 고친다. apply 면 돌고 있는 프로세스를 지우고 새 설정으로 다시 시작한다 (대시보드 자신은 제외)."""
+    _check_name(name)
+    self_name = PM2Service.self_name()
+    if body.name != name and name == self_name:
+        raise HTTPException(
+            status_code=400,
+            detail="이 대시보드 자신의 앱 이름은 여기서 바꿀 수 없습니다.",
+        )
+    try:
+        result = await asyncio.to_thread(
+            ecosystem_service.update_app, name, body.model_dump()
+        )
+    except (ValueError, KeyError, EcosystemError, OSError) as error:
+        _ecosystem_error(error)
+    result["applied"] = None
+    running = name in {
+        p.get("name") for p in await asyncio.to_thread(PM2Service.get_processes)
+    }
+    if body.apply and result["changed"] and running:
+        if name == self_name:
+            result["applied"] = "self"
+        else:
+            # script · cwd · 인터프리터 변경은 restart 로는 반영되지 않아 지우고 새로 시작한다
+            await asyncio.to_thread(PM2Service.run_command, "delete", name)
+            try:
+                ok, output = await asyncio.to_thread(
+                    ecosystem_service.start_app, body.name
+                )
+            except (ValueError, KeyError, EcosystemError) as error:
+                ok, output = False, str(error)
+            result.update(applied=ok, output=output)
+    _log_eco(
+        user,
+        "update",
+        name,
+        f"ecosystem 앱 수정: {name}"
+        + (f" → {body.name}" if body.name != name else "")
+        + f" ({', '.join(result['changed']) or '변경 없음'})",
+        result["applied"] is not False,
+    )
+    return result
+
+
+@router.delete("/api/ecosystem/apps/{name}")
+async def delete_ecosystem_app(
+    name: str, pm2: bool = False, user=Depends(get_current_user)
+):
+    """ecosystem 에서 항목을 지운다. pm2 면 돌고 있는 프로세스도 지운다. 대시보드 자신은 지울 수 없다."""
+    _check_name(name)
+    if name == PM2Service.self_name():
+        raise HTTPException(
+            status_code=400, detail="이 대시보드 자신은 여기서 지울 수 없습니다."
+        )
+    try:
+        result = await asyncio.to_thread(ecosystem_service.delete_app, name)
+    except (ValueError, KeyError, EcosystemError, OSError) as error:
+        _ecosystem_error(error)
+    result["pm2_deleted"] = None
+    if pm2 and name in {
+        p.get("name") for p in await asyncio.to_thread(PM2Service.get_processes)
+    }:
+        result["pm2_deleted"] = await asyncio.to_thread(
+            PM2Service.run_command, "delete", name
+        )
+    _log_eco(
+        user,
+        "delete",
+        name,
+        f"ecosystem 앱 삭제: {name}"
+        + (" (pm2 프로세스도 삭제)" if result["pm2_deleted"] else ""),
     )
     return result
 

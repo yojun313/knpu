@@ -368,16 +368,22 @@
     });
   }
 
-  function confirmSheet({ title, message, confirmLabel = '확인', danger = false }) {
+  // check: {label, desc, checked} 를 주면 체크박스를 함께 보이고, 확인할 때 check.checked 에 결과를 담는다
+  function confirmSheet({ title, message, confirmLabel = '확인', danger = false, check = null }) {
     return new Promise((resolve) => {
       let answered = false;
       let keyHandler = null;
-      openSheet(`${sheetHead(title, message)}<div class="sheet-buttons">
+      const checkHtml = check ? `<div class="sheet-form sheet-check"><label class="check-row"><input type="checkbox" data-check${check.checked ? ' checked' : ''}>
+          <span>${escapeHtml(check.label)}${check.desc ? `<small>${escapeHtml(check.desc)}</small>` : ''}</span></label></div>` : '';
+      openSheet(`${sheetHead(title, message)}${checkHtml}<div class="sheet-buttons">
           <button type="button" class="sheet-cancel" data-no>취소</button>
           <button type="button" class="${danger ? 'sheet-danger' : 'btn-glow'}" data-yes>${escapeHtml(confirmLabel)}</button></div>`, (body) => {
         const yes = body.querySelector('[data-yes]');
         body.querySelector('[data-no]').addEventListener('click', () => closeSheet());
-        yes.addEventListener('click', () => { answered = true; closeSheet(); resolve(true); });
+        yes.addEventListener('click', () => {
+          if (check) check.checked = body.querySelector('[data-check]').checked;
+          answered = true; closeSheet(); resolve(true);
+        });
         // Enter = 확인 · Esc = 취소 (확인 버튼에 초점을 두어 키보드로 바로 누를 수 있게)
         keyHandler = (event) => {
           if (event.isComposing || event.repeat) return;
