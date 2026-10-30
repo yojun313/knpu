@@ -65,6 +65,7 @@ dependencies = [
     "tqdm>=4.67.3",
     "transformers>=5.10.0",
     "ultralytics>=8.4.52",
+    "urllib3>=2.8.0",
     "user-agent>=0.1.14",
     "uvicorn>=0.46.0",
     "websockets>=16.0",
@@ -85,9 +86,4 @@ required-environments = [
 [tool.uv.workspace]
 members = [
     "manager/app",
-    "homepage",
-    "crawler",
-    "complaint",
-    "system/bot",
-    "admin",
 ]
