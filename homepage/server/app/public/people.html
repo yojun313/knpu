@@ -444,15 +444,25 @@
         });
         const recent = matched.slice(0, 7);
 
+        // 직접 입력해 둔 연구 목록 중 논문 DB에 이미 있는 논문은 상세보기에서 뺀다
+        const normalize = (s) => String(s || "").toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+        const knownTitles = matched.map((p) => normalize(p.title)).filter((t) => t.length >= 8);
+        const legacyRest = legacyList
+          ? legacyList.filter((entry) => {
+              const text = normalize(entry);
+              return !knownTitles.some((t) => text.includes(t));
+            })
+          : [];
+
         const legacyDetailId = `legacyResearch-${safeId}`;
-        const legacyHtml = legacyList
+        const legacyHtml = legacyRest.length
           ? `
             <button class="btn btn-outline-dark btn-sm people-pub-ribbon" type="button"
               data-bs-toggle="collapse" data-bs-target="#${legacyDetailId}" aria-expanded="false" aria-controls="${legacyDetailId}">
               <i class="fas fa-chevron-down"></i>상세보기
             </button>
             <div class="collapse" id="${legacyDetailId}">
-              <p class="people-pub-detail mb-0">${legacyList.join("<br>")}</p>
+              <p class="people-pub-detail mb-0">${legacyRest.join("<br>")}</p>
             </div>
           `
           : "";
