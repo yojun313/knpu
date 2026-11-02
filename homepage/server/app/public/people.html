@@ -447,10 +447,27 @@
         // 직접 입력해 둔 연구 목록 중 논문 DB에 이미 있는 논문은 상세보기에서 뺀다
         const normalize = (s) => String(s || "").toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
         const knownTitles = matched.map((p) => normalize(p.title)).filter((t) => t.length >= 8);
+        // 제목이 영문/한글로 달라도 같은 해·권·쪽수면 같은 논문으로 본다
+        const pageRange = (s) => {
+          const m = String(s || "").match(/(\d+)\s*[-–—~]\s*(\d+)/);
+          return m ? `${m[1]}-${m[2]}` : null;
+        };
+        const knownCitations = matched
+          .filter((p) => p.year && pageRange(p.pages))
+          .map((p) => ({ year: String(p.year), volume: p.volume ? String(p.volume) : "", pages: pageRange(p.pages) }));
+        const sameCitation = (entry) => {
+          const text = String(entry).replace(/\s*[-–—~]\s*/g, "-");
+          return knownCitations.some(
+            (c) =>
+              text.includes(c.year) &&
+              new RegExp(`(^|\\D)${c.pages}(\\D|$)`).test(text) &&
+              (!c.volume || new RegExp(`(^|\\D)${c.volume}(\\D|$)`).test(text))
+          );
+        };
         const legacyRest = legacyList
           ? legacyList.filter((entry) => {
               const text = normalize(entry);
-              return !knownTitles.some((t) => text.includes(t));
+              return !knownTitles.some((t) => text.includes(t)) && !sameCitation(entry);
             })
           : [];
 
