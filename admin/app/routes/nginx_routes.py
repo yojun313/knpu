@@ -9,7 +9,7 @@ from fastapi import (
 )
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from app.services.nginx_service import NginxService
+from app.services.nginx_service import HELPER_MISSING, NginxService
 from app.services import domain_folder_service
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
@@ -17,8 +17,6 @@ from app.db import user_logs_col, homepage_users_col
 from app.libs.jwt import decode_token
 from system.logging.user_log import insert_log
 from system.auth.session import revalidate_session
-import os
-import re
 from urllib.parse import urlsplit
 
 
@@ -215,39 +213,39 @@ async def check_rename_domain(
     payload: DomainRenameRequest, user=Depends(get_current_user)
 ):
     """콘솔을 열기 전에 미리 검증한다. 실제 변경은 웹소켓 rename 액션이 수행한다."""
-    ok, message = NginxService.build_renamed_config(
-        payload.old_domain, payload.new_domain
+    ok, message = NginxService.check_rename(
+        payload.old_domain.strip().lower(), payload.new_domain.strip().lower()
     )
     if not ok:
         raise HTTPException(status_code=400, detail=message)
     return {"success": True, "message": "변경 가능한 도메인입니다."}
 
 
-EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-
-
 def _invalid_console_input(action, data):
-    if action not in ("add", "rename", "delete"):
-        return None
+    """콘솔 값을 검증하고 정리한다. 헬퍼가 root 로 다시 검증하지만 먼저 이유를 알려 준다."""
+    for key in ("domain", "new_domain"):
+        if isinstance(data.get(key), str):
+            data[key] = data[key].strip().lower()
+    if isinstance(data.get("email"), str):
+        data["email"] = data["email"].strip()
     domains = (
         [data.get("old_domain"), data.get("new_domain")]
         if action == "rename"
         else [data.get("domain")]
     )
-    if not all(isinstance(d, str) and NginxService.is_valid_domain(d) for d in domains):
+    if not all(NginxService.is_valid_domain(d) for d in domains):
         return "유효하지 않은 도메인입니다."
-    if action in ("add", "rename") and not (
-        isinstance(data.get("email"), str) and EMAIL_RE.match(data["email"])
+    if action in ("add", "rename") and not NginxService.is_valid_email(
+        data.get("email")
     ):
         return "유효하지 않은 이메일입니다."
     if action == "add":
-        port = data.get("port")
-        if not (isinstance(port, str) and port.isdigit() and 1 <= int(port) <= 65535):
+        if not NginxService.is_valid_port(data.get("port")):
             return "유효하지 않은 포트입니다."
-        path = data.get("path") or "/"
-        if not isinstance(path, str) or NginxService.normalize_path(path) is None:
+        path = NginxService.normalize_path(data.get("path") or "/")
+        if path is None:
             return "유효하지 않은 경로입니다."
-        data["path"] = NginxService.normalize_path(path)
+        data["path"] = path
     return None
 
 
@@ -273,31 +271,25 @@ async def nginx_console_ws(websocket: WebSocket):
 
     try:
         data = await websocket.receive_json()
-        action = data.get("action")
-        rename_stdin = None
+        action = data.get("action") if isinstance(data, dict) else None
+        if action not in ("add", "rename", "delete"):
+            await websocket.send_text("Invalid Action")
+            await websocket.close()
+            return
 
-        # root 권한으로 실행하는 스크립트·명령에 넘기므로 모든 값을 먼저 검증한다
         error = _invalid_console_input(action, data)
         if error:
             await websocket.send_text(f"에러 발생: {error}")
             await websocket.close()
             return
 
+        if not NginxService.helper_installed():
+            await websocket.send_text(f"에러 발생: {HELPER_MISSING}")
+            await websocket.close()
+            return
+
         if action == "add":
-            cmd = [
-                "sudo",
-                "bash",
-                os.path.join(
-                    os.path.abspath(
-                        os.path.join(os.path.dirname(__file__), "..", "scripts")
-                    ),
-                    "add_nginx.sh",
-                ),
-                data["domain"],
-                data["email"],
-                data["port"],
-                data.get("path") or "/",
-            ]
+            args = ["add", data["domain"], data["email"], data["port"], data["path"]]
             insert_log(
                 user_logs_col,
                 admin_uid,
@@ -305,30 +297,17 @@ async def nginx_console_ws(websocket: WebSocket):
                 "admin",
                 message=f"SSL 인증서 발급 + nginx 등록: {data['domain']}",
                 target={"type": "nginx_domain", "id": data["domain"]},
-                metadata={"port": data["port"], "path": data.get("path") or "/"},
+                metadata={"port": data["port"], "path": data["path"]},
             )
         elif action == "rename":
             old_domain = data["old_domain"]
             new_domain = data["new_domain"]
-            ok, result = NginxService.build_renamed_config(old_domain, new_domain)
+            ok, message = NginxService.check_rename(old_domain, new_domain)
             if not ok:
-                await websocket.send_text(f"에러 발생: {result}")
+                await websocket.send_text(f"에러 발생: {message}")
                 await websocket.close()
                 return
-            rename_stdin = result
-            cmd = [
-                "sudo",
-                "bash",
-                os.path.join(
-                    os.path.abspath(
-                        os.path.join(os.path.dirname(__file__), "..", "scripts")
-                    ),
-                    "rename_nginx.sh",
-                ),
-                old_domain,
-                new_domain,
-                data["email"],
-            ]
+            args = ["rename", old_domain, new_domain, data["email"]]
             insert_log(
                 user_logs_col,
                 admin_uid,
@@ -338,15 +317,8 @@ async def nginx_console_ws(websocket: WebSocket):
                 target={"type": "nginx_domain", "id": new_domain},
                 metadata={"old_domain": old_domain},
             )
-        elif action == "delete":
-            cmd = [
-                "sudo",
-                "certbot",
-                "delete",
-                "--cert-name",
-                data["domain"],
-                "--non-interactive",
-            ]
+        else:
+            args = ["delete", data["domain"]]
             insert_log(
                 user_logs_col,
                 admin_uid,
@@ -355,57 +327,53 @@ async def nginx_console_ws(websocket: WebSocket):
                 message=f"SSL 인증서 및 nginx 설정 삭제: {data['domain']}",
                 target={"type": "nginx_domain", "id": data["domain"]},
             )
-        else:
-            await websocket.send_text("Invalid Action")
-            await websocket.close()
-            return
 
         process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdin=asyncio.subprocess.PIPE if rename_stdin else None,
+            *NginxService.helper_command(*args),
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
+            limit=1024 * 1024,
         )
 
-        if rename_stdin:
-            process.stdin.write(rename_stdin.encode())
-            await process.stdin.drain()
-            process.stdin.close()
-
-        while True:
-            line = await process.stdout.readline()
-            if not line:
-                break
-            await websocket.send_text(line.decode().strip())
+        # 브라우저가 끊겨도 헬퍼는 끝까지 돌리고 결과를 폴더에 반영한다
+        connected = True
+        while line := await process.stdout.readline():
+            if connected:
+                try:
+                    await websocket.send_text(line.decode("utf-8", "replace").strip())
+                except (WebSocketDisconnect, RuntimeError):
+                    connected = False
 
         await process.wait()
-        if action == "add" and process.returncode == 0 and data.get("folder_id"):
+        succeeded = process.returncode == 0
+        notice = ""
+        if succeeded and action == "add" and data.get("folder_id"):
             # 추가 모달에서 폴더를 골랐으면 생성 성공 직후 바로 그 폴더로 분류한다
             ok, _msg = domain_folder_service.assign_domain(
                 data["domain"], data["folder_id"]
             )
             if ok:
-                await websocket.send_text("도메인을 선택한 폴더로 분류했습니다.")
-        if action == "rename" and process.returncode == 0:
+                notice = "도메인을 선택한 폴더로 분류했습니다."
+        if succeeded and action == "rename":
             domain_folder_service.rename_domain(data["old_domain"], data["new_domain"])
-            await websocket.send_text("폴더 소속을 새 도메인으로 옮겼습니다.")
-        if action == "delete":
-            for base in (NginxService.SITES_ENABLED, NginxService.SITES_AVAILABLE):
-                await (
-                    await asyncio.create_subprocess_exec(
-                        "sudo", "rm", "-f", "--", os.path.join(base, data["domain"])
-                    )
-                ).wait()
-            await (
-                await asyncio.create_subprocess_exec(
-                    "sudo", "systemctl", "reload", "nginx"
-                )
-            ).wait()
-            await websocket.send_text("Nginx configuration removed and reloaded.")
+            notice = "폴더 소속을 새 도메인으로 옮겼습니다."
+        if connected:
+            if notice:
+                await websocket.send_text(notice)
+            await websocket.send_text(
+                "작업이 완료되었습니다." if succeeded else "작업이 실패했습니다."
+            )
 
-        await websocket.send_text("작업이 완료되었습니다.")
-
+    except WebSocketDisconnect:
+        pass
     except Exception as e:
-        await websocket.send_text(f"에러 발생: {str(e)}")
+        try:
+            await websocket.send_text(f"에러 발생: {str(e)}")
+        except (WebSocketDisconnect, RuntimeError):
+            pass
     finally:
-        await websocket.close()
+        try:
+            await websocket.close()
+        except RuntimeError:
+            pass

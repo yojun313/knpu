@@ -1,131 +1,66 @@
-import subprocess
-import os
-import re
+"""nginx 도메인 읽기와 root 헬퍼 호출.
 
-DOMAIN_RE = re.compile(
-    r"^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
-    r"(\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$"
+설정 파일은 직접 읽고, 바꾸는 일은 모두 nginx_helper.py (설치본 /usr/local/sbin/knpu-nginx) 에 맡긴다.
+일반 사용자가 고칠 수 있는 스크립트를 sudo 로 실행하면 웹 프로세스가 곧 root 이므로 그렇게 하지 않는다.
+"""
+
+import os
+import subprocess
+
+from app.services import nginx_helper
+
+HELPER_PATH = "/usr/local/sbin/knpu-nginx"
+SUDO = "/usr/bin/sudo"
+HELPER_TIMEOUT = 90
+HELPER_MISSING = (
+    "Nginx 헬퍼가 설치되어 있지 않습니다. "
+    "서버에서 sudo bash admin/scripts/install_nginx_helper.sh <계정> 을 실행해 주세요."
 )
-PATH_SEGMENT_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
-LOCATION_START_RE = re.compile(r"location\s+(\S+)\s*\{")
 
 
 class NginxService:
-    SCRIPT_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "scripts")
-    )
-    SITES_AVAILABLE = "/etc/nginx/sites-available"
-    SITES_ENABLED = "/etc/nginx/sites-enabled"
+    SITES_AVAILABLE = nginx_helper.SITES_AVAILABLE
+    SITES_ENABLED = nginx_helper.SITES_ENABLED
 
     # ---------- validation / normalization ----------
 
-    @staticmethod
-    def is_valid_domain(domain: str) -> bool:
-        return bool(domain) and bool(DOMAIN_RE.match(domain))
-
-    @staticmethod
-    def normalize_path(path: str) -> str:
-        if path is None:
-            return None
-        path = path.strip()
-        if path in ("", "/"):
-            return "/"
-        segments = [seg for seg in path.split("/") if seg]
-        if not segments:
-            return None
-        for seg in segments:
-            if not PATH_SEGMENT_RE.match(seg):
-                return None
-        return "/" + "/".join(segments)
-
-    # ---------- location block parsing ----------
-
-    @classmethod
-    def _extract_locations(cls, content: str):
-        results = []
-        for m in LOCATION_START_RE.finditer(content):
-            raw_path = m.group(1)
-            depth = 1
-            i = m.end()
-            while i < len(content) and depth > 0:
-                if content[i] == "{":
-                    depth += 1
-                elif content[i] == "}":
-                    depth -= 1
-                i += 1
-            block = content[m.end() : i - 1]
-            port_match = re.search(r"proxy_pass\s+http://localhost:(\d+)", block)
-            path = "/" if raw_path == "/" else raw_path.rstrip("/")
-            results.append(
-                {
-                    "path": path,
-                    "port": port_match.group(1) if port_match else "N/A",
-                    "start": m.start(),
-                    "end": i,
-                }
-            )
-        return results
-
-    @staticmethod
-    def _build_location_block(path: str, port: str) -> str:
-        if path == "/":
-            return (
-                "    location / {\n"
-                f"        proxy_pass http://localhost:{port};\n"
-                "        proxy_http_version 1.1;\n"
-                "        proxy_set_header Upgrade $http_upgrade;\n"
-                "        proxy_set_header Connection 'upgrade';\n"
-                "        proxy_set_header Host $host;\n"
-                "        proxy_cache_bypass $http_upgrade;\n"
-                "    }\n"
-            )
-        return (
-            f"    location {path}/ {{\n"
-            f"        proxy_pass http://localhost:{port}/;\n"
-            f"        proxy_redirect / {path}/;\n"
-            "        proxy_http_version 1.1;\n"
-            "        proxy_set_header Upgrade $http_upgrade;\n"
-            "        proxy_set_header Connection 'upgrade';\n"
-            "        proxy_set_header Host $host;\n"
-            "        proxy_cache_bypass $http_upgrade;\n"
-            "    }\n"
-        )
+    is_valid_domain = staticmethod(nginx_helper.is_valid_domain)
+    is_valid_port = staticmethod(nginx_helper.is_valid_port)
+    is_valid_email = staticmethod(nginx_helper.is_valid_email)
+    normalize_path = staticmethod(nginx_helper.normalize_path)
 
     # ---------- read ----------
 
     @classmethod
     def get_domains(cls):
         domains = []
-
         if not os.path.exists(cls.SITES_ENABLED):
             return domains
 
         for filename in os.listdir(cls.SITES_ENABLED):
             file_path = os.path.join(cls.SITES_ENABLED, filename)
-            if os.path.isfile(file_path):
-                try:
-                    with open(file_path, "r") as f:
-                        content = f.read()
-
-                    domain_match = re.search(r"server_name\s+([^;]+);", content)
-                    domain = domain_match.group(1).strip() if domain_match else None
-                    if not domain or not cls.is_valid_domain(domain):
-                        continue
-
-                    locations = cls._extract_locations(content)
-                    paths = [
-                        {"path": loc["path"], "port": loc["port"]} for loc in locations
-                    ]
-                    domains.append(
-                        {
-                            "domain": domain,
-                            "filename": filename,
-                            "paths": paths,
-                            "primary_port": cls._primary_port(paths),
-                        }
-                    )
-                except Exception:
-                    continue
+            if not os.path.isfile(file_path):
+                continue
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read()
+            except OSError:
+                continue
+            domain = nginx_helper.first_server_name(content)
+            if not cls.is_valid_domain(domain):
+                continue
+            paths = [
+                {"path": loc["path"], "port": loc["port"]}
+                for loc in nginx_helper.extract_locations(content)
+            ]
+            domains.append(
+                {
+                    "domain": domain,
+                    "filename": filename,
+                    "paths": paths,
+                    "primary_port": cls._primary_port(paths),
+                }
+            )
 
         domains.sort(
             key=lambda d: (
@@ -150,234 +85,80 @@ class NginxService:
                 continue
         return min(ports) if ports else None
 
+    # ---------- helper ----------
+
+    @staticmethod
+    def helper_installed() -> bool:
+        return os.path.isfile(HELPER_PATH)
+
+    @staticmethod
+    def helper_command(*args: str) -> list[str]:
+        return [SUDO, "-n", HELPER_PATH, *args]
+
+    @classmethod
+    def _run_helper(cls, *args: str) -> tuple[int, str]:
+        if not cls.helper_installed():
+            return 1, f"실패: {HELPER_MISSING}"
+        try:
+            result = subprocess.run(
+                cls.helper_command(*args),
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=HELPER_TIMEOUT,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return 1, "실패: 시간 안에 끝나지 않았습니다."
+        return result.returncode, (result.stdout + result.stderr).strip()
+
+    @staticmethod
+    def _message(output: str) -> str:
+        lines = [line for line in output.splitlines() if line.strip()]
+        failed = [line for line in lines if line.startswith("실패: ")]
+        if failed:
+            return failed[-1].removeprefix("실패: ")
+        return lines[-1] if lines else "작업에 실패했습니다."
+
     # ---------- write (existing domain, no certbot) ----------
 
     @classmethod
-    def _write_config(cls, domain: str, content: str):
-        script_path = os.path.join(cls.SCRIPT_DIR, "write_nginx_config.sh")
-        process = subprocess.Popen(
-            ["sudo", "bash", script_path, domain],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = process.communicate(input=content)
-        return process.returncode == 0, stdout + stderr
-
-    @classmethod
     def add_path(cls, domain: str, path: str, port: str):
-        if not cls.is_valid_domain(domain):
-            return False, "유효하지 않은 도메인입니다."
-
-        norm_path = cls.normalize_path(path)
-        if norm_path is None:
-            return False, "유효하지 않은 경로입니다."
-
-        if not (port.isdigit() and 1 <= int(port) <= 65535):
-            return False, "유효하지 않은 포트입니다."
-
-        config_path = os.path.join(cls.SITES_AVAILABLE, domain)
-        if not os.path.exists(config_path):
-            return (
-                False,
-                "해당 도메인이 존재하지 않습니다. '새 도메인 추가'로 먼저 생성해 주시기 바랍니다.",
-            )
-
-        with open(config_path, "r") as f:
-            content = f.read()
-
-        locations = cls._extract_locations(content)
-        if any(loc["path"] == norm_path for loc in locations):
-            return False, "이미 존재하는 경로입니다."
-
-        block = cls._build_location_block(norm_path, port)
-        if locations:
-            insert_at = locations[-1]["end"]
-            new_content = content[:insert_at] + "\n" + block + content[insert_at:]
-        else:
-            name_match = re.search(r"server_name\s+[^;]+;", content)
-            if not name_match:
-                return False, "설정 파일 형식을 인식할 수 없습니다."
-            insert_at = name_match.end()
-            new_content = content[:insert_at] + "\n\n" + block + content[insert_at:]
-
-        return cls._write_config(domain, new_content)
+        code, output = cls._run_helper("add-path", domain, path, port)
+        return code == 0, cls._message(output)
 
     @classmethod
     def edit_path_port(cls, domain: str, path: str, port: str):
-        if not cls.is_valid_domain(domain):
-            return False, "유효하지 않은 도메인입니다."
-
-        norm_path = cls.normalize_path(path)
-        if norm_path is None:
-            return False, "유효하지 않은 경로입니다."
-
-        if not (port.isdigit() and 1 <= int(port) <= 65535):
-            return False, "유효하지 않은 포트입니다."
-
-        config_path = os.path.join(cls.SITES_AVAILABLE, domain)
-        if not os.path.exists(config_path):
-            return False, "해당 도메인이 존재하지 않습니다."
-
-        with open(config_path, "r") as f:
-            content = f.read()
-
-        locations = cls._extract_locations(content)
-        target = next((loc for loc in locations if loc["path"] == norm_path), None)
-        if target is None:
-            return False, "해당 경로를 찾을 수 없습니다."
-
-        block = content[target["start"] : target["end"]]
-        new_block, n = re.subn(
-            r"(proxy_pass\s+http://localhost:)\d+", rf"\g<1>{port}", block, count=1
-        )
-        if n == 0:
-            return False, "포트 설정을 찾을 수 없습니다."
-
-        new_content = content[: target["start"]] + new_block + content[target["end"] :]
-        return cls._write_config(domain, new_content)
+        code, output = cls._run_helper("edit-path", domain, path, port)
+        return code == 0, cls._message(output)
 
     @classmethod
     def delete_path(cls, domain: str, path: str):
-        if not cls.is_valid_domain(domain):
-            return False, "유효하지 않은 도메인입니다.", False
+        code, output = cls._run_helper("delete-path", domain, path)
+        last = code == nginx_helper.EXIT_LAST_PATH
+        return code == 0, cls._message(output), last
 
-        norm_path = cls.normalize_path(path)
-        if norm_path is None:
-            return False, "유효하지 않은 경로입니다.", False
-
-        config_path = os.path.join(cls.SITES_AVAILABLE, domain)
-        if not os.path.exists(config_path):
-            return False, "해당 도메인이 존재하지 않습니다.", False
-
-        with open(config_path, "r") as f:
-            content = f.read()
-
-        locations = cls._extract_locations(content)
-        target = next((loc for loc in locations if loc["path"] == norm_path), None)
-        if target is None:
-            return False, "해당 경로를 찾을 수 없습니다.", False
-
-        if len(locations) <= 1:
-            return False, "마지막 경로입니다. 도메인 전체 삭제가 필요합니다.", True
-
-        start, end = target["start"], target["end"]
-        # 블록 앞의 들여쓰기/개행도 함께 제거
-        while start > 0 and content[start - 1] in " \t":
-            start -= 1
-        if start > 0 and content[start - 1] == "\n":
-            start -= 1
-        new_content = content[:start] + content[end:]
-
-        ok, msg = cls._write_config(domain, new_content)
-        return ok, msg, False
-
-    # ---------- domain rename (포트/경로 유지) ----------
+    # ---------- domain rename (미리 검사만. 실제 변경은 헬퍼가 다시 판단한다) ----------
 
     @classmethod
-    def build_renamed_config(cls, old_domain: str, new_domain: str):
-        """기존 도메인의 location 블록(경로·포트)을 그대로 두고 도메인 이름만 바꾼
-        HTTP 전용 설정을 만들어 돌려준다.
-
-        certbot이 붙여둔 ssl_certificate / listen 443 / $host 리다이렉트 줄은
-        전부 옛 도메인 인증서를 가리키므로 여기서 걷어낸다. 새 인증서는 이 설정을
-        올린 뒤 rename_nginx.sh가 certbot을 다시 돌려 붙인다.
-        """
+    def check_rename(cls, old_domain: str, new_domain: str):
         if not cls.is_valid_domain(old_domain):
             return False, "유효하지 않은 기존 도메인입니다."
         if not cls.is_valid_domain(new_domain):
             return False, "유효하지 않은 새 도메인입니다."
         if old_domain == new_domain:
             return False, "기존 도메인과 새 도메인이 같습니다."
-
         old_path = os.path.join(cls.SITES_AVAILABLE, old_domain)
         if not os.path.exists(old_path):
             return False, "해당 도메인이 존재하지 않습니다."
-
-        new_path = os.path.join(cls.SITES_AVAILABLE, new_domain)
-        if os.path.exists(new_path):
+        if os.path.lexists(os.path.join(cls.SITES_AVAILABLE, new_domain)):
             return False, "이미 존재하는 도메인입니다."
-
-        with open(old_path, "r") as f:
+        with open(old_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
-
-        locations = cls._extract_locations(content)
-        # certbot이 만든 리다이렉트 전용 server 블록에는 location이 없다.
-        # 포트를 못 읽은 블록은 되살릴 수 없으므로 제외한다.
-        blocks = [
-            cls._build_location_block(loc["path"], loc["port"])
-            for loc in locations
-            if loc["port"] != "N/A"
-        ]
-        if not blocks:
-            return False, "옮길 수 있는 경로(proxy_pass)를 찾지 못했습니다."
-
-        body = "\n".join(blocks)
-        config = (
-            f"server {{\n    listen 80;\n    server_name {new_domain};\n\n{body}}}\n"
-        )
-        return True, config
-
-    @classmethod
-    def rename_domain_files(cls, old_domain: str, new_domain: str, email: str):
-        """certbot 없이 파일만 옮긴다(웹소켓을 쓰지 않는 호출부용)."""
-        ok, result = cls.build_renamed_config(old_domain, new_domain)
-        if not ok:
-            return False, result
-
-        script_path = os.path.join(cls.SCRIPT_DIR, "rename_nginx.sh")
-        process = subprocess.Popen(
-            ["sudo", "bash", script_path, old_domain, new_domain, email],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = process.communicate(input=result)
-        return process.returncode == 0, stdout + stderr
-
-    # ---------- new domain creation (certbot) ----------
-
-    @classmethod
-    def add_domain(cls, domain: str, email: str, port: str, path: str = "/"):
-        script_path = os.path.join(cls.SCRIPT_DIR, "add_nginx.sh")
-        inputs = f"{domain}\n{email}\n{port}\n{path}\n"
-        process = subprocess.Popen(
-            ["sudo", "bash", script_path],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = process.communicate(input=inputs)
-        return process.returncode == 0, stdout + stderr
-
-    @classmethod
-    def delete_domain(cls, domain_name: str):
         try:
-            # 1. Certbot 인증서 삭제
-            subprocess.run(
-                [
-                    "sudo",
-                    "certbot",
-                    "delete",
-                    "--cert-name",
-                    domain_name,
-                    "--non-interactive",
-                ],
-                check=False,
-            )
-            # 2. Nginx 설정 파일 삭제
-            subprocess.run(
-                ["sudo", "rm", f"/etc/nginx/sites-enabled/{domain_name}"], check=False
-            )
-            subprocess.run(
-                ["sudo", "rm", f"/etc/nginx/sites-available/{domain_name}"], check=False
-            )
-            # 3. Nginx Reload
-            subprocess.run(["sudo", "nginx", "-t"], check=True)
-            subprocess.run(["sudo", "systemctl", "reload", "nginx"], check=True)
-            return True, "Success"
-        except Exception as e:
-            return False, str(e)
+            nginx_helper.renamed_config(content, new_domain)
+        except nginx_helper.HelperError as error:
+            return False, str(error)
+        return True, ""

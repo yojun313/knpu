@@ -183,4 +183,8 @@ if __name__ == "__main__":
 
     # 실제 실행 진입점은 run.py다(PORT를 pm2가 넣어준다). 여기 남은 직접 실행 경로도
     # 옛 포트(3004)가 아니라 같은 기본값을 쓰도록 맞춘다.
-    uvicorn.run("app.main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8009)))
+    uvicorn.run(
+        "app.main:app",
+        host=os.getenv("HOST", "127.0.0.1"),
+        port=int(os.getenv("PORT", 8009)),
+    )
