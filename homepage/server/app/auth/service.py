@@ -9,7 +9,6 @@ from app.db import (
     users_db,
     auth_codes_db,
     members_db,
-    manager_users_db,
     user_logs_db,
     webauthn_credentials_db,
 )
@@ -62,19 +61,6 @@ def _member_already_linked(member_uid: str) -> bool:
     )
 
 
-def _match_manager_account(name: str) -> dict | None:
-    matches = list(manager_users_db.find({"name": name}))
-    return matches[0] if len(matches) == 1 else None
-
-
-def _manager_uid_already_used(uid: str) -> bool:
-    return users_db.find_one({"uid": uid, "status": {"$ne": "rejected"}}) is not None
-
-
-def _manager_account_exists_by_email(email: str) -> bool:
-    return manager_users_db.find_one({"email": email}) is not None
-
-
 def signup(data) -> dict:
     # 이메일 인증을 끝내지 못하고 이탈한(pending_email) 기존 기록은 "선점"으로 치지 않고
     # 새 가입 신청으로 덮어써서, 같은 아이디로 재시도할 수 있게 한다.
@@ -100,24 +86,9 @@ def signup(data) -> dict:
     if matched_member and not _member_already_linked(matched_member["uid"]):
         member_uid = matched_member["uid"]
 
-    # manager.users에 같은 이름의 계정이 이미 있으면 uid를 그대로 이어받아, 두 시스템에서
-    # 같은 사람이 항상 같은 uid로 식별되게 한다 (crawler db-list 소유자 확인 등에 필요).
-    matched_manager_account = _match_manager_account(data.name)
-    manager_uid = None
-    if matched_manager_account and not _manager_uid_already_used(
-        matched_manager_account["uid"]
-    ):
-        manager_uid = matched_manager_account["uid"]
-
-    manager_email_matched = _manager_account_exists_by_email(data.email)
-
     now = datetime.now()
     user = {
-        "uid": (
-            existing_username["uid"]
-            if existing_username
-            else manager_uid or str(uuid.uuid4())
-        ),
+        "uid": existing_username["uid"] if existing_username else str(uuid.uuid4()),
         "username": data.username,
         "name": data.name,
         "email": data.email,
@@ -126,7 +97,6 @@ def signup(data) -> dict:
         "status": "pending_email",
         "email_verified": False,
         "member_uid": member_uid,
-        "manager_email_matched": manager_email_matched,
         "created_at": existing_username["created_at"] if existing_username else now,
         "approved_at": None,
         "approved_by": None,
@@ -195,21 +165,15 @@ def verify_email(data) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
 
-    # 가입 시 홈페이지 멤버와 연결됐거나, manager.users에 같은 이메일로 가입 이력이 있으면
-    # 관리자 승인 없이 바로 승인 처리한다.
-    auto_approved = bool(user.get("member_uid")) or bool(
-        user.get("manager_email_matched")
-    )
-    approved_reason = (
-        "auto:member_match" if user.get("member_uid") else "auto:manager_email_match"
-    )
+    # 가입 시 홈페이지 멤버와 연결됐으면 관리자 승인 없이 바로 승인 처리한다.
+    auto_approved = bool(user.get("member_uid"))
     updates = {"email_verified": True, "updated_at": datetime.now()}
     if auto_approved:
         updates.update(
             {
                 "status": "approved",
                 "approved_at": datetime.now(),
-                "approved_by": approved_reason,
+                "approved_by": "auto:member_match",
             }
         )
     else:

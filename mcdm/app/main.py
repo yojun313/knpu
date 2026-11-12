@@ -32,6 +32,8 @@ app.add_middleware(
         # 응답자는 익명이라 로그인 없이 접근한다 (PLAN.md 5.2).
         "/r/",
         "/api/respond/",
+        # 응답자 웹소켓 — 핸들러가 응답자 토큰을 직접 검증한다(ws_routes.ws_respond).
+        "/ws/respond/",
         # /js/ /css/는 system.auth.middleware가 항상 공개로 취급하지만 /img/는
         # 아니다 — 응답자 페이지가 로고·파비콘을 못 불러오는 조용한 버그가 될
         # 뻔했다(하드코딩된 예외에 /img/가 빠져 있음).

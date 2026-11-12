@@ -1,9 +1,11 @@
+import asyncio
 import logging
 from urllib.parse import quote, urlsplit
 
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, RedirectResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.websockets import WebSocketDisconnect
 
 from system.auth.jwt import decode_token
 from system.auth.session import revalidate_session
@@ -17,6 +19,9 @@ logger = logging.getLogger(__name__)
 PUBLIC_PATHS = [
     "/api/health",
 ]
+
+# 열린 웹소켓의 세션을 다시 확인하는 주기(초)
+WS_REVALIDATE_SECONDS = 30
 
 
 class AuthMiddleware:
@@ -125,9 +130,46 @@ class AuthMiddleware:
                     "role": live.get("role"),
                 }
             }
-            await self.app(scope, receive, send)
+            await self._run_watched(scope, receive, send, token)
             return
 
         message = await receive()
         if message["type"] == "websocket.connect":
             await send({"type": "websocket.close", "code": 1008})
+
+    async def _run_watched(self, scope: Scope, receive: Receive, send: Send, token):
+        """연결이 열려 있는 동안에도 주기적으로 세션을 다시 확인한다. 계정이 삭제·차단되거나
+        로그아웃(token_version 변경)되면 이미 열린 웹소켓도 끊는다."""
+        lock = asyncio.Lock()
+        state = {"accepted": False, "closed": False}
+
+        async def guarded_send(message):
+            async with lock:
+                if state["closed"]:
+                    raise WebSocketDisconnect(code=1008)
+                if message["type"] == "websocket.accept":
+                    state["accepted"] = True
+                elif message["type"] == "websocket.close":
+                    state["closed"] = True
+                await send(message)
+
+        async def watchdog():
+            while True:
+                await asyncio.sleep(WS_REVALIDATE_SECONDS)
+                live = await asyncio.to_thread(
+                    revalidate_session, decode_token(token), user_db
+                )
+                if live:
+                    continue
+                async with lock:
+                    if not state["closed"]:
+                        state["closed"] = True
+                        await send({"type": "websocket.close", "code": 1008})
+                return
+
+        task = asyncio.create_task(watchdog())
+        try:
+            await self.app(scope, receive, guarded_send)
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)

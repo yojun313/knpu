@@ -28,6 +28,8 @@ templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 _prev_sample = {"ts": None, "net": None, "disk": None}
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+# 열린 로그 웹소켓의 세션을 다시 확인하는 주기(초)
+_WS_REVALIDATE_SECONDS = 30
 
 
 def _get_cpu_temp():
@@ -286,12 +288,31 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
     )
 
     disconnect_task = asyncio.create_task(websocket.receive_text())
+    next_check = time.monotonic() + _WS_REVALIDATE_SECONDS
     try:
+        line_task = None
         while True:
-            line_task = asyncio.create_task(process.stdout.readline())
+            # 연결이 열려 있는 동안에도 세션을 다시 확인해서, 삭제·강등된 계정은 끊는다
+            if time.monotonic() >= next_check:
+                next_check = time.monotonic() + _WS_REVALIDATE_SECONDS
+                live = await asyncio.to_thread(
+                    revalidate_session, decode_token(token), homepage_users_col
+                )
+                if not live or live.get("role") != "admin":
+                    if line_task:
+                        line_task.cancel()
+                        await asyncio.gather(line_task, return_exceptions=True)
+                    await websocket.close(code=1008)
+                    break
+            if line_task is None:
+                line_task = asyncio.create_task(process.stdout.readline())
             done, _ = await asyncio.wait(
-                {line_task, disconnect_task}, return_when=asyncio.FIRST_COMPLETED
+                {line_task, disconnect_task},
+                timeout=max(0, next_check - time.monotonic()),
+                return_when=asyncio.FIRST_COMPLETED,
             )
+            if not done:
+                continue
             if disconnect_task in done:
                 try:
                     disconnect_task.result()
@@ -301,6 +322,7 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
                 await asyncio.gather(line_task, return_exceptions=True)
                 break
             line = line_task.result()
+            line_task = None
             if not line:
                 break
             clean_line = _ANSI_ESCAPE.sub("", line.decode(errors="replace")).rstrip(

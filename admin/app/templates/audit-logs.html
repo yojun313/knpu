@@ -18,6 +18,13 @@
     #auditTable tr { display: table-row; }
     #auditTable th, #auditTable td { display: table-cell; vertical-align: middle; }
 
+    /* 경로를 뺀 열은 내용 길이가 거의 일정하므로 고정 폭을 주고, 남는 폭을 경로에 몰아준다.
+       그래도 넘치는 값(긴 이름 등)은 옆 칸을 침범하지 않게 말줄임 처리한다. */
+    @media (min-width: 1024px) {
+        #auditTable { min-width: 860px; }
+        #auditTable th, #auditTable td { padding-left: 0.75rem; padding-right: 0.75rem; overflow: hidden; text-overflow: ellipsis; }
+    }
+
     /* 1024px 미만(모바일/태블릿 세로)에서는 감사 로그 테이블을 세로 카드형으로 재배치해서
        모든 필드(특히 경로)를 보려고 가로 스크롤할 필요가 없게 한다. */
     @media (max-width: 1023px) {
@@ -89,13 +96,13 @@
             <div class="overflow-x-auto">
                 <table id="auditTable" class="w-full text-sm">
                     <colgroup>
-                        <col style="width: 13%;">  <!-- 시간 -->
-                        <col style="width: 9%;">   <!-- 서비스 -->
-                        <col style="width: 10%;">  <!-- 사용자 -->
-                        <col style="width: 8%;">   <!-- 메서드 -->
-                        <col style="width: 42%;">  <!-- 경로 (제일 넓게) -->
-                        <col style="width: 8%;">   <!-- 상태 -->
-                        <col style="width: 10%;">  <!-- 소요 -->
+                        <col style="width: 168px;">  <!-- 시간 -->
+                        <col style="width: 130px;">  <!-- 서비스 -->
+                        <col style="width: 175px;">  <!-- 사용자 -->
+                        <col style="width: 80px;">   <!-- 메서드 -->
+                        <col>                        <!-- 경로 (남는 폭 전부) -->
+                        <col style="width: 58px;">   <!-- 상태 -->
+                        <col style="width: 84px;">   <!-- 소요 -->
                     </colgroup>
                     <thead>
                         <tr class="border-b border-zinc-800 text-left text-zinc-500 text-xs uppercase tracking-wide">
@@ -111,11 +118,11 @@
                     <tbody>
                         {% for log in logs %}
                         <tr class="audit-row hover:bg-zinc-900/40 transition-colors">
-                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs whitespace-nowrap" data-label="시간">{{ log.ts_kst }}</td>
-                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="서비스">
+                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs whitespace-nowrap" data-label="시간">{{ log.datetime }}</td>
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="서비스" title="{{ log.service }}">
                                 <span class="text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded uppercase">{{ log.service }}</span>
                             </td>
-                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="사용자">
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="사용자" title="{{ log.user_name }}">
                                 {% if log.user_name %}
                                     <span class="text-zinc-200">{{ log.user_name }}</span>
                                     {% if log.role == "admin" %}<span class="text-[10px] text-amber-400 ml-1">admin</span>{% endif %}
