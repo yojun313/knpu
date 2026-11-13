@@ -7,6 +7,7 @@ from typing import Callable, Optional
 from zoneinfo import ZoneInfo
 
 from starlette.requests import Request
+from starlette.routing import Match, Mount
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
@@ -130,6 +131,26 @@ def insert_log(
         )
 
 
+def route_exists(routes, scope: Scope) -> bool:
+    """요청의 경로와 메서드를 모두 받는 라우트가 있는지 확인한다.
+
+    경로만 맞고 메서드가 다르면(Match.PARTIAL, 405) 없는 것으로 본다. 마운트는 안쪽
+    라우트로 다시 대조하고, 라우트가 없는 앱(정적 파일)은 변경 요청을 받지 않으므로
+    없는 것으로 본다.
+    """
+    for route in routes:
+        match, child_scope = route.matches(scope)
+        if match != Match.FULL:
+            continue
+        if isinstance(route, Mount):
+            inner = route.routes
+            if inner and route_exists(inner, {**scope, **child_scope}):
+                return True
+            continue
+        return True
+    return False
+
+
 class AuditLogMiddleware:
     def __init__(
         self,
@@ -144,6 +165,20 @@ class AuditLogMiddleware:
         self.collection = collection
         self.identity_extractor = identity_extractor
 
+    def _routes(self, scope: Scope):
+        """이 미들웨어가 감싼 앱의 라우트 목록. 찾지 못하면 None(대조 생략, 기록 유지)."""
+        app = scope.get("app")
+        if hasattr(app, "routes"):
+            return app.routes
+        node = self.app
+        for _ in range(32):
+            if node is None:
+                break
+            if hasattr(node, "routes"):
+                return node.routes
+            node = getattr(node, "app", None)
+        return None
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -154,6 +189,8 @@ class AuditLogMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # 라우팅·인증 미들웨어가 scope를 바꾸기 전 상태로 경로를 대조해야 한다
+        match_scope = dict(scope)
         start = time.monotonic()
         status_holder = {"code": None}
 
@@ -165,6 +202,11 @@ class AuditLogMiddleware:
         await self.app(scope, receive, send_wrapper)
 
         try:
+            # 존재하지 않는 경로·메서드로 온 요청(스캐너 등)은 기록하지 않는다
+            routes = self._routes(scope)
+            if routes is not None and not route_exists(routes, match_scope):
+                return
+
             duration_ms = int((time.monotonic() - start) * 1000)
             status_code = status_holder["code"]
 
