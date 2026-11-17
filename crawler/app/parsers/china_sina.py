@@ -22,10 +22,9 @@ from common.storage import (
     getResumeContext,
     computeResumeStartDate,
     getResumeDBPath,
-    restoreCsvFromParquet,
+    prepareResumeTables,
     beginResume,
     validateResumeRange,
-    countExistingRows,
     renameForResume,
 )
 from common.csv import makeCSV, addToCSV
@@ -151,8 +150,7 @@ class ChinaSinaCrawler:
         tables = [obj.articleDB]
         if obj.option == 2:
             tables.append(obj.replyDB)
-        restoreCsvFromParquet(obj.DBPath, tables)
-        obj.resumePriorCounts = countExistingRows(obj.DBPath, tables)
+        obj.resumePriorCounts = prepareResumeTables(obj.DBPath, obj.DBname, tables, doc)
 
         beginResume(DBuid, newEndDate=endDate)
         return obj
@@ -586,14 +584,31 @@ class ChinaSinaCrawler:
                     chinasina_article_column,
                 )
 
-            updateCrawlStatus(
-                self.DBuid,
-                self.status["percentage"] + "%",
-                self.status["articleCnt"],
-                self.status["commentCnt"],
-                self.status["replyCnt"],
-                currentDate_end,
+            # 중간에 중지되어 이 구간을 다 처리하지 못했으면 완료로 기록하지 않는다
+            # (이어받기가 이 구간부터 다시 수집하도록)
+            if self.running:
+                updateCrawlStatus(
+                    self.DBuid,
+                    self.status["percentage"] + "%",
+                    self.status["articleCnt"],
+                    self.status["commentCnt"],
+                    self.status["replyCnt"],
+                    currentDate_end,
+                )
+
+        # 마지막 구간 도중에 중지된 경우 — 완료가 아니라 중단으로 처리한다
+        if not self.running:
+            stopOperator(
+                DBpath=self.DBPath,
+                DBtype="chinasina",
+                DBname=self.DBname,
+                startTime=self.startTime,
+                userEmail=self.Email,
+                status=self.status,
+                DBuid=self.DBuid,
+                requester=self.requester,
             )
+            return
 
         # 모든 월 범위 완료
         finishOperator(

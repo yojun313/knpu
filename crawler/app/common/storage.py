@@ -12,6 +12,7 @@ import pandas as pd
 from config import CRAWL_DATA_PATH, CRAWL_LOG_PATH, CRAWLCOM
 from db import crawler_db, add_userlog
 from db.util import makeDBname
+from common.csv import getRowCounts, setRowCount
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,15 @@ def updateCrawlStatus(
         # 유일한 근거이므로(reportStatus()의 currentdate는 프로세스가 죽으면 함께 사라진다).
         if currentDateStr:
             update["lastCrawledDate"] = currentDateStr
+            # 이 날짜까지 완료된 시점의 테이블별 행 수 — 이어받기 때 이후 행을 잘라내는 기준
+            update["resumeRowCounts"] = {
+                (
+                    table[len(folder["name"]) + 1 :]
+                    if table.startswith(folder["name"] + "_")
+                    else table
+                ): count
+                for table, count in getRowCounts(folder_path).items()
+            }
 
         crawlList_db.update_one({"uid": DBuid}, {"$set": update})
     except Exception as e:
@@ -253,19 +263,49 @@ def restoreCsvFromParquet(DBpath, tableNames):
             logger.info(f"이어받기: {name}.parquet → {name}.csv 복원")
 
 
-def countExistingRows(DBpath, tableNames):
+def prepareResumeTables(DBpath, DBname, tableNames, doc):
+    """이어받기 전에 테이블을 마지막 완료 날짜 시점으로 되돌리고, 남은 행 수를 반환한다.
+
+    마지막 완료 날짜 이후(중간에 멈춘 날짜)에 저장된 행은 이어받기에서 그 날짜를
+    처음부터 다시 수집하므로 지운다. 지우지 않으면 중복된다. 완료 시점의 행 수는
+    updateCrawlStatus()가 날짜를 마칠 때마다 resumeRowCounts에 남긴다.
+    """
+    restoreCsvFromParquet(DBpath, tableNames)
+
+    checkpoint = doc.get("resumeRowCounts")
+    restart_from_beginning = not doc.get("lastCrawledDate")
+
     counts = {}
     for name in tableNames:
         csv_path = os.path.join(DBpath, f"{name}.csv")
         if not os.path.exists(csv_path):
             counts[name] = 0
+            setRowCount(DBpath, name, 0)
             continue
+
         try:
-            with open(csv_path, "r", encoding="utf-8-sig") as f:
-                counts[name] = max(0, sum(1 for _ in f) - 1)  # 헤더 제외
+            df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
         except Exception as e:
-            logger.warning(f"기존 행 수 계산 실패 ({name}): {e}")
-            counts[name] = 0
+            raise ValueError(f"이어받기 테이블을 읽을 수 없습니다 ({name}): {e}") from e
+
+        suffix = name[len(DBname) + 1 :] if name.startswith(DBname + "_") else name
+        if restart_from_beginning:
+            # 완료된 날짜가 하나도 없으면 시작일부터 다시 수집하므로 전부 지운다
+            keep = 0
+        elif checkpoint is not None and suffix in checkpoint:
+            keep = min(len(df), int(checkpoint[suffix]))
+        else:
+            # 체크포인트가 없는 예전 작업 — 어디까지가 완료분인지 알 수 없어 그대로 둔다
+            keep = len(df)
+
+        if keep < len(df):
+            df.iloc[:keep].to_csv(csv_path, index=False, encoding="utf-8-sig")
+            logger.info(
+                f"이어받기: {name} 미완료 날짜의 행 {len(df) - keep}개 삭제 ({len(df)} → {keep})"
+            )
+
+        counts[name] = keep
+        setRowCount(DBpath, name, keep)
     return counts
 
 

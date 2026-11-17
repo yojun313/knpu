@@ -22,10 +22,9 @@ from common.storage import (
     getResumeContext,
     computeResumeStartDate,
     getResumeDBPath,
-    restoreCsvFromParquet,
+    prepareResumeTables,
     beginResume,
     validateResumeRange,
-    countExistingRows,
     renameForResume,
 )
 from common.csv import makeCSV, addToCSV
@@ -166,8 +165,7 @@ class NaverCafeCrawler:
         tables = [obj.articleDB]
         if obj.option == 1:
             tables.append(obj.replyDB)
-        restoreCsvFromParquet(obj.DBPath, tables)
-        obj.resumePriorCounts = countExistingRows(obj.DBPath, tables)
+        obj.resumePriorCounts = prepareResumeTables(obj.DBPath, obj.DBname, tables, doc)
 
         beginResume(DBuid, newEndDate=endDate)
         return obj
@@ -603,14 +601,17 @@ class NaverCafeCrawler:
             concurrency = speed_to_concurrency(self.speed)
             asyncio.run(run_with_concurrency(urlList, self._processOneUrl, concurrency))
 
-            updateCrawlStatus(
-                self.DBuid,
-                self.status["percentage"] + "%",
-                self.status["articleCnt"],
-                self.status["commentCnt"],
-                self.status["replyCnt"],
-                currentDate_str,
-            )
+            # 중간에 중지되어 이 날짜를 다 처리하지 못했으면 완료로 기록하지 않는다
+            # (이어받기가 이 날짜부터 다시 수집하도록)
+            if self.running:
+                updateCrawlStatus(
+                    self.DBuid,
+                    self.status["percentage"] + "%",
+                    self.status["articleCnt"],
+                    self.status["commentCnt"],
+                    self.status["replyCnt"],
+                    currentDate_str,
+                )
 
             self.currentDate += self.deltaD
 
