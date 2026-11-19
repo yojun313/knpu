@@ -61,7 +61,7 @@ function renderList() {
  }).join(''):'<div class="board-empty">'+($('board-search').value?'검색 조건에 맞는 글이 없습니다.':'게시글이 없습니다. 첫 글을 작성해 주시기 바랍니다.')+'</div>';
 }
 function connection(ok) {const status=$('board-connection');status.classList.toggle('ok',ok);status.classList.toggle('bad',!ok);status.querySelector('.conn-label').textContent=ok?'서버 연결됨':'연결 오류';}
-$('board-theme').onclick=()=>{if(window.KNPUSettings)KNPUSettings.open('appearance');};
+
 async function refresh(silent=false) {
  const n=++generation;if(!silent){$('board-feedback').textContent='불러오는 중…';$('board-feedback').classList.remove('error');}
  try {const results=await Promise.all(['version','bug','post','suggestion'].map(t=>api('/api/board/'+t)));if(n!==generation)return;['version','bug','post','suggestion'].forEach((t,i)=>lists[t]=results[i]);renderList();$('board-feedback').textContent='';connection(true);}
