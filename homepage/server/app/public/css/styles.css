@@ -10967,6 +10967,36 @@ p {
   #mainNav .navbar-nav .nav-item:last-child {
     margin-right: 0;
   }
+  /* 메뉴가 늘어나 "MY PAGE"가 두 줄로 나뉘던 문제 — 글자를 조금 줄이고 줄바꿈을 막는다 */
+  #mainNav .navbar-nav .nav-item .nav-link {
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}
+/* 노트북 폭(992~1399px)에서는 메뉴 9개가 로고와 한 줄에 들어가도록 한 단계 더 줄인다 */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+  #mainNav > .container { max-width: none; padding-left: 24px; padding-right: 24px; }
+  #mainNav .navbar-brand img,
+  #mainNav.navbar-shrink .navbar-brand img { height: 3rem; }
+  #mainNav .navbar-nav .nav-item { margin-right: 0.15rem; }
+  #mainNav .navbar-nav .nav-item .nav-link {
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+@media (min-width: 992px) and (max-width: 1099.98px) {
+  #mainNav > .container { padding-left: 16px; padding-right: 16px; }
+  #mainNav .navbar-brand img,
+  #mainNav.navbar-shrink .navbar-brand img { height: 2.6rem; }
+  #mainNav .navbar-nav .nav-item { margin-right: 0; }
+  #mainNav .navbar-nav .nav-item .nav-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    padding-left: 0.42rem;
+    padding-right: 0.42rem;
+  }
 }
 header.masthead {
   position: relative;
