@@ -397,6 +397,9 @@
             border-radius: 22px;
             box-shadow: var(--ap-specular), var(--ap-shadow) !important;
         }
+        /* 애플 테마에서만 사이드바가 유리 카드가 되므로 안쪽 여백을 준다(제목·항목이 테두리에 붙지 않게) */
+        :root[data-ui-theme="apple"] nav.sidebar { padding: 20px 12px 14px; }
+        :root[data-ui-theme="apple"] nav.sidebar h2 { margin-bottom: 10px; }
         /* 유리 위에 얹히는 컨트롤 — 자체 블러 없이 틴트만 (반투명 겹침 금지) */
         :root[data-ui-theme="apple"] .download-btn-simple {
             border-radius: 10px;

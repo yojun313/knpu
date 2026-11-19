@@ -1077,6 +1077,12 @@
             box-shadow: 4px 4px 9px var(--neu-dark), -4px -4px 9px var(--neu-light);
         }
         :root[data-ui-theme="neu"] .btn:active { box-shadow: inset 3px 3px 7px var(--neu-dark), inset -3px -3px 7px var(--neu-light); }
+        /* 뉴모피즘은 경계선이 투명이라 입력칸·요청자 칸이 카드와 구분되지 않는다 — 안으로 들어간 그림자로 표시 */
+        :root[data-ui-theme="neu"] .panel :is(input[type="text"], input[type="search"], input[type="number"], input:not([type]), select, textarea),
+        :root[data-ui-theme="neu"] .requester-bar {
+            border-color: transparent !important;
+            box-shadow: inset 3px 3px 6px var(--neu-dark), inset -3px -3px 6px var(--neu-light) !important;
+        }
 
         /* ── 그라디언트 메시 (라이트/다크) ─────────────────── */
         :root[data-ui-theme="mesh"]:not([data-ui-theme-mode="dark"]) {
