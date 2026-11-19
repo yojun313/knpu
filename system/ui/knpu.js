@@ -69,6 +69,20 @@
       return mePromise;
     },
   };
+  // 크롤링 DB에서 만든 프로젝트 이름(navernews_키워드_시작일_종료일_MMDD_HHMM_article 등)을
+  // 사이드바에 보기 좋게 나눈다: 제목은 키워드, 부제는 파일 종류·기간·플랫폼(구분에 중요한 순).
+  // 형식이 다르면 이름을 그대로 제목으로 쓴다.
+  var PLATFORM_LABEL = { navernews: '네이버 뉴스', naverblog: '네이버 블로그', navercafe: '네이버 카페', youtube: '유튜브', chinadaily: 'China Daily', chinasina: 'Sina' };
+  var CRAWL_NAME_RE = /^(token_)?(navernews|naverblog|navercafe|youtube|chinadaily|chinasina)_(.+)_(\d{8})_(\d{8})_\d{4}_\d{4}_(article|reply|rereply|statistics)(\.\w+)?$/;
+  function ymd(d) { return d.slice(0, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6, 8); }
+  KNPU.projectLabel = function (name) {
+    name = String(name || '');
+    var m = CRAWL_NAME_RE.exec(name);
+    if (!m) return { title: name, sub: '' };
+    var kw = m[3].trim().replace(/^"\s+/, '"').replace(/\s+"$/, '"');
+    var range = m[4] === m[5] ? ymd(m[4]) : ymd(m[4]) + '–' + (m[4].slice(0, 4) === m[5].slice(0, 4) ? ymd(m[5]).slice(5) : ymd(m[5]));
+    return { title: kw, sub: [m[6] + (m[1] ? '(토큰)' : ''), range, PLATFORM_LABEL[m[2]]].join(' · ') };
+  };
   window.KNPU = KNPU;
   var boardNotices = document.createElement('script');
   boardNotices.src = '/shared-ui/board-notices.js';

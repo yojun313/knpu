@@ -296,6 +296,11 @@
 
   var railColorCounter = 0;
 
+  // 사이드바 항목 제목·부제 — 크롤링 DB 이름이면 키워드·플랫폼·기간으로 나눠 보여 준다(knpu.js)
+  function railLabel(name) {
+    return (window.KNPU && KNPU.projectLabel) ? KNPU.projectLabel(name) : { title: name, sub: '' };
+  }
+
   function buildProjectItem(p, interactive) {
     var idx = railColorCounter++;
     var item = document.createElement('div');
@@ -305,7 +310,9 @@
     var netMeta = p.networks && p.networks.length === 1
       ? '노드 ' + p.networks[0].nodes.toLocaleString() + ' · 엣지 ' + p.networks[0].edges.toLocaleString()
       : (p.networks ? p.networks.length + '개 네트워크' : '');
-    var meta = p.owner_name ? (p.owner_name + ' · ' + netMeta) : netMeta;
+    var label = railLabel(p.name);
+    var badge = '';
+    var meta = [netMeta, label.sub, p.owner_name].filter(Boolean).join(' · ');
     var actionsHtml = !interactive ? '' :
       '<span class="ri-actions">'
       + '<button class="ri-btn" data-act="props" title="속성">ℹ</button>'
@@ -314,9 +321,10 @@
       + '<button class="ri-btn danger" data-act="delete" title="삭제">🗑</button>'
       + '</span>';
     item.innerHTML =
-      '<span class="ri-dot" style="background:' + railDotColor(idx) + '">' + esc(railInitial(p.name)) + '</span>'
-      + '<span class="ri-main"><span class="ri-name">' + esc(p.name) + '</span>'
-      + '<span class="ri-meta">' + esc(meta) + '</span></span>'
+      '<span class="ri-dot" style="background:' + railDotColor(idx) + '">' + esc(railInitial(label.title.replace(/^[^\p{L}\p{N}]+/u, ""))) + '</span>'
+      + '<span class="ri-main"><span class="ri-name">' + esc(label.title) + '</span>'
+      + '<span class="ri-meta">' + (badge ? '<span class="ri-badge">' + esc(badge) + '</span>' : '')
+      + '<span class="ri-sub">' + esc(meta) + '</span></span></span>'
       + actionsHtml;
     item.addEventListener('click', function (e) {
       if (e.target.closest('[data-act]')) return;

@@ -10,7 +10,7 @@
   var API = '/shared-ui/chatbot/api';
   var FULL = !!window.KNPU_CHATBOT_FULL; // 브라우저 탭 전체로 여는 페이지(/shared-ui/chatbot.html)
   var SIZE_KEY = 'knpu_chatbot_size', CHATBOT_COOKIE = 'ui_chatbot';
-  var ANON_KEY = 'knpu_chatbot_public_v1', MODE_KEY = 'knpu_chatbot_mode', OPEN_KEY = 'knpu_chatbot_open', ACTIVE_KEY = 'knpu_chatbot_active_';
+  var ANON_KEY = 'knpu_chatbot_public_v1', MODE_KEY = 'knpu_chatbot_mode', ACTIVE_KEY = 'knpu_chatbot_active_';
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
@@ -402,7 +402,6 @@
     panel.hidden = !open;
     fab.setAttribute('aria-expanded', open ? 'true' : 'false');
     fab.innerHTML = (open ? ICON.close : ICON.chat) + '<span class="kcb-dot"></span>';
-    if (!FULL) lsSet(OPEN_KEY, open ? '1' : '0');
     if (open) {
       render();
       if (loggedIn()) { loadList(); loadActive(); }
@@ -518,8 +517,8 @@
       var saved = (FULL && params.get('mode')) || lsGet(MODE_KEY);
       if (FULL && params.get('c') && /^[a-f0-9]{8,40}$/.test(params.get('c'))) lsSet(ACTIVE_KEY + (saved === 'member' ? 'member' : 'public'), params.get('c'));
       setMode(cfg.public ? (saved === 'member' && cfg.member ? 'member' : 'public') : 'member');
+      // 다른 페이지·서비스로 옮겨 갈 때 챗봇 창이 저절로 열리지 않도록, 열림 상태는 이어받지 않는다
       if (FULL) setOpen(true);
-      else if (lsGet(OPEN_KEY) === '1' && window.innerWidth > 640) setOpen(true);
     }).catch(function () { root.remove(); }); // 챗봇 API 가 없는 사이트면 버튼을 숨긴다
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

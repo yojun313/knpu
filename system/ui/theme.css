@@ -1681,10 +1681,6 @@ html body .rail .rail-list { flex: 1; min-height: 0; }
 html:not([data-ui-theme-mode="dark"]) .sb-logout { color: #dc2626; }
 .sb-logout:hover { background: rgba(239, 68, 68, .1); }
 .sb-collapse svg { transition: transform 200ms; }
-/* 연결 상태·프로필 접기 (theme.js initSidebarInfoCollapse) */
-.sb-bottom.sb-info-collapsed :is(.sb-conn, .sb-user) { display: none !important; }
-.sb-info-toggle svg { transition: transform 200ms; }
-.sb-bottom.sb-info-collapsed .sb-info-toggle svg { transform: rotate(180deg); }
 
 /* 접힌 사이드바: 아이콘만 남는 막대 */
 @media (min-width: 1101px) {
@@ -1898,3 +1894,32 @@ html.knpu-header-profile body .sb-user,
 html.knpu-header-profile body .sb-brand { display: none !important; }
 /* 로고만 있던 사이드바 윗칸(crawler·admin)은 통째로 접는다 */
 html.knpu-header-profile body .sb-top:not(:has(> :not(.sb-brand))) { display: none !important; }
+
+/* '서버 연결됨' 표시는 없앴고, 로그아웃은 설정 창 왼쪽 아래(.st-logout)로 옮겼다 */
+html body .sb-conn, html body .sb-logout { display: none !important; }
+html body .sb-account { justify-content: flex-end; }
+.st-logout { display: flex; align-items: center; gap: 10px; margin-top: auto; padding: 9px 11px; border-radius: 10px;
+  border: 1px solid transparent; background: none; color: #dc2626; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-align: left; }
+html[data-ui-theme-mode="dark"] .st-logout { color: #f87171; }
+.st-logout:hover { background: rgba(239, 68, 68, .1); }
+.st-link .st-link-manuals { display: flex; flex-direction: column; gap: 4px; margin: 0; flex-shrink: 0; }
+@media (max-width: 720px) { .st-logout { margin-top: 0; margin-left: auto; flex-shrink: 0; } }
+
+/* ── 사이드바 프로젝트 목록: 한눈에 보이도록 ─────────────────────────────
+   제목(크롤링 키워드)은 두 줄까지 줄바꿈해 다 보이게 하고, 아래 줄 맨 앞에
+   분석 종류를 배지로 띄운다. 플랫폼·기간·파일 종류는 그 뒤에 작게. */
+html body .rail .rail-list { overflow-x: hidden !important; }
+html body .rail-item { align-items: flex-start !important; }
+html body .rail-item .ri-dot { margin-top: 1px; }
+html body .rail-item .ri-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+html body .rail-item .ri-name {
+  display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  white-space: normal !important; overflow: hidden; word-break: break-all; line-height: 1.35;
+}
+html body .rail-item .ri-meta { display: flex !important; align-items: center; gap: 6px; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; }
+html body .rail-item .ri-badge {
+  flex: none; padding: 1px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 750; line-height: 1.5;
+  background: var(--ud-active-bg, rgba(59, 130, 246, .12)); color: var(--ud-active-fg, #1d4ed8);
+}
+html body .rail-item .ri-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html body .rail.collapsed .rail-item { align-items: center !important; }

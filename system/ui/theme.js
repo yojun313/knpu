@@ -122,7 +122,9 @@
     overlay.innerHTML =
       '<div class="theme-modal st-modal" role="dialog" aria-modal="true" aria-label="설정">'
       + '<aside class="st-side"><div class="st-side-title"><h3>설정</h3><p>KNPU FPEI 연구 시스템에 공통으로 적용됩니다.</p></div>'
-      + '<nav class="st-nav">' + nav + '</nav></aside>'
+      + '<nav class="st-nav">' + nav + '</nav>'
+      + '<button type="button" class="st-logout" id="stSideLogout">' + svgIcon('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>') + '<span>로그아웃</span></button>'
+      + '</aside>'
       + '<div class="st-main">'
       + '<div class="st-head"><h4 id="stTitle">테마</h4><button type="button" class="theme-modal-close" aria-label="닫기">&times;</button></div>'
       + '<div class="st-body">'
@@ -478,14 +480,19 @@
         if (btn.getAttribute('data-armed') !== '1') { btn.setAttribute('data-armed', '1'); btn.textContent = '한 번 더 누르면 실행'; setTimeout(function () { btn.removeAttribute('data-armed'); btn.textContent = '모두 로그아웃'; }, 3000); return; }
         stFetch('/shared-ui/account/api/logout-all', { method: 'POST' }).then(function () { location.href = loginHref(); }).catch(function (err) { alert(err.message); });
       });
-      document.getElementById('accLogout').addEventListener('click', function () {
-        var url = (window.KNPU && KNPU.logoutUrl) ? KNPU.logoutUrl() : homeOrigin() + '/api/auth/logout';
-        fetch(url, { method: 'POST', credentials: 'include' }).finally(function () { location.href = loginHref(); });
-      });
+      document.getElementById('accLogout').addEventListener('click', logoutHere);
       loadPasskeys();
     }).catch(function (err) {
       host.innerHTML = err.status === 401 ? loginBox('로그인하면 계정 정보를 관리할 수 있습니다.') : '<div class="st-empty">계정 정보를 불러오지 못했습니다: ' + stEsc(err.message) + '</div>';
     });
+  }
+  // 이 기기에서 로그아웃. 사이드바에 서비스별 로그아웃 버튼(.sb-logout)이 있으면 그 동작을
+  // 그대로 쓴다(서비스마다 정리할 것이 다를 수 있다). 버튼은 설정 창으로 옮기며 숨겼다.
+  function logoutHere() {
+    var own = document.querySelector('.sb-logout');
+    if (own) { own.click(); return; }
+    var url = (window.KNPU && KNPU.logoutUrl) ? KNPU.logoutUrl() : homeOrigin() + '/api/auth/logout';
+    fetch(url, { method: 'POST', credentials: 'include' }).finally(function () { location.href = loginHref(); });
   }
   function loadPasskeys() {
     var host = document.getElementById('accPasskeys');
@@ -513,44 +520,28 @@
     { key: 'statistics', name: 'STATISTICS', desc: '통계 분석 · AI 리포트', manual: '/manual' },
     { key: 'kemkim', name: 'KEMKIM', desc: '미래신호(약한 신호) 분석', manual: '/manual' },
     { key: 'network', name: 'NETWORK', desc: '단어 네트워크 분석', manual: '/manual' },
-    { key: 'mcdm', name: 'POLYDECISION', desc: 'AHP 다기준 의사결정' },
+    { key: 'mcdm', name: 'POLYDECISION', desc: 'AHP 다기준 의사결정', manual: '/manual' },
     { key: 'whisper', name: 'WHISPER', desc: '음성 → 텍스트 노트' },
-    { key: 'manager', name: 'MANAGER', desc: '데스크톱 앱 다운로드 · 설명서' },
+    { key: 'manager', name: 'MANAGER', desc: '데스크톱 앱 다운로드 · 설명서',
+      manuals: [['혐오 분석', '/manual/hate_analysis'], ['음성 인식', '/manual/whisper'], ['객체 탐지', '/manual/yolo']] },
   ];
+  // 설명서 버튼: manual 하나면 '설명서', manuals 여러 개면 [이름, 경로]마다 버튼
+  function manualButtons(l, url) {
+    var list = l.manuals || (l.manual ? [['설명서', l.manual]] : []);
+    if (!list.length) return '';
+    return '<span class="st-link-manuals">' + list.map(function (m) {
+      return '<a class="st-btn sm" href="' + stEsc(url + m[1]) + '" target="_blank" rel="noopener">' + stEsc(m[0]) + '</a>';
+    }).join('') + '</span>';
+  }
   function renderLinks() {
     var host = document.getElementById('stLinks');
     var svc = (window.KNPU_SERVICES && KNPU_SERVICES.services) || {};
     host.innerHTML = '<div class="st-links">' + LINKS.map(function (l) {
       var s = svc[l.key], url = 'https://' + ((s && s.prodDomain) || (l.key === 'homepage' ? 'knpu.re.kr' : l.key + '.knpu.re.kr')) + ((s && s.publicPath) || '');
       return '<div class="st-link"><a href="' + stEsc(url) + '"><b>' + stEsc(l.name) + '</b><span>' + stEsc(l.desc) + '</span></a>'
-        + (l.manual ? '<a class="st-btn sm" href="' + stEsc(url + l.manual) + '" target="_blank" rel="noopener">설명서</a>' : '') + '</div>';
+        + manualButtons(l, url) + '</div>';
     }).join('') + '</div>'
       + '<p class="st-note">사용법이 궁금하면 오른쪽 아래 AI 챗봇(구성원용)에게 질문해 주시기 바랍니다. 코드를 직접 읽고 화면 기준으로 알려 줍니다.</p>';
-  }
-
-  // 사이드바 아래 연결 상태 점(.sb-conn): 로그인 API를 주기적으로 확인한다.
-  function initConnStatus() {
-    var box = document.querySelector('.sb-conn');
-    if (!box || !window.fetch) return;
-    var label = box.querySelector('.conn-label');
-    function set(ok) {
-      box.classList.toggle('ok', ok); box.classList.toggle('bad', !ok);
-      if (label) label.textContent = ok ? '서버 연결됨' : '연결 끊김 · 재시도 중';
-    }
-    function ping() {
-      fetch(box.getAttribute('data-conn-url') || '/shared-ui/services.js', { credentials: 'same-origin', cache: 'no-store' })
-        .then(function (r) {
-          var fallback = box.getAttribute('data-conn-fallback');
-          if (r.status === 404 && fallback) {
-            return fetch(fallback, { credentials: 'same-origin', cache: 'no-store' })
-              .then(function (alt) { set(alt.ok || alt.status === 401); });
-          }
-          set(r.ok || r.status === 401);
-        })
-        .catch(function () { set(false); })
-        .then(function () { setTimeout(ping, document.hidden ? 60000 : 30000); });
-    }
-    ping();
   }
 
   // 연구실 챗봇(오른쪽 아래 동그라미 버튼)을 불러온다. <meta name="knpu-chatbot" content="off"> 면 끈다.
@@ -671,39 +662,10 @@
     });
   }
 
-  // 사이드바 아래 '서버 연결됨' 상태와 'Welcome, 000' 프로필 카드를 한 번에 접고 편다.
-  // 설정은 쿠키로 저장해 모든 서비스에서 같이 유지한다.
-  var SBINFO_COOKIE_KEY = 'ui_sbinfo_collapsed';
-  var CHEVRON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-  function initSidebarInfoCollapse() {
-    document.querySelectorAll('.sb-bottom').forEach(function (bottom) {
-      if (!bottom.querySelector('.sb-conn, .sb-user') || bottom.querySelector('.sb-info-toggle')) return;
-      var button = document.createElement('button');
-      button.type = 'button'; button.className = 'sb-icon sb-info-toggle';
-      button.innerHTML = CHEVRON;
-      var account = bottom.querySelector('.sb-account');
-      if (account) account.insertBefore(button, account.querySelector('.sb-collapse'));
-      else bottom.insertBefore(button, bottom.firstChild);
-      function sync() {
-        var collapsed = getCookie(SBINFO_COOKIE_KEY) === 'yes';
-        bottom.classList.toggle('sb-info-collapsed', collapsed);
-        var label = collapsed ? '연결 상태·프로필 펼치기' : '연결 상태·프로필 접기';
-        button.title = label; button.setAttribute('aria-label', label);
-        button.setAttribute('aria-expanded', String(!collapsed));
-      }
-      button.addEventListener('click', function () {
-        setCookie(SBINFO_COOKIE_KEY, bottom.classList.contains('sb-info-collapsed') ? 'no' : 'yes'); sync();
-      });
-      window.addEventListener('focus', sync); sync();
-    });
-  }
-
   function init() {
     initGpuCollapse();
-    initSidebarInfoCollapse();
     initHeaderProfile();
     initLiquidGlass();
-    initConnStatus();
     loadChatbot();
     initUserAvatar();
     var btn = document.getElementById('themeSettingsBtn');
@@ -728,6 +690,7 @@
     overlay.querySelectorAll('.st-nav-item').forEach(function (b) {
       b.addEventListener('click', function () { showPane(overlay, b.getAttribute('data-pane')); });
     });
+    overlay.querySelector('#stSideLogout').addEventListener('click', logoutHere);
     overlay.querySelector('#stClearAnon').addEventListener('click', function (e) {
       try { localStorage.removeItem('knpu_chatbot_public_v1'); } catch (err) { }
       e.currentTarget.textContent = '삭제했습니다';
