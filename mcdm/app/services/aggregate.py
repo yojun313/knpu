@@ -32,7 +32,13 @@ def aggregate_aij(node_ids: list[str], respondent_pairs: list[dict[str, float]])
     merged: dict[str, list[float]] = defaultdict(list)
     for pairs in respondent_pairs:
         for pid, v in pairs.items():
-            merged[pid].append(v)
+            # 손상된 저장값(숫자 아님·NaN·Infinity·0 이하)은 집계에서 뺀다
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(f) and f > 0:
+                merged[pid].append(f)
     merged_pairs = {pid: geometric_mean(vs) for pid, vs in merged.items()}
     return derive_weights(node_ids, merged_pairs), merged_pairs
 

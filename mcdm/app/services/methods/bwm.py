@@ -44,16 +44,30 @@ def _parse(group: dict, responses: dict, overrides):
     ow = {}
     for c in child:
         if c != best:
-            v = r.get(BO + c)
+            v = _num(r.get(BO + c))
             if v is None:
                 return None
-            bo[c] = float(v)
+            bo[c] = v
         if c != worst:
-            v = r.get(OW + c)
+            v = _num(r.get(OW + c))
             if v is None:
                 return None
-            ow[c] = float(v)
+            ow[c] = v
     return child, best, worst, bo, ow
+
+
+def _num(v) -> float | None:
+    """저장된 BWM 값을 숫자로. 없거나 손상된 값(문자열·NaN·Infinity·범위 밖)은 None —
+    응답 미완료로 처리해 결과 계산이 예외로 깨지지 않게 한다."""
+    if v is None:
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(f) or not (1 <= f <= 9):
+        return None
+    return f
 
 
 def _cro(xi: float, a_bw: float) -> float | None:
@@ -123,7 +137,12 @@ class BwmPlugin:
 
         # BWM 전용 필터 설정(2.2) — AHP의 cr_threshold 와 별개.
         s = settings or {}
-        manual = float(s.get("bwm_cri_threshold") or 0)
+        try:
+            manual = float(s.get("bwm_cri_threshold") or 0)
+        except (TypeError, ValueError):  # 손상된 설정값은 자동 임계값으로
+            manual = 0.0
+        if not math.isfinite(manual):
+            manual = 0.0
         thr = manual if manual > 0 else ic["threshold"]
         or_gate = s.get("bwm_or_gate", "on") != "off"
 

@@ -73,13 +73,16 @@ def run_job(ctx) -> dict:
     ctx.log(
         f"데이터 {len(token_data):,}행 · 기간 {option.get('startdate')}~{option.get('enddate')}"
     )
-    result = start_kemkim(
-        KemKimOption(**option),
-        token_data,
-        uid=ctx.uid,
-        project_name=ctx.title,
-        crawl_source=crawl_source,
-    )
+    try:
+        result = start_kemkim(
+            KemKimOption(**option),
+            token_data,
+            uid=ctx.uid,
+            project_name=ctx.title,
+            crawl_source=crawl_source,
+        )
+    except ValueError as e:  # 입력 검증 실패 — 사용자에게 그대로 보여 줄 메시지
+        raise JobError(str(e))
     if result is None:
         raise JobError(
             "분석이 결과 없이 끝났습니다. 진행 로그의 마지막 메시지를 확인해 주시기 바랍니다."

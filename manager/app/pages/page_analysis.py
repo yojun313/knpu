@@ -134,7 +134,16 @@ class Manager_Analysis(Manager_Worker):
                         return
 
                     self.message.emit(f"[{filename}] 시계열 분할 중...")
-                    table_df = self.dataprocess_obj.TimeSplitter(table_df)
+                    try:
+                        table_df = self.dataprocess_obj.TimeSplitter(table_df)
+                    except ValueError as e:  # Date 열 없음·유효 날짜 없음
+                        self.finished.emit(False, f"{filename}: {e}", "")
+                        return
+                    dropped = int(table_df["year"].isna().sum())
+                    if dropped:
+                        self.message.emit(
+                            f"[{filename}] 날짜를 읽지 못한 {dropped:,}행은 분할에서 제외합니다."
+                        )
 
                     year_group = table_df.groupby("year")
                     month_group = table_df.groupby("year_month")

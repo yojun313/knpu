@@ -1,13 +1,11 @@
-import json
 import os
-from io import StringIO
 
-import pandas as pd
-from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.db import user_logs_db
 from app.models.analysis_model import KemKimOption
 from app.services.analysis_service import start_kemkim
+from system.analysis_input import read_analysis_request
 from system.logging.user_log import insert_log
 
 from .project_routes import _uid
@@ -21,14 +19,17 @@ async def analysis_kemkim(
     option: str = Form(...),
     file: UploadFile = File(...),
 ):
-    option = json.loads(option)
-    content = await file.read()
-    token_data = pd.read_csv(StringIO(content.decode("utf-8")))
+    option, token_data = await read_analysis_request(option, file)
     uid = _uid(request)
-    project_name = os.path.splitext(file.filename)[0]
-    result = start_kemkim(
-        KemKimOption(**option), token_data, uid=uid, project_name=project_name
-    )
+    project_name = os.path.splitext(file.filename or "")[0]
+    try:
+        result = start_kemkim(
+            KemKimOption(**option), token_data, uid=uid, project_name=project_name
+        )
+    except ValueError as e:  # 입력 검증 실패(열 누락·유효 날짜 없음 등)와 옵션 오류
+        raise HTTPException(400, str(e))
+    if getattr(result, "status_code", 200) >= 400:
+        return result
     insert_log(
         user_logs_db,
         uid,

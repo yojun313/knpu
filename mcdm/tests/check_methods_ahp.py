@@ -204,10 +204,12 @@ def test_generate_questions_parity():
         assert gn["scale"] == 5
     # 노드별 방법 배정: root=bwm(등록됨) → kind="bwm", 미등록 topsis → AHP 폴백.
     m = normalize_methods({"criteria": {"root": "bwm"}, "alternatives": "topsis"})
+    # normalize_methods 는 미등록 방법을 조용히 기본값(ahp)으로 되돌린다 —
+    # 그래서 alternatives 는 "ahp"로 저장되고 enabled 에도 ahp 가 들어간다.
     assert m == {
         "criteria": {"root": "bwm"},
-        "alternatives": "topsis",
-        "enabled": ["bwm"],  # 선언 없으면 실제 쓰임(등록된 것만)에서 도출
+        "alternatives": "ahp",
+        "enabled": ["ahp", "bwm"],  # 선언 없으면 실제 쓰임(등록된 것만)에서 도출
         "criteria_per_node": False,  # 배정이 한 종류뿐이면 고급 모드 아님
     }
     fb = generate_questions(nodes, alts, methods=m, settings=settings)

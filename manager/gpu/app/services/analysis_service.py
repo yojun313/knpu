@@ -1,3 +1,4 @@
+import re
 import os
 
 # 예전에는 "1"로 물리 GPU 1만 보이게 했다. 이제 두 장을 다 쓰되 순서를 "1,0"으로
@@ -315,6 +316,9 @@ def transcribe_audio(
 
         return "\n".join(lines)
 
+    # 허용 범위 밖 단계는 스트리밍 경로와 같이 기본(2)으로 — 예전엔 KeyError 로 실패했다
+    if model_level not in WHISPER_MODEL_MAP:
+        model_level = 2
     send_message(
         pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']} 모델 로드 중"
     )
@@ -466,17 +470,40 @@ def unload_yolo_models():
         gc.collect()
 
 
+def _unique_stem(stem: str, used: set) -> str:
+    """ZIP 안 결과 이름 중복 방지 — 같은 파일명이 여러 개 올라오면 _2, _3 을 붙인다."""
+    candidate, n = stem, 2
+    while candidate in used:
+        candidate = f"{stem}_{n}"
+        n += 1
+    used.add(candidate)
+    return candidate
+
+
+# 요청이 고를 수 있는 YOLO 모델: 모델 폴더에 실제로 있는 .pt 와 ultralytics 공식 기본 모델.
+# 요청값을 경로로 그대로 쓰면 '../'·절대경로로 서버의 임의 weight 파일을 지정할 수 있었다.
+_YOLO_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+_YOLO_OFFICIAL = {f"yolo11{s}" for s in "nsmlx"} | {f"yolov8{s}" for s in "nsmlx"}
+
+
+def resolve_yolo_model_name(model_name) -> str:
+    """요청의 모델 이름을 검증해 확장자 없는 이름으로 돌려준다. 허용되지 않으면 ValueError."""
+    name = str(model_name or "yolo11n").strip()
+    if name.endswith(".pt"):
+        name = name[:-3]
+    if not _YOLO_NAME_RE.match(name) or ".." in name:
+        raise ValueError(f"YOLO 모델 이름 형식이 올바르지 않습니다: {model_name}")
+    if name not in _YOLO_OFFICIAL and name not in get_yolo_model_list():
+        raise ValueError(f"사용할 수 없는 YOLO 모델입니다: {model_name}")
+    return name
+
+
 def load_yolo_model(model_name: str = "yolo11n"):
     global _yolo_models_cache
 
+    model_name = resolve_yolo_model_name(model_name)
     if model_name not in _yolo_models_cache:
-        # 모델 파일 경로 구성 (확장자 .pt가 없는 경우 붙여줌)
-        if not model_name.endswith(".pt"):
-            filename = f"{model_name}.pt"
-        else:
-            filename = model_name
-
-        model_path = os.path.join(MODEL_DIR, "yolo", filename)
+        model_path = os.path.join(MODEL_DIR, "yolo", f"{model_name}.pt")
 
         # 모델 로드 (처음 요청될 때만 메모리에 로드됨)
         # 주의: 너무 큰 모델이나 여러 모델을 동시에 띄우면 메모리 부족이 발생할 수 있음
@@ -522,6 +549,7 @@ async def yolo_detect_images(
 
     zip_buffer = io.BytesIO()
 
+    used_stems: set = set()
     with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for i, up in enumerate(valid_files, start=1):
             filename = up.filename or f"image_{i}"
@@ -607,7 +635,9 @@ async def yolo_detect_images(
                     "utf-8"
                 )
 
-                stem = os.path.splitext(os.path.basename(filename))[0]
+                stem = _unique_stem(
+                    os.path.splitext(os.path.basename(filename))[0], used_stems
+                )
                 zf.writestr(f"images/{stem}{encode_ext}", annotated_bytes)
                 zf.writestr(f"json/{stem}.json", json_bytes)
 
@@ -702,10 +732,12 @@ async def yolo_detect_videos(
         with zipfile.ZipFile(
             zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED
         ) as zf:
+            used_stems: set = set()
             for i, up in enumerate(valid_files, start=1):
                 model.predictor = None  # 영상마다 트래커 상태 초기화
                 filename = up.filename or f"video_{i}"
                 stem, ext = os.path.splitext(os.path.basename(filename))
+                stem = _unique_stem(stem, used_stems)
 
                 if pid is not None:
                     send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 로드 중...")
@@ -723,6 +755,7 @@ async def yolo_detect_videos(
                     tmp_path = tmp.name
 
                 out_video_path = None
+                cap = writer = None
 
                 try:
                     cap = cv2.VideoCapture(tmp_path)
@@ -863,6 +896,11 @@ async def yolo_detect_videos(
                     continue
 
                 finally:
+                    # 프레임 읽기·추론 중 예외가 나도 파일 핸들을 놓는다(release 는 여러 번 불러도 안전)
+                    if cap is not None:
+                        cap.release()
+                    if writer is not None:
+                        writer.release()
                     try:
                         os.remove(tmp_path)
                     except Exception:
@@ -966,12 +1004,15 @@ async def grounding_dino_detect_images(
 
     zip_bytes = io.BytesIO()
     # ZIP_STORED(무압축) 또는 ZIP_DEFLATED(압축). 이미지 PNG는 압축 효율 낮지만 보통 DEFLATED 사용.
+    used_stems: set = set()
     with zipfile.ZipFile(zip_bytes, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for idx, file in enumerate(files, start=1):
             detections: List[Dict[str, Any]] = []
-            # 원본 파일명 기반 결과명
+            # 원본 파일명 기반 결과명(같은 이름이 여러 개면 _2, _3 …)
             orig_name = file.filename or f"image_{idx}.png"
-            stem = os.path.splitext(os.path.basename(orig_name))[0]
+            stem = _unique_stem(
+                os.path.splitext(os.path.basename(orig_name))[0], used_stems
+            )
             out_img_name = f"{stem}.png"
             out_json_name = f"{stem}.json"
 
@@ -1083,12 +1124,13 @@ async def grounding_dino_detect_videos(
         send_message(pid, f"[GroundingDINO] 영상 처리 시작 (count={len(files)})")
 
     zip_buf = io.BytesIO()
+    used_stems: set = set()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for vid_idx, up in enumerate(files, start=1):
             detections_by_frame: List[Dict[str, Any]] = []
 
             name = up.filename or f"video_{vid_idx}.mp4"
-            stem = os.path.splitext(os.path.basename(name))[0]
+            stem = _unique_stem(os.path.splitext(os.path.basename(name))[0], used_stems)
             ext = os.path.splitext(name)[1]
             out_video_name = f"{stem}.mp4"
             out_json_name = f"{stem}.json"
@@ -1102,109 +1144,126 @@ async def grounding_dino_detect_videos(
                 tmp.write(await up.read())
                 video_path = tmp.name
 
-            cap = cv2.VideoCapture(video_path)
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
-            fps = cap.get(cv2.CAP_PROP_FPS) or 30
-            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            cap = writer = None
+            out_path = None
+            try:
+                cap = cv2.VideoCapture(video_path)
+                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30
+                w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-            out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-            writer = cv2.VideoWriter(
-                out_path,
-                cv2.VideoWriter_fourcc(*"mp4v"),
-                fps,
-                (w, h),
-            )
-
-            frame_idx = 0
-
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                inputs = processor(images=image, text=prompt, return_tensors="pt").to(
-                    device
+                out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+                writer = cv2.VideoWriter(
+                    out_path,
+                    cv2.VideoWriter_fourcc(*"mp4v"),
+                    fps,
+                    (w, h),
                 )
 
-                with torch.no_grad():
-                    outputs = model(**inputs)
+                frame_idx = 0
 
-                res = processor.post_process_grounded_object_detection(
-                    outputs,
-                    inputs.input_ids,
-                    target_sizes=[image.size[::-1]],
-                )[0]
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
 
-                labels = res.get("text_labels", res["labels"])
+                    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                    inputs = processor(
+                        images=image, text=prompt, return_tensors="pt"
+                    ).to(device)
 
-                frame_det = []
-                for box, label, score in zip(res["boxes"], labels, res["scores"]):
-                    if float(score) < box_threshold:
-                        continue
+                    with torch.no_grad():
+                        outputs = model(**inputs)
 
-                    x1, y1, x2, y2 = map(int, box.tolist())
+                    res = processor.post_process_grounded_object_detection(
+                        outputs,
+                        inputs.input_ids,
+                        target_sizes=[image.size[::-1]],
+                    )[0]
 
-                    frame_det.append(
+                    labels = res.get("text_labels", res["labels"])
+
+                    frame_det = []
+                    for box, label, score in zip(res["boxes"], labels, res["scores"]):
+                        if float(score) < box_threshold:
+                            continue
+
+                        x1, y1, x2, y2 = map(int, box.tolist())
+
+                        frame_det.append(
+                            {
+                                "label": label,
+                                "confidence": round(float(score), 4),
+                                "bbox_xyxy": [x1, y1, x2, y2],
+                            }
+                        )
+
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(
+                            frame,
+                            f"{label} {float(score):.2f}",
+                            (x1, max(0, y1 - 5)),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 0, 255),
+                            1,
+                        )
+
+                    detections_by_frame.append(
                         {
-                            "label": label,
-                            "confidence": round(float(score), 4),
-                            "bbox_xyxy": [x1, y1, x2, y2],
+                            "frame_index": frame_idx,
+                            "detections": frame_det,
                         }
                     )
 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                    cv2.putText(
-                        frame,
-                        f"{label} {float(score):.2f}",
-                        (x1, max(0, y1 - 5)),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 0, 255),
-                        1,
-                    )
+                    writer.write(frame)
+                    frame_idx += 1
 
-                detections_by_frame.append(
-                    {
-                        "frame_index": frame_idx,
-                        "detections": frame_det,
-                    }
+                    if pid is not None and frame_idx % 30 == 0:
+                        pct = (
+                            round(frame_idx / frame_count * 100, 2)
+                            if frame_count
+                            else 0
+                        )
+                        send_message(
+                            pid,
+                            f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} "
+                            f"frame {frame_idx}/{frame_count} ({pct}%)",
+                        )
+
+                cap.release()
+                writer.release()
+
+                zf.write(out_path, f"videos/{out_video_name}")
+
+                json_obj = {
+                    "video": f"videos/{out_video_name}",
+                    "fps": fps,
+                    "width": w,
+                    "height": h,
+                    "frame_count": frame_idx,
+                    "prompt": prompt,
+                    "detections": detections_by_frame,
+                }
+
+                zf.writestr(
+                    f"json/{out_json_name}",
+                    json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
                 )
 
-                writer.write(frame)
-                frame_idx += 1
-
-                if pid is not None and frame_idx % 30 == 0:
-                    pct = round(frame_idx / frame_count * 100, 2) if frame_count else 0
-                    send_message(
-                        pid,
-                        f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} "
-                        f"frame {frame_idx}/{frame_count} ({pct}%)",
-                    )
-
-            cap.release()
-            writer.release()
-
-            zf.write(out_path, f"videos/{out_video_name}")
-
-            json_obj = {
-                "video": f"videos/{out_video_name}",
-                "fps": fps,
-                "width": w,
-                "height": h,
-                "frame_count": frame_idx,
-                "prompt": prompt,
-                "detections": detections_by_frame,
-            }
-
-            zf.writestr(
-                f"json/{out_json_name}",
-                json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
-            )
-
-            os.remove(video_path)
-            os.remove(out_path)
+            finally:
+                # 프레임 읽기·추론 중 예외가 나도 파일 핸들과 임시 파일을 정리한다
+                if cap is not None:
+                    cap.release()
+                if writer is not None:
+                    writer.release()
+                for _p in (video_path, out_path):
+                    if _p:
+                        try:
+                            os.remove(_p)
+                        except OSError:
+                            pass
 
             if pid is not None:
                 send_message(
@@ -1308,9 +1367,19 @@ def measure_embeddings(
     return data
 
 
+EMBED_BATCH_MIN, EMBED_BATCH_MAX = 1, 256
+
+
 def generate_embeddings(
     sentences: List[str], batch_size: int = 12
 ) -> List[List[float]]:
+    # 0·음수 batch 는 배치 분할을 깨뜨려 결과 개수가 입력과 어긋날 수 있다
+    if not isinstance(batch_size, int) or not (
+        EMBED_BATCH_MIN <= batch_size <= EMBED_BATCH_MAX
+    ):
+        raise ValueError(
+            f"batch_size는 {EMBED_BATCH_MIN}~{EMBED_BATCH_MAX} 사이 정수여야 합니다"
+        )
     model = load_bge_m3_model()
 
     out = model.encode(

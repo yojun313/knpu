@@ -5,7 +5,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")  # period 병렬 시 워커 내부
 import re
 import json
 import shutil
-import traceback
+import logging
 from datetime import datetime
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
@@ -30,6 +30,8 @@ from system.endpoints import HOMEPAGE_URL
 from app.services import project_store
 from scipy.spatial import ConvexHull
 from xml.sax.saxutils import escape
+
+logger = logging.getLogger(__name__)
 
 
 # 한글 폰트 (GPU 서버 환경에 맞게 경로/이름만 맞춰줘)
@@ -78,6 +80,13 @@ def _period_key(dt_series, period):
     if period == "1w":
         return dt_series.dt.to_period("W").astype(str)
     return None  # total
+
+
+PERIOD_CHOICES = {"total", "1y", "6m", "3m", "1m", "1w"}
+
+
+def _bad_request(error: str, message: str) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"error": error, "message": message})
 
 
 # ────────────────────── 공출현 행렬(병렬) ──────────────────────
@@ -156,11 +165,19 @@ def build_edges(cooc, freq, n_units, measure, min_edge_weight):
             if p_ij <= 0 or p_i <= 0 or p_j <= 0:
                 continue
             pmi = np.log(p_ij / (p_i * p_j))
-            w = pmi / (-np.log(p_ij)) if measure == "npmi" else pmi
+            if measure == "npmi":
+                # 두 토큰이 모든 분석 단위에 함께 나오면 p_ij = 1 → 분모 -log(p_ij) = 0.
+                # NPMI의 정의상 완전 동시 출현은 1이다(0/0 NaN이 Louvain까지 가서 실패했다).
+                denom = -np.log(p_ij)
+                w = 1.0 if denom <= 0 else pmi / denom
+            else:
+                w = pmi
             if w <= 0:  # 음의 연관은 버림
                 continue
         else:
             w = float(c)
+        if not np.isfinite(w):  # NaN·Infinity 가중치는 군집화를 깨뜨리므로 버린다
+            continue
         edges.append((int(i), int(j), float(w), int(c)))
     return edges
 
@@ -813,32 +830,37 @@ def run_network_analysis(
         out_dir = os.path.join(base_temp, f"network_{pid}_{ts}")
         os.makedirs(out_dir, exist_ok=True)
 
+        def _reject(error: str, message: str) -> JSONResponse:
+            # 입력 오류로 일찍 끝날 때도 방금 만든 작업 폴더를 남기지 않는다
+            shutil.rmtree(out_dir, ignore_errors=True)
+            return _bad_request(error, message)
+
         text_col = option["text_col"]
         if text_col not in data.columns:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "열 없음", "message": f"{text_col} 열이 없습니다."},
-            )
+            return _reject("열 없음", f"{text_col} 열이 없습니다.")
 
         period = option.get("period", "total")
+        if period not in PERIOD_CHOICES:
+            return _reject("기간 단위 오류", f"지원하지 않는 기간 단위입니다: {period}")
 
         # 기간별로 쪼개서 병렬
         if period != "total":
             date_col = next((c for c in data.columns if "Date" in c), None)
             if date_col is None:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "error": "Date 열 없음",
-                        "message": "기간 분석엔 Date 열 필요",
-                    },
-                )
+                return _reject("Date 열 없음", "기간 분석엔 Date 열 필요")
             data[date_col] = pd.to_datetime(data[date_col], errors="coerce")
             data = data.dropna(subset=[date_col])
+            if data.empty:
+                return _reject(
+                    "유효한 날짜 없음",
+                    f"'{date_col}' 열에서 날짜를 읽을 수 있는 행이 없습니다. 날짜 형식을 확인해 주시기 바랍니다.",
+                )
             data["_pk"] = _period_key(data[date_col], period)
             groups = [
                 (str(k), sub[text_col].tolist()) for k, sub in data.groupby("_pk")
             ]
+            if not groups:
+                return _reject("기간 그룹 없음", "기간으로 나눌 데이터가 없습니다.")
             send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
             n_workers = min(len(groups), os.cpu_count() or 4)
             args = [(f"_{k}", txts, option) for k, txts in groups]
@@ -969,11 +991,11 @@ def run_network_analysis(
         )
 
     except Exception as e:
+        # traceback·로컬 경로는 서버 로그에만 남기고 응답에는 넣지 않는다
+        logger.exception("네트워크 분석 실패 (pid=%s)", pid)
+        if "out_dir" in locals():  # 실패한 작업의 임시 폴더를 남기지 않는다
+            shutil.rmtree(out_dir, ignore_errors=True)
         return JSONResponse(
             status_code=500,
-            content={
-                "error": "네트워크 분석 오류",
-                "message": str(e),
-                "traceback": traceback.format_exc(),
-            },
+            content={"error": "네트워크 분석 오류", "message": str(e)},
         )

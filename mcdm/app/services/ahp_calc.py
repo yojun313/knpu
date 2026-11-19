@@ -79,7 +79,16 @@ def build_matrix(node_ids: list[str], pairs: dict[str, float]) -> np.ndarray:
             if pid not in pairs:
                 missing.append(pid)
                 continue
-            v = float(pairs[pid])
+            # 예전에 저장됐거나 손으로 고친 값이 숫자가 아니거나 NaN·Infinity·0 이하이면
+            # 고유벡터 계산이 NumPy 예외로 깨진다 — 비어 있는 쌍과 똑같이 취급한다.
+            try:
+                v = float(pairs[pid])
+            except (TypeError, ValueError):
+                missing.append(pid)
+                continue
+            if not math.isfinite(v) or v <= 0:
+                missing.append(pid)
+                continue
             lo, _hi = sorted([a, b])
             # 저장값은 항상 "사전순 작은 쪽 / 사전순 큰 쪽"의 중요도.
             # 표시 순서(i가 사전순으로 큰 쪽일 수도 있음)에 맞춰 방향을 정한다.

@@ -404,7 +404,11 @@ async def review(
         f"[초안]\n{json.dumps(sections, ensure_ascii=False)}\n\n"
         f"[규칙 검사 결과]\n"
         + (
-            "\n".join(f"- {i['section']}: {i['problem']}" for i in rule_issues)
+            "\n".join(
+                f"- {i.get('section', '')}: {i.get('problem', '')}"
+                for i in rule_issues
+                if isinstance(i, dict)
+            )
             or "(문제 없음)"
         )
         + "\n\nJSON만 출력해 주시기 바랍니다."
@@ -417,6 +421,13 @@ async def review(
         temperature=0.1,
         max_tokens=8000,
     )
+    # LLM 응답 모양을 믿지 않는다 — 최상위가 dict 가 아니거나 issues 가 목록이 아니면
+    # 빈 검토 결과로 본다(예전에는 .get() 호출 지점에서 파이프라인이 중단될 수 있었다).
+    if not isinstance(data, dict):
+        data = {}
+    raw_issues = data.get("issues")
+    if not isinstance(raw_issues, list):
+        raw_issues = []
     issues = [
         {
             "section": str(i.get("section", ""))[:40],
@@ -424,7 +435,7 @@ async def review(
             "problem": str(i.get("problem", ""))[:300],
             "fix": str(i.get("fix", ""))[:300],
         }
-        for i in (data.get("issues") or [])
+        for i in raw_issues
         if isinstance(i, dict) and i.get("problem")
     ]
     revised = data.get("revised")

@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+import math
+
 from fractions import Fraction
 
 # long(tidy) 내보내기 전용 열. 반입은 wide 형식이라 이 목록을 쓰지 않는다.
@@ -105,8 +107,8 @@ def parse_value(raw: str) -> float:
         v = float(raw)
     except ValueError:
         raise ValueError(f"숫자로 해석할 수 없습니다: {raw!r}")
-    if v <= 0:
-        raise ValueError(f"값은 0보다 커야 합니다: {raw!r}")
+    if not math.isfinite(v) or v <= 0:
+        raise ValueError(f"값은 0보다 큰 유한한 숫자여야 합니다: {raw!r}")
     return v
 
 

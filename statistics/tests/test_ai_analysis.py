@@ -33,7 +33,7 @@ BASE = {
 def response(text):
     return SimpleNamespace(
         result=SimpleNamespace(text=text, display_model="local-model"),
-        target=SimpleNamespace(label="local"),
+        target=SimpleNamespace(label="local", provider="local"),
         cost_usd=0.01,
         notes=[],
     )
@@ -49,10 +49,9 @@ class AnalysisAgentTests(unittest.IsolatedAsyncioTestCase):
             ]
         )
         with patch.object(ai_analysis.user_llm, "achat_for_user", fake):
-            result = await ai_analysis.analyze(
+            result = await ai_analysis.run_chat(
                 BASE,
                 "user-1",
-                "chat",
                 question="A와 B의 차이를 계산해줘",
                 history=[
                     {"role": "user", "content": "두 집단을 보자"},
@@ -60,8 +59,11 @@ class AnalysisAgentTests(unittest.IsolatedAsyncioTestCase):
                 ],
             )
 
-        self.assertEqual(result["cost_usd"], 0.03)
-        self.assertEqual(result["tables_used"], ["점수 요약"])
+        self.assertEqual(result["llm"]["cost_usd"], 0.03)
+        self.assertEqual(
+            result["tables"], [{"id": "score_summary", "title": "점수 요약"}]
+        )
+        self.assertEqual(len(result["steps"]), 2)  # 표 열람 · 계산
         sent = json.dumps(fake.call_args_list, ensure_ascii=False, default=str)
         self.assertIn("두 집단을 보자", sent)
         self.assertIn("20", sent)
@@ -70,23 +72,27 @@ class AnalysisAgentTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_rejects_invalid_history_and_private_table(self):
         with self.assertRaises(ValueError):
-            await ai_analysis.analyze(
-                BASE, "user-1", "chat", question="질문", history={"role": "user"}
+            await ai_analysis.run_chat(
+                BASE, "user-1", question="질문", history={"role": "user"}
             )
         self.assertEqual(
-            ai_analysis._agent_tool(
+            ai_analysis._tool(
                 BASE, {"tool": "read_table", "table_id": "writer_analysis"}
             ),
-            {"error": "조회할 수 없는 표입니다."},
+            {"error": "없는 표이거나 개인정보 보호로 열람할 수 없는 표입니다."},
         )
 
     def test_calculator_rejects_code(self):
         self.assertEqual(ai_analysis._calculate("(12-10)/10*100"), "20")
         self.assertEqual(
-            ai_analysis._agent_action(
-                '[도구 호출] read_table({"table_id":"score_summary"})'
+            ai_analysis._action(
+                '표를 보겠습니다. {"request":"read_table","table_id":"score_summary"}'
             ),
-            {"tool": "read_table", "table_id": "score_summary"},
+            {
+                "request": "read_table",
+                "table_id": "score_summary",
+                "tool": "read_table",
+            },
         )
         with self.assertRaises(ValueError):
             ai_analysis._calculate("__import__('os').system('true')")

@@ -14,6 +14,12 @@ from app.services.analysis_service import (
 )
 from app.libs.progress import send_message
 from app.libs.exceptions import BadRequestException
+from app.services.analysis_service import (
+    WHISPER_MODEL_MAP,
+    EMBED_BATCH_MIN,
+    EMBED_BATCH_MAX,
+    resolve_yolo_model_name,
+)
 import pandas as pd
 import json
 import io
@@ -45,11 +51,14 @@ async def hate_measure_route(
     file: UploadFile = File(...),
 ):
     # 옵션 파싱 → HateOption + 부가 파라미터(text_col 등)
-    option_dict = json.loads(option)
-    hate_option = HateOption(
-        pid=option_dict["pid"],
-        option_num=option_dict["option_num"],
-    )
+    option_dict = _parse_option(option)
+    try:
+        hate_option = HateOption(
+            pid=option_dict["pid"],
+            option_num=option_dict["option_num"],
+        )
+    except (KeyError, ValueError) as e:
+        raise BadRequestException(f"hate 옵션이 올바르지 않습니다: {e}")
     text_col = option_dict.get("text_col", "Text")
 
     # CSV → DataFrame
@@ -81,12 +90,47 @@ async def hate_measure_route(
     )
 
 
+def _parse_option(option: str) -> dict:
+    """option JSON 을 dict 로. 잘못된 JSON 은 400(예전엔 일부 경로가 예외 객체를 반환만 했다)."""
+    try:
+        value = json.loads(option or "{}")
+    except (TypeError, ValueError):
+        raise BadRequestException("option JSON 파싱 실패")
+    if not isinstance(value, dict):
+        raise BadRequestException("option 은 JSON 객체여야 합니다")
+    return value
+
+
+def _whisper_level(option_dict: dict) -> int:
+    try:
+        level = int(option_dict.get("model", 2))
+    except (TypeError, ValueError):
+        raise BadRequestException("model 단계는 정수여야 합니다")
+    if level not in WHISPER_MODEL_MAP:
+        raise BadRequestException(
+            f"지원하지 않는 model 단계입니다: {level} (허용: {sorted(WHISPER_MODEL_MAP)})"
+        )
+    return level
+
+
+def _batch_size(option_dict: dict) -> int:
+    try:
+        size = int(option_dict.get("batch_size", 12))
+    except (TypeError, ValueError):
+        raise BadRequestException("batch_size는 정수여야 합니다")
+    if not (EMBED_BATCH_MIN <= size <= EMBED_BATCH_MAX):
+        raise BadRequestException(
+            f"batch_size는 {EMBED_BATCH_MIN}~{EMBED_BATCH_MAX} 사이여야 합니다"
+        )
+    return size
+
+
 @router.post("/whisper")
 async def whisper_route(option: str = Form("{}"), file: UploadFile = File(...)):
-    option_dict = json.loads(option)
+    option_dict = _parse_option(option)
 
     language = option_dict.get("language", "ko")
-    model_level = int(option_dict.get("model", 2))
+    model_level = _whisper_level(option_dict)
     pid = option_dict.get("pid", None)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
@@ -112,11 +156,11 @@ def whisper_stream_route(option: str = Form("{}"), file: UploadFile = File(...))
     (동기 라우트 + 동기 제너레이터라서 FastAPI가 threadpool에서 돌린다)
 
     option.language: 생략 / null / "auto" 이면 언어 자동 감지(기본값), 그 외는 ISO-639-1 코드(ko/en/ja/...)로 고정."""
-    option_dict = json.loads(option)
+    option_dict = _parse_option(option)
     language = option_dict.get("language")
     if not language or str(language).strip().lower() == "auto":
         language = None  # None = faster-whisper 자동 감지
-    model_level = int(option_dict.get("model", 2))
+    model_level = _whisper_level(option_dict)
     job_id = option_dict.get("job_id")  # 있으면 /whisper/cancel/{job_id}로 중단 가능
 
     suffix = os.path.splitext(file.filename or "")[1] or ".wav"
@@ -246,16 +290,18 @@ async def yolo_detect_route(
     option: str = Form("{}"),
     conf_thres: float = Form(0.25),
 ):
-    try:
-        option_dict = json.loads(option)
-    except json.JSONDecodeError:
-        return BadRequestException("option JSON 파싱 실패")
+    option_dict = _parse_option(option)
 
     pid = option_dict.get("pid")
     media = option_dict.get("media", "image")
+    if media not in ("image", "video"):
+        raise BadRequestException(f"지원하지 않는 media 타입: {media}")
 
-    # [추가] 모델명 추출 (기본값: yolo11n)
-    model_name = option_dict.get("model", "yolo11n")
+    # 모델명은 허용 목록(모델 폴더의 .pt + 공식 기본 모델)으로만 — 경로 문자 거절
+    try:
+        model_name = resolve_yolo_model_name(option_dict.get("model", "yolo11n"))
+    except ValueError as e:
+        raise BadRequestException(str(e))
 
     if media == "video":
         zip_buffer = await yolo_detect_videos(
@@ -275,10 +321,8 @@ async def yolo_detect_route(
         )
         out_name = "yolo_image_results.zip"
 
-    else:
-        return BadRequestException(
-            detail=f"지원하지 않는 media 타입: {media}",
-        )
+    else:  # 위에서 걸렀으므로 오지 않는다
+        raise BadRequestException(f"지원하지 않는 media 타입: {media}")
 
     cd_header = f"attachment; filename*=UTF-8''{quote(out_name)}"
 
@@ -295,11 +339,16 @@ async def grounding_dino_route(
     prompt: str = Form(...),
     option: str = Form("{}"),
 ):
-    option_dict = json.loads(option)
+    option_dict = _parse_option(option)
     pid = option_dict.get("pid")
     media = option_dict.get("media", "image")
 
-    box_threshold = float(option_dict.get("box_threshold", 0.4))
+    try:
+        box_threshold = float(option_dict.get("box_threshold", 0.4))
+    except (TypeError, ValueError):
+        raise BadRequestException("box_threshold는 숫자여야 합니다")
+    if not (0.0 <= box_threshold <= 1.0):
+        raise BadRequestException("box_threshold는 0~1 사이여야 합니다")
 
     if media == "image":
         zip_buffer = await grounding_dino_detect_images(
@@ -336,10 +385,9 @@ async def embed_text_route(
     sentences: List[str] = Body(..., description="임베딩할 문장 리스트"),
     option: str = Form("{}"),
 ):
+    option_dict = _parse_option(option)
+    batch_size = _batch_size(option_dict)
     try:
-        option_dict = json.loads(option)
-        batch_size = int(option_dict.get("batch_size", 12))
-
         embeddings = generate_embeddings(sentences, batch_size=batch_size)
 
         return JSONResponse(
@@ -356,20 +404,26 @@ async def embed_text_route(
 
 @router.post("/embed/csv")
 async def embed_csv_route(file: UploadFile = File(...), option: str = Form("{}")):
-    try:
-        option_dict = json.loads(option)
-    except json.JSONDecodeError:
-        return BadRequestException("option JSON 파싱 실패")
+    option_dict = _parse_option(option)
 
     pid = option_dict.get("pid")
     text_col = option_dict.get("text_col", "Text")
-    batch_size = int(option_dict.get("batch_size", 12))
+    batch_size = _batch_size(option_dict)
 
     content = await file.read()
-    try:
-        df = pd.read_csv(io.StringIO(content.decode("utf-8")))
-    except:
-        df = pd.read_csv(io.StringIO(content.decode("cp949")))
+    df = None
+    for enc in ("utf-8-sig", "cp949"):
+        try:
+            df = pd.read_csv(io.StringIO(content.decode(enc)))
+            break
+        except UnicodeDecodeError:
+            continue
+        except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
+            raise BadRequestException(f"CSV 파일을 읽지 못했습니다: {e}")
+    if df is None:
+        raise BadRequestException(
+            "CSV 인코딩을 읽지 못했습니다(UTF-8 또는 CP949만 지원)"
+        )
 
     if text_col not in df.columns:
         for c in df.columns:

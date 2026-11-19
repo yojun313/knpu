@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import math
+
 from app.services.methods.ahp import AhpPlugin
 from app.services.methods.base import Consistency, LocalResult, MethodPlugin
 from app.services.methods.bwm import BwmPlugin
@@ -32,8 +34,9 @@ from app.services.ahp_calc import to_stored_pair  # noqa: E402
 
 def _v_pairwise(body: dict):
     v = float(body["value"])
-    if v <= 0:
-        raise ValueError("비교값은 0보다 커야 합니다")
+    # NaN은 `v <= 0` 비교를 통과하고 Infinity도 양수라 통과했다 — 유한한 양수만 받는다
+    if not math.isfinite(v) or v <= 0:
+        raise ValueError("비교값은 0보다 큰 유한한 숫자여야 합니다")
     return to_stored_pair(body["uuid_a"], body["uuid_b"], v)  # (pair_id, 저장값)
 
 
@@ -50,7 +53,7 @@ def _v_vector(body: dict):
     if not (iid.startswith("BO:") or iid.startswith("OW:")):
         raise ValueError(f"vector item_id 형식 오류: {iid}")
     v = float(body["value"])
-    if not (1 <= v <= 9):
+    if not math.isfinite(v) or not (1 <= v <= 9):
         raise ValueError("BWM 비교값은 1~9 범위여야 합니다")
     return iid, v
 

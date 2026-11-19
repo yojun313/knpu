@@ -32,14 +32,24 @@ class DataProcess:
 
     def TimeSplitter(self, data):
         # data 형태: DataFrame
-        data_columns = data.columns.tolist()
+        # Date 열이 없거나 날짜를 하나도 읽지 못하면 ValueError — 예전에는 열이 없으면
+        # 변수 미정의(UnboundLocalError), 날짜가 전부 잘못되면 빈 결과로 조용히 끝났다.
+        word = next((c for c in data.columns.tolist() if "Date" in str(c)), None)
+        if word is None:
+            raise ValueError("'Date'가 들어간 열이 없어 시계열 분할을 할 수 없습니다.")
 
-        for i in data_columns:
-            if "Date" in i:
-                word = i
-                break
-
-        data[word] = pd.to_datetime(data[word], format="%Y-%m-%d", errors="coerce")
+        parsed = pd.to_datetime(data[word], format="%Y-%m-%d", errors="coerce")
+        # "2026-01-01 12:00" 처럼 시각이 붙은 값 등은 일반 해석으로 한 번 더 읽는다
+        missing = parsed.isna() & data[word].notna()
+        if missing.any():
+            parsed[missing] = pd.to_datetime(
+                data.loc[missing, word].astype(str), errors="coerce", format="mixed"
+            )
+        if parsed.notna().sum() == 0:
+            raise ValueError(
+                f"'{word}' 열에서 읽을 수 있는 날짜가 없습니다. 날짜 형식을 확인해 주시기 바랍니다."
+            )
+        data[word] = parsed
 
         data["year"] = data[word].dt.year
         data["month"] = data[word].dt.month
