@@ -591,41 +591,11 @@
     });
   }
 
-  // ── 상단 바 오른쪽(설정 버튼 왼쪽)에 프로필 사진·이름을 띄운다 ──────────────
-  // 사이드바의 'Welcome, 000' 카드와 서비스 로고는 공간만 차지하므로 숨긴다(theme.css).
-  var USER_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-  function setHeaderName(name) {
-    var el = document.querySelector('.hd-profile .hd-name');
-    name = (name || '').trim();
-    if (!el || !name || name === '-') return;
-    el.textContent = name;
-    el.parentNode.title = name;
-  }
-  function initHeaderProfile() {
-    var header = document.querySelector('.knpu-service-header');
-    var settings = header && header.querySelector('#themeSettingsBtn');
-    if (!settings || header.querySelector('.hd-profile')) return;
-    var chip = document.createElement('div');
-    chip.className = 'hd-profile';
-    chip.innerHTML = '<span class="sb-avatar hd-avatar">' + USER_SVG + '</span><span class="hd-name"></span>';
-    header.insertBefore(chip, settings);
-    document.documentElement.classList.add('knpu-header-profile');
-    // 각 서비스가 사이드바 이름(.sb-username)을 채우면 그대로 따라간다
-    var src = document.querySelector('.sb-username');
-    if (src) {
-      setHeaderName(src.textContent);
-      if (window.MutationObserver) {
-        new MutationObserver(function () { setHeaderName(src.textContent); })
-          .observe(src, { childList: true, characterData: true, subtree: true });
-      }
-    }
-  }
-
   function initUserAvatar() {
     if (!document.querySelector('.sb-avatar')) return;   // 해당 없는 페이지는 요청도 않는다
 
     var cached = cachedPhoto();
-    if (cached) { setHeaderName(cached.name); paintAvatars(cached.url, cached.name); return; }
+    if (cached) { paintAvatars(cached.url, cached.name); return; }
 
     fetch('/shared-ui/account/api/me', { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -636,7 +606,6 @@
           sessionStorage.setItem(AVATAR_CACHE_KEY,
             JSON.stringify({ t: Date.now(), url: url || '', name: me.name || '' }));
         } catch (e) { }
-        setHeaderName(me.name);
         paintAvatars(url, me.name);
       })
       .catch(function () { /* 비로그인·오류면 기본 아이콘 그대로 */ });
@@ -664,7 +633,6 @@
 
   function init() {
     initGpuCollapse();
-    initHeaderProfile();
     initLiquidGlass();
     loadChatbot();
     initUserAvatar();

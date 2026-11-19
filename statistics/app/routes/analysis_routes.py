@@ -37,6 +37,6 @@ async def analysis_statistics(
         uid,
         "statistics.analysis.statistics_run",
         "statistics",
-        target={"type": "analysis", "id": project_name},
+        target={"type": "analysis", "id": project_name, "name": project_name},
     )
     return result

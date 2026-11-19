@@ -149,6 +149,26 @@ def build_search_query(name=None, date_str=None, user_map=None, only_explicit=Fa
     return query
 
 
+def _readable_message(log: dict, user_map: dict):
+    """예전 로그는 '동작: <uid>' 처럼 식별자만 메시지에 남았다. 화면에서는 대상 이름으로
+    바꿔 보여 준다(저장된 데이터는 그대로 둔다). 이름을 알 수 없으면 식별자는 빼고 표시한다."""
+    message = log.get("message")
+    action = log.get("action")
+    target = log.get("target") or {}
+    tid = target.get("id")
+    if not (message and action and tid) or message != f"{action}: {tid}":
+        return message
+    name = next(
+        (target[k] for k in ("name", "title", "label", "username") if target.get(k)),
+        None,
+    ) or (user_map.get(tid) if target.get("type") == "user" else None)
+    return (
+        f"{action}: {name}"
+        if name
+        else f"{action} (대상 이름이 기록되지 않은 예전 로그)"
+    )
+
+
 def _decorate_log(log: dict, user_map: dict) -> dict:
     log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime(
         "%Y-%m-%d %H:%M:%S"
@@ -159,6 +179,7 @@ def _decorate_log(log: dict, user_map: dict) -> dict:
     else:
         log["user_name"] = "익명 (로그인 전 요청)"
     log["action"] = log.get("action")
+    log["message"] = _readable_message(log, user_map)
     log["service"] = log.get("service")
     log["outcome"] = log.get("outcome")
     req = log.get("request") or {}

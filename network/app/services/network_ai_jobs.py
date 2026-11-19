@@ -164,7 +164,11 @@ async def _run(job_id, uid, project_id, payload, admin):
                 uid,
                 "network.ai_analysis",
                 "network",
-                target={"type": "project", "id": project_id},
+                target={
+                    "type": "project",
+                    "id": project_id,
+                    "name": project_store.name_of("project", project_id),
+                },
                 metadata={
                     "mode": payload["mode"],
                     "report_id": job_id,

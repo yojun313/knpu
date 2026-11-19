@@ -137,6 +137,9 @@ def delete_paper(
     uid: str = Query(..., description="삭제할 논문의 UID"),
     admin=Depends(get_current_user),
 ):
+    doc = (
+        papers_db.find_one({"uid": uid}, {"title": 1}) or {}
+    )  # 지우기 전에 로그용 제목
     result = delete_content(papers_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Paper not found")
@@ -145,7 +148,7 @@ def delete_paper(
         admin["sub"],
         "homepage.paper.delete",
         "homepage",
-        target={"type": "paper", "id": uid},
+        target={"type": "paper", "id": uid, "name": doc.get("title")},
     )
     return {"message": f"Paper '{uid}' deleted successfully"}
 

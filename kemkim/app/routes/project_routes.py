@@ -304,13 +304,14 @@ async def api_rename_folder(folder_id: str, request: Request):
 @router.delete("/api/folders/{folder_id}")
 async def api_delete_folder(folder_id: str, request: Request):
     uid = _uid(request)
+    folder_name = project_store.name_of("folder", folder_id)  # 지우기 전에 로그용 이름
     _handle_store_error(project_store.delete_folder, uid, folder_id)
     insert_log(
         user_logs_db,
         uid,
         "kemkim.folder.delete",
         "kemkim",
-        target={"type": "folder", "id": folder_id},
+        target={"type": "folder", "id": folder_id, "name": folder_name},
     )
     return JSONResponse({"message": "삭제되었습니다"})
 
@@ -385,7 +386,11 @@ async def project_upload_source(
         uid,
         "kemkim.project.source_upload",
         "kemkim",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"filename": file.filename},
     )
     return JSONResponse({"message": "원본 CSV가 저장되었습니다."})
@@ -435,7 +440,11 @@ async def project_source_from_crawl_db(project_id: str, request: Request):
         uid,
         "kemkim.project.source_from_crawl_db",
         "kemkim",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"crawl_uid": crawl_uid, "name": name},
     )
     return JSONResponse(
@@ -510,7 +519,11 @@ async def project_interpret(project_id: str, request: Request):
         uid,
         "kemkim.interpretation.run",
         "kemkim",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"keywords": keywords, "match_mode": match_mode, "use_ai": use_ai},
     )
     return JSONResponse(saved)
@@ -620,7 +633,11 @@ async def project_signal_ai(project_id: str, request: Request):
             uid,
             "kemkim.interpretation.signal_ai",
             "kemkim",
-            target={"type": "project", "id": project_id},
+            target={
+                "type": "project",
+                "id": project_id,
+                "name": project_store.name_of("project", project_id),
+            },
             metadata={"word": word, "has_ai": bool(result.get("ai"))},
         )
         return saved
@@ -670,7 +687,11 @@ async def project_signal_group_ai(project_id: str, request: Request):
             uid,
             "kemkim.interpretation.signal_group_ai",
             "kemkim",
-            target={"type": "project", "id": project_id},
+            target={
+                "type": "project",
+                "id": project_id,
+                "name": project_store.name_of("project", project_id),
+            },
             metadata={
                 "signal": signal,
                 "basis": basis,
@@ -768,7 +789,11 @@ async def project_interpretation_export(
         uid,
         "kemkim.interpretation.export",
         "kemkim",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"interpretation_id": interpretation_id},
     )
 

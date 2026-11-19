@@ -38,7 +38,7 @@ def upsert_popup(popup: Popup, admin=Depends(get_current_user)):
         admin["sub"],
         "homepage.popup.upsert",
         "homepage",
-        target={"type": "popup", "id": data["uid"]},
+        target={"type": "popup", "id": data["uid"], "name": data.get("title")},
     )
     return result
 
@@ -48,6 +48,7 @@ def delete_popup(
     uid: str = Query(..., description="삭제할 팝업의 UID"),
     admin=Depends(get_current_user),
 ):
+    doc = popup_db.find_one({"uid": uid}, {"title": 1}) or {}  # 지우기 전에 로그용 제목
     result = delete_content(popup_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Popup not found")
@@ -56,6 +57,6 @@ def delete_popup(
         admin["sub"],
         "homepage.popup.delete",
         "homepage",
-        target={"type": "popup", "id": uid},
+        target={"type": "popup", "id": uid, "name": doc.get("title")},
     )
     return {"message": f"Popup '{uid}' deleted successfully"}

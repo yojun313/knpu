@@ -449,3 +449,15 @@ def save_source_csv(
             }
         },
     )
+
+
+def name_of(kind: str, doc_id: str) -> str | None:
+    """로그에 남길 프로젝트·폴더 이름(권한 검사 없음). 찾지 못하면 None."""
+    col = {"project": network_projects_db, "folder": network_folders_db}.get(kind)
+    if col is None or not doc_id:
+        return None
+    try:
+        doc = col.find_one({"_id": doc_id}, {"name": 1})
+    except Exception:
+        return None
+    return (doc or {}).get("name")

@@ -189,6 +189,9 @@ def delete_faq(
     uid: str = Query(..., description="삭제할 FAQ 항목의 UID"),
     admin=Depends(get_current_user),
 ):
+    doc = (
+        admission_faq_db.find_one({"uid": uid}, {"question": 1}) or {}
+    )  # 지우기 전에 로그용 제목
     result = delete_content(admission_faq_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="FAQ not found")
@@ -197,6 +200,6 @@ def delete_faq(
         admin["sub"],
         "homepage.faq.delete",
         "homepage",
-        target={"type": "faq", "id": uid},
+        target={"type": "faq", "id": uid, "name": doc.get("question")},
     )
     return {"message": f"FAQ '{uid}' deleted successfully"}

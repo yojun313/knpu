@@ -749,3 +749,15 @@ def read_ai_results_meta(owner_uid: str, project_id: str) -> str:
     """저장된 결과 목록이 바뀌었는지 알기 위한 짧은 버전 문자열."""
     items = _read_ai_results(_ai_results_path(owner_uid, project_id))
     return f"{len(items)}:{items[0].get('id') if items else ''}"
+
+
+def name_of(kind: str, doc_id: str) -> str | None:
+    """로그에 남길 프로젝트·폴더 이름(권한 검사 없음). 찾지 못하면 None."""
+    col = {"project": statistics_projects_db, "folder": statistics_folders_db}.get(kind)
+    if col is None or not doc_id:
+        return None
+    try:
+        doc = col.find_one({"_id": doc_id}, {"name": 1})
+    except Exception:
+        return None
+    return (doc or {}).get("name")

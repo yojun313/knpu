@@ -33,6 +33,6 @@ async def graph_network(
         uid,
         "network.analysis.graph_network_run",
         "network",
-        target={"type": "analysis", "id": project_name},
+        target={"type": "analysis", "id": project_name, "name": project_name},
     )
     return result

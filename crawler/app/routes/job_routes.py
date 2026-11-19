@@ -1,4 +1,4 @@
-from system.db import crawlList_db
+from system.db import crawlJobQueue_db, crawlList_db
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.job_model import (
     JobSubmitRequest,
@@ -109,6 +109,21 @@ def get_job_logs(job_id: str):
     return {"job_id": job_id, "logs": logs}
 
 
+def _job_name(job_id: str) -> str | None:
+    """로그에 남길 크롤링 작업 이름 — DB 이름, 없으면 '대상 · 키워드'."""
+    try:
+        job = crawlJobQueue_db.find_one({"job_id": job_id}) or {}
+        if job.get("db_uid"):
+            db = crawlList_db.find_one({"uid": job["db_uid"]}, {"name": 1})
+            if db and db.get("name"):
+                return db["name"]
+        req = job.get("request") or {}
+        parts = [req.get("crawl_object"), req.get("keyword")]
+        return " · ".join(str(x) for x in parts if x) or None
+    except Exception:
+        return None
+
+
 @router.post("/jobs/{job_id}/stop")
 def stop_job(job_id: str, user=Depends(get_current_user)):
     success = queue_manager.stop_job(job_id)
@@ -119,7 +134,7 @@ def stop_job(job_id: str, user=Depends(get_current_user)):
         user["uid"],
         "crawler.crawl.stop",
         "crawler",
-        target={"type": "crawl_job", "id": job_id},
+        target={"type": "crawl_job", "id": job_id, "name": _job_name(job_id)},
     )
     return {"status": "ok", "message": f"Job {job_id} stop signal sent"}
 
@@ -137,7 +152,7 @@ def cancel_job(job_id: str, user=Depends(get_current_user)):
         user["uid"],
         "crawler.crawl.cancel",
         "crawler",
-        target={"type": "crawl_job", "id": job_id},
+        target={"type": "crawl_job", "id": job_id, "name": _job_name(job_id)},
         outcome="success" if success else "failure",
     )
     return {"status": "ok", "message": f"Job {job_id} removed ({removed_from})"}

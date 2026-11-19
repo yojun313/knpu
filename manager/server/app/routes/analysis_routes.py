@@ -159,6 +159,7 @@ async def youtube_download(
         uid,
         "manager.analysis.youtube_download",
         "manager",
+        message=f"유튜브 다운로드: {len(option.get('urls', []) or [])}개",
         metadata={
             "count": len(option.get("urls", []) or []),
             "format": option.get("format", "mp3"),

@@ -1873,27 +1873,9 @@ pre.st-code[hidden] { display: none; }
 .gpu-collapse-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 .gpu-widget :is(#gpuBody,#gpu-body)[hidden]{display:none!important}
 
-/* ── 상단 바 프로필(theme.js initHeaderProfile) ──────────────────────────
-   프로필 사진·이름을 설정 버튼 왼쪽에 두고, 사이드바의 서비스 로고와
-   'Welcome, 000' 카드는 숨겨 목록에 공간을 더 준다. */
-html body .knpu-service-header .hd-profile {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 0; max-width: 200px;
-  margin-left: auto; color: #fff; font-size: 13px; font-weight: 700;
-}
-html body .knpu-service-header .hd-profile + .theme-settings-btn { margin-left: 4px; }
-html body .knpu-service-header .hd-avatar {
-  width: 30px; height: 30px; min-width: 30px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28); color: #fff;
-}
-html body .knpu-service-header .hd-avatar.has-photo { border-color: rgba(255, 255, 255, .5); }
-html body .knpu-service-header .hd-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html body .knpu-service-header .hd-name:empty { display: none; }
-@media (max-width: 700px) { html body .knpu-service-header .hd-name { display: none; } }
-html.knpu-header-profile body .sb-user,
-html.knpu-header-profile body .sb-brand { display: none !important; }
-/* 로고만 있던 사이드바 윗칸(crawler·admin)은 통째로 접는다 */
-html.knpu-header-profile body .sb-top:not(:has(> :not(.sb-brand))) { display: none !important; }
+/* 사이드바 맨 위 서비스 로고는 공간만 차지하므로 숨긴다. 로고만 있던 윗칸(crawler·admin)은 통째로 접는다. */
+html body .sb-brand { display: none !important; }
+html body .sb-top:not(:has(> :not(.sb-brand))) { display: none !important; }
 
 /* '서버 연결됨' 표시는 없앴고, 로그아웃은 설정 창 왼쪽 아래(.st-logout)로 옮겼다 */
 html body .sb-conn, html body .sb-logout { display: none !important; }
@@ -1923,3 +1905,18 @@ html body .rail-item .ri-badge {
 }
 html body .rail-item .ri-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 html body .rail.collapsed .rail-item { align-items: center !important; }
+
+/* 사이드바 맨 아래: 프로필과 아이콘 버튼을 한 줄에 — 로그아웃·연결 상태를 뺀 자리를 프로필이 쓴다 */
+@media (min-width: 1101px) {
+  html body .rail:not(.collapsed) .sb-bottom,
+  html body .sidebar:not(.collapsed) .sb-bottom { display: flex; align-items: center; gap: 6px; }
+  html body .rail:not(.collapsed) .sb-bottom .sb-user,
+  html body .sidebar:not(.collapsed) .sb-bottom .sb-user {
+    flex: 1; min-width: 0; margin: 0 !important; padding: 4px 6px !important;
+    border: 0 !important; background: none !important; box-shadow: none !important;
+  }
+  html body .rail:not(.collapsed) .sb-bottom .sb-welcome,
+  html body .sidebar:not(.collapsed) .sb-bottom .sb-welcome { display: none; }
+  html body .rail:not(.collapsed) .sb-bottom .sb-account,
+  html body .sidebar:not(.collapsed) .sb-bottom .sb-account { flex: none; }
+}

@@ -288,13 +288,14 @@ async def api_rename_folder(folder_id: str, request: Request):
 @router.delete("/api/folders/{folder_id}")
 async def api_delete_folder(folder_id: str, request: Request):
     uid = _uid(request)
+    folder_name = project_store.name_of("folder", folder_id)  # 지우기 전에 로그용 이름
     _handle_store_error(project_store.delete_folder, uid, folder_id)
     insert_log(
         user_logs_db,
         uid,
         "network.folder.delete",
         "network",
-        target={"type": "folder", "id": folder_id},
+        target={"type": "folder", "id": folder_id, "name": folder_name},
     )
     return JSONResponse({"message": "삭제되었습니다"})
 
@@ -436,7 +437,11 @@ async def project_ai_report_export(project_id: str, report_id: str, request: Req
         uid,
         "network.ai_report.export",
         "network",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"report_id": report_id},
     )
     return Response(
@@ -463,7 +468,11 @@ async def project_upload_source(
         uid,
         "network.project.source_upload",
         "network",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"filename": file.filename},
     )
     return JSONResponse({"message": "원문 CSV가 저장되었습니다."})
@@ -511,7 +520,11 @@ async def project_source_from_crawl_db(project_id: str, request: Request):
         uid,
         "network.project.source_from_crawl_db",
         "network",
-        target={"type": "project", "id": project_id},
+        target={
+            "type": "project",
+            "id": project_id,
+            "name": project_store.name_of("project", project_id),
+        },
         metadata={"crawl_uid": crawl_uid, "name": name},
     )
     return JSONResponse(

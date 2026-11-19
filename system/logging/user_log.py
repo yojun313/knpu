@@ -71,10 +71,19 @@ def build_entry(
     now_utc, now_kst = _now_kst()
 
     if message is None:
-        if target and target.get("id"):
-            message = f"{action}: {target['id']}"
-        else:
-            message = action
+        # 대상의 이름을 붙인다. uid 같은 식별자만으로는 무엇인지 알 수 없으므로
+        # 이름이 없으면 식별자를 메시지에 넣지 않는다(식별자는 target.id에 그대로 남는다).
+        label = None
+        if target:
+            label = next(
+                (
+                    target[k]
+                    for k in ("name", "title", "label", "username")
+                    if target.get(k)
+                ),
+                None,
+            )
+        message = f"{action}: {label}" if label else action
 
     return {
         "uid": str(uuid.uuid4()),

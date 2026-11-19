@@ -34,6 +34,6 @@ async def analysis_kemkim(
         uid,
         "kemkim.analysis.kemkim_run",
         "kemkim",
-        target={"type": "analysis", "id": project_name},
+        target={"type": "analysis", "id": project_name, "name": project_name},
     )
     return result

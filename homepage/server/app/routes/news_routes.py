@@ -57,6 +57,7 @@ def delete_news(
     uid: str = Query(..., description="삭제할 뉴스의 UID"),
     admin=Depends(get_current_user),
 ):
+    doc = news_db.find_one({"uid": uid}, {"title": 1}) or {}  # 지우기 전에 로그용 제목
     result = delete_content(news_db, uid, admin)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="News not found")
@@ -65,6 +66,6 @@ def delete_news(
         admin["sub"],
         "homepage.news.delete",
         "homepage",
-        target={"type": "news", "id": uid},
+        target={"type": "news", "id": uid, "name": doc.get("title")},
     )
     return {"message": f"News '{uid}' deleted successfully"}

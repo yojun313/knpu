@@ -250,13 +250,14 @@ async def api_rename_folder(folder_id: str, request: Request):
 @router.delete("/api/folders/{folder_id}")
 async def api_delete_folder(folder_id: str, request: Request):
     uid = _uid(request)
+    folder_name = project_store.name_of("folder", folder_id)  # 지우기 전에 로그용 이름
     _handle_store_error(project_store.delete_folder, uid, folder_id)
     insert_log(
         user_logs_db,
         uid,
         "statistics.folder.delete",
         "statistics",
-        target={"type": "folder", "id": folder_id},
+        target={"type": "folder", "id": folder_id, "name": folder_name},
     )
     return JSONResponse({"message": "삭제되었습니다"})
 
