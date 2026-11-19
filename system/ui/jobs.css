@@ -233,7 +233,7 @@ html[data-ui-theme-mode="dark"] .kj-btn.kj-danger { color: #fca5a5; }
 .kj-rail-empty { padding: 6px 4px 2px; font-size: 11.5px; color: var(--sidebar-muted, #667085); line-height: 1.45; }
 
 .kj-rail-item {
-  display: grid; grid-template-columns: 8px 1fr; align-items: center; gap: 8px;
+  display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 8px;
   width: 100%; padding: 7px 9px; text-align: left; cursor: pointer;
   border-radius: var(--ud-r-ctl, 10px);
   border: 1px solid transparent; background: transparent;
@@ -275,6 +275,19 @@ html[data-ui-theme-mode="dark"] .kj-btn.kj-danger { color: #fca5a5; }
 .rail.collapsed .kj-rail-all,
 .rail.collapsed .kj-rail-main,
 .rail.collapsed .kj-rail-bar,
-.rail.collapsed .kj-rail-empty { display: none; }
+.rail.collapsed .kj-rail-empty,
+.rail.collapsed .kj-rail-del { display: none; }
 .rail.collapsed .kj-rail-head .kj-badge { position: static; min-width: 18px; height: 18px; font-size: 10px; }
 .rail.collapsed .kj-rail-item { grid-template-columns: 1fr; justify-items: center; padding: 7px 0; }
+
+/* 실패·중단 작업 기록 삭제 버튼 — 마우스를 올렸을 때만 보이고, 터치 기기에서는 항상 보인다 */
+.kj-rail-del, .kj-row-del {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
+  color: var(--sidebar-muted, #667085); opacity: 0;
+  transition: opacity .14s ease, background .14s ease, color .14s ease;
+}
+.kj-rail-item:hover .kj-rail-del, .kj-rail-del:focus-visible,
+.kj-row:hover .kj-row-del, .kj-row-del:focus-visible { opacity: 1; }
+.kj-rail-del:hover, .kj-row-del:hover { background: rgba(239, 68, 68, .12); color: #dc2626; }
+@media (hover: none) { .kj-rail-del, .kj-row-del { opacity: 1; } }

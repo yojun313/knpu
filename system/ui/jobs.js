@@ -105,6 +105,33 @@
     if (m === 60) { h += 1; m = 0; }
     return (h ? h + '시간 ' : '') + (m ? m + '분' : '') + ' 후';
   }
+  // 실패·중단된 작업은 목록/사이드바에서 바로 기록을 지울 수 있다
+  var DELETABLE = { error: 1, cancelled: 1, interrupted: 1 };
+  function delBtn(j, cls) {
+    if (!(j.status in DELETABLE)) return '';
+    return '<span class="' + cls + '" role="button" tabindex="0" title="기록 삭제" aria-label="기록 삭제" data-del="' + esc(j.id) + '">' + icon('trash') + '</span>';
+  }
+  function bindDel(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-del]'), function (b) {
+      var run = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        deleteJob(b.getAttribute('data-del'));
+      };
+      b.onclick = run;
+      b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') run(e); };
+    });
+  }
+  function deleteJob(id) {
+    if (!confirm('이 작업 기록을 삭제하시겠습니까? (만들어진 결과 프로젝트는 그대로 남습니다)')) return;
+    api('/' + encodeURIComponent(id), { method: 'DELETE' }).then(function () {
+      if (S.detail && S.detail.id === id) close('kjDetail');
+      if (navData) { navData.items = (navData.items || []).filter(function (j) { return j.id !== id; }); renderNav(); }
+      if (listData) { listData.items = (listData.items || []).filter(function (j) { return j.id !== id; }); renderList(); }
+      refreshNav();
+      refreshSummary();
+    }).catch(function (err) { toast(err.message, 'err'); });
+  }
+
   function pill(status) {
     var s = STATUS[status] || [status, 'gray'];
     return '<span class="kj-pill kj-' + s[1] + (RUNNING[status] ? ' kj-live' : '') + '">' + esc(s[0]) + '</span>';
@@ -237,7 +264,7 @@
           '<div class="kj-row-top">' + pill(j.status) +
           '<span class="kj-row-title">' + esc(j.title || '(이름 없음)') + '</span>' +
           (S.scope === 'all' ? '<span class="kj-svc">' + esc(SERVICE_LABEL[j.service] || j.service) + '</span>' : '') +
-          '<span class="kj-row-when">' + when + '</span></div>' +
+          '<span class="kj-row-when">' + when + '</span>' + delBtn(j, 'kj-row-del') + '</div>' +
           '<div class="kj-row-sub"><span class="kj-kind">' + esc(j.kind_label || j.kind) + '</span>' +
           '<span class="kj-stage">' + esc(j.status === 'error' || j.status === 'interrupted' ? (j.error || '').split('\n')[0] : (j.stage || '')) + '</span>' +
           (p != null && j.status in RUNNING ? '<span class="kj-pct">' + p + '%</span>' : '') + '</div>' +
@@ -247,6 +274,7 @@
       Array.prototype.forEach.call(body.querySelectorAll('.kj-row'), function (row) {
         row.onclick = function () { open(row.getAttribute('data-id')); };
       });
+      bindDel(body);
     }
     var active = (listData.items || []).filter(function (j) { return j.status in RUNNING; }).length;
     var note = el.querySelector('[data-note]');
@@ -440,11 +468,7 @@
         open(nj.id, { autoOpenResult: true });
       }).catch(function (err) { b.disabled = false; toast(err.message, 'err'); });
     } else if (a === 'delete') {
-      if (!confirm('이 작업 기록을 삭제하시겠습니까? (만들어진 결과 프로젝트는 그대로 남습니다)')) return;
-      api('/' + encodeURIComponent(j.id), { method: 'DELETE' }).then(function () {
-        close('kjDetail');
-        loadList(true);
-      }).catch(function (err) { toast(err.message, 'err'); });
+      deleteJob(j.id);
     } else if (a === 'result') {
       openResult(j);
     }
@@ -679,12 +703,13 @@
         '<span class="kj-rail-main">' +
         '<span class="kj-rail-name">' + esc(j.title || '(이름 없음)') + '</span>' +
         '<span class="kj-rail-meta">' + esc(navMeta(j, now)) + '</span>' +
-        '</span>' + bar + '</button>';
+        '</span>' + delBtn(j, 'kj-rail-del') + bar + '</button>';
     }).join('');
     Array.prototype.forEach.call(body.querySelectorAll('.kj-rail-item'), function (row) {
       // 바로 진행 상황 창으로 — 목록 모달을 거치지 않는다
       row.onclick = function () { open(row.getAttribute('data-id'), { autoOpenResult: false }); };
     });
+    bindDel(body);
   }
 
   function refreshNav() {
