@@ -13,7 +13,7 @@ from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, RequestAsync, set_proxy_list
 from common.async_run import speed_to_concurrency, run_with_concurrency
-from common.naver_lib import parse_naver_query
+from common.naver_lib import parse_naver_query, naver_query_text
 from common.storage import (
     makeDB,
     updateCrawlStatus,
@@ -254,7 +254,7 @@ class NaverCafeCrawler:
             # 1단계: 검색 페이지 HTML 요청 후 API URL 추출
             search_params = {
                 "ssc": "tab.cafe.all",
-                "query": keyword,
+                "query": naver_query_text(keyword),
                 "sm": "mtb_opt",
                 "st": "rel",
                 "stnm": "date",

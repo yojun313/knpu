@@ -590,7 +590,7 @@ async def api_crawl_db_select(uid: str, request: Request):
     # 파일이 있는지만 확인하고, 실제 변환은 작업 워커가 진행률과 함께 한다.
     if crawldata.available():
         try:
-            crawldata.parquet_path(uid, name)
+            columns = crawldata.parquet_columns(uid, name)
         except crawldata.CrawlDataError as e:
             raise HTTPException(404, str(e))
         stage_id = upload_staging.stage_ref(
@@ -612,6 +612,7 @@ async def api_crawl_db_select(uid: str, request: Request):
         if resp.status_code != 200:
             raise HTTPException(resp.status_code, resp.text)
         stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+        columns = _parse_csv_header(resp.content)
     insert_log(
         user_logs_db,
         _uid(request),
@@ -623,7 +624,7 @@ async def api_crawl_db_select(uid: str, request: Request):
         {
             "stage_id": stage_id,
             "suggested_name": os.path.splitext(filename)[0],
-            "columns": _parse_csv_header(resp.content),
+            "columns": columns,
         }
     )
 

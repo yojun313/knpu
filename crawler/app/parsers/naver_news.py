@@ -15,7 +15,7 @@ from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, RequestAsync, set_proxy_list
 from common.async_run import speed_to_concurrency, run_with_concurrency
-from common.naver_lib import parse_naver_query
+from common.naver_lib import parse_naver_query, naver_query_text
 from common.storage import (
     makeDB,
     updateCrawlStatus,
@@ -242,8 +242,8 @@ class NaverNewsCrawler:
                 "office_type": "0",
                 "pd": "3",
                 "photo": "0",
-                "query": f"{keyword}",
-                "query_original": f"{keyword}",
+                "query": naver_query_text(keyword),
+                "query_original": naver_query_text(keyword),
                 "rev": "0",
                 "service_area": "0",
                 "sm": "tab_smr",

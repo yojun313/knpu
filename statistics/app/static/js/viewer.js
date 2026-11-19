@@ -1208,10 +1208,15 @@
     updateWcVisibility();
   }
 
+  // 크롤 DB에서 고른 파일이 토큰화 파일(token_*)인지 — 토큰화 파일은 워드클라우드만,
+  // 원본 파일은 워드클라우드를 뺀 분석만 고를 수 있다(서버도 같은 규칙으로 막는다).
+  var crawlSelectedIsToken = false;
+
   function updateCrawlCategoryOptions() {
     if (!analyzeOptions) return;
     var platform = document.getElementById('crawlOptPlatform').value;
-    var categories = (analyzeOptions.platforms[platform] || []).concat(commonCategories());
+    var categories = (analyzeOptions.platforms[platform] || []).concat(commonCategories())
+      .filter(function (c) { return isWcCategory(c) === crawlSelectedIsToken; });
     var categorySel = document.getElementById('crawlOptCategory');
     categorySel.innerHTML = '';
     categories.forEach(function (c) {
@@ -1470,6 +1475,7 @@
     progEl.hidden = false; labelEl.textContent = '불러오는 중...';
     document.getElementById('crawlAnalyzeForm').hidden = true;
 
+    crawlSelectedIsToken = file.type === 'token' || /^token_/.test(file.name || '');
     postJson('/api/crawl-dbs/' + encodeURIComponent(uid) + '/select', { name: file.name }).then(function (res) {
       crawlAnalyzeStage = res.stage_id;
       document.getElementById('crawlProjectName').value = res.suggested_name || '';

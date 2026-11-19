@@ -910,6 +910,18 @@ async def api_analyze_start(request: Request):
     except ValueError as e:
         raise HTTPException(400, str(e))
     if crawl_file:
+        # 워드클라우드는 토큰화 파일(token_*)로만, 나머지 분석은 원본 파일로만 돌린다.
+        # 원본으로 워드클라우드를 만들면 문장 전체가 한 단어로 잡혀 실패한다.
+        is_token = os.path.basename(crawl_file.get("name") or "").startswith("token_")
+        is_wc = "워드클라우드" in category or "wordcloud" in category.lower()
+        if is_wc and not is_token:
+            raise HTTPException(
+                400, "워드클라우드 분석은 토큰화 파일(token_)만 사용할 수 있습니다."
+            )
+        if is_token and not is_wc:
+            raise HTTPException(
+                400, "토큰화 파일(token_)은 워드클라우드 분석에만 사용할 수 있습니다."
+            )
         # 워커가 크롤 parquet 을 직접 읽어 CSV 로 변환한다(입력 사본을 만들지 않는다).
         params = {**params, "_crawl_file": crawl_file}
     scheduled = parse_schedule(body.get("scheduled_at"))

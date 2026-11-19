@@ -40,6 +40,24 @@ def _safe_fname(label: str) -> str:
     return re.sub(r'[\\/*?:"<>| ]', "_", str(label))
 
 
+# 토큰화된 단어로 보기에 너무 긴 것(문장 조각 등). 그려지지 않아 WordCloud가 실패한다.
+_MAX_WORD_LEN = 30
+
+
+def _looks_untokenized(cells) -> bool:
+    """쉼표로 나눈 조각 대부분에 공백이 들어 있으면 토큰화 전 원문으로 본다."""
+    pieces = [
+        t.strip()
+        for c in cells[:200]
+        if isinstance(c, str)
+        for t in c.split(",")
+        if t.strip()
+    ]
+    if not pieces:
+        return False
+    return sum(" " in t for t in pieces) / len(pieces) > 0.5
+
+
 def _period_groups(data: pd.DataFrame, date_col: str, period: str):
     """(기간 라벨, 부분 DataFrame) 목록을 시간순으로 돌려준다."""
     if period == "total":
@@ -109,6 +127,11 @@ def run_wordcloud(
     os.makedirs(csv_dir, exist_ok=True)
     os.makedirs(graph_dir, exist_ok=True)
 
+    if _looks_untokenized(data[text_col].tolist()):
+        raise ValueError(
+            "토큰화되지 않은 원문입니다. 워드클라우드 분석에는 토큰화된 CSV(크롤링 DB의 token_ 파일)를 사용해 주시기 바랍니다."
+        )
+
     groups = _period_groups(data, date_col, period)
     made = 0
     for i, (label, group) in enumerate(groups):
@@ -123,20 +146,26 @@ def run_wordcloud(
                 continue
             for token in cell.split(","):
                 token = token.strip()
-                if token and token not in exclude:
+                if token and len(token) <= _MAX_WORD_LEN and token not in exclude:
                     words.append(token)
         if not words:
             continue
 
         freq = dict(Counter(words).most_common(max_words))
 
-        wc = WordCloud(
-            font_path=font_path,
-            background_color="white",
-            width=1200,
-            height=800,
-            max_words=max_words,
-        ).generate_from_frequencies(freq)
+        try:
+            wc = WordCloud(
+                font_path=font_path,
+                background_color="white",
+                width=1200,
+                height=800,
+                max_words=max_words,
+            ).generate_from_frequencies(freq)
+        except ValueError as e:
+            # 그릴 공간을 못 찾는 경우 등 — 이 기간만 건너뛰고 나머지는 계속 만든다
+            if pid:
+                send_message(pid, f"[워드클라우드] {label} 건너뜀: {e}")
+            continue
         wc.to_file(
             safe_path(os.path.join(graph_dir, f"wordcloud_{_safe_fname(label)}.png"))
         )

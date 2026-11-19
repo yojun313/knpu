@@ -75,6 +75,17 @@ def parquet_path(uid: str, name: str) -> str:
     return path
 
 
+def parquet_columns(uid: str, name: str) -> list[str]:
+    """parquet 의 컬럼명. 파일 끝의 스키마만 읽으므로 큰 파일이어도 즉시 끝난다."""
+    import pyarrow.parquet as pq
+
+    src = parquet_path(uid, name)
+    try:
+        return list(pq.read_schema(src).names)
+    except Exception as e:
+        raise CrawlDataError(f"파일을 읽지 못했습니다: {e}") from e
+
+
 def write_csv(uid: str, name: str, dest_path: str) -> int:
     """parquet 을 dest_path 에 CSV(utf-8-sig)로 흘려 쓴다. 쓴 바이트 수를 돌려준다.
 

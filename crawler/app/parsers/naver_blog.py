@@ -15,7 +15,7 @@ from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, RequestAsync, set_proxy_list
 from common.async_run import speed_to_concurrency, run_with_concurrency
-from common.naver_lib import parse_naver_query
+from common.naver_lib import parse_naver_query, naver_query_text
 from common.storage import (
     makeDB,
     updateCrawlStatus,
@@ -208,8 +208,8 @@ class NaverBlogCrawler:
             # 1단계: 상세검색(날짜 범위 + nx 쿼리 파라미터) 조건으로 최초 검색 페이지 요청 후 API URL 추출
             search_params = {
                 "ssc": "tab.blog.all",
-                "query": keyword,
-                "query_original": f"{keyword}",
+                "query": naver_query_text(keyword),
+                "query_original": naver_query_text(keyword),
                 "sm": "tab_opt",
                 "nso": f"so:r,p:from{startDate}to{endDate}",
                 "nx_and_query": f"{query_dict['nx_and_query']}",
