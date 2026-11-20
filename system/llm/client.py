@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from openai import AsyncOpenAI, OpenAI
 
+from . import global_model
 from .config import LLMSettings, get_settings
 from .errors import LLMError
 
@@ -42,6 +43,26 @@ class _Target:
 
 
 def _targets(settings: LLMSettings, model: str | None) -> list[_Target]:
+    # 관리자 대시보드의 전역 AI 모델이 OpenAI면 그 모델을 먼저 쓰고, 실패하면 로컬 LLM으로 넘어간다.
+    # (호출부가 넘긴 model 은 로컬 서버용 이름이라 OpenAI 쪽에는 쓰지 않는다)
+    openai = global_model.openai_target()
+    if openai:
+        base_url, key, openai_model = openai
+        return [
+            _Target(
+                label="global-openai",
+                base_url=base_url,
+                api_key=key,
+                model=openai_model,
+            ),
+            _Target(
+                label="local",
+                base_url=settings.base_url,
+                api_key=settings.api_key,
+                model=model or settings.model,
+                is_fallback=True,
+            ),
+        ]
     targets = [
         _Target(
             label="primary",

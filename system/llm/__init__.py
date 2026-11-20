@@ -10,6 +10,7 @@ from .client import (
     get_async_client,
     get_client,
 )
+from . import global_model
 from .config import LLMSettings, get_settings, reload_settings
 from .errors import LLMError
 
@@ -27,5 +28,6 @@ __all__ = [
     "get_async_client",
     "get_client",
     "get_settings",
+    "global_model",
     "reload_settings",
 ]

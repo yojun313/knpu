@@ -3,10 +3,37 @@
 {% block content %}
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-white tracking-tight">설정</h2>
-    <p class="text-zinc-400 text-sm">사이드바 메뉴 순서를 원하는 대로 바꿀 수 있습니다. PC에서는 드래그, 모바일에서는 화살표 버튼을 사용해 주시기 바랍니다. 저장하면 어떤 기기로 접속해도 이 순서로 보입니다.</p>
+    <p class="text-zinc-400 text-sm">전역 AI 모델, 테마, 사이드바 메뉴 순서를 설정합니다. 메뉴 순서는 PC에서는 드래그, 모바일에서는 화살표 버튼을 사용해 주시기 바랍니다. 저장하면 어떤 기기로 접속해도 이 순서로 보입니다.</p>
 </div>
 
 <div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm"></div>
+
+<div class="mb-8">
+    <h3 class="text-base font-bold text-white tracking-tight">전역 AI 모델</h3>
+    <p class="text-zinc-400 text-sm">모든 연구실 서비스(AI 챗봇, STATISTICS·NETWORK·KEMKIM AI 해석, 고소장 생성기, Discord 봇 등)가 기본으로 쓰는 AI 모델입니다. 사용자가 개인 설정에서 '내 GPT API'를 고른 경우에는 그 설정이 우선합니다. 저장하면 약 10초 안에 모든 서비스에 반영됩니다.</p>
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg mt-4 card space-y-4">
+        <div class="text-sm" style="color: var(--muted);">현재 사용 중: <b id="llmActive" style="color: var(--ink);">불러오는 중…</b></div>
+        <label class="llm-choice">
+            <input type="radio" name="llmProvider" value="local">
+            <span><b>로컬 LLM</b><small id="llmLocalInfo">.env 의 LLM_BASE_URL</small></span>
+        </label>
+        <label class="llm-choice">
+            <input type="radio" name="llmProvider" value="openai">
+            <span><b>OpenAI GPT</b><small id="llmKeyInfo">.env 의 OPENAI_API_KEY</small></span>
+        </label>
+        <div id="llmModelRow" class="pl-7">
+            <label class="text-xs font-semibold block mb-1" style="color: var(--muted);" for="llmModel">OpenAI 모델</label>
+            <select id="llmModel" class="w-full rounded-lg px-3 py-2 text-sm"></select>
+            <p class="text-xs mt-1" style="color: var(--muted);">OpenAI 호출이 실패하면 로컬 LLM으로 넘어갑니다. 사용 요금은 서버 키 계정에 청구됩니다.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="saveLlmGlobal()" id="llmSaveBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">저장</button>
+            <button onclick="testLlmGlobal()" id="llmTestBtn" class="px-4 py-3 rounded-lg text-sm font-bold border border-zinc-700 hover:bg-white/5 transition" style="color: var(--ink);">연결 확인</button>
+        </div>
+        <div id="llmTestResult" class="text-xs hidden"></div>
+        <div id="llmUpdated" class="text-xs" style="color: var(--muted);"></div>
+    </div>
+</div>
 
 <div class="mb-8">
     <h3 class="text-base font-bold text-white tracking-tight">테마</h3>
@@ -20,6 +47,8 @@
     </div>
 </div>
 
+<h3 class="text-base font-bold text-white tracking-tight">메뉴 순서</h3>
+<p class="text-zinc-400 text-sm mb-4">사이드바 메뉴 순서를 바꿉니다.</p>
 <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg card">
     <div id="navList" class="space-y-2 mb-4"></div>
     <button onclick="saveOrder()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">
@@ -32,6 +61,12 @@
     #themeOptionList .theme-option.selected { border-color: var(--accent); }
     #themeOptionList .theme-option-label { color: var(--ink); }
     #themeOptionList .theme-modal-sub { color: var(--muted); }
+    .llm-choice { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+    .llm-choice input { margin-top: 4px; accent-color: var(--accent, #3b82f6); }
+    .llm-choice b { display: block; font-size: 14px; color: var(--ink, #e4e4e7); }
+    .llm-choice small { display: block; font-size: 12px; color: var(--muted, #a1a1aa); margin-top: 2px; word-break: break-all; }
+    #llmModel { background: var(--panel2, #18181b); color: var(--ink, #e4e4e7); border: 1px solid var(--line, #3f3f46); }
+    #llmModel:disabled, #llmModelRow.off { opacity: 0.45; }
     .nav-row {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 12px; border-radius: 10px;
@@ -166,6 +201,88 @@
     }
 
     loadOrder();
+
+    // ── 전역 AI 모델 ───────────────────────────────────────────────────────────
+    let llmStatus = null;
+    function llmProvider() {
+        const el = document.querySelector('input[name="llmProvider"]:checked');
+        return el ? el.value : 'local';
+    }
+    function syncLlmForm() {
+        const off = llmProvider() !== 'openai';
+        document.getElementById('llmModel').disabled = off;
+        document.getElementById('llmModelRow').classList.toggle('off', off);
+    }
+    function renderLlm(st) {
+        llmStatus = st;
+        document.getElementById('llmActive').textContent = st.active;
+        document.getElementById('llmLocalInfo').textContent = '.env 의 LLM_BASE_URL · ' + st.local_base_url;
+        document.getElementById('llmKeyInfo').textContent = '.env 의 OPENAI_API_KEY · ' + (st.openai_key_set ? '키 있음' : '키 없음 — 선택할 수 없습니다');
+        const openaiRadio = document.querySelector('input[name="llmProvider"][value="openai"]');
+        openaiRadio.disabled = !st.openai_key_set;
+        document.querySelector(`input[name="llmProvider"][value="${st.provider}"]`).checked = true;
+        document.getElementById('llmModel').innerHTML = st.openai_models.map(m =>
+            `<option value="${escHtml(m)}"${m === st.openai_model ? ' selected' : ''}>${escHtml(m)}${m === st.default_openai_model ? ' (기본값)' : ''}</option>`
+        ).join('');
+        document.getElementById('llmUpdated').textContent = st.updated_at
+            ? `마지막 변경: ${new Date(st.updated_at).toLocaleString('ko-KR')}${st.updated_by ? ' · ' + st.updated_by : ''}`
+            : '아직 변경한 적이 없습니다(기본값: 로컬 LLM).';
+        syncLlmForm();
+    }
+    async function loadLlmGlobal() {
+        try {
+            const res = await fetch('/api/llm-global');
+            if (!res.ok) throw new Error();
+            renderLlm(await res.json());
+        } catch (err) {
+            document.getElementById('llmActive').textContent = '불러오지 못했습니다';
+        }
+    }
+    async function saveLlmGlobal() {
+        const btn = document.getElementById('llmSaveBtn');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/llm-global', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider: llmProvider(), openai_model: document.getElementById('llmModel').value }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || '저장에 실패했습니다.');
+            renderLlm(data);
+            showBanner(`전역 AI 모델을 '${data.active}'(으)로 저장했습니다. 약 10초 안에 모든 서비스에 반영됩니다.`, false);
+        } catch (err) {
+            showBanner(err.message || '저장에 실패했습니다.', true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+    async function testLlmGlobal() {
+        const btn = document.getElementById('llmTestBtn');
+        const out = document.getElementById('llmTestResult');
+        btn.disabled = true;
+        out.classList.remove('hidden');
+        out.style.color = 'var(--muted)';
+        out.textContent = '현재 저장된 설정으로 요청을 보내는 중…';
+        try {
+            const res = await fetch('/api/llm-global/test', { method: 'POST' });
+            const d = await res.json();
+            if (d.ok) {
+                out.style.color = '#34d399';
+                out.textContent = `응답 모델: ${d.model}${d.used_fallback ? ' (기본 대상 실패 → 대체 모델로 응답)' : ''} · ${d.elapsed_s}초 · "${d.reply}"`;
+            } else {
+                out.style.color = '#f87171';
+                out.textContent = `연결 실패 (${d.elapsed_s}초): ${d.error}`;
+            }
+        } catch (err) {
+            out.style.color = '#f87171';
+            out.textContent = '연결 확인 요청에 실패했습니다.';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+    document.querySelectorAll('input[name="llmProvider"]').forEach(r => r.addEventListener('change', syncLlmForm));
+    loadLlmGlobal();
 
     // ── 테마(글래스모피즘/애플 리퀴드 글래스/뉴모피즘/그라디언트 메시) ────────────────
     // currentUiTheme()/applyUiTheme()는 base.html의 <head> 스크립트에서

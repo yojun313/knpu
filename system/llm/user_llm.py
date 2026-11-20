@@ -28,7 +28,8 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 MODES = {
-    "local": "로컬 LLM만 사용",
+    # 관리자 대시보드의 전역 AI 모델(로컬 LLM 또는 서버 OpenAI)을 따른다
+    "local": "연구실 서버 기본 모델 사용",
     "local_then_openai": "로컬 LLM 우선, 실패하면 내 GPT API",
     "openai": "항상 내 GPT API",
 }
@@ -110,6 +111,12 @@ def _usage(uid: str) -> dict:
     return usage.find_one({"_id": f"{uid}:{_month()}"}) or {}
 
 
+def _global_model_name() -> str:
+    from . import global_model
+
+    return f"현재 {global_model.describe()} · 관리자 설정"
+
+
 # ── 공개 설정 ──────────────────────────────────────────────────────────────
 def public_settings(uid: str) -> dict:
     doc = _load(uid)
@@ -136,7 +143,8 @@ def public_settings(uid: str) -> dict:
             {"id": m, "input_per_1m": p[0], "output_per_1m": p[1]}
             for m, p in PRICES.items()
         ],
-        "local_model": "서버 모델 자동 선택",
+        # 사용자 설정 화면의 '연구실 서버 기본 모델' 옆에 지금 쓰이는 모델을 보여 준다
+        "local_model": _global_model_name(),
     }
 
 
@@ -225,7 +233,9 @@ def plan(
 
     messages·max_tokens 를 주면 이번 호출의 예상 비용까지 남은 한도 안에 드는지 본다.
     """
-    local_default = Target("local", "로컬 LLM")
+    from . import global_model
+
+    local_default = Target("local", f"서버 기본 모델({global_model.describe()})")
     if not uid:
         return [local_default], None
     try:

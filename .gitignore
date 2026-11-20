@@ -233,3 +233,6 @@ files/
 setup_temp.iss
 # whisper 서비스 업로드 음성 저장소
 whisper/data/
+
+# 로컬 문서(작업용 메모·점검 보고서)
+/docs/
