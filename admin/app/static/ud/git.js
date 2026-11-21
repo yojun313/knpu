@@ -912,74 +912,23 @@
   }
   $('gitCommitStageAll').addEventListener('change', updateCommitCount);
 
-  // ── AI 커밋 메시지 (VS Code Copilot 처럼): 커밋할 변경을 OpenAI 호환 API 에 보내 메시지를 받는다 ──
-  // 설정(주소 · 모델 · 토큰)은 서버에만 저장되고, 토큰은 브라우저로 돌아오지 않는다.
+  // ── AI 커밋 메시지 (VS Code Copilot 처럼): 커밋할 변경을 연구실 전역 AI 모델에 보내 메시지를 받는다 ──
+  // 어떤 모델을 쓸지는 설정 > 전역 AI 모델의 우선순위만 따른다. 여기서는 메시지 언어만 고른다.
   const UI = () => window.UnivDashUI;
   async function aiSettingsSheet({ thenGenerate = false } = {}) {
     let current;
     try { current = await api('/api/git/ai/settings'); } catch (error) { toast(error.message, 'error'); return; }
-    let selectedModel = current.model || '';
-    let modelForUrl = '';
-    let modelRequest = 0;
-    let modelTimer = null;
     UI().formSheet({
       title: 'AI 커밋 메시지 설정',
-      subtitle: 'OpenAI 호환 API 주소를 입력하면 /models 를 조회해 모델을 자동으로 선택합니다. 토큰은 서버에만 저장됩니다.',
-      fields: [
-        { name: 'base_url', label: 'API 주소 (Base URL)', value: current.base_url, placeholder: 'https://api.openai.com/v1', maxlength: 500 },
-        { name: 'token', label: `Bearer 토큰${current.token_set ? ' (저장됨 · 바꿀 때만 입력)' : ''}`, value: '', placeholder: current.token_set ? '••••••••  (비워 두면 그대로)' : 'sk-...', maxlength: 1000 },
-      ],
-      extraHtml: `<div class="text-xs text-white/60" data-model-status>${current.model ? `현재 선택 모델: ${escapeHtml(current.model)}` : '주소를 입력하면 사용 가능한 모델을 자동으로 확인합니다.'}</div>
-        <label>메시지 언어<select name="language">
+      subtitle: '커밋 메시지는 설정 > 전역 AI 모델에서 정한 우선순위의 모델로 만듭니다.',
+      fields: [],
+      extraHtml: `<label>메시지 언어<select name="language">
           <option value="auto" ${current.language === 'auto' ? 'selected' : ''}>자동 (최근 커밋과 같은 언어)</option>
           <option value="ko" ${current.language === 'ko' ? 'selected' : ''}>한국어</option>
-          <option value="en" ${current.language === 'en' ? 'selected' : ''}>English</option></select></label>
-        ${current.token_set ? '<label class="check-row"><input type="checkbox" name="clear_token"> 저장된 토큰 지우기</label>' : ''}`,
+          <option value="en" ${current.language === 'en' ? 'selected' : ''}>English</option></select></label>`,
       submitLabel: '저장',
-      onMount: (body) => {
-        const token = body.querySelector('input[name="token"]');
-        token.type = 'password';
-        token.autocomplete = 'new-password';
-        const baseUrl = body.querySelector('input[name="base_url"]');
-        const modelStatus = body.querySelector('[data-model-status]');
-        const discover = async () => {
-          const url = baseUrl.value.trim().replace(/\/+$/, '');
-          if (!url) { modelStatus.textContent = 'API 주소를 입력해 주시기 바랍니다.'; return false; }
-          const request = ++modelRequest;
-          modelStatus.textContent = '사용 가능한 모델 확인 중…';
-          try {
-            const data = await api('/api/git/ai/models', { method: 'POST', body: { base_url: url, token: token.value || null } });
-            if (request !== modelRequest) return false;
-            selectedModel = data.model;
-            modelForUrl = url;
-            modelStatus.textContent = `자동 선택 모델: ${data.model}${data.models.length > 1 ? ` · 외 ${data.models.length - 1}개` : ''}`;
-            return true;
-          } catch (error) {
-            if (request === modelRequest) modelStatus.textContent = error.message;
-            throw error;
-          }
-        };
-        baseUrl.addEventListener('input', () => {
-          clearTimeout(modelTimer);
-          modelTimer = setTimeout(() => discover().catch(() => {}), 500);
-        });
-        token.addEventListener('input', () => {
-          if (baseUrl.value.trim()) {
-            clearTimeout(modelTimer);
-            modelTimer = setTimeout(() => discover().catch(() => {}), 500);
-          }
-        });
-        if (baseUrl.value.trim()) discover().catch(() => {});
-        body._discoverModel = discover;
-      },
-      onSubmit: async (values, body) => {
-        const url = (values.base_url || '').trim().replace(/\/+$/, '');
-        if (modelForUrl !== url || !selectedModel) {
-          const discovered = await body._discoverModel();
-          if (!discovered || modelForUrl !== url) throw new Error('API 주소에서 모델을 확인한 뒤 저장해 주시기 바랍니다.');
-        }
-        const token = values.clear_token ? '' : (values.token ? values.token : null);
-        await api('/api/git/ai/settings', { method: 'PUT', body: { base_url: values.base_url || '', model: selectedModel, token, language: values.language || 'auto' } });
+      onSubmit: async (values) => {
+        await api('/api/git/ai/settings', { method: 'PUT', body: { language: values.language || 'auto' } });
         toast('AI 설정을 저장했습니다.', 'success');
         if (thenGenerate) setTimeout(generateCommitMessage, 50);
       },

@@ -13,7 +13,6 @@ import re
 import secrets
 from pathlib import Path
 
-import httpx
 
 from app.paths import data_dir
 from app.services.repo_git_service import GitService
@@ -46,40 +45,20 @@ def _read() -> dict:
 
 
 def public_settings() -> dict:
+    """커밋 메시지는 항상 연구실 전역 AI 모델로 만든다. 고를 수 있는 것은 메시지 언어뿐이다."""
     data = _read()
-    own = bool(data.get("base_url") and data.get("model"))
     return {
-        "base_url": data.get("base_url") or "",
-        "model": data.get("model") or "",
         "language": data.get("language") or "auto",
-        "token_set": bool(data.get("token")),
-        # 따로 설정하지 않으면 KNPU 공용 LLM(설정 창의 'AI 모델' = 사용자별 로컬/내 GPT API)을 쓴다.
         "configured": True,
-        "source": "custom" if own else "knpu",
+        "source": "knpu",
     }
 
 
-def save_settings(base_url: str, model: str, token: str | None, language: str) -> dict:
-    """token 이 None 이면 기존 토큰 유지, "" 이면 지운다."""
-    base_url = (base_url or "").strip().rstrip("/")
-    model = (model or "").strip()
-    if base_url and not re.match(r"^https?://[^\s/?#]+(?:/[^\s?#]*)?$", base_url):
-        raise ValueError(
-            "API 주소는 http:// 또는 https:// 로 시작해야 합니다 (예: https://api.openai.com/v1)."
-        )
-    if len(base_url) > 500:
-        raise ValueError("API 주소가 너무 깁니다.")
-    if model and not _MODEL.match(model):
-        raise ValueError("모델 이름이 올바르지 않습니다.")
+def save_settings(language: str) -> dict:
     if language not in LANGUAGES:
         raise ValueError("언어 설정이 올바르지 않습니다.")
     data = _read()
-    data.update({"base_url": base_url, "model": model, "language": language})
-    if token is not None:
-        token = token.strip()
-        if len(token) > 1000 or any(c in token for c in "\r\n"):
-            raise ValueError("토큰 형식이 올바르지 않습니다.")
-        data["token"] = token
+    data["language"] = language
     path = _settings_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.{secrets.token_hex(4)}.tmp")
@@ -88,77 +67,6 @@ def save_settings(base_url: str, model: str, token: str | None, language: str) -
         json.dump(data, handle, ensure_ascii=False)
     os.replace(tmp, path)
     return public_settings()
-
-
-def _validated_base_url(base_url: str) -> str:
-    base_url = (base_url or "").strip().rstrip("/")
-    if not re.match(r"^https?://[^\s/?#]+(?:/[^\s?#]*)?$", base_url):
-        raise ValueError("API 주소는 http:// 또는 https:// 로 시작해야 합니다.")
-    if len(base_url) > 500:
-        raise ValueError("API 주소가 너무 깁니다.")
-    return base_url
-
-
-def discover_model(base_url: str, token: str | None = None) -> dict:
-    """OpenAI 호환 /models 에서 현재 사용 가능한 모델을 읽고 자동 선택한다."""
-    base_url = _validated_base_url(base_url)
-    if base_url.endswith("/chat/completions"):
-        models_url = base_url[: -len("/chat/completions")] + "/models"
-    elif base_url.endswith("/models"):
-        models_url = base_url
-    else:
-        models_url = base_url + "/models"
-
-    saved = _read()
-    if token is None and saved.get("base_url", "").rstrip("/") == base_url:
-        token = saved.get("token") or ""
-    token = (token or "").strip()
-    if len(token) > 1000 or any(char in token for char in "\r\n"):
-        raise ValueError("토큰 형식이 올바르지 않습니다.")
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    try:
-        with httpx.Client(timeout=15.0, follow_redirects=False) as client:
-            response = client.get(models_url, headers=headers)
-    except httpx.TimeoutException as error:
-        raise AICommitError("모델 목록 조회 시간이 초과되었습니다.") from error
-    except httpx.HTTPError as error:
-        raise AICommitError(
-            f"모델 목록을 가져오지 못했습니다: {type(error).__name__}"
-        ) from error
-    if response.status_code >= 400:
-        raise AICommitError(
-            f"모델 목록 조회 실패 ({response.status_code}). API 주소와 토큰을 확인해 주시기 바랍니다."
-        )
-    try:
-        payload = response.json()
-        rows = (
-            payload.get("data", payload.get("models", []))
-            if isinstance(payload, dict)
-            else []
-        )
-        models = [
-            row.get("id") or row.get("name")
-            for row in rows
-            if isinstance(row, dict)
-            and isinstance(row.get("id") or row.get("name"), str)
-        ]
-    except (ValueError, TypeError, AttributeError) as error:
-        raise AICommitError("모델 목록 응답이 OpenAI 호환 형식이 아닙니다.") from error
-    models = list(dict.fromkeys(model.strip() for model in models if model.strip()))
-    if not models:
-        raise AICommitError("API 주소에서 사용 가능한 모델을 찾지 못했습니다.")
-    # 서버가 활성 모델을 표시하면 그것을 우선하고, 아니면 /models 첫 항목을 기본으로 쓴다.
-    active = next(
-        (
-            row.get("id") or row.get("name")
-            for row in rows
-            if isinstance(row, dict)
-            and (row.get("loaded") or row.get("active") or row.get("currently_loaded"))
-            and isinstance(row.get("id") or row.get("name"), str)
-        ),
-        models[0],
-    )
-    return {"model": active, "models": models}
 
 
 # ── 변경 모으기 (읽기만) ─────────────────────────────────────────────────────────
@@ -263,7 +171,7 @@ def _clean(text: str) -> str:
 
 
 def _generate_with_knpu_llm(uid: str | None, prompt: str) -> str:
-    """별도 AI 설정이 없을 때: KNPU 공용 LLM(사용자별 설정 · 사용량 기록)으로 만든다."""
+    """연구실 전역 AI 모델(설정 > 전역 AI 모델의 우선순위)로 만든다."""
     from system.llm import LLMError, user_llm
 
     try:
@@ -285,7 +193,6 @@ def _generate_with_knpu_llm(uid: str | None, prompt: str) -> str:
 @tracked("AI 커밋 메시지 작성", service="admin")
 def generate(repository_id: str, include_all: bool, uid: str | None = None) -> dict:
     settings = _read()
-    use_knpu = not (settings.get("base_url") and settings.get("model"))
     changes = collect_changes(repository_id, include_all)
     prompt = "\n\n".join(
         part
@@ -300,54 +207,7 @@ def generate(repository_id: str, include_all: bool, uid: str | None = None) -> d
         ]
         if part
     )
-    if use_knpu:
-        message = _clean(_generate_with_knpu_llm(uid, prompt))
-        if not message:
-            raise AICommitError("AI 가 빈 메시지를 반환했습니다.")
-        return {"message": message[:5000], "truncated": "생략" in changes["diff"][-40:]}
-    headers = {"Content-Type": "application/json"}
-    if settings.get("token"):
-        headers["Authorization"] = f"Bearer {settings['token']}"
-    body = {
-        "model": settings["model"],
-        "messages": [
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.2,
-    }
-    try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=False) as client:
-            response = client.post(
-                _endpoint(settings["base_url"]), headers=headers, json=body
-            )
-    except httpx.TimeoutException as error:
-        raise AICommitError("AI 응답이 너무 늦습니다 (60초 초과).") from error
-    except httpx.HTTPError as error:
-        raise AICommitError(
-            f"AI 서버에 연결하지 못했습니다: {type(error).__name__}"
-        ) from error
-    if response.status_code >= 400:
-        detail = ""
-        try:
-            payload = response.json()
-            detail = (
-                (payload.get("error") or {}).get("message")
-                if isinstance(payload.get("error"), dict)
-                else payload.get("error") or payload.get("detail") or ""
-            )
-        except ValueError:
-            detail = response.text[:200]
-        raise AICommitError(
-            f"AI 요청 실패 ({response.status_code}){': ' + str(detail)[:300] if detail else ''}"
-        )
-    try:
-        content = response.json()["choices"][0]["message"]["content"]
-    except (ValueError, KeyError, IndexError, TypeError) as error:
-        raise AICommitError(
-            "AI 응답 형식을 알 수 없습니다 (OpenAI 호환 /chat/completions 인지 확인해 주시기 바랍니다)."
-        ) from error
-    message = _clean(content if isinstance(content, str) else "")
+    message = _clean(_generate_with_knpu_llm(uid, prompt))
     if not message:
         raise AICommitError("AI 가 빈 메시지를 반환했습니다.")
     return {"message": message[:5000], "truncated": "생략" in changes["diff"][-40:]}

@@ -151,6 +151,8 @@
         m.steps.slice(-4).forEach(function (s) { ul.appendChild(el('li', null, s)); });
         box.appendChild(ul);
       }
+      // 답변을 쓰는 대로 미리 보여 준다(검토가 끝나면 최종 답변으로 바뀐다)
+      if (m.draft) { var dr = el('div', 'kcb-md kcb-draft'); dr.innerHTML = md(m.draft); box.appendChild(dr); }
       return box;
     }
     if (m.error) { box.textContent = m.content || '답변을 만들지 못했습니다.'; return box; }
@@ -348,7 +350,7 @@
     if (busy || state.open) {
       state.pollTimer = setTimeout(function () {
         (state.view === 'list' ? loadList() : (state.active ? loadActive() : loadList()));
-      }, busy ? 1500 : 20000);
+      }, busy ? 700 : 20000);
     }
   }
 
@@ -356,8 +358,8 @@
 
   function pollAnon(jobId, pending) {
     api('/jobs/' + jobId).then(function (j) {
-      pending.stage = j.stage; pending.steps = j.steps || [];
-      if (j.status === 'running') { render(); setTimeout(function () { pollAnon(jobId, pending); }, 1200); return; }
+      pending.stage = j.stage; pending.steps = j.steps || []; pending.draft = j.draft || '';
+      if (j.status === 'running') { render(); setTimeout(function () { pollAnon(jobId, pending); }, 600); return; }
       var i = state.anon.indexOf(pending);
       var msg = j.status === 'done'
         ? { role: 'assistant', content: j.result.answer, sources: j.result.sources, steps: j.result.steps, llm: j.result.llm, created_at: new Date().toISOString() }

@@ -6,7 +6,7 @@
 import json
 from pathlib import Path
 
-from . import code_kb, homepage_kb
+from . import registry
 from .config import REPO_ROOT
 
 # 서비스 안내: 코드 위치 · 설명서 · 주소. 모델이 어디부터 볼지 정하는 지도 역할.
@@ -214,160 +214,29 @@ def list_services() -> dict:
     }
 
 
-# ── 도구 정의 (프롬프트에 그대로 들어가는 설명) ─────────────────────────────────
-
-PUBLIC_TOOLS = {
-    "site_overview": ("홈페이지가 가진 정보 종류와 건수", {}),
-    "search_site": (
-        "홈페이지 전체(페이지·구성원·논문·소식·입학 FAQ·갤러리·공지) 검색. kind 로 좁힐 수 있음(page/member/paper/news/faq/gallery/notice)",
-        {
-            "query": "검색어",
-            "kind": "(선택) 문서 종류",
-            "input": "플랫폼(네이버 뉴스·블로그·카페, 유튜브, China Daily, Sina)·키워드·기간(YYYYMMDD)·수집 옵션",
-            "output": "크롤링 DB(기사·댓글 원본 CSV와 토큰화 CSV). STATISTICS·NETWORK·KEMKIM 에서 '크롤링 DB에서 선택'으로 바로 불러 쓴다",
-            "use_for": "분석할 텍스트 데이터 모으기(모든 분석의 첫 단계)",
-            "input": "크롤링 원본 CSV(기사·댓글·통계) 업로드 또는 크롤링 DB에서 선택, 또는 결과 zip",
-            "output": "기술통계·상관·회귀·집단 비교·교차분석·군집·PCA 표와 차트, AI 통계 리포트, 결과 zip",
-            "use_for": "반응(댓글·공감) 규모와 집단 차이, 변수 관계를 수치로 확인",
-            "input": "토큰화 CSV(크롤링 DB의 토큰화 파일) 또는 결과 zip. AI 해석에는 토큰화 전 원본 CSV를 추가로 연결",
-            "output": "KEM(DoV)·KIM(DoD) 사분면의 강한/약한/잠재/알려진 신호어, 기간별 추적, 단어·신호군 AI 해석",
-            "use_for": "떠오르는 이슈·미래신호(약한 신호) 찾기",
-            "input": "토큰화 CSV 업로드 또는 크롤링 DB에서 선택, 또는 nodes/edges 결과 zip. AI 해석용 원본 CSV 연결 가능",
-            "output": "단어 동시출현 네트워크 그래프, 중심성, 커뮤니티(주제 묶음), AI 해석",
-            "use_for": "어떤 단어·주제가 함께 묶여 논의되는지 구조 보기",
-            "input": "평가 목표·기준·대안(계층 구조), 설문 응답자",
-            "output": "쌍대비교 설문 링크, 응답 수집, 일관성 비율(CR), 기준·대안 가중치와 순위",
-            "use_for": "정책 대안의 우선순위를 전문가 판단으로 정하기(AHP)",
-            "input": "음성·영상 파일(mp3·wav·m4a·mp4 등, 파일당 최대 2GB)",
-            "output": "구간별 텍스트 전사, 검색·재생, 내보내기",
-            "use_for": "인터뷰·회의 녹음을 텍스트로 바꿔 분석 자료로 쓰기",
-            "input": "MANAGER 데스크톱 앱 설치(다운로드 페이지)",
-            "output": "DB 관리·분석(혐오 표현 분석, YOLO 등) 데스크톱 기능",
-            "use_for": "웹 서비스에 없는 고급 분석과 리소스 관리",
-            "input": "피해 상황 대화(AI 상담) 또는 양식 입력",
-            "output": "고소장 초안 docx/pdf",
-            "use_for": "고소장 초안 작성",
-        },
-    ),
-    "read_doc": ("검색 결과의 문서 전문 읽기", {"id": "문서 id"}),
-    "list_members": (
-        "구성원 목록(구분·직위로 거르기)",
-        {
-            "section": "(선택) 예: 교수, 대학원 과정, 박사과정",
-            "query": "(선택) 이름·연구주제",
-        },
-    ),
-    "list_publications": (
-        "논문 목록과 연도별 건수(코드가 센 값)",
-        {"year": "(선택) 연도", "query": "(선택) 제목 키워드"},
-    ),
-}
-
-MEMBER_TOOLS = {
-    "list_services": (
-        "연구실 소프트웨어 지도: 하는 일·입력→출력·쓰임새·코드 폴더·설명서·주소. 무엇부터 볼지 모르거나, 원하는 결과를 얻는 절차(여러 프로그램 연결)를 물을 때 먼저 부른다",
-        {},
-    ),
-    "search_code": (
-        "저장소 코드·설명서 키워드 검색(경로·줄 번호와 발췌를 돌려줌)",
-        {
-            "query": "검색어(기능 이름·화면 문구·함수명)",
-            "path": "(선택) 폴더로 좁히기 예: kemkim/",
-        },
-    ),
-    "grep": (
-        "정확한 문자열/정규식 검색(함수·라우트·설정 키 찾기). 전체 일치 파일 수를 함께 돌려줌",
-        {"pattern": "문자열 또는 정규식", "path": "(선택) 폴더"},
-    ),
-    "read_file": (
-        "파일 일부 읽기(최대 220줄, 줄 번호 포함)",
-        {"path": "저장소 기준 경로", "start": "시작 줄(기본 1)", "end": "(선택) 끝 줄"},
-    ),
-    "list_dir": (
-        "폴더 안의 하위 폴더·파일 목록",
-        {"path": "저장소 기준 폴더(비우면 루트)"},
-    ),
-    **PUBLIC_TOOLS,
-}
+# ── 도구 실행 (정의는 registry 와 toolsets/ 에 있다) ──────────────────────────────
+# 도구를 더하려면 toolsets/ 에 모듈을 추가하고 @tool 로 등록한다(registry.py 설명 참고).
 
 
-def tool_prompt(tools: dict) -> str:
-    lines = []
-    for name, (desc, args) in tools.items():
-        arg = ", ".join(f'"{k}": {v}' for k, v in args.items())
-        lines.append(f"- {name}({arg}) — {desc}")
-    return "\n".join(lines)
+def tool_prompt(mode: str) -> str:
+    return registry.prompt(mode)
 
 
-def run(mode: str, name: str, args: dict) -> dict:
-    allowed = MEMBER_TOOLS if mode == "member" else PUBLIC_TOOLS
-    if name not in allowed:
-        return {
-            "error": f"사용할 수 없는 도구입니다: {name}. 가능한 도구: {', '.join(allowed)}"
-        }
-    known = set(allowed[name][1])
-    extra = set(args) - known
-    if extra:
-        # 모르는 인자를 조용히 무시하면 엉뚱한 결과를 받게 되므로 오류로 알린다(dis-047 교훈)
-        return {
-            "error": f"{name} 에 없는 인자: {', '.join(sorted(extra))}. 가능한 인자: {', '.join(known) or '없음'}"
-        }
-    a = {k: (v if v is not None else "") for k, v in args.items()}
-    try:
-        if name == "site_overview":
-            return homepage_kb.overview()
-        if name == "search_site":
-            hits = homepage_kb.search(
-                str(a.get("query", "")), kind=a.get("kind") or None
-            )
-            return (
-                {"count": len(hits), "results": hits}
-                if hits
-                else {
-                    "count": 0,
-                    "note": "결과 없음. 더 짧은 핵심어로 다시 찾거나 kind 를 빼 보시기 바랍니다.",
-                }
-            )
-        if name == "read_doc":
-            doc = homepage_kb.read(str(a.get("id", "")))
-            return doc or {
-                "error": "없는 문서 id 입니다. search_site 결과의 id 를 그대로 작성해 주시기 바랍니다."
-            }
-        if name == "list_members":
-            items = homepage_kb.list_members(
-                str(a.get("section", "")), str(a.get("query", ""))
-            )
-            return {"count": len(items), "members": items}
-        if name == "list_publications":
-            return homepage_kb.list_publications(
-                str(a.get("year", "")), str(a.get("query", ""))
-            )
-        if name == "list_services":
-            return list_services()
-        if name == "search_code":
-            hits = code_kb.index.search(str(a.get("query", "")), str(a.get("path", "")))
-            if not hits:
-                return {
-                    "count": 0,
-                    "note": "결과 없음. 화면에 보이는 문구나 영어 함수명으로 바꿔 찾거나 grep 을 써 보시기 바랍니다.",
-                }
-            return {"count": len(hits), "results": hits}
-        if name == "grep":
-            return code_kb.grep(str(a.get("pattern", "")), str(a.get("path", "")))
-        if name == "read_file":
-            end = a.get("end")
-            return code_kb.read_file(
-                str(a.get("path", "")),
-                int(a.get("start") or 1),
-                int(end) if str(end).strip() else None,
-            )
-        if name == "list_dir":
-            return code_kb.list_dir(str(a.get("path", "")))
-    except ValueError as e:
-        return {"error": str(e)}
-    except Exception as e:  # 도구 하나가 실패해도 대화는 이어간다
-        return {"error": f"{type(e).__name__}: {e}"}
-    return {"error": "알 수 없는 도구"}
+def run(mode: str, name: str, args: dict, ctx: registry.Context | None = None) -> dict:
+    ctx = ctx or registry.Context(mode=mode)
+    ctx.mode = mode
+    return registry.run(ctx, name, args)
+
+
+def step_label(name: str, args: dict) -> str:
+    t = registry.get(name)
+    return t.step_label(args) if t else name
+
+
+def is_read(name: str) -> bool:
+    """이 도구의 결과를 '실제로 본 본문'으로 치는지(화면 문구 대조 · 파일 미열람 가드)."""
+    t = registry.get(name)
+    return bool(t and t.reads)
 
 
 def sources_from(name: str, args: dict, result: dict) -> list[dict]:
@@ -387,6 +256,14 @@ def sources_from(name: str, args: dict, result: dict) -> list[dict]:
         return [
             {"type": "code", "path": result.get("path"), "lines": result.get("lines")}
         ]
+    if name == "read_manual":
+        return [
+            {
+                "type": "code",
+                "path": result.get("path"),
+                "lines": result.get("title") or result.get("lines"),
+            }
+        ]
     return []
 
 
@@ -395,7 +272,7 @@ def seen_refs(name: str, result: dict) -> set[str]:
     refs: set[str] = set()
     if not isinstance(result, dict):
         return refs
-    for key in ("results", "hits"):
+    for key in ("results", "hits", "sections"):
         for r in result.get(key) or []:
             if r.get("path"):
                 refs.add(r["path"])

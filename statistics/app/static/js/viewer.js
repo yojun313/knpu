@@ -1679,27 +1679,6 @@
     syncSideToggle();
   }
 
-  function refreshModelLine() {
-    var line = document.getElementById('aiModelLine');
-    railApi('/api/llm-settings').then(function (s) {
-      var u = s.usage || {};
-      var money = '$' + Number(u.cost_usd || 0).toFixed(2) + ' / $' + Number(s.monthly_limit_usd || 0).toFixed(2);
-      line.textContent = s.mode === 'openai' ? '내 GPT API · ' + s.model + ' · 이번 달 ' + money
-        : s.mode === 'local_then_openai' ? '로컬 LLM 우선 → ' + s.model + ' · ' + money
-        : '로컬 LLM (연구실 서버) · 설정 변경';
-    }).catch(function () { line.textContent = 'AI 모델 설정'; });
-  }
-
-  function openLlmSettings() {
-    var btn = document.getElementById('themeSettingsBtn');
-    if (!btn) return;
-    btn.click();
-    setTimeout(function () {
-      var sec = document.getElementById('llmSettings');
-      if (sec && !sec.hidden) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 350);
-  }
-
   // ---- 서버 상태 동기화 ----
   function hasRunning() { return aiJobs.some(function (j) { return j.status === 'running'; }); }
 
@@ -1882,10 +1861,6 @@
       var dismiss = el('button', null, '닫기'); dismiss.type = 'button';
       dismiss.addEventListener('click', function () { dismissJob(j); });
       acts.appendChild(retry); acts.appendChild(dismiss);
-      if (/모델|LLM|한도|API/.test(j.error || '')) {
-        var cfg = el('button', null, 'AI 모델 설정'); cfg.type = 'button';
-        cfg.addEventListener('click', openLlmSettings); acts.appendChild(cfg);
-      }
       card.appendChild(acts);
       return card;
     }
@@ -2200,7 +2175,6 @@
       if (open) closeAiSide(); else openAiSide();
     });
     document.getElementById('sideCloseBtn').addEventListener('click', closeAiSide);
-    document.getElementById('aiModelLine').addEventListener('click', openLlmSettings);
     document.querySelectorAll('.side-tab').forEach(function (b) {
       b.addEventListener('click', function () { setSideTab(b.getAttribute('data-side-tab')); });
     });
@@ -2255,7 +2229,6 @@
     });
 
     renderAiResults(); renderChat(); setSideTab(lsGet(AI_TAB_KEY));
-    refreshModelLine();
     pollAiActivity();
   }
 

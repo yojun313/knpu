@@ -537,7 +537,7 @@ async def _ask_json(
     uid: str | None = None,
     purpose: str = "",
 ) -> tuple[dict, dict]:
-    """사용자 LLM 설정 순서대로(로컬 → 내 GPT API 등) JSON 답을 받는다.
+    """연구실 전역 AI 모델로 JSON 답을 받는다.
 
     대상마다 한 번 호출하고, JSON이 깨졌으면 같은 대상에 한 번 고쳐 달라고 한 뒤,
     그래도 안 되면 다음 대상으로 넘어간다. (답, 사용 정보)를 돌려준다.

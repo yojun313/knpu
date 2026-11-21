@@ -1855,7 +1855,7 @@
     }).join('');
   }
 
-  // 어떤 모델이 답했는지, 내 GPT API를 썼다면 추정 비용과 앞선 실패 사유
+  // 해석 모델 표시와 앞선 실패 사유
   function llmUsedHtml(llm) {
     if (!llm) return '';
     var cost = llm.provider === 'openai' ? ' · 추정 비용 $' + Number(llm.cost_usd || 0).toFixed(4) : '';

@@ -9,7 +9,7 @@
      실제로 제공된 표인지, 인용한 수치가 원자료에 있는 값인지 서버에서 다시 확인한다.
   4) 대화형(chat)은 표 검색·열람·계산 도구를 쓰는 짧은 에이전트 루프로 답한다.
 
-LLM 호출은 system.llm.user_llm 을 통해 사용자별 설정(로컬 → 내 GPT API 등)을 따른다.
+LLM 호출은 system.llm.user_llm 을 통해 연구실 전역 AI 모델을 쓴다.
 """
 
 import ast

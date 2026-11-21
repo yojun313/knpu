@@ -180,6 +180,7 @@ def _client_msgs(items: list[dict]) -> list[dict]:
         "role",
         "content",
         "pending",
+        "draft",
         "stage",
         "steps",
         "sources",
@@ -328,6 +329,7 @@ def register(app, *, public: bool) -> None:
             "status": "running",
             "stage": "질문을 이해하는 중",
             "steps": [],
+            "draft": "",
             "result": None,
             "error": None,
             "created": time.time(),
@@ -341,6 +343,10 @@ def register(app, *, public: bool) -> None:
         def emit(ev):
             if ev.get("label"):
                 activity_stage(ev["label"])
+            if ev["type"] == "draft":
+                job["draft"] = ev.get("text") or ""
+                if job["draft"]:
+                    job["stage"] = "답변을 작성하는 중"
             if ev["type"] == "step":
                 job["steps"].append(ev["label"])
             if ev["type"] in ("step", "stage"):
@@ -411,14 +417,26 @@ def register(app, *, public: bool) -> None:
         _update(uid, cid, start)
         _live.add(job_id)
 
+        draft_at = [0.0]
+
         def emit(ev):
             if ev.get("label"):
                 activity_stage(ev["label"])
+            if ev["type"] == "draft":
+                # 초안은 자주 오므로 파일 쓰기를 줄인다(지우는 신호는 바로 반영)
+                now_m = time.monotonic()
+                if ev.get("text") and now_m - draft_at[0] < 0.7:
+                    return
+                draft_at[0] = now_m
 
             def fix(c):
                 for m in c["messages"]:
                     if m.get("job_id") == job_id and m.get("pending"):
-                        if ev["type"] == "stage":
+                        if ev["type"] == "draft":
+                            m["draft"] = ev.get("text") or ""
+                            if m["draft"]:
+                                m["stage"] = "답변을 작성하는 중"
+                        elif ev["type"] == "stage":
                             m["stage"] = ev["label"]
                         elif ev["type"] == "step":
                             m["steps"] = (m.get("steps") or []) + [ev["label"]]
@@ -438,7 +456,13 @@ def register(app, *, public: bool) -> None:
             beat_task = asyncio.create_task(heartbeat())
             try:
                 result = await agent.run(
-                    mode, question, history, uid, user["name"], emit
+                    mode,
+                    question,
+                    history,
+                    uid,
+                    user["name"],
+                    emit,
+                    role=str(user.get("role") or ""),
                 )
                 msg = {
                     "role": "assistant",
@@ -497,6 +521,9 @@ def register(app, *, public: bool) -> None:
                 "작업을 찾을 수 없습니다. 페이지를 새로 고쳐 다시 질문해 주시기 바랍니다.",
             )
         return JSONResponse(
-            {k: job[k] for k in ("status", "stage", "steps", "result", "error")},
+            {
+                k: job.get(k)
+                for k in ("status", "stage", "steps", "draft", "result", "error")
+            },
             headers={"cache-control": "no-store"},
         )

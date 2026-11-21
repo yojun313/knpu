@@ -59,15 +59,7 @@ class GitActionRequest(BaseModel):
 
 
 class AISettingsRequest(BaseModel):
-    base_url: str = Field(default="", max_length=500)
-    model: str = Field(default="", max_length=120)
-    token: str | None = Field(default=None, max_length=1000)  # None: 그대로, "": 지우기
     language: str = Field(default="auto", pattern=r"^(auto|ko|en)$")
-
-
-class AIModelsRequest(BaseModel):
-    base_url: str = Field(default="", max_length=500)
-    token: str | None = Field(default=None, max_length=1000)
 
 
 class AICommitRequest(BaseModel):
@@ -106,27 +98,7 @@ async def save_ai_settings(body: AISettingsRequest, user=Depends(get_current_use
     from app.services import ai_commit_service
 
     try:
-        return await asyncio.to_thread(
-            ai_commit_service.save_settings,
-            body.base_url,
-            body.model,
-            body.token,
-            body.language,
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-
-
-@router.post("/api/git/ai/models")
-async def get_ai_models(body: AIModelsRequest, user=Depends(get_current_user)):
-    from app.services import ai_commit_service
-
-    try:
-        return await asyncio.to_thread(
-            ai_commit_service.discover_model, body.base_url, body.token
-        )
-    except ai_commit_service.AICommitError as error:
-        raise HTTPException(status_code=409, detail=str(error)) from error
+        return await asyncio.to_thread(ai_commit_service.save_settings, body.language)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

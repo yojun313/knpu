@@ -91,6 +91,10 @@ html[data-ui-theme-mode="dark"] .kcb-msg.err { color: #f87171; }
   animation: kcbSpin .8s linear infinite; flex-shrink: 0; }
 @keyframes kcbSpin { to { transform: rotate(360deg); } }
 .kcb-status .t { margin-left: auto; font-variant-numeric: tabular-nums; }
+/* 작성 중인 답변 미리보기 */
+.kcb-draft { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--kcb-line, rgba(127,127,127,.3)); opacity: .82; }
+.kcb-draft > :last-child::after { content: '▍'; margin-left: 2px; opacity: .6; animation: kcb-blink 1s steps(2) infinite; }
+@keyframes kcb-blink { 50% { opacity: 0; } }
 .kcb-trail { margin: 6px 0 0 22px; padding: 0; list-style: none; font-size: 11.5px; color: var(--kcb-muted); }
 .kcb-trail li::before { content: '✓ '; color: #10b981; }
 .kcb-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
