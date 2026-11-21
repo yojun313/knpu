@@ -111,10 +111,23 @@ def _usage(uid: str) -> dict:
     return usage.find_one({"_id": f"{uid}:{_month()}"}) or {}
 
 
-def _global_model_name() -> str:
-    from . import global_model
+SERVER_LABEL = "연구실 서버 모델"
 
-    return f"현재 {global_model.describe()} · 관리자 설정"
+
+def public_model(target, model: str | None) -> str | None:
+    """일반 사용자에게 보여 줄 모델 이름. 서버 모델 이름은 숨기고, 본인 GPT API 모델만 알려 준다."""
+    return model if getattr(target, "provider", None) == "openai" else None
+
+
+def public_llm(llm: dict | None) -> dict:
+    """저장된 llm 정보(예전 결과 포함)를 일반 사용자 화면용으로 정리한다."""
+    llm = dict(llm or {})
+    used = llm.get("used") or ""
+    if used.startswith("서버 기본 모델") or used == "로컬 LLM":
+        llm["used"] = SERVER_LABEL
+    if llm.get("provider") != "openai":
+        llm.pop("model", None)
+    return llm
 
 
 # ── 공개 설정 ──────────────────────────────────────────────────────────────
@@ -143,8 +156,6 @@ def public_settings(uid: str) -> dict:
             {"id": m, "input_per_1m": p[0], "output_per_1m": p[1]}
             for m, p in PRICES.items()
         ],
-        # 사용자 설정 화면의 '연구실 서버 기본 모델' 옆에 지금 쓰이는 모델을 보여 준다
-        "local_model": _global_model_name(),
     }
 
 
@@ -233,9 +244,7 @@ def plan(
 
     messages·max_tokens 를 주면 이번 호출의 예상 비용까지 남은 한도 안에 드는지 본다.
     """
-    from . import global_model
-
-    local_default = Target("local", f"서버 기본 모델({global_model.describe()})")
+    local_default = Target("local", SERVER_LABEL)
     if not uid:
         return [local_default], None
     try:
@@ -267,7 +276,7 @@ def plan(
         else:
             openai_target = Target(
                 "openai",
-                f"{model} (내 API 키)",
+                "내 GPT API",
                 {"base_url": OPENAI_BASE_URL, "api_key": key, "model": model},
                 model,
             )
@@ -278,7 +287,7 @@ def plan(
     s = get_settings()
     local_only = Target(
         "local",
-        "로컬 LLM",
+        SERVER_LABEL,
         {
             "base_url": s.base_url,
             "api_key": s.api_key or "not-needed",

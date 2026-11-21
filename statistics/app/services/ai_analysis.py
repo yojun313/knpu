@@ -573,7 +573,7 @@ async def _ask_json(
             return data, {
                 "provider": t.provider,
                 "used": t.label,
-                "model": res.display_model,
+                "model": user_llm.public_model(t, res.display_model),
                 "cost_usd": round(cost, 5),
                 "notes": notes,
             }
@@ -987,7 +987,7 @@ async def run_chat(
         "llm": {
             "provider": call.target.provider,
             "used": call.target.label,
-            "model": call.result.display_model,
+            "model": user_llm.public_model(call.target, call.result.display_model),
             "cost_usd": round(cost, 5),
             "notes": notes,
         },
@@ -1030,7 +1030,7 @@ def to_markdown(result: dict) -> str:
     for key, title in (("cautions", "주의점"), ("next_steps", "후속 분석 제안")):
         if rep.get(key):
             lines += [f"## {title}", *[f"- {x}" for x in rep[key]], ""]
-    llm = result.get("llm") or {}
+    llm = user_llm.public_llm(result.get("llm"))
     lines += [
         "---",
         f"모델: {llm.get('used') or ''} {llm.get('model') or ''} · 생성: {result.get('created_at', '')}",

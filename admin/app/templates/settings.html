@@ -3,57 +3,89 @@
 {% block content %}
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-white tracking-tight">설정</h2>
-    <p class="text-zinc-400 text-sm">전역 AI 모델, 테마, 사이드바 메뉴 순서를 설정합니다. 메뉴 순서는 PC에서는 드래그, 모바일에서는 화살표 버튼을 사용해 주시기 바랍니다. 저장하면 어떤 기기로 접속해도 이 순서로 보입니다.</p>
+    <p class="text-zinc-400 text-sm">KNPU FPEI 연구 시스템 전체에 적용되는 AI 모델과 화면 설정을 관리합니다.</p>
 </div>
 
 <div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm"></div>
 
-<div class="mb-8">
-    <h3 class="text-base font-bold text-white tracking-tight">전역 AI 모델</h3>
-    <p class="text-zinc-400 text-sm">모든 연구실 서비스(AI 챗봇, STATISTICS·NETWORK·KEMKIM AI 해석, 고소장 생성기, Discord 봇 등)가 기본으로 쓰는 AI 모델입니다. 사용자가 개인 설정에서 '내 GPT API'를 고른 경우에는 그 설정이 우선합니다. 저장하면 약 10초 안에 모든 서비스에 반영됩니다.</p>
-    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg mt-4 card space-y-4">
-        <div class="text-sm" style="color: var(--muted);">현재 사용 중: <b id="llmActive" style="color: var(--ink);">불러오는 중…</b></div>
-        <label class="llm-choice">
-            <input type="radio" name="llmProvider" value="local">
-            <span><b>로컬 LLM</b><small id="llmLocalInfo">.env 의 LLM_BASE_URL</small></span>
-        </label>
-        <label class="llm-choice">
-            <input type="radio" name="llmProvider" value="openai">
-            <span><b>OpenAI GPT</b><small id="llmKeyInfo">.env 의 OPENAI_API_KEY</small></span>
-        </label>
-        <div id="llmModelRow" class="pl-7">
-            <label class="text-xs font-semibold block mb-1" style="color: var(--muted);" for="llmModel">OpenAI 모델</label>
-            <select id="llmModel" class="w-full rounded-lg px-3 py-2 text-sm"></select>
-            <p class="text-xs mt-1" style="color: var(--muted);">OpenAI 호출이 실패하면 로컬 LLM으로 넘어갑니다. 사용 요금은 서버 키 계정에 청구됩니다.</p>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="saveLlmGlobal()" id="llmSaveBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">저장</button>
-            <button onclick="testLlmGlobal()" id="llmTestBtn" class="px-4 py-3 rounded-lg text-sm font-bold border border-zinc-700 hover:bg-white/5 transition" style="color: var(--ink);">연결 확인</button>
-        </div>
-        <div id="llmTestResult" class="text-xs hidden"></div>
-        <div id="llmUpdated" class="text-xs" style="color: var(--muted);"></div>
-    </div>
-</div>
+<div class="settings-grid">
+    <div class="settings-col">
+        <!-- 전역 AI 모델 -->
+        <section class="set-card card">
+            <header class="set-head">
+                <div>
+                    <h3>전역 AI 모델</h3>
+                    <p>AI 챗봇, STATISTICS·NETWORK·KEMKIM AI 해석, 고소장 생성기, Discord 봇이 기본으로 쓰는 모델입니다. 개인 설정에서 '내 GPT API'를 고른 사용자는 그 설정이 우선합니다.</p>
+                </div>
+                <span class="set-pill" id="llmActivePill"><span class="dot"></span><b id="llmActive">불러오는 중…</b></span>
+            </header>
+            <div class="set-body stack">
+                <div class="llm-tiles">
+                    <label class="llm-tile">
+                        <input type="radio" name="llmProvider" value="local">
+                        <span class="t-title">로컬 LLM</span>
+                        <span class="t-sub">연구실 GPU 서버 · 무료</span>
+                        <span class="t-meta" id="llmLocalInfo">.env 의 LLM_BASE_URL</span>
+                    </label>
+                    <label class="llm-tile">
+                        <input type="radio" name="llmProvider" value="openai">
+                        <span class="t-title">OpenAI GPT</span>
+                        <span class="t-sub">서버 API 키 · 사용량 과금</span>
+                        <span class="t-meta" id="llmKeyInfo">.env 의 OPENAI_API_KEY</span>
+                    </label>
+                </div>
+                <div id="llmModelRow">
+                    <label class="set-label" for="llmModel">OpenAI 모델</label>
+                    <select id="llmModel" class="w-full rounded-lg px-3 py-2.5 text-sm"></select>
+                    <p class="set-hint">OpenAI 호출이 실패하면 로컬 LLM으로 넘어갑니다. 요금은 서버 키 계정에 청구됩니다.</p>
+                </div>
+                <div id="llmTestResult" class="set-result hidden"></div>
+            </div>
+            <footer class="set-foot">
+                <span id="llmUpdated" class="set-hint" style="margin:0"></span>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="testLlmGlobal()" id="llmTestBtn" class="set-btn ghost">연결 확인</button>
+                    <button onclick="saveLlmGlobal()" id="llmSaveBtn" class="set-btn primary">저장</button>
+                </div>
+            </footer>
+        </section>
 
-<div class="mb-8">
-    <h3 class="text-base font-bold text-white tracking-tight">테마</h3>
-    <p class="text-zinc-400 text-sm">사용할 테마를 선택하십시오. 선택한 테마는 Crawler·Manager·Statistics·KEMKIM·Network를 포함한 KNPU FPEI 연구 시스템에 공통으로 적용됩니다.</p>
-    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg mt-4 card">
-        <div id="themeOptionList" class="theme-modal-body" style="padding:0;"></div>
-        <div class="flex items-center justify-between pt-4 mt-2 border-t" style="border-color: var(--line);">
-            <span class="text-sm font-semibold" style="color: var(--ink);">다크 모드</span>
-            <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleUiThemeMode()" aria-label="다크 모드 전환"></button>
-        </div>
+        <!-- 테마 -->
+        <section class="set-card card">
+            <header class="set-head">
+                <div>
+                    <h3>테마</h3>
+                    <p>모든 연구실 사이트에 공통으로 적용됩니다. 이 브라우저에 저장됩니다.</p>
+                </div>
+            </header>
+            <div class="set-body">
+                <div id="themeOptionList" class="theme-modal-body theme-grid" style="padding:0;"></div>
+            </div>
+            <footer class="set-foot">
+                <span class="text-sm font-semibold" style="color: var(--ink);">다크 모드</span>
+                <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleUiThemeMode()" aria-label="다크 모드 전환"></button>
+            </footer>
+        </section>
     </div>
-</div>
 
-<h3 class="text-base font-bold text-white tracking-tight">메뉴 순서</h3>
-<p class="text-zinc-400 text-sm mb-4">사이드바 메뉴 순서를 바꿉니다.</p>
-<div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg card">
-    <div id="navList" class="space-y-2 mb-4"></div>
-    <button onclick="saveOrder()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">
-        순서 저장
-    </button>
+    <div class="settings-col">
+        <!-- 메뉴 순서 -->
+        <section class="set-card card">
+            <header class="set-head">
+                <div>
+                    <h3>사이드바 메뉴 순서</h3>
+                    <p>PC에서는 끌어서 놓고, 모바일에서는 화살표로 옮깁니다. 저장하면 어느 기기에서나 같은 순서로 보입니다.</p>
+                </div>
+            </header>
+            <div class="set-body">
+                <div id="navList" class="nav-list"></div>
+            </div>
+            <footer class="set-foot">
+                <span class="set-hint" style="margin:0">순서를 바꾼 뒤 저장해 주시기 바랍니다.</span>
+                <button onclick="saveOrder()" class="set-btn primary">순서 저장</button>
+            </footer>
+        </section>
+    </div>
 </div>
 
 <style>
@@ -61,15 +93,52 @@
     #themeOptionList .theme-option.selected { border-color: var(--accent); }
     #themeOptionList .theme-option-label { color: var(--ink); }
     #themeOptionList .theme-modal-sub { color: var(--muted); }
-    .llm-choice { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
-    .llm-choice input { margin-top: 4px; accent-color: var(--accent, #3b82f6); }
-    .llm-choice b { display: block; font-size: 14px; color: var(--ink, #e4e4e7); }
-    .llm-choice small { display: block; font-size: 12px; color: var(--muted, #a1a1aa); margin-top: 2px; word-break: break-all; }
-    #llmModel { background: var(--panel2, #18181b); color: var(--ink, #e4e4e7); border: 1px solid var(--line, #3f3f46); }
-    #llmModel:disabled, #llmModelRow.off { opacity: 0.45; }
+    /* 레이아웃: 넓은 화면에서는 두 열(왼쪽 AI 모델·테마, 오른쪽 메뉴 순서) */
+    .settings-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+    @media (min-width: 1280px) { .settings-grid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
+    .settings-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+    .set-card { border-radius: 18px; border: 1px solid var(--line, #27272a); background: rgba(24, 24, 27, 0.35); overflow: hidden; }
+    .set-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px 14px; border-bottom: 1px solid var(--line, #27272a); }
+    .set-head h3 { font-size: 15px; font-weight: 800; color: var(--ink, #fafafa); margin: 0; letter-spacing: -0.01em; }
+    .set-head p { font-size: 12.5px; color: var(--muted, #a1a1aa); margin: 4px 0 0; line-height: 1.55; }
+    .set-body { padding: 18px 20px; }
+    .set-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line, #27272a); background: rgba(255, 255, 255, 0.02); flex-wrap: wrap; }
+    .set-label { display: block; font-size: 12px; font-weight: 700; color: var(--muted, #a1a1aa); margin-bottom: 6px; }
+    .set-hint { font-size: 12px; color: var(--muted, #a1a1aa); margin: 6px 0 0; line-height: 1.5; }
+    .set-btn { padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; transition: background .15s, border-color .15s; white-space: nowrap; }
+    .set-btn.primary { background: #2563eb; color: #fff; }
+    .set-btn.primary:hover { background: #3b82f6; }
+    .set-btn.ghost { border: 1px solid var(--line, #3f3f46); color: var(--ink, #e4e4e7); }
+    .set-btn.ghost:hover { background: rgba(255, 255, 255, 0.06); }
+    .set-btn:disabled { opacity: .5; cursor: default; }
+    .set-pill { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 6px 11px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line, #3f3f46); background: rgba(255, 255, 255, 0.04); color: var(--ink, #e4e4e7); white-space: nowrap; }
+    .set-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, .18); }
+    .set-result { font-size: 12.5px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line, #27272a); line-height: 1.5; }
+
+    /* 전역 AI 모델: 선택 타일 */
+    .llm-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 560px) { .llm-tiles { grid-template-columns: minmax(0, 1fr); } }
+    .llm-tile { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 14px 40px 14px 14px; border-radius: 14px; cursor: pointer;
+        border: 1px solid var(--line, #3f3f46); background: rgba(255, 255, 255, 0.025); transition: border-color .15s, background .15s; min-width: 0; }
+    .llm-tile:hover { background: rgba(255, 255, 255, 0.05); }
+    .llm-tile input { position: absolute; top: 14px; right: 14px; width: 16px; height: 16px; accent-color: var(--accent, #3b82f6); }
+    .llm-tile:has(input:checked) { border-color: var(--accent, #3b82f6); background: rgba(59, 130, 246, 0.10); box-shadow: 0 0 0 1px var(--accent, #3b82f6) inset; }
+    .llm-tile:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+    .llm-tile .t-title { font-size: 14px; font-weight: 800; color: var(--ink, #fafafa); }
+    .llm-tile .t-sub { font-size: 12px; color: var(--muted, #a1a1aa); }
+    .llm-tile .t-meta { font-size: 11.5px; color: var(--muted, #a1a1aa); opacity: .85; margin-top: 6px; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .set-body.stack > * + * { margin-top: 16px; }
+    #llmModel { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; background: var(--panel2, #18181b); color: var(--ink, #e4e4e7); border: 1px solid var(--line, #3f3f46); }
+    #llmModelRow { transition: opacity .15s; }
+    #llmModelRow.off { opacity: 0.4; }
+
+    /* 테마·메뉴 */
+    #themeOptionList.theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 640px) { #themeOptionList.theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .nav-list { display: flex; flex-direction: column; gap: 6px; }
     .nav-row {
         display: flex; align-items: center; gap: 10px;
-        padding: 10px 12px; border-radius: 10px;
+        padding: 8px 10px 8px 12px; border-radius: 10px;
         background: rgba(255,255,255,0.03);
         border: 1px solid var(--line, #3f3f46);
         cursor: grab;
@@ -216,8 +285,8 @@
     function renderLlm(st) {
         llmStatus = st;
         document.getElementById('llmActive').textContent = st.active;
-        document.getElementById('llmLocalInfo').textContent = '.env 의 LLM_BASE_URL · ' + st.local_base_url;
-        document.getElementById('llmKeyInfo').textContent = '.env 의 OPENAI_API_KEY · ' + (st.openai_key_set ? '키 있음' : '키 없음 — 선택할 수 없습니다');
+        document.getElementById('llmLocalInfo').textContent = st.local_base_url;
+        document.getElementById('llmKeyInfo').textContent = 'OPENAI_API_KEY · ' + (st.openai_key_set ? '키 있음' : '키 없음(선택 불가)');
         const openaiRadio = document.querySelector('input[name="llmProvider"][value="openai"]');
         openaiRadio.disabled = !st.openai_key_set;
         document.querySelector(`input[name="llmProvider"][value="${st.provider}"]`).checked = true;
@@ -225,7 +294,7 @@
             `<option value="${escHtml(m)}"${m === st.openai_model ? ' selected' : ''}>${escHtml(m)}${m === st.default_openai_model ? ' (기본값)' : ''}</option>`
         ).join('');
         document.getElementById('llmUpdated').textContent = st.updated_at
-            ? `마지막 변경: ${new Date(st.updated_at).toLocaleString('ko-KR')}${st.updated_by ? ' · ' + st.updated_by : ''}`
+            ? `마지막 변경 ${new Date(st.updated_at).toLocaleString('ko-KR')}${st.updated_by ? ' · ' + st.updated_by : ''}`
             : '아직 변경한 적이 없습니다(기본값: 로컬 LLM).';
         syncLlmForm();
     }

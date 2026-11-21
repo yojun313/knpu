@@ -252,4 +252,5 @@ def register_lab_llm_test(app) -> None:
             models = [m.get("id") for m in (r.json().get("data") or []) if m.get("id")]
         except ValueError:
             models = []
-        return JSONResponse({"ok": True, "models": models}, headers=_NO_STORE)
+        # 일반 사용자 화면에는 서버 모델 이름을 보이지 않는다(개수만)
+        return JSONResponse({"ok": True, "model_count": len(models)}, headers=_NO_STORE)

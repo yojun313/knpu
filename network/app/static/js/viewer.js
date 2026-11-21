@@ -1985,9 +1985,11 @@
         html += '</div>';
       });
     }
-    if (data.llm) html += '<p class="hint">해석 모델: ' + esc(data.llm.used || data.model || '-')
-      + (data.llm.provider === 'openai' ? ' · 추정 비용 $' + Number(data.llm.cost_usd || 0).toFixed(4) : '') + '</p>';
-    else if (data.model) html += '<p class="hint">모델: ' + esc(data.model) + '</p>';
+    if (data.llm) {
+      var mine = data.llm.provider === 'openai';
+      html += '<p class="hint">해석 모델: ' + esc((mine ? [data.llm.used, data.model].filter(Boolean).join(' · ') : '연구실 서버 모델') || '-')
+        + (mine ? ' · 추정 비용 $' + Number(data.llm.cost_usd || 0).toFixed(4) : '') + '</p>';
+    }
     html += aiPromptHtml(data.prompt);
     html += '</div></details>';
     document.getElementById('aiReportModalTitle').textContent = title;

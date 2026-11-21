@@ -589,7 +589,8 @@ async def run(
         "sources": sources[:12],
         "steps": steps,
         "llm": {
-            "model": llm.model,
+            "model": user_llm.public_model(llm.target, llm.model),
+            "provider": llm.target.provider if llm.target else None,
             "used": llm.target.label if llm.target else None,
             "cost_usd": round(llm.cost, 5),
             "notes": llm.notes,

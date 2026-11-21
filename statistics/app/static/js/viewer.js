@@ -2003,7 +2003,7 @@
       foot.appendChild(el('span', 'ai-verify ' + (v.flagged ? 'warn' : 'ok'),
         v.flagged ? '근거 ' + total + '개 중 ' + v.flagged + '개 확인 필요' : '근거 ' + total + '개 원자료 확인'));
     }
-    var model = [llm.used, llm.model].filter(Boolean).join(' · ');
+    var model = [llm.used, llm.provider === 'openai' ? llm.model : ''].filter(Boolean).join(' · ');
     if (llm.cost_usd) model += ' · $' + Number(llm.cost_usd).toFixed(4);
     if (model) foot.appendChild(el('span', null, model));
     if ((r.tables || []).length) foot.appendChild(el('span', null, '참고 표 ' + r.tables.length + '개'));
@@ -2129,7 +2129,7 @@
     }
     var meta = el('div', 'chat-meta');
     var llm = m.llm || {};
-    var model = [llm.used, llm.model].filter(Boolean).join(' · ');
+    var model = [llm.used, llm.provider === 'openai' ? llm.model : ''].filter(Boolean).join(' · ');
     if (llm.cost_usd) model += ' · $' + Number(llm.cost_usd).toFixed(4);
     if (model) meta.appendChild(el('span', null, model));
     if ((m.steps || []).length) {

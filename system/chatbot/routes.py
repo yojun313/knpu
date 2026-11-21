@@ -188,7 +188,17 @@ def _client_msgs(items: list[dict]) -> list[dict]:
         "job_id",
         "llm",
     )
-    return [{k: m[k] for k in keys if k in m} for m in items]
+    from system.llm.user_llm import public_llm
+
+    out = []
+    for m in items:
+        msg = {k: m[k] for k in keys if k in m}
+        if msg.get("llm"):
+            msg["llm"] = public_llm(
+                msg["llm"]
+            )  # 예전 답변에 남은 서버 모델 이름도 숨긴다
+        out.append(msg)
+    return out
 
 
 def _require_user(request: Request) -> dict:

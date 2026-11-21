@@ -245,7 +245,7 @@
     sec.hidden = false;
     document.getElementById('llmModes').innerHTML = Object.keys(st.modes).map(function (k) {
       return '<label class="llm-mode"><input type="radio" name="llmMode" value="' + k + '"' + (st.mode === k ? ' checked' : '') + '>'
-        + '<span>' + llmEsc(st.modes[k]) + (k === 'local' ? ' <em>(' + llmEsc(st.local_model) + ')</em>' : '') + '</span></label>';
+        + '<span>' + llmEsc(st.modes[k]) + '</span></label>';
     }).join('');
     document.getElementById('llmModel').innerHTML = st.models.map(function (m) {
       return '<option value="' + llmEsc(m.id) + '"' + (m.id === st.model ? ' selected' : '') + '>' + llmEsc(m.id)
@@ -375,7 +375,7 @@
         + '<div class="st-kv"><span>Base URL</span><code id="labBase">' + stEsc(base) + '</code><button type="button" class="st-btn sm" data-copy="base">복사</button></div>'
         + '<div class="st-kv"><span>토큰</span><code id="labToken" class="st-secret">' + stEsc(token ? token.replace(/./g, '•').slice(0, 24) : tokenShown) + '</code>'
         + (token ? '<button type="button" class="st-btn sm" id="labShow">보기</button><button type="button" class="st-btn sm" data-copy="token">복사</button>' : '') + '</div>'
-        + '<div class="st-kv"><span>모델</span><code id="labModels">연결 테스트로 확인</code><button type="button" class="st-btn sm" id="labTest">연결 테스트</button></div>'
+        + '<div class="st-kv"><span>연결</span><code id="labModels">연결 테스트로 확인</code><button type="button" class="st-btn sm" id="labTest">연결 테스트</button></div>'
         + '<p class="st-note">토큰은 개인에게 발급된 것이 아니라 연구실 공용 토큰입니다. 외부에 공개하거나 저장소에 올리지 마시기 바랍니다. 모델 이름은 <code>/models</code>로 조회해 쓰면 서버 모델이 바뀌어도 코드를 고칠 필요가 없습니다.</p>'
         + '</div>'
         + '<div class="st-group"><div class="st-group-title">사용 예시</div>'
@@ -406,7 +406,7 @@
         btn.disabled = true; out.textContent = '확인 중…';
         stFetch('/shared-ui/account/api/lab-llm/models').then(function (r) {
           btn.disabled = false;
-          out.textContent = r.ok ? ((r.models || []).join(', ') || '(모델 없음)') : ('실패: ' + r.error);
+          out.textContent = r.ok ? (r.model_count ? '연결됨' : '연결됨 · 사용 가능한 모델 없음') : ('실패: ' + r.error);
           out.className = r.ok ? 'ok' : 'err';
         }).catch(function (err) { btn.disabled = false; out.textContent = '실패: ' + err.message; out.className = 'err'; });
       });

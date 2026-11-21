@@ -483,7 +483,7 @@ async def interpret(uid, profile, examples, evidence_note, on_prompt=None):
     )
     return {
         "report": result.result.text,
-        "model": result.result.model,
+        "model": user_llm.public_model(result.target, result.result.display_model),
         "cost_usd": result.cost_usd,
         "llm": {
             "used": result.target.label,
@@ -495,6 +495,15 @@ async def interpret(uid, profile, examples, evidence_note, on_prompt=None):
     }
 
 
+def _model_text(saved: dict) -> str:
+    """보고서에 적을 모델 표기. 서버 모델 이름은 숨긴다(예전 결과 포함)."""
+    if not saved.get("llm"):
+        return "-"
+    llm = user_llm.public_llm(saved["llm"])
+    model = saved.get("model") if llm.get("provider") == "openai" else None
+    return " · ".join(x for x in (llm.get("used"), model) if x) or "-"
+
+
 def markdown_report(saved: dict) -> str:
     """저장된 화면 내용과 근거를 이식 가능한 Markdown 보고서로 만든다."""
     profile = saved.get("profile") or {}
@@ -504,7 +513,7 @@ def markdown_report(saved: dict) -> str:
         "",
         f"- 분석 시각: {saved['created_at']}",
         f"- 분석 범위: {saved['mode']} / {saved['tag'] or '전체'}",
-        f"- 모델: {saved.get('model') or '-'}",
+        f"- 모델: {_model_text(saved)}",
         "",
         "## 그래프 지표",
         "",

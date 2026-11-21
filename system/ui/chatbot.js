@@ -169,7 +169,8 @@
       box.appendChild(refs);
     }
     var meta = el('div', 'kcb-meta'), llm = m.llm || {};
-    if (llm.used || llm.model) meta.appendChild(el('span', null, [llm.used, llm.model].filter(Boolean).join(' · ') + (llm.cost_usd ? ' · $' + Number(llm.cost_usd).toFixed(4) : '')));
+    var llmText = [llm.used, llm.provider === 'openai' ? llm.model : ''].filter(Boolean).join(' · ');
+    if (llmText) meta.appendChild(el('span', null, llmText + (llm.cost_usd ? ' · $' + Number(llm.cost_usd).toFixed(4) : '')));
     if ((m.steps || []).length) {
       var d = el('details'); d.appendChild(el('summary', null, '조회 과정 ' + m.steps.length + '단계'));
       var ol = el('ol'); m.steps.forEach(function (s) { ol.appendChild(el('li', null, s)); }); d.appendChild(ol); meta.appendChild(d);
