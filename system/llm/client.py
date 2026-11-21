@@ -21,6 +21,7 @@ class LLMResult:
     base_url: str
     used_fallback: bool = False
     raw: object = field(default=None, repr=False)
+    target_label: str = ""  # 응답한 대상 이름(전역 우선순위 목록의 이름 등)
 
     @property
     def display_model(self) -> str:
@@ -43,25 +44,24 @@ class _Target:
 
 
 def _targets(settings: LLMSettings, model: str | None) -> list[_Target]:
-    # 관리자 대시보드의 전역 AI 모델이 OpenAI면 그 모델을 먼저 쓰고, 실패하면 로컬 LLM으로 넘어간다.
-    # (호출부가 넘긴 model 은 로컬 서버용 이름이라 OpenAI 쪽에는 쓰지 않는다)
-    openai = global_model.openai_target()
-    if openai:
-        base_url, key, openai_model = openai
+    # 관리자 대시보드의 전역 AI 모델 우선순위대로 시도하고, 실패하면 다음 순위로 넘어간다.
+    # (호출부가 넘긴 model 은 로컬 서버용 이름이라 로컬 LLM에만 쓴다)
+    try:
+        ordered = global_model.chain(local_model=model)
+    except Exception as e:  # 설정을 못 읽어도 .env 기본 동작으로는 돌아가야 한다
+        logger.warning("전역 AI 모델 목록을 만들지 못해 .env 설정을 씁니다: %s", e)
+        ordered = []
+    # 켜진 대상이 로컬 LLM 하나뿐이거나 하나도 없으면 예전처럼 .env 주 엔드포인트 + 폴백을 쓴다
+    if ordered and not (len(ordered) == 1 and ordered[0]["kind"] == "local"):
         return [
             _Target(
-                label="global-openai",
-                base_url=base_url,
-                api_key=key,
-                model=openai_model,
-            ),
-            _Target(
-                label="local",
-                base_url=settings.base_url,
-                api_key=settings.api_key,
-                model=model or settings.model,
-                is_fallback=True,
-            ),
+                label=c["label"],
+                base_url=c["base_url"],
+                api_key=c["api_key"],
+                model=c["model"],
+                is_fallback=i > 0,
+            )
+            for i, c in enumerate(ordered)
         ]
     targets = [
         _Target(
@@ -350,6 +350,7 @@ def chat(
                 base_url=target.base_url,
                 used_fallback=target.is_fallback,
                 raw=response,
+                target_label=target.label,
             )
         except Exception as e:
             attempts.append((f"{target.label} {target.base_url}", e))
@@ -412,6 +413,7 @@ async def achat(
                 base_url=target.base_url,
                 used_fallback=target.is_fallback,
                 raw=response,
+                target_label=target.label,
             )
         except Exception as e:
             attempts.append((f"{target.label} {target.base_url}", e))

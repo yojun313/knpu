@@ -15,36 +15,26 @@
             <header class="set-head">
                 <div>
                     <h3>전역 AI 모델</h3>
-                    <p>AI 챗봇, STATISTICS·NETWORK·KEMKIM AI 해석, 고소장 생성기, Discord 봇이 기본으로 쓰는 모델입니다. 개인 설정에서 '내 GPT API'를 고른 사용자는 그 설정이 우선합니다.</p>
+                    <p>AI 챗봇, STATISTICS·NETWORK·KEMKIM AI 해석, 고소장 생성기, Discord 봇이 기본으로 쓰는 모델입니다. vLLM·Ollama·OpenRouter처럼 OpenAI 형식(/v1/chat/completions)을 따르는 API를 원하는 만큼 추가하고 순서를 정할 수 있습니다. 개인 설정에서 '내 GPT API'를 고른 사용자는 그 설정이 우선합니다.</p>
                 </div>
                 <span class="set-pill" id="llmActivePill"><span class="dot"></span><b id="llmActive">불러오는 중…</b></span>
             </header>
             <div class="set-body stack">
-                <div class="llm-tiles">
-                    <label class="llm-tile">
-                        <input type="radio" name="llmProvider" value="local">
-                        <span class="t-title">로컬 LLM</span>
-                        <span class="t-sub">연구실 GPU 서버 · 무료</span>
-                        <span class="t-meta" id="llmLocalInfo">.env 의 LLM_BASE_URL</span>
-                    </label>
-                    <label class="llm-tile">
-                        <input type="radio" name="llmProvider" value="openai">
-                        <span class="t-title">OpenAI GPT</span>
-                        <span class="t-sub">서버 API 키 · 사용량 과금</span>
-                        <span class="t-meta" id="llmKeyInfo">.env 의 OPENAI_API_KEY</span>
-                    </label>
+                <div class="llm-order-head">
+                    <span class="set-label" style="margin:0">우선순위</span>
+                    <span class="set-hint" style="margin:0">위에서부터 차례로 시도하고, 실패하면 다음 순위로 넘어갑니다.</span>
                 </div>
-                <div id="llmModelRow">
-                    <label class="set-label" for="llmModel">OpenAI 모델</label>
-                    <select id="llmModel" class="w-full rounded-lg px-3 py-2.5 text-sm"></select>
-                    <p class="set-hint">OpenAI 호출이 실패하면 로컬 LLM으로 넘어갑니다. 요금은 서버 키 계정에 청구됩니다.</p>
-                </div>
+                <ol id="llmList" class="llm-list"></ol>
+                <button type="button" class="llm-add" id="llmAddBtn" onclick="addLlmEntry()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    OpenAI 호환 API 추가
+                </button>
                 <div id="llmTestResult" class="set-result hidden"></div>
             </div>
             <footer class="set-foot">
                 <span id="llmUpdated" class="set-hint" style="margin:0"></span>
                 <div class="flex gap-2 shrink-0">
-                    <button onclick="testLlmGlobal()" id="llmTestBtn" class="set-btn ghost">연결 확인</button>
+                    <button onclick="testLlmGlobal()" id="llmTestBtn" class="set-btn ghost" title="저장된 우선순위대로 요청을 보내 봅니다">저장된 설정 확인</button>
                     <button onclick="saveLlmGlobal()" id="llmSaveBtn" class="set-btn primary">저장</button>
                 </div>
             </footer>
@@ -115,22 +105,54 @@
     .set-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, .18); }
     .set-result { font-size: 12.5px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line, #27272a); line-height: 1.5; }
 
-    /* 전역 AI 모델: 선택 타일 */
-    .llm-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    @media (max-width: 560px) { .llm-tiles { grid-template-columns: minmax(0, 1fr); } }
-    .llm-tile { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 14px 40px 14px 14px; border-radius: 14px; cursor: pointer;
-        border: 1px solid var(--line, #3f3f46); background: rgba(255, 255, 255, 0.025); transition: border-color .15s, background .15s; min-width: 0; }
-    .llm-tile:hover { background: rgba(255, 255, 255, 0.05); }
-    .llm-tile input { position: absolute; top: 14px; right: 14px; width: 16px; height: 16px; accent-color: var(--accent, #3b82f6); }
-    .llm-tile:has(input:checked) { border-color: var(--accent, #3b82f6); background: rgba(59, 130, 246, 0.10); box-shadow: 0 0 0 1px var(--accent, #3b82f6) inset; }
-    .llm-tile:has(input:disabled) { opacity: .45; cursor: not-allowed; }
-    .llm-tile .t-title { font-size: 14px; font-weight: 800; color: var(--ink, #fafafa); }
-    .llm-tile .t-sub { font-size: 12px; color: var(--muted, #a1a1aa); }
-    .llm-tile .t-meta { font-size: 11.5px; color: var(--muted, #a1a1aa); opacity: .85; margin-top: 6px; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .set-body.stack > * + * { margin-top: 16px; }
-    #llmModel { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; background: var(--panel2, #18181b); color: var(--ink, #e4e4e7); border: 1px solid var(--line, #3f3f46); }
-    #llmModelRow { transition: opacity .15s; }
-    #llmModelRow.off { opacity: 0.4; }
+    /* 전역 AI 모델: 우선순위 목록 */
+    .set-body.stack > * + * { margin-top: 14px; }
+    .llm-order-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .llm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; counter-reset: llm; }
+    .llm-item { border: 1px solid var(--line, #3f3f46); border-radius: 14px; background: rgba(255, 255, 255, 0.025); transition: border-color .15s, background .15s, opacity .15s; min-width: 0; }
+    .llm-item.dragging { opacity: .4; }
+    .llm-item.off .llm-main { opacity: .5; }
+    .llm-item.editing { border-color: var(--accent, #3b82f6); }
+    .llm-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-width: 0; }
+    .llm-rank { width: 24px; height: 24px; flex-shrink: 0; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 800;
+        background: rgba(59, 130, 246, .14); color: var(--accent, #60a5fa); }
+    .llm-item.off .llm-rank { background: rgba(255, 255, 255, .05); color: var(--muted, #71717a); }
+    .llm-grip { cursor: grab; color: var(--muted, #71717a); flex-shrink: 0; display: flex; }
+    .llm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .llm-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; font-weight: 800; color: var(--ink, #fafafa); }
+    .llm-name > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .llm-badge { flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line, #3f3f46); color: var(--muted, #a1a1aa); }
+    .llm-badge.warn { color: #fbbf24; border-color: rgba(251, 191, 36, .4); }
+    .llm-meta { font-size: 11.5px; color: var(--muted, #a1a1aa); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .llm-acts { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .llm-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; color: var(--muted, #a1a1aa); background: rgba(255, 255, 255, .04); }
+    .llm-icon:not(:disabled):hover { background: rgba(255, 255, 255, .1); color: var(--ink, #fff); }
+    .llm-icon:disabled { opacity: .25; cursor: default; }
+    .llm-icon.danger:not(:disabled):hover { color: #f87171; background: rgba(248, 113, 113, .12); }
+    .llm-toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; border-radius: 999px; background: rgba(255, 255, 255, .14); transition: background .15s; }
+    .llm-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+    .llm-toggle.on { background: var(--accent, #3b82f6); }
+    .llm-toggle.on::after { transform: translateX(16px); }
+    .llm-toggle:disabled { opacity: .4; cursor: not-allowed; }
+    .llm-edit { padding: 4px 12px 14px 46px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .llm-edit .full { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .llm-edit { grid-template-columns: minmax(0, 1fr); padding-left: 12px; } .llm-meta { white-space: normal; word-break: break-all; } }
+    .llm-edit label { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted, #a1a1aa); margin-bottom: 4px; }
+    .llm-in { width: 100%; padding: 8px 10px; border-radius: 9px; font-size: 13px; background: var(--panel2, #18181b); color: var(--ink, #e4e4e7); border: 1px solid var(--line, #3f3f46); }
+    .llm-in:focus { outline: none; border-color: var(--accent, #3b82f6); }
+    .llm-inline { display: flex; gap: 6px; }
+    .llm-inline .llm-in { flex: 1; min-width: 0; }
+    .llm-mini { padding: 7px 11px; border-radius: 9px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line, #3f3f46); color: var(--ink, #e4e4e7); }
+    .llm-mini:hover { background: rgba(255, 255, 255, .06); }
+    .llm-mini:disabled { opacity: .5; }
+    .llm-out { font-size: 12px; line-height: 1.5; margin-top: 2px; word-break: break-all; }
+    .llm-out.ok { color: #34d399; } .llm-out.err { color: #f87171; } .llm-out.busy { color: var(--muted, #a1a1aa); }
+    .llm-row-out { padding: 0 12px 10px 46px; }
+    .llm-add { width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 700;
+        border: 1px dashed var(--line, #52525b); color: var(--muted, #a1a1aa); }
+    .llm-add:hover { border-color: var(--accent, #3b82f6); color: var(--accent, #60a5fa); background: rgba(59, 130, 246, .06); }
+    .llm-add:disabled { opacity: .4; }
+    .llm-dirty { color: #fbbf24 !important; }
 
     /* 테마·메뉴 */
     #themeOptionList.theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -271,32 +293,191 @@
 
     loadOrder();
 
-    // ── 전역 AI 모델 ───────────────────────────────────────────────────────────
+    // ── 전역 AI 모델: 우선순위 목록 ─────────────────────────────────────────────
     let llmStatus = null;
-    function llmProvider() {
-        const el = document.querySelector('input[name="llmProvider"]:checked');
-        return el ? el.value : 'local';
+    let llmEntries = [];      // 화면에서 고치는 중인 목록(순서 = 우선순위)
+    let llmDirty = false;
+    let llmDragIdx = null;
+    let llmSeq = 0;
+    const ICON = {
+        up: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
+        down: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+        edit: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+        test: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        del: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>',
+        grip: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>',
+    };
+
+    function llmMarkDirty() {
+        llmDirty = true;
+        const u = document.getElementById('llmUpdated');
+        u.textContent = '저장하지 않은 변경 사항이 있습니다.';
+        u.classList.add('llm-dirty');
     }
-    function syncLlmForm() {
-        const off = llmProvider() !== 'openai';
-        document.getElementById('llmModel').disabled = off;
-        document.getElementById('llmModelRow').classList.toggle('off', off);
+    function llmMeta(e) {
+        if (e.kind === 'local') return (llmStatus.local_base_url || '') + ' · 모델 자동';
+        if (e.kind === 'openai') return 'api.openai.com · ' + (e.model || llmStatus.default_openai_model);
+        const key = e.api_key ? '새 키 입력됨' : (e.clear_key ? '키 삭제 예정' : (e.key_set ? '키 ••••' + (e.key_hint || '') : '키 없음'));
+        return (e.base_url || '주소 미입력') + ' · ' + (e.model || '모델 자동') + ' · ' + key;
     }
+    function llmItemHtml(e, i) {
+        const builtin = e.kind !== 'custom';
+        const noKey = e.kind === 'openai' && !llmStatus.openai_key_set;
+        const badge = e.kind === 'local' ? '<span class="llm-badge">기본 · .env</span>'
+            : e.kind === 'openai' ? '<span class="llm-badge' + (noKey ? ' warn' : '') + '">' + (noKey ? '키 없음' : '기본 · .env') + '</span>'
+            : '<span class="llm-badge">OpenAI 호환</span>';
+        let edit = '';
+        if (e._open && e.kind === 'openai') {
+            edit = `<div class="llm-edit"><div class="full"><label>모델</label><select class="llm-in" onchange="llmSet(${i}, 'model', this.value)">`
+                + llmStatus.openai_models.map(m => `<option value="${escHtml(m)}"${m === e.model ? ' selected' : ''}>${escHtml(m)}${m === llmStatus.default_openai_model ? ' (기본값)' : ''}</option>`).join('')
+                + `</select></div></div>`;
+        } else if (e._open && e.kind === 'custom') {
+            const keyPh = e.key_set && !e.clear_key ? `저장된 키 ••••${escHtml(e.key_hint || '')} · 비워 두면 그대로 유지` : '필요 없으면 비워 두기';
+            edit = `<div class="llm-edit">
+                <div><label>이름</label><input class="llm-in" maxlength="40" value="${escHtml(e.name || '')}" placeholder="예: 연구실 2번 서버" oninput="llmSet(${i}, 'name', this.value, true)"></div>
+                <div><label>API 주소 (Base URL)</label><input class="llm-in" value="${escHtml(e.base_url || '')}" placeholder="https://host/v1" oninput="llmSet(${i}, 'base_url', this.value, true)"></div>
+                <div><label>API 키</label><input class="llm-in" type="password" autocomplete="new-password" value="${escHtml(e.api_key || '')}" placeholder="${keyPh}" oninput="llmSet(${i}, 'api_key', this.value, true)">
+                    ${e.key_set ? `<label style="display:flex;gap:6px;align-items:center;margin:6px 0 0;font-weight:500"><input type="checkbox"${e.clear_key ? ' checked' : ''} onchange="llmSet(${i}, 'clear_key', this.checked)"> 저장된 키 삭제</label>` : ''}</div>
+                <div><label>모델 (비우면 서버의 첫 모델 자동)</label><div class="llm-inline">
+                    <input class="llm-in" list="llmModels-${e._key}" value="${escHtml(e.model || '')}" placeholder="예: Qwen/Qwen3-32B" oninput="llmSet(${i}, 'model', this.value, true)">
+                    <button type="button" class="llm-mini" onclick="loadLlmModels(${i}, this)">불러오기</button></div>
+                    <datalist id="llmModels-${e._key}">${(e._models || []).map(m => `<option value="${escHtml(m)}">`).join('')}</datalist></div>
+            </div>`;
+        }
+        const out = e._out ? `<div class="llm-row-out"><div class="llm-out ${e._out.kind}">${escHtml(e._out.text)}</div></div>` : '';
+        return `<li class="llm-item${e.enabled ? '' : ' off'}${e._open ? ' editing' : ''}" data-idx="${i}"
+                ondragover="event.preventDefault()" ondrop="llmDrop(event, ${i})">
+            <div class="llm-row">
+                <span class="llm-grip" draggable="true" ondragstart="llmDragStart(event, ${i})" ondragend="llmDragEnd(event)" title="끌어서 순서 바꾸기">${ICON.grip}</span>
+                <span class="llm-rank">${i + 1}</span>
+                <div class="llm-main">
+                    <div class="llm-name"><span>${escHtml(e.name || '이름 없음')}</span>${badge}</div>
+                    <div class="llm-meta" title="${escHtml(llmMeta(e))}">${escHtml(llmMeta(e))}</div>
+                </div>
+                <div class="llm-acts">
+                    <button type="button" class="llm-icon" onclick="llmMove(${i}, -1)" title="위로"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
+                    <button type="button" class="llm-icon" onclick="llmMove(${i}, 1)" title="아래로"${i === llmEntries.length - 1 ? ' disabled' : ''}>${ICON.down}</button>
+                    ${e.kind !== 'local' ? `<button type="button" class="llm-icon" onclick="llmToggleOpen(${i})" title="${e.kind === 'openai' ? '모델 고르기' : '편집'}">${ICON.edit}</button>` : ''}
+                    <button type="button" class="llm-icon" onclick="testLlmEntry(${i})" title="이 대상만 연결 확인"${noKey ? ' disabled' : ''}>${ICON.test}</button>
+                    ${builtin ? '' : `<button type="button" class="llm-icon danger" onclick="llmRemove(${i})" title="삭제">${ICON.del}</button>`}
+                    <button type="button" class="llm-toggle${e.enabled ? ' on' : ''}" onclick="llmSet(${i}, 'enabled', ${!e.enabled})" title="${e.enabled ? '끄기' : '켜기'}"${noKey && !e.enabled ? ' disabled' : ''}></button>
+                </div>
+            </div>
+            ${edit}${out}
+        </li>`;
+    }
+    function renderLlmList() {
+        document.getElementById('llmList').innerHTML = llmEntries.map(llmItemHtml).join('');
+        document.getElementById('llmAddBtn').disabled = llmEntries.length >= (llmStatus.max_entries || 20);
+    }
+    // quiet: 입력 중에는 목록을 다시 그리지 않고(커서 유지) 요약 줄만 고친다
+    function llmSet(i, key, value, quiet) {
+        llmEntries[i][key] = value;
+        llmMarkDirty();
+        if (quiet) {
+            const li = document.querySelector(`#llmList .llm-item[data-idx="${i}"]`);
+            if (li) {
+                li.querySelector('.llm-meta').textContent = llmMeta(llmEntries[i]);
+                if (key === 'name') li.querySelector('.llm-name > span').textContent = value || '이름 없음';
+            }
+            return;
+        }
+        renderLlmList();
+    }
+    function llmMove(i, d) {
+        const j = i + d;
+        if (j < 0 || j >= llmEntries.length) return;
+        [llmEntries[i], llmEntries[j]] = [llmEntries[j], llmEntries[i]];
+        llmMarkDirty();
+        renderLlmList();
+    }
+    function llmDragStart(ev, i) {
+        llmDragIdx = i;
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.currentTarget.closest('.llm-item').classList.add('dragging');
+    }
+    function llmDragEnd(ev) { llmDragIdx = null; ev.currentTarget.closest('.llm-item')?.classList.remove('dragging'); }
+    function llmDrop(ev, i) {
+        ev.preventDefault();
+        if (llmDragIdx === null || llmDragIdx === i) return;
+        const [moved] = llmEntries.splice(llmDragIdx, 1);
+        llmEntries.splice(i, 0, moved);
+        llmDragIdx = null;
+        llmMarkDirty();
+        renderLlmList();
+    }
+    function llmToggleOpen(i) { llmEntries[i]._open = !llmEntries[i]._open; renderLlmList(); }
+    function llmRemove(i) {
+        const e = llmEntries[i];
+        if (!confirm(`'${e.name || '이름 없음'}'을(를) 목록에서 삭제하시겠습니까? 저장해야 반영됩니다.`)) return;
+        llmEntries.splice(i, 1);
+        llmMarkDirty();
+        renderLlmList();
+    }
+    function addLlmEntry() {
+        llmEntries.push({ id: '', kind: 'custom', name: '', base_url: '', model: '', api_key: '', enabled: true, _open: true, _key: 'n' + (++llmSeq) });
+        llmMarkDirty();
+        renderLlmList();
+        const items = document.querySelectorAll('#llmList .llm-item');
+        const last = items[items.length - 1];
+        last?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        last?.querySelector('input.llm-in')?.focus();
+    }
+    function llmPayload(e) {
+        return { id: e.id, kind: e.kind, name: e.name, base_url: e.base_url, model: e.model, api_key: e.api_key || '', clear_key: !!e.clear_key, enabled: !!e.enabled };
+    }
+    function llmSetOut(i, kind, text) { llmEntries[i]._out = { kind, text }; renderLlmList(); }
+
+    async function testLlmEntry(i) {
+        const e = llmEntries[i];
+        llmSetOut(i, 'busy', '요청을 보내는 중…');
+        try {
+            const res = await fetch('/api/llm-global/test', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entry: llmPayload(e) }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.detail || '확인 요청에 실패했습니다.');
+            if (llmEntries[i] !== e) return;
+            llmSetOut(i, d.ok ? 'ok' : 'err', d.ok
+                ? `정상 · 응답 모델 ${d.model} · ${d.elapsed_s}초 · "${d.reply}"`
+                : `연결 실패 (${d.elapsed_s}초): ${d.error}`);
+        } catch (err) {
+            if (llmEntries[i] === e) llmSetOut(i, 'err', err.message || '확인 요청에 실패했습니다.');
+        }
+    }
+    async function loadLlmModels(i, btn) {
+        const e = llmEntries[i];
+        btn.disabled = true;
+        btn.textContent = '불러오는 중…';
+        try {
+            const res = await fetch('/api/llm-global/models', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entry: llmPayload(e) }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.detail || '모델 목록을 불러오지 못했습니다.');
+            if (!d.ok) throw new Error(d.error);
+            e._models = d.models;
+            if (!e.model && d.models.length) { e.model = d.models[0]; llmMarkDirty(); }
+            e._out = { kind: 'ok', text: `모델 ${d.models.length}개를 불러왔습니다. 모델 칸을 누르면 목록에서 고를 수 있습니다.` };
+        } catch (err) {
+            e._out = { kind: 'err', text: err.message || '모델 목록을 불러오지 못했습니다.' };
+        }
+        renderLlmList();
+    }
+
     function renderLlm(st) {
         llmStatus = st;
+        llmEntries = st.entries.map(e => ({ ...e, _key: 'e' + (++llmSeq) }));
+        llmDirty = false;
         document.getElementById('llmActive').textContent = st.active;
-        document.getElementById('llmLocalInfo').textContent = st.local_base_url;
-        document.getElementById('llmKeyInfo').textContent = 'OPENAI_API_KEY · ' + (st.openai_key_set ? '키 있음' : '키 없음(선택 불가)');
-        const openaiRadio = document.querySelector('input[name="llmProvider"][value="openai"]');
-        openaiRadio.disabled = !st.openai_key_set;
-        document.querySelector(`input[name="llmProvider"][value="${st.provider}"]`).checked = true;
-        document.getElementById('llmModel').innerHTML = st.openai_models.map(m =>
-            `<option value="${escHtml(m)}"${m === st.openai_model ? ' selected' : ''}>${escHtml(m)}${m === st.default_openai_model ? ' (기본값)' : ''}</option>`
-        ).join('');
-        document.getElementById('llmUpdated').textContent = st.updated_at
+        const u = document.getElementById('llmUpdated');
+        u.classList.remove('llm-dirty');
+        u.textContent = st.updated_at
             ? `마지막 변경 ${new Date(st.updated_at).toLocaleString('ko-KR')}${st.updated_by ? ' · ' + st.updated_by : ''}`
             : '아직 변경한 적이 없습니다(기본값: 로컬 LLM).';
-        syncLlmForm();
+        renderLlmList();
     }
     async function loadLlmGlobal() {
         try {
@@ -314,12 +495,12 @@
             const res = await fetch('/api/llm-global', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider: llmProvider(), openai_model: document.getElementById('llmModel').value }),
+                body: JSON.stringify({ entries: llmEntries.map(llmPayload) }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || '저장에 실패했습니다.');
+            if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : '저장에 실패했습니다.');
             renderLlm(data);
-            showBanner(`전역 AI 모델을 '${data.active}'(으)로 저장했습니다. 약 10초 안에 모든 서비스에 반영됩니다.`, false);
+            showBanner(`전역 AI 모델 우선순위를 저장했습니다(${data.active}). 약 10초 안에 모든 서비스에 반영됩니다.`, false);
         } catch (err) {
             showBanner(err.message || '저장에 실패했습니다.', true);
         } finally {
@@ -332,13 +513,13 @@
         btn.disabled = true;
         out.classList.remove('hidden');
         out.style.color = 'var(--muted)';
-        out.textContent = '현재 저장된 설정으로 요청을 보내는 중…';
+        out.textContent = (llmDirty ? '저장하지 않은 변경은 빼고, ' : '') + '저장된 우선순위대로 요청을 보내는 중…';
         try {
-            const res = await fetch('/api/llm-global/test', { method: 'POST' });
+            const res = await fetch('/api/llm-global/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
             const d = await res.json();
             if (d.ok) {
                 out.style.color = '#34d399';
-                out.textContent = `응답 모델: ${d.model}${d.used_fallback ? ' (기본 대상 실패 → 대체 모델로 응답)' : ''} · ${d.elapsed_s}초 · "${d.reply}"`;
+                out.textContent = `응답: ${d.target ? d.target + ' · ' : ''}${d.model}${d.used_fallback ? ' (앞 순위 실패 → 다음 순위가 응답)' : ''} · ${d.elapsed_s}초 · "${d.reply}"`;
             } else {
                 out.style.color = '#f87171';
                 out.textContent = `연결 실패 (${d.elapsed_s}초): ${d.error}`;
@@ -350,7 +531,7 @@
             btn.disabled = false;
         }
     }
-    document.querySelectorAll('input[name="llmProvider"]').forEach(r => r.addEventListener('change', syncLlmForm));
+    window.addEventListener('beforeunload', e => { if (llmDirty) { e.preventDefault(); e.returnValue = ''; } });
     loadLlmGlobal();
 
     // ── 테마(글래스모피즘/애플 리퀴드 글래스/뉴모피즘/그라디언트 메시) ────────────────
