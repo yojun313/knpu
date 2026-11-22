@@ -39,5 +39,7 @@ ANSWER_TOKENS = int(
 STREAM = os.getenv("CHATBOT_STREAM", "1").lower() not in ("0", "false", "off")
 # 첫 LLM 호출 전에 질문으로 관련 자료를 미리 찾아 넣는다(LLM 왕복 1~2번 절약)
 PREFETCH = os.getenv("CHATBOT_PREFETCH", "1").lower() not in ("0", "false", "off")
+# 추론 모델의 생각 길이(minimal/low/medium/high, 빈 값이면 모델 기본값). 지원하는 모델에만 전달된다
+REASONING_EFFORT = os.getenv("CHATBOT_REASONING_EFFORT", "low").strip().lower()
 HOMEPAGE_CACHE_S = 600
 CODE_RESCAN_S = 300

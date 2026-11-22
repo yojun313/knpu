@@ -169,7 +169,11 @@ def _payload(messages, model, temperature, max_tokens, extra, base_url=None):
         payload["temperature"] = temperature
     if max_tokens is not None:
         payload["max_completion_tokens" if reasoning else "max_tokens"] = max_tokens
-    payload.update(extra or {})
+    extra = dict(extra or {})
+    if not reasoning:
+        # 생각 길이 옵션은 OpenAI 추론 모델만 받는다(다른 서버는 무시하거나 거부한다)
+        extra.pop("reasoning_effort", None)
+    payload.update(extra)
     return payload
 
 

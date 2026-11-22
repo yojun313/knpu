@@ -25,7 +25,14 @@ from system.llm.client import achat, astream
 from system.llm.errors import LLMError
 
 from . import tools
-from .config import ANSWER_TOKENS, MAX_TURNS, PREFETCH, STREAM, TIME_BUDGET_S
+from .config import (
+    ANSWER_TOKENS,
+    MAX_TURNS,
+    PREFETCH,
+    REASONING_EFFORT,
+    STREAM,
+    TIME_BUDGET_S,
+)
 from .registry import Context
 
 logger = logging.getLogger(__name__)
@@ -36,6 +43,8 @@ _FRESH_TURNS = 2
 _CONTEXT_BUDGET = 38_000  # 대략 문맥 글자 수 상한
 _MAX_CALLS = 5  # 한 턴에 함께 실행하는 도구 수
 _DRAFT_EVERY_S = 0.35  # 답변 초안을 화면에 흘려보내는 간격
+# 추론 모델의 생각 길이(지원하는 모델에만 전달된다). 챗봇은 근거를 도구로 읽으므로 길게 생각할 필요가 없다
+_EXTRA = {"reasoning_effort": REASONING_EFFORT} if REASONING_EFFORT else None
 
 _PUBLIC_SYSTEM = """너는 경찰대학 미래치안공학연구원(FPEI, 이하 연구원) 홈페이지의 안내 챗봇이다.
 한국어 설명과 답변은 공식적인 문체(입니다·합니다·습니다)로 작성한다. 해요체나 반말은 사용하지 않는다. 안내는 '주시기 바랍니다', 질문은 '하시겠습니까' 등의 공식적인 표현을 사용한다. 제목·항목명·지표명과 직접 인용한 원문은 보존한다. JSON 출력 형식과 키는 변경하지 않는다.
@@ -43,7 +52,9 @@ _PUBLIC_SYSTEM = """너는 경찰대학 미래치안공학연구원(FPEI, 이하
 외부 방문자(예비 대학원생, 협력 기관, 일반인)의 질문에 친절하고 정확하게 답한다.
 
 규칙
-- 질문과 함께 [미리 찾은 자료]가 주어진다. 그것으로 충분하면 도구를 더 쓰지 말고 바로 답한다.
+- 인사, 너 자신에 대한 질문(누구인지·무엇을 할 수 있는지·어떻게 동작하는지), 앞선 대화만으로 답할 수 있는 질문은 도구 없이 바로 짧게 답한다.
+  너는 질문을 받으면 홈페이지에 실린 정보를 도구로 찾아 읽은 뒤 그 내용을 근거로 답하고, 읽은 페이지를 출처로 보여 주는 AI 안내 챗봇이다.
+- 연구원에 대한 질문에는 [미리 찾은 자료]가 함께 주어진다. 그것으로 충분하면 도구를 더 쓰지 말고 바로 답한다.
 - 사실은 반드시 도구(또는 미리 찾은 자료)로 확인한 뒤 답한다. 홈페이지에서 확인되지 않는 내용(일정 변경, 합격 가능성, 개인 연락처 이외의 사생활, 내부 시스템 코드)은 추측하지 말고 "홈페이지에서 확인되지 않는다"고 밝히고 문의처를 안내한다.
 - 건수·연도별 수는 도구가 계산한 값을 그대로 쓴다. 목록을 직접 세지 않는다.
 - 답변 끝에 근거로 읽은 페이지를 "참고: 페이지명(경로)" 형태로 적는다. 도구가 쓰는 문서 id(page:…, member:… 등)나 HTML 태그(<br> 등)는 답변에 쓰지 않는다.
@@ -82,7 +93,9 @@ POLYDECISION, WHISPER, 관리자 대시보드, AI 고소장 생성기)의 사용
      화면 사용 단계 형식을 억지로 쓰지 않는다.
 
 일하는 방법
-- 질문과 함께 [미리 찾은 자료]가 주어진다. 그것으로 충분하면 도구를 더 쓰지 말고 바로 답한다. 부족할 때만 필요한 도구를 고른다.
+- 인사, 너 자신에 대한 질문(누구인지·무엇을 할 수 있는지·어떻게 동작하는지), 앞선 대화만으로 답할 수 있는 질문(다시 설명·요약 등)은 도구 없이 바로 짧게 답한다.
+  너는 질문을 받으면 서비스 설명서·화면 코드·홈페이지 정보·구성원 본인의 작업 현황을 도구로 찾아 읽은 뒤, 읽은 내용을 근거로 답하고 출처를 함께 보여 주는 AI 에이전트다. 답을 낸 뒤에는 읽지 않은 화면 문구나 경로를 쓰지 않았는지 한 번 더 검사한다.
+- 사용법·현황 질문에는 [미리 찾은 자료]가 함께 주어진다. 그것으로 충분하면 도구를 더 쓰지 말고 바로 답한다. 부족할 때만 필요한 도구를 고르고, 질문과 관계없는 자료는 무시한다.
 - 반드시 설명서 구역(read_manual)이나 관련 파일(read_file)을 한 번 이상 읽은 뒤 답한다. 검색 발췌만 보고 입력칸·버튼을 추측해 쓰지 않는다.
 - 사용법·절차 질문은 서비스 지도의 기본 절차 → 설명서(search_manual → read_manual) → 화면 파일(search_code → read_file) 순서로 찾는다. 설명서가 가장 빠르고 정확하다.
 - 구성원 본인의 현황 질문("내 프로젝트", "내 분석 끝났나", "수집한 데이터 있나", "사이트가 안 열린다")은 my_projects·my_jobs·crawl_data·service_status 로 실제 상태를 확인해 답한다.
@@ -144,8 +157,45 @@ _PATH_RX = re.compile(
     r"`?((?:[\w.-]+/)+[\w.-]+\.(?:py|js|html|css|md|json|toml|sh|ya?ml|txt))(?::\d+(?:-\d+)?)?`?"
 )
 _SMALLTALK_RX = re.compile(
-    r"^\s*(안녕|hi|hello|고마워|감사|ㅎㅇ|반가워|누구(야|세요)|뭐\s*할\s*수)", re.I
+    r"(안녕|^\s*(hi|hello|ㅎㅇ)\b|고마워|고맙|감사|반가|수고|"
+    r"누구(야|니|냐|세요|십니까|입니까|신가요)|(넌|너는|네가|당신은)\s*(뭐|무엇|어떤)|이름이\s*(뭐|무엇)|자기\s*소개|"
+    r"(뭐|뭘|무엇을|무슨\s*일을?)\s*(할\s*수|도와|해\s*줄))",
+    re.I,
 )
+# 챗봇 자신의 동작을 묻는 질문 — 지침에 적힌 자기 설명으로 바로 답한다
+_SELF_RX = re.compile(
+    r"(챗봇|에이전트|agent|너는|너의|넌|네가|니가)[^\n]{0,12}(작동|동작|원리|구조|어떻게\s*(답|대답|동작|작동|만들))",
+    re.I,
+)
+# 앞선 답변을 다시 써 달라는 요청 — 이미 대화에 있는 내용이라 자료를 다시 찾지 않는다
+_REWRITE_RX = re.compile(
+    r"(더\s*)?(짧게|간단히|간단하게|쉽게|자세히|자세하게|길게)|요약|다시\s*(설명|말|정리|써)|한\s*줄로|표로|영어로|번역|무슨\s*(말|뜻)"
+)
+# 연구실 자료를 찾아야 답할 수 있는 낱말 — 이것이 있으면 위 규칙에 걸려도 평소대로 찾는다
+_TOPIC_RX = re.compile(
+    r"(크롤|crawler|network|네트워크|statistics|통계|kemkim|켐킴|polydecision|mcdm|whisper|위스퍼|manager|매니저|"
+    r"고소장|홈페이지|대시보드|프로젝트|분석|수집|데이터|업로드|설명서|코드|파일|버튼|화면|메뉴|오류|에러|로그인|계정|"
+    r"논문|교수|구성원|입학|연구원|연구실|소식|공지)",
+    re.I,
+)
+
+
+def _is_direct(question: str, has_history: bool) -> bool:
+    """자료를 찾지 않고 바로 답해도 되는 질문인지(인사 · 자기소개 · 챗봇 자신 · 앞 답변 다시 쓰기)."""
+    q = question.strip()
+    if len(q) > 60:
+        return False
+    if _SELF_RX.search(q):
+        return not re.search(r"(코드|구현|파일|함수)", q)
+    if _TOPIC_RX.search(q):
+        return False
+    if _SMALLTALK_RX.search(q):
+        return True
+    return has_history and len(q) <= 40 and bool(_REWRITE_RX.search(q))
+
+
+# 화면 조작을 안내하는 답인지(번호 단계 · 화면 요소 이름) — 이런 답만 '읽고 답했는지' 따진다
+_HOWTO_RX = re.compile(r"(?m)^\s*\d+[.)]\s")
 
 
 def _strip_think(text: str) -> str:
@@ -277,14 +327,18 @@ class _LLM:
                 logger.info("스트리밍 응답 실패, 일반 호출로 전환: %s", e)
                 self.on_draft("")
                 self.on_draft = None
-        res = await achat(messages, temperature=0.2, max_tokens=ANSWER_TOKENS)
+        res = await achat(
+            messages, temperature=0.2, max_tokens=ANSWER_TOKENS, extra_body=_EXTRA
+        )
         self.model = res.display_model
         return res.text or ""
 
     async def _stream(self, messages: list[dict]) -> str:
         parts: list[str] = []
         last, shown = 0.0, ""
-        async for piece in astream(messages, temperature=0.2, max_tokens=ANSWER_TOKENS):
+        async for piece in astream(
+            messages, temperature=0.2, max_tokens=ANSWER_TOKENS, extra_body=_EXTRA
+        ):
             parts.append(piece)
             now = time.monotonic()
             if now - last >= _DRAFT_EVERY_S:
@@ -468,7 +522,13 @@ async def run(
         )
         tool_turn_idx.append(len(messages) - 1)
 
-    smalltalk = bool(_SMALLTALK_RX.search(question)) and len(question) < 30
+    # 인사 · 자기소개 · 앞 답변 다시 쓰기처럼 자료가 필요 없는 질문은 찾지 않고 바로 답한다
+    smalltalk = _is_direct(question, len(messages) > 2)
+    if smalltalk:
+        messages[0]["content"] += (
+            "\n\n이번 질문은 자료를 찾지 않아도 되는 질문으로 보인다. 도구 없이 바로, 다섯 문장 이내로 짧게 답한다. "
+            "(연구실 자료를 확인해야만 답할 수 있다면 그때만 도구를 쓴다.)"
+        )
 
     async def prefetch():
         """첫 LLM 호출 전에 질문 그대로 관련 자료를 찾아 둔다 — 대부분의 질문에서 LLM 왕복을 1~2번 줄인다."""
@@ -562,6 +622,8 @@ async def run(
             and not smalltalk
             and not read_ids
             and guards["not_read"] < 1
+            # 화면 조작을 안내하는 답일 때만 — 일반 대화까지 파일을 읽게 하지 않는다
+            and (_HOWTO_RX.search(answer) or _UI_LABEL_RX.search(answer))
         ):
             guards["not_read"] += 1
             top = [u for u in unread_hits if "/" in u][:3]
